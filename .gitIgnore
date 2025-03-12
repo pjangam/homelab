@@ -1,0 +1,4 @@
+.imich/*
+library/*
+postgres/*
+.env
