@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "node-red-contrib-ha-miraie-ac": "^2.1.1"
+  }
+}
