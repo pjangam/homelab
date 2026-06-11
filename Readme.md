@@ -11,9 +11,12 @@ Services to run
 - [x] Tailscale
   - [ ] Bhakti user not able to connect to exit node
 
-## System Stability (Intel N5105 freeze fix)
+## Machine-specific config (xero — Beelink Mini PC, Intel N5105, Lubuntu)
+These fixes are gated behind `hostname == xero` in `new_machine_setup.sh` and won't run on other machines.
+
 - [x] Disable deep CPU C-states — N5105 Jasper Lake has a known Linux kernel bug causing hard freezes (`intel_idle.max_cstate=1` in GRUB)
 - [x] Increase swap to 4GB — 512MB default is too low for Docker workloads
+- [x] Disable USB auto-suspend — Logitech USB receiver disconnects due to Linux USB power management
 - [ ] Temperature monitoring via Home Assistant — CPU idles at ~65°C, monitor spikes under load
 
 

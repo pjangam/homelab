@@ -15,25 +15,8 @@ HOMELAB_DIR="$(cd "$(dirname "$0")" && pwd)"
 (crontab -l 2>/dev/null | grep -v "backup_vaultwarden.sh"; echo "0 2 * * * $HOMELAB_DIR/backup_vaultwarden.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 (crontab -l 2>/dev/null | grep -v "backup_homeassistant.sh"; echo "0 3 * * * $HOMELAB_DIR/backup_homeassistant.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 
-
 git config --global user.email "pjangam2015@gmail.com"
 git config --global user.name "Pramod"
-
-# Disable deep C-states — fixes Intel N5105 Jasper Lake hard freeze bug
-if ! grep -q "intel_idle.max_cstate=1" /etc/default/grub; then
-  sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 intel_idle.max_cstate=1"/' /etc/default/grub
-  sudo update-grub
-fi
-
-# Increase swap to 4GB
-if [[ ! -f /swapfile ]]; then
-  sudo swapoff -a
-  sudo fallocate -l 4G /swapfile
-  sudo chmod 600 /swapfile
-  sudo mkswap /swapfile
-  sudo swapon /swapfile
-  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-fi
 
 # Free port 53 for Pi-hole
 sudo systemctl disable systemd-resolved
@@ -55,4 +38,35 @@ if ! ip addr show enp1s0 | grep -q "192.168.1.123"; then
   sudo nmcli con up "Wired connection 1"
 else
   echo "Static IP already set, skipping."
+fi
+
+# =============================================================================
+# Machine-specific config: xero (Beelink Mini PC, Intel N5105, Lubuntu)
+# See Readme.md for details on why these fixes are needed.
+# =============================================================================
+if [[ "$(hostname)" == "xero" ]]; then
+
+  # Intel N5105 Jasper Lake — deep C-states cause hard system freezes on Linux
+  if ! grep -q "intel_idle.max_cstate=1" /etc/default/grub; then
+    sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 intel_idle.max_cstate=1"/' /etc/default/grub
+    sudo update-grub
+  fi
+
+  # 512MB default swap is too low for Docker workloads
+  if [[ ! -f /swapfile ]]; then
+    sudo swapoff -a
+    sudo fallocate -l 4G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+  fi
+
+  # Logitech USB receiver drops on USB auto-suspend — disable it
+  if [[ ! -f /etc/udev/rules.d/50-usb-autosuspend.rules ]]; then
+    echo 'ACTION=="add", SUBSYSTEM=="usb", TEST=="power/autosuspend" ATTR{power/autosuspend}="-1"' | \
+      sudo tee /etc/udev/rules.d/50-usb-autosuspend.rules
+    sudo udevadm control --reload-rules
+  fi
+
 fi
