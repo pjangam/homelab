@@ -11,6 +11,11 @@ Services to run
 - [x] Tailscale
   - [ ] Bhakti user not able to connect to exit node
 
+## System Stability (Intel N5105 freeze fix)
+- [x] Disable deep CPU C-states — N5105 Jasper Lake has a known Linux kernel bug causing hard freezes (`intel_idle.max_cstate=1` in GRUB)
+- [x] Increase swap to 4GB — 512MB default is too low for Docker workloads
+- [ ] Temperature monitoring via Home Assistant — CPU idles at ~65°C, monitor spikes under load
+
 
 
 

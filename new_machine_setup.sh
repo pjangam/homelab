@@ -19,6 +19,22 @@ HOMELAB_DIR="$(cd "$(dirname "$0")" && pwd)"
 git config --global user.email "pjangam2015@gmail.com"
 git config --global user.name "Pramod"
 
+# Disable deep C-states — fixes Intel N5105 Jasper Lake hard freeze bug
+if ! grep -q "intel_idle.max_cstate=1" /etc/default/grub; then
+  sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 intel_idle.max_cstate=1"/' /etc/default/grub
+  sudo update-grub
+fi
+
+# Increase swap to 4GB
+if [[ ! -f /swapfile ]]; then
+  sudo swapoff -a
+  sudo fallocate -l 4G /swapfile
+  sudo chmod 600 /swapfile
+  sudo mkswap /swapfile
+  sudo swapon /swapfile
+  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+fi
+
 # Free port 53 for Pi-hole
 sudo systemctl disable systemd-resolved
 sudo systemctl stop systemd-resolved
