@@ -7,6 +7,7 @@ Services to run
 - [ ] https://immich.app/docs/install/docker-compose/ : photos
 - [ ] ftp server to dump files
 - [ ] ftp backups- compress and encrypt
+- [ ] Immich data redundancy: evaluate RAID (RAID-1 mirror or RAID-5) for the photo volume — backup is skipped due to size, so disk redundancy is the safety net
 - [x] Tailscale
   - [ ] Bhakti user not able to connect to exit node
 

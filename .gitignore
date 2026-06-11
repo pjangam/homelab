@@ -1,0 +1,9 @@
+vw-data/
+HOMEASSISTANT_CONFIG/
+etc-pihole/
+backups/
+.imich/
+library/
+postgres/
+.env
+.env.backup
