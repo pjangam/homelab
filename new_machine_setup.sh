@@ -41,10 +41,10 @@ else
 fi
 
 # =============================================================================
-# Machine-specific config: xero (Beelink Mini PC, Intel N5105, Lubuntu)
+# Machine-specific config: Beelink Mini PC, Intel N5105, Lubuntu
 # See Readme.md for details on why these fixes are needed.
 # =============================================================================
-if [[ "$(hostname)" == "xero" ]]; then
+if grep -q "N5105" /proc/cpuinfo; then
 
   # Intel N5105 Jasper Lake — deep C-states cause hard system freezes on Linux
   if ! grep -q "intel_idle.max_cstate=1" /etc/default/grub; then

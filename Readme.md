@@ -11,8 +11,8 @@ Services to run
 - [x] Tailscale
   - [ ] Bhakti user not able to connect to exit node
 
-## Machine-specific config (xero — Beelink Mini PC, Intel N5105, Lubuntu)
-These fixes are gated behind `hostname == xero` in `new_machine_setup.sh` and won't run on other machines.
+## Machine-specific config (Beelink Mini PC, Intel N5105, Lubuntu)
+These fixes are gated behind a CPU model check (`N5105` in `/proc/cpuinfo`) in `new_machine_setup.sh` and won't run on other machines.
 
 - [x] Disable deep CPU C-states — N5105 Jasper Lake has a known Linux kernel bug causing hard freezes (`intel_idle.max_cstate=1` in GRUB)
 - [x] Increase swap to 4GB — 512MB default is too low for Docker workloads
