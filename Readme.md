@@ -1,4 +1,17 @@
-Services to run
+## New Machine Setup
+
+Run `new_machine_setup.sh` then complete these manual steps:
+
+1. **Rclone / Dropbox** — `rclone config` (name the remote `backup`), then create `.env.backup`:
+   ```
+   BACKUP_PASSPHRASE='your-passphrase'
+   ```
+2. **Tailscale** — `sudo tailscale up` and follow the auth URL
+3. **Reboot** — required for the C-state GRUB fix to take effect (N5105 machines only)
+
+---
+
+## Services to run
 
 - [ ] Pinhole: ad blocker
 - [ ] Node red : workflow engine for IOT
