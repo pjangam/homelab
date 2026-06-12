@@ -6,3 +6,8 @@ xero.REDACTED-TAILNET-ID.ts.net {
     tls /certs/xero.REDACTED-TAILNET-ID.ts.net.crt /certs/xero.REDACTED-TAILNET-ID.ts.net.key
     reverse_proxy localhost:8080
 }
+
+xero.REDACTED-TAILNET-ID.ts.net:8081 {
+    tls /certs/xero.REDACTED-TAILNET-ID.ts.net.crt /certs/xero.REDACTED-TAILNET-ID.ts.net.key
+    reverse_proxy localhost:8081
+}
