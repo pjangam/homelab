@@ -28,6 +28,11 @@ printf "nameserver 127.0.0.1\nnameserver 1.1.1.1\n" | sudo tee /etc/resolv.conf
 cd "$(dirname "$0")"
 sudo docker compose up -d
 
+# Install HACS if not already installed
+if [[ ! -d "$HOMELAB_DIR/HOMEASSISTANT_CONFIG/custom_components/hacs" ]]; then
+  sudo docker exec homeassistant bash -c "wget -O - https://get.hacs.xyz | bash -"
+fi
+
 # Set static IP (last — drops network connection)
 if ! ip addr show enp1s0 | grep -q "192.168.1.123"; then
   sudo nmcli con mod "Wired connection 1" \
