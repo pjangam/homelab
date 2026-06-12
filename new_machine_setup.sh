@@ -18,6 +18,13 @@ HOMELAB_DIR="$(cd "$(dirname "$0")" && pwd)"
 git config --global user.email "pjangam2015@gmail.com"
 git config --global user.name "Pramod"
 
+# Install Tailscale
+if ! command -v tailscale &>/dev/null; then
+  curl -fsSL https://tailscale.com/install.sh | sh
+fi
+sudo systemctl enable --now tailscaled
+echo "ACTION REQUIRED: run 'sudo tailscale up' to authenticate this machine with Tailscale"
+
 # Free port 53 for Pi-hole
 sudo systemctl disable systemd-resolved
 sudo systemctl stop systemd-resolved
