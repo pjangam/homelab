@@ -25,6 +25,28 @@ fi
 sudo systemctl enable --now tailscaled
 echo "ACTION REQUIRED: run 'sudo tailscale up' to authenticate this machine with Tailscale"
 
+# Generate Tailscale cert for Caddy (requires tailscale to be authenticated first)
+mkdir -p "$HOMELAB_DIR/certs"
+TAILSCALE_TIMEOUT=120
+TAILSCALE_ELAPSED=0
+echo "Waiting for Tailscale authentication (timeout: ${TAILSCALE_TIMEOUT}s)..."
+echo "Run 'sudo tailscale up' in another terminal to authenticate."
+until tailscale status &>/dev/null; do
+  if [[ $TAILSCALE_ELAPSED -ge $TAILSCALE_TIMEOUT ]]; then
+    echo "[$(date)] TIMED OUT waiting for Tailscale auth — skipping cert generation. Re-run script after 'sudo tailscale up'."
+    break
+  fi
+  sleep 5
+  TAILSCALE_ELAPSED=$((TAILSCALE_ELAPSED + 5))
+done
+if tailscale status &>/dev/null; then
+  sudo tailscale cert \
+    --cert-file "$HOMELAB_DIR/certs/xero.REDACTED-TAILNET-ID.ts.net.crt" \
+    --key-file  "$HOMELAB_DIR/certs/xero.REDACTED-TAILNET-ID.ts.net.key" \
+    xero.REDACTED-TAILNET-ID.ts.net
+  sudo chown "$USER:$USER" "$HOMELAB_DIR/certs/"*
+fi
+
 # Free port 53 for Pi-hole
 sudo systemctl disable systemd-resolved
 sudo systemctl stop systemd-resolved

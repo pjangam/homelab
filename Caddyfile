@@ -1,0 +1,8 @@
+{
+    auto_https off
+}
+
+xero.REDACTED-TAILNET-ID.ts.net {
+    tls /certs/xero.REDACTED-TAILNET-ID.ts.net.crt /certs/xero.REDACTED-TAILNET-ID.ts.net.key
+    reverse_proxy localhost:8080
+}

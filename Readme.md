@@ -6,7 +6,7 @@ Run `new_machine_setup.sh` then complete these manual steps:
    ```
    BACKUP_PASSPHRASE='your-passphrase'
    ```
-2. **Tailscale** — `sudo tailscale up` and follow the auth URL
+2. **Tailscale** — `sudo tailscale up` and follow the auth URL, then re-run the script so `tailscale cert` can generate the SSL cert for Caddy
 3. **Reboot** — required for the C-state GRUB fix to take effect (N5105 machines only)
 
 ---

@@ -151,9 +151,22 @@ services:
     volumes:
       - node-red-data:/data
 
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    network_mode: host
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./certs:/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
 volumes:
   model-cache:
   node-red-data:
+  caddy_data:
+  caddy_config:
 
 networks:
   node-red-net:
