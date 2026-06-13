@@ -6,8 +6,13 @@ Run `new_machine_setup.sh` then complete these manual steps:
    ```
    BACKUP_PASSPHRASE='your-passphrase'
    ```
-2. **Tailscale** — `sudo tailscale up` and follow the auth URL, then re-run the script so `tailscale cert` can generate the SSL cert for Caddy
-3. **Reboot** — required for the C-state GRUB fix to take effect (N5105 machines only)
+2. **Secrets** — create `.env` (gitignored) with service passwords:
+   ```
+   PIHOLE_PASSWORD=<your-password>
+   ```
+   Pi-hole password is stored in `.env` on the server (not in git). Check Bitwarden for the current value.
+3. **Tailscale** — `sudo tailscale up` and follow the auth URL, then re-run the script so `tailscale cert` can generate the SSL cert for Caddy
+4. **Reboot** — required for the C-state GRUB fix to take effect (N5105 machines only)
 
 ---
 
