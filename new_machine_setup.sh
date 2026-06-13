@@ -14,6 +14,8 @@ cp /usr/share/applications/com.github.hluk.copyq.desktop ~/.config/autostart/
 HOMELAB_DIR="$(cd "$(dirname "$0")" && pwd)"
 (crontab -l 2>/dev/null | grep -v "backup_vaultwarden.sh"; echo "0 2 * * * $HOMELAB_DIR/backup_vaultwarden.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 (crontab -l 2>/dev/null | grep -v "backup_homeassistant.sh"; echo "0 3 * * * $HOMELAB_DIR/backup_homeassistant.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
+# Renew Tailscale cert monthly (cert validity is ~90 days)
+(crontab -l 2>/dev/null | grep -v "tailscale cert"; echo "0 4 1 * * sudo tailscale cert --cert-file $HOMELAB_DIR/certs/xero.REDACTED-TAILNET-ID.ts.net.crt --key-file $HOMELAB_DIR/certs/xero.REDACTED-TAILNET-ID.ts.net.key xero.REDACTED-TAILNET-ID.ts.net && sudo chown $USER:$USER $HOMELAB_DIR/certs/* && sudo docker kill --signal=USR1 caddy >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 
 git config --global user.email "pjangam2015@gmail.com"
 git config --global user.name "Pramod"
