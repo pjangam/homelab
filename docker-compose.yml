@@ -127,6 +127,7 @@ services:
       - ./vw-data:/data
     environment:
       WEBSOCKET_ENABLED: 'true'
+      SIGNUPS_ALLOWED: 'false'
   homeassistant:
     container_name: homeassistant
     image: "ghcr.io/home-assistant/home-assistant:stable"

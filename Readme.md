@@ -18,11 +18,7 @@ Run `new_machine_setup.sh` then complete these manual steps:
 
 ## Vaultwarden
 
-Signups are currently open (default). To disable after all accounts are created, add to `docker-compose.yml` under vaultwarden's `environment`:
-```yaml
-SIGNUPS_ALLOWED: "false"
-```
-Then `sudo docker compose up -d vaultwarden`.
+Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compose.yml`). To allow a new account, temporarily set it to `"true"`, run `sudo docker compose up -d vaultwarden`, create the account, then set it back to `"false"`.
 
 ---
 
