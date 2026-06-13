@@ -16,6 +16,16 @@ Run `new_machine_setup.sh` then complete these manual steps:
 
 ---
 
+## Vaultwarden
+
+Signups are currently open (default). To disable after all accounts are created, add to `docker-compose.yml` under vaultwarden's `environment`:
+```yaml
+SIGNUPS_ALLOWED: "false"
+```
+Then `sudo docker compose up -d vaultwarden`.
+
+---
+
 ## Services to run
 
 - [ ] Pinhole: ad blocker
