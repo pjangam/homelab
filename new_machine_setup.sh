@@ -55,6 +55,9 @@ sudo systemctl stop systemd-resolved
 sudo rm /etc/resolv.conf
 printf "nameserver 127.0.0.1\nnameserver 1.1.1.1\n" | sudo tee /etc/resolv.conf
 
+# Allow running docker without sudo
+sudo usermod -aG docker "$USER"
+
 # Start services
 cd "$(dirname "$0")"
 sudo docker compose up -d
