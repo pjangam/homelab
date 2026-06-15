@@ -16,6 +16,18 @@ Run `new_machine_setup.sh` then complete these manual steps:
 
 ---
 
+## Miraie AC (Node-RED + MQTT)
+
+Mosquitto and the `node-red-contrib-ha-miraie-ac` node are set up automatically. Manual steps after first run:
+
+1. Open Node-RED at `http://192.168.1.123:1880`
+2. Find the `ha-miraie-ac` node in the palette (left sidebar), drag it into a flow
+3. Configure it with your Miraie registered mobile number + password
+4. In Home Assistant: Settings → Integrations → Add Integration → MQTT → host `192.168.1.123`, port `1883`
+5. Search for `climate` entities in HA — your AC should appear after the node connects
+
+---
+
 ## Vaultwarden
 
 Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compose.yml`). To allow a new account, temporarily set it to `"true"`, run `sudo docker compose up -d vaultwarden`, create the account, then set it back to `"false"`.
