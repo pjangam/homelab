@@ -10,3 +10,4 @@ postgres/
 .env.backup
 *.log
 *.swp
+mosquitto/log/

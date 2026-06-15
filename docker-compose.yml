@@ -139,6 +139,19 @@ services:
     privileged: true
     network_mode: host
 
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    networks:
+      - node-red-net
+    restart: unless-stopped
+
   node-red:
     image: nodered/node-red:latest
     environment:
@@ -149,6 +162,8 @@ services:
       - node-red-net
     volumes:
       - node-red-data:/data
+    depends_on:
+      - mosquitto
 
   caddy:
     image: caddy:latest
@@ -164,6 +179,8 @@ services:
 volumes:
   model-cache:
   node-red-data:
+  mosquitto-data:
+  mosquitto-log:
   caddy_data:
   caddy_config:
 
