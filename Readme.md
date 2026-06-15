@@ -33,7 +33,12 @@ Mosquitto and the `node-red-contrib-ha-miraie-ac` node are set up automatically.
 
 > Mosquitto has no authentication (`allow_anonymous true`). Fine for homelab, can add credentials later.
 
-> TODO: these steps could be automated with Selenium — deferred.
+> **TODO (deferred): Full automation approach**
+> 1. Store Miraie credentials in Bitwarden
+> 2. On setup, pull them via Bitwarden CLI (`bw get item "Miraie AC"`)
+> 3. Export working Node-RED flow as `nodered-flows.json` in repo, inject credentials and POST to Node-RED API
+> 4. Set up HA MQTT integration via HA REST API using a long-lived token (no Selenium needed)
+> 5. Only manual step: generate the HA long-lived token once
 
 ---
 
