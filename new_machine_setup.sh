@@ -4,11 +4,22 @@ set -euo pipefail
 sudo apt install -y openssh-server
 sudo systemctl enable --now ssh
 
-sudo apt install -y net-tools copyq gnupg rclone fzf
+sudo apt install -y net-tools copyq gnupg rclone fzf zsh zsh-autosuggestions zsh-syntax-highlighting thefuck
 
-# fzf history search — wire into bash if not already there
-if ! grep -q "fzf --bash" ~/.bashrc; then
-  echo 'eval "$(fzf --bash)"' >> ~/.bashrc
+# Switch default shell to zsh
+if [[ "$SHELL" != "$(which zsh)" ]]; then
+  chsh -s "$(which zsh)" "$USER"
+fi
+
+# Configure zsh
+if ! grep -q "zsh-autosuggestions" ~/.zshrc 2>/dev/null; then
+  cat >> ~/.zshrc << 'ZSHRC'
+
+source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+eval "$(fzf --zsh)"
+eval "$(thefuck --alias)"
+ZSHRC
 fi
 
 # Autostart CopyQ on login
