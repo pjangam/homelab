@@ -8,3 +8,5 @@ library/
 postgres/
 .env
 .env.backup
+*.log
+*.swp
