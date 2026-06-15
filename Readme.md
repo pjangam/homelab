@@ -22,9 +22,18 @@ Mosquitto and the `node-red-contrib-ha-miraie-ac` node are set up automatically.
 
 1. Open Node-RED at `http://192.168.1.123:1880`
 2. Find the `ha-miraie-ac` node in the palette (left sidebar), drag it into a flow
-3. Configure it with your Miraie registered mobile number + password
-4. In Home Assistant: Settings → Integrations → Add Integration → MQTT → host `192.168.1.123`, port `1883`
-5. Search for `climate` entities in HA — your AC should appear after the node connects
+3. Double-click the node and configure:
+   - **Mobile number** — Miraie registered phone number
+   - **Password** — Miraie app password
+   - **MQTT broker** — host `mosquitto`, port `1883` (no username/password)
+4. Click Deploy (top right) — node status should show "HA broker connected" and "MirAIe broker connected"
+5. In Home Assistant: Settings → Integrations → Add Integration → MQTT → host `192.168.1.123`, port `1883`, no credentials
+6. AC appears under Settings → Devices & Services → MQTT as "PANASONIC AC"
+7. If entity shows "Unavailable", turn the AC on/off physically to trigger a state update
+
+> Mosquitto has no authentication (`allow_anonymous true`). Fine for homelab, can add credentials later.
+
+> TODO: these steps could be automated with Selenium — deferred.
 
 ---
 
