@@ -4,7 +4,12 @@ set -euo pipefail
 sudo apt install -y openssh-server
 sudo systemctl enable --now ssh
 
-sudo apt install -y net-tools copyq gnupg rclone
+sudo apt install -y net-tools copyq gnupg rclone fzf
+
+# fzf history search — wire into bash if not already there
+if ! grep -q "fzf --bash" ~/.bashrc; then
+  echo 'eval "$(fzf --bash)"' >> ~/.bashrc
+fi
 
 # Autostart CopyQ on login
 mkdir -p ~/.config/autostart
