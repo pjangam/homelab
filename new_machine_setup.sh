@@ -4,22 +4,34 @@ set -euo pipefail
 sudo apt install -y openssh-server
 sudo systemctl enable --now ssh
 
-sudo apt install -y net-tools copyq gnupg rclone fzf zsh zsh-autosuggestions zsh-syntax-highlighting thefuck
+sudo apt install -y net-tools copyq gnupg rclone fzf zsh thefuck
 
-# Switch default shell to zsh
-if [[ "$SHELL" != "$(which zsh)" ]]; then
-  chsh -s "$(which zsh)" "$USER"
+# Install oh-my-zsh
+if [[ ! -d ~/.oh-my-zsh ]]; then
+  RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 
-# Configure zsh
-if ! grep -q "zsh-autosuggestions" ~/.zshrc 2>/dev/null; then
-  cat >> ~/.zshrc << 'ZSHRC'
+# Clone plugins into oh-my-zsh custom plugins dir
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]]; then
+  git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+fi
+if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]]; then
+  git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+fi
 
-source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-eval "$(fzf --zsh)"
-eval "$(thefuck --alias)"
-ZSHRC
+# Configure .zshrc — set theme and plugins
+sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="agnoster"/' ~/.zshrc
+sed -i 's/^plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' ~/.zshrc
+
+# Add fzf and thefuck if not already there
+if ! grep -q "thefuck" ~/.zshrc; then
+  printf '\neval "$(fzf --zsh)"\neval "$(thefuck --alias)"\n' >> ~/.zshrc
+fi
+
+# Set zsh as default shell
+if [[ "$SHELL" != "$(which zsh)" ]]; then
+  chsh -s "$(which zsh)" "$USER"
 fi
 
 # Autostart CopyQ on login
