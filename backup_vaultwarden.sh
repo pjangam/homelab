@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKUP_DIR="$SCRIPT_DIR/backups"
 DATA_DIR="$SCRIPT_DIR/vw-data"
 RCLONE_REMOTE="backup:vaultwarden"
-KEEP_DAYS=7
+KEEP_COUNT=7
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="$BACKUP_DIR/vaultwarden_$TIMESTAMP.tar.gz.gpg"
 
@@ -40,7 +40,14 @@ docker start vaultwarden
 echo "[$(date)] Uploading to $RCLONE_REMOTE..."
 rclone copy "$BACKUP_FILE" "$RCLONE_REMOTE"
 
-echo "[$(date)] Cleaning up local backups older than $KEEP_DAYS days..."
-find "$BACKUP_DIR" -name "vaultwarden_*.tar.gz.gpg" -mtime +"$KEEP_DAYS" -delete
+echo "[$(date)] Keeping $KEEP_COUNT most recent local backups..."
+ls -1t "$BACKUP_DIR"/vaultwarden_*.tar.gz.gpg 2>/dev/null | tail -n +"$((KEEP_COUNT + 1))" | xargs -r rm -v
+
+echo "[$(date)] Keeping $KEEP_COUNT most recent remote backups..."
+rclone lsf "$RCLONE_REMOTE" --format "tp" | sort | head -n -"$KEEP_COUNT" | awk '{print $NF}' | \
+  while IFS= read -r f; do
+    echo "[$(date)] Removing old remote backup: $f"
+    rclone deletefile "$RCLONE_REMOTE/$f"
+  done
 
 echo "[$(date)] Backup complete: $(basename "$BACKUP_FILE")"

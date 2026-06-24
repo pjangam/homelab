@@ -83,6 +83,12 @@ sudo systemctl stop systemd-resolved
 sudo rm /etc/resolv.conf
 printf "nameserver 127.0.0.1\nnameserver 1.1.1.1\n" | sudo tee /etc/resolv.conf
 
+# Install ZFS userspace tools (no DKMS — use pre-built kernel module)
+if ! command -v zfs &>/dev/null; then
+  sudo apt install -y zfsutils-linux
+fi
+sudo zpool import -a 2>/dev/null || true
+
 # Allow running docker without sudo
 sudo usermod -aG docker "$USER"
 

@@ -42,6 +42,43 @@ Mosquitto and the `node-red-contrib-ha-miraie-ac` node are set up automatically.
 
 ---
 
+## Baby Monitor (Alfred Camera → Home Assistant)
+
+Currently using **Alfred Camera** on iPhone. No native HA integration exists yet.
+
+**Features in use:** low light mode, motion detection alerts, sound alerts.
+
+**Approach under consideration — bridge Alfred alerts to HA via iOS Shortcuts:**
+- Alfred detects motion/sound → sends push notification to iPhone
+- iOS Shortcuts automation fires on Alfred notification → sends HTTP POST to HA webhook
+- HA webhook triggers automations (lights, alerts on other devices, etc.)
+- Low light mode stays Alfred's job — no HA integration needed for that
+
+**HA side (webhook automation skeleton):**
+```yaml
+automation:
+  - alias: "Alfred Motion Alert"
+    trigger:
+      - platform: webhook
+        webhook_id: alfred_motion
+    action:
+      - ... # e.g. notify, turn on light
+```
+Webhook URL: `http://<ha-ip>:8123/api/webhook/alfred_motion`
+
+**iOS Shortcuts side:**
+1. Shortcuts → Automation → New Automation
+2. Trigger: App → Alfred → "Notification received"
+3. Action: Get Contents of URL → POST to HA webhook URL
+4. Create separate automations for motion and sound (filter by notification text)
+
+**Other options ruled out:**
+- RTSP server apps on iPhone — iOS restricts background network servers, unreliable
+- New hardware — not preferred
+- Alfred web viewer — laggy and buggy
+
+---
+
 ## Vaultwarden
 
 Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compose.yml`). To allow a new account, temporarily set it to `"true"`, run `sudo docker compose up -d vaultwarden`, create the account, then set it back to `"false"`.
