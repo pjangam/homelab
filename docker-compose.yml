@@ -179,6 +179,11 @@ services:
       - DOCKER_API_VERSION=1.40
       - WATCHTOWER_NOTIFICATIONS=shoutrrr
       - WATCHTOWER_NOTIFICATION_URL=generic+http://192.168.1.123:8123/api/webhook/watchtower_update
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
     restart: unless-stopped
 
 volumes:
