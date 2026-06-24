@@ -4,7 +4,7 @@ set -euo pipefail
 sudo apt install -y openssh-server
 sudo systemctl enable --now ssh
 
-sudo apt install -y net-tools copyq gnupg rclone fzf zsh thefuck
+sudo apt install -y net-tools copyq gnupg rclone fzf zsh thefuck gh
 
 # Install oh-my-zsh
 if [[ ! -d ~/.oh-my-zsh ]]; then
