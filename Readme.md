@@ -87,15 +87,18 @@ Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compos
 
 ## Services to run
 
-- [ ] Pinhole: ad blocker
-- [ ] Node red : workflow engine for IOT
-- [ ] MQTT broker
-- [ ] 1password
-- [ ] https://immich.app/docs/install/docker-compose/ : photos
-- [ ] ftp server to dump files
-- [ ] ftp backups- compress and encrypt
-- [ ] Immich data redundancy: evaluate RAID (RAID-1 mirror or RAID-5) for the photo volume — backup is skipped due to size, so disk redundancy is the safety net
+- [x] Pi-hole: ad blocker
+- [x] Node-RED: workflow engine for IoT
+- [x] MQTT broker (Mosquitto)
+- [x] Vaultwarden (Bitwarden-compatible password manager)
+- [x] Immich: photos
+- [x] Home Assistant
 - [x] Tailscale
+- [x] Caddy: reverse proxy with TLS
+- [x] Watchtower: auto-update containers
+- [ ] ftp server to dump files
+- [ ] ftp backups — compress and encrypt
+- [ ] Immich data redundancy: evaluate RAID (RAID-1 mirror or RAID-5) for the photo volume — backup is skipped due to size, so disk redundancy is the safety net
   - [ ] Bhakti user not able to connect to exit node
 
 ## Machine-specific config (Beelink Mini PC, Intel N5105, Lubuntu)
@@ -111,17 +114,4 @@ These fixes are gated behind a CPU model check (`N5105` in `/proc/cpuinfo`) in `
 
 
 
-✅ Better Approach: Free up port 53 for Pi-hole
-If you want Pi-hole to function properly and easily intercept DNS queries, the best approach is to free up port 53 on the host:
-
-Option A: Disable systemd-resolved
-
-Disable and stop it:
-sudo systemctl disable systemd-resolved
-sudo systemctl stop systemd-resolved
-Remove the symlink to /run/systemd/resolve from /etc/resolv.conf:
-sudo rm /etc/resolv.conf
-echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
-(You can replace 1.1.1.1 with another DNS if needed; this is just temporary until Pi-hole takes over.)
-Start your Pi-hole Docker container with port 53 available.
 
