@@ -118,6 +118,7 @@ services:
     environment:
       WEBSOCKET_ENABLED: 'true'
       SIGNUPS_ALLOWED: 'false'
+      DOMAIN: 'https://xero.REDACTED-TAILNET-ID.ts.net'
   homeassistant:
     container_name: homeassistant
     image: "ghcr.io/home-assistant/home-assistant:stable"
