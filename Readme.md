@@ -91,23 +91,74 @@ Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compos
 - [x] Node-RED: workflow engine for IoT
 - [x] MQTT broker (Mosquitto)
 - [x] Vaultwarden (Bitwarden-compatible password manager)
-- [x] Immich: photos
+- [~] Immich: photos — **disabled, 8 GB RAM insufficient** (see below)
 - [x] Home Assistant
 - [x] Tailscale
 - [x] Caddy: reverse proxy with TLS
 - [x] Watchtower: auto-update containers
 - [ ] ftp server to dump files
 - [ ] ftp backups — compress and encrypt
-- [ ] Immich data redundancy: evaluate RAID (RAID-1 mirror or RAID-5) for the photo volume — backup is skipped due to size, so disk redundancy is the safety net
+- [x] Immich data redundancy: ZFS mirror for the photo volume — backup is skipped due to size, so disk redundancy is the safety net
+- [x] Immich: Google Photos imported via immich-go — 12,913 photos/videos uploaded (22/23 takeout parts). 21 files from part 019 missing, listed in `google_takeout_missing.md`, to be uploaded manually.
   - [ ] Bhakti user not able to connect to exit node
+
+## Immich hardware requirements
+
+Immich + its ML container + Postgres + Redis + the rest of the stack causes kernel panics on 8 GB RAM due to memory exhaustion. **Immich is disabled in docker-compose.yml until hardware is upgraded.**
+
+Data is safe on the ZFS pool: `datapool/immich-upload` (15 GB), `datapool/immich-db` (133 MB).
+
+To re-enable, uncomment the `immich-server`, `immich-machine-learning`, `redis`, `database` services and the `model-cache` volume in `docker-compose.yml`.
+
+Options to bring Immich back:
+- **Add RAM to this machine** — 16 GB minimum recommended
+- **Dedicated machine** — run Immich on a separate device (Raspberry Pi 5 with 8 GB works)
+- **Disable ML only** — comment out just `immich-machine-learning`; server runs with much less RAM but no face/object recognition
+
+## Memory management
+
+System has 7.6 GB RAM running Docker services + occasional desktop use. Without these mitigations, the system hard-freezes (even SSH unresponsive) under memory pressure.
+
+**Increase swap to 4 GB** (default 512 MB is too small):
+```bash
+sudo swapoff /swapfile
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+# verify:
+swapon --show
+```
+No fstab change needed — the existing entry is size-agnostic.
+
+**Install earlyoom** (kills the biggest memory hog before the kernel freezes):
+```bash
+sudo apt install -y earlyoom
+sudo systemctl enable --now earlyoom
+# config: /etc/default/earlyoom
+```
+
+**Switch to CLI-only boot** (frees ~4.5 GB — Chrome, VS Code, Spotify):
+```bash
+# set CLI as default boot target
+sudo systemctl set-default multi-user.target
+
+# start desktop on demand when needed
+sudo systemctl start graphical.target
+```
+
+## Known issues
+
+- **thefuck** — disabled in `~/.zshrc`. Version 3.32 (latest PyPI release) uses `distutils` and `imp`, both removed in Python 3.12. Fix: `pipx uninstall thefuck && pipx install git+https://github.com/nvbn/thefuck.git && pipx inject thefuck setuptools`, then uncomment in `~/.zshrc`.
 
 ## Machine-specific config (Beelink Mini PC, Intel N5105, Lubuntu)
 These fixes are gated behind a CPU model check (`N5105` in `/proc/cpuinfo`) in `new_machine_setup.sh` and won't run on other machines.
 
 - [x] Disable deep CPU C-states — N5105 Jasper Lake has a known Linux kernel bug causing hard freezes (`intel_idle.max_cstate=1` in GRUB)
 - [x] Increase swap to 4GB — 512MB default is too low for Docker workloads
+- [x] Cap ZFS ARC to 1GB — default max is 6.6GB (87% of RAM), causes kernel panics under load (`echo "options zfs zfs_arc_max=1073741824" | sudo tee /etc/modprobe.d/zfs.conf`)
 - [x] Disable USB auto-suspend — Logitech USB receiver disconnects due to Linux USB power management
-- [ ] Temperature monitoring via Home Assistant — CPU idles at ~65°C, monitor spikes under load
+- [x] Temperature monitoring via Home Assistant — CPU idles at ~65°C, monitor spikes under load
 
 
 
