@@ -115,6 +115,70 @@ Options to bring Immich back:
 - **Dedicated machine** — run Immich on a separate device (Raspberry Pi 5 with 8 GB works)
 - **Disable ML only** — comment out just `immich-machine-learning`; server runs with much less RAM but no face/object recognition
 
+## Spotify (headless)
+
+Running spotifyd as a Spotify Connect daemon — no GUI needed. Speakers connected to headphone jack (USB Audio Device / C-Media chip, card 1).
+
+**Install:**
+```bash
+# download spotifyd binary from https://github.com/Spotifyd/spotifyd/releases
+mkdir -p ~/.local/bin
+mv spotifyd ~/.local/bin/spotifyd
+chmod +x ~/.local/bin/spotifyd
+```
+
+**Config:** `~/.config/spotifyd/spotifyd.conf`
+```toml
+[global]
+username = "your-spotify-email"
+password = "your-spotify-password"
+device_name = "xero"
+device_type = "computer"
+backend = "alsa"
+device = "default"
+volume_controller = "softvol"
+bitrate = 320
+cache_path = "/home/pramod/.cache/spotifyd"
+no_audio_cache = false
+```
+
+**ALSA routing** (`~/.asoundrc`) — points `default` to card 1 (headphone jack):
+```
+defaults.pcm.card 1
+defaults.ctl.card 1
+```
+
+**Systemd user service:** `~/.config/systemd/user/spotifyd.service`
+```ini
+[Unit]
+Description=Spotifyd - Spotify Connect daemon
+After=network-online.target sound.target
+
+[Service]
+ExecStart=/home/pramod/.local/bin/spotifyd --no-daemon
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+```
+
+**Enable:**
+```bash
+sudo usermod -aG audio pramod   # required — without this ALSA sees no devices
+# log out and back in (or reboot) for group to take effect
+systemctl --user enable --now spotifyd
+```
+
+**Usage:** "xero" appears as a Spotify Connect device in the Spotify app. Select it to play through the speakers.
+
+**Volume:**
+```bash
+amixer sset Master 50%
+```
+
+---
+
 ## Memory management
 
 System has 7.6 GB RAM running Docker services + occasional desktop use. Without these mitigations, the system hard-freezes (even SSH unresponsive) under memory pressure.
