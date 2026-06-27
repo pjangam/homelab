@@ -11,3 +11,4 @@ postgres/
 *.log
 *.swp
 mosquitto/log/
+client_secret*.json
