@@ -44,7 +44,7 @@ echo "[$(date)] Keeping $KEEP_COUNT most recent local backups..."
 ls -1t "$BACKUP_DIR"/vaultwarden_*.tar.gz.gpg 2>/dev/null | tail -n +"$((KEEP_COUNT + 1))" | xargs -r rm -v
 
 echo "[$(date)] Keeping $KEEP_COUNT most recent remote backups..."
-rclone lsf "$RCLONE_REMOTE" --format "tp" | sort | head -n -"$KEEP_COUNT" | awk '{print $NF}' | \
+rclone lsf "$RCLONE_REMOTE" --format "tp" | sort | head -n -"$KEEP_COUNT" | awk -F';' '{print $NF}' | \
   while IFS= read -r f; do
     echo "[$(date)] Removing old remote backup: $f"
     rclone deletefile "$RCLONE_REMOTE/$f"
