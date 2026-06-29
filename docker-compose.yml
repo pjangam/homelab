@@ -157,6 +157,8 @@ services:
     depends_on:
       - mosquitto
     restart: unless-stopped
+    # Delay startup so Docker's DNS is ready before Miraie tries to resolve auth.miraie.in
+    entrypoint: sh -c "sleep 20 && node-red --userDir /data"
 
   caddy:
     image: caddy:latest
