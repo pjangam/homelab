@@ -33,9 +33,18 @@ fi
 echo "=== Font after change ==="
 showconsolefont --info
 
-# Persist via console-setup
+# Persist: console-setup (best-effort, often fails at boot timing)
 grep -q '^FONT=' /etc/default/console-setup \
     && sudo sed -i "s/^FONT=.*/FONT=\"${CHOSEN}.psf.gz\"/" /etc/default/console-setup \
     || echo "FONT=\"${CHOSEN}.psf.gz\"" | sudo tee -a /etc/default/console-setup
 
-echo "=== Done. Saved ${CHOSEN} to /etc/default/console-setup ==="
+# Persist: getty drop-in runs setfont before each TTY login prompt
+# (more reliable than console-setup.service which runs before framebuffer is ready)
+sudo mkdir -p /etc/systemd/system/getty@.service.d
+sudo tee /etc/systemd/system/getty@.service.d/powerline-font.conf > /dev/null <<EOF
+[Service]
+ExecStartPre=/usr/bin/setfont /usr/share/consolefonts/${CHOSEN}.psf.gz
+EOF
+sudo systemctl daemon-reload
+
+echo "=== Done. Font will persist via getty drop-in on next boot ==="
