@@ -211,11 +211,53 @@ sudo systemctl set-default multi-user.target
 sudo systemctl start graphical.target
 ```
 
+## TTY console font (powerline)
+
+The TTY uses a Terminus powerline PSF font so that oh-my-zsh agnoster theme renders correctly (git branch icon, arrow separators).
+
+**Setup** (run after a fresh install or if font resets):
+```bash
+~/code/homelab/set_console_font.sh
+```
+
+**How it works:**
+- GRUB sets framebuffer to 1024×768 (`GRUB_GFXMODE=1024x768x32`, `GRUB_GFXPAYLOAD_LINUX=keep`) — makes the font readable
+- Script downloads Terminus powerline PSF from `powerline/fonts` GitHub repo, tries v24b→v16b, picks largest size KDFONTOP accepts
+- Font persisted in `/etc/default/console-setup` via `FONT=` variable
+
+**Constraint:** The Linux VGA text console's `KDFONTOP` ioctl only accepts 8px-wide fonts. Terminus powerline fonts ≥v18b are 10–14px wide and fail. Only v16b (8×16px) is guaranteed to load; larger sizes may work at 1024×768.
+
+---
+
+## Past incidents
+
+### 2026-06-29: System freeze — SSH + display dead, Docker still accessible
+
+**Symptom:** SSH unreachable, display blank, but Docker containers accessible on the network. Required hard power cycle to recover.
+
+**Root cause:** `immich_postgres` was an orphaned container — Immich was commented out in `docker-compose.yml` but its containers were still running from a previous enable. Postgres got stuck in a ZFS I/O deadlock for ~55 hours (kernel soft lockup on CPU#3), eventually making SSH and display unresponsive. The kernel network stack stayed alive, so containers remained reachable.
+
+**Diagnosis:**
+```bash
+journalctl -b -1 | grep "soft lockup"
+# watchdog: BUG: soft lockup - CPU#3 stuck for 200169s! [postgres:24853]
+```
+
+**Fixes applied:**
+- Removed orphaned containers: `docker compose down --remove-orphans && docker compose up -d`
+- Added soft lockup panic so future lockups auto-reboot instead of hanging:
+  ```bash
+  echo "kernel.softlockup_panic=1" | sudo tee /etc/sysctl.d/99-softlockup.conf
+  sudo sysctl -p /etc/sysctl.d/99-softlockup.conf
+  ```
+
+**Prevention:** After commenting out services in `docker-compose.yml`, always run `docker compose down --remove-orphans` — `docker compose up -d` alone does not stop containers removed from the file.
+
+---
+
 ## Known issues
 
 - **SSH login warning** — `Failed to connect to https://changelogs.ubuntu.com/meta-release-lts` appears on every SSH login. Ubuntu's MOTD update checker hits this URL; Pi-hole is not blocking it (verified). Likely a transient timeout or the server being slow — cosmetic and harmless.
-
-
 
 - **thefuck** — disabled in `~/.zshrc`. Version 3.32 (latest PyPI release) uses `distutils` and `imp`, both removed in Python 3.12. Fix: `pipx uninstall thefuck && pipx install git+https://github.com/nvbn/thefuck.git && pipx inject thefuck setuptools`, then uncomment in `~/.zshrc`.
 
