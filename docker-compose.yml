@@ -157,8 +157,8 @@ services:
     depends_on:
       - mosquitto
     restart: unless-stopped
-    # Delay startup so Docker's DNS is ready before Miraie tries to resolve auth.miraie.in
-    entrypoint: sh -c "sleep 20 && node-red --userDir /data"
+    # Wait for DNS to resolve Miraie's auth endpoint before starting — prevents failed init on power-cut recovery
+    entrypoint: sh -c "until nslookup auth.miraie.in > /dev/null 2>&1; do echo 'waiting for DNS...'; sleep 5; done && npm install --prefix /data && node-red --userDir /data"
 
   caddy:
     image: caddy:latest
