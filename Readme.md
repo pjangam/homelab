@@ -81,40 +81,23 @@ Webhook URL: `http://<ha-ip>:8123/api/webhook/alfred_motion`
 
 ## White Noise (Home Assistant Switch)
 
-Brown noise is played through the speakers via `sox` and exposed to Home Assistant as a switch. Two systemd user services work together:
+How the HA white noise switch works, end to end:
 
-| Service | File | What it does |
-|---|---|---|
-| `white-noise` | `systemd/user/white-noise.service` | Runs `play -n -q synth brownnoise` — generates and plays brown noise through ALSA |
-| `white-noise-api` | `systemd/user/white-noise-api.service` | Tiny Python HTTP server on port 8765 that starts/stops `white-noise` in response to HA requests |
-
-**sox** is a command-line audio tool (`sudo apt install sox`). `play -n -q synth brownnoise` means: no input file (`-n`), quiet mode (`-q`), synthesise brown noise and play it indefinitely.
-
-**Why the API bridge?** Home Assistant can't call `systemctl` directly. The `command_line` switch in HA sends HTTP requests to the API, which translates them to systemctl calls.
-
-```
-HA switch ON  → POST /white-noise/on  → systemctl --user start white-noise  → sox plays
-HA switch OFF → POST /white-noise/off → systemctl --user stop white-noise   → audio stops
-HA state poll → GET  /white-noise/status → {"state": "active"|"inactive"}
-```
-
-**Source:** `scripts/white-noise-api.py`
+1. **HA command_line switch** — Home Assistant sends HTTP requests to `localhost:8765` when you toggle the switch (`setup_white_noise_ha.sh` adds this to `configuration.yaml`)
+2. **Python HTTP service** (`scripts/white-noise-api.py`) — listens on port 8765, translates `POST /white-noise/on|off` into systemctl calls (`systemd/user/white-noise-api.service`)
+3. **systemctl** — starts/stops the `white-noise` user service (`systemd/user/white-noise.service`)
+4. **sox** — the actual audio: `play -n -q synth brownnoise` generates and plays brown noise through the speakers until stopped (`sudo apt install sox`)
 
 **Install / reinstall:**
 ```bash
-# copy service files
 cp systemd/user/white-noise.service     ~/.config/systemd/user/
 cp systemd/user/white-noise-api.service ~/.config/systemd/user/
-
 systemctl --user daemon-reload
 systemctl --user enable --now white-noise-api
 
-# add the command_line switch to HA config (one-time):
-./setup_white_noise_ha.sh
-docker restart homeassistant
+# one-time HA config setup:
+./setup_white_noise_ha.sh && docker restart homeassistant
 ```
-
-**Dependencies:** `sox` for audio, `python3` (stdlib only) for the API.
 
 ---
 
