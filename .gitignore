@@ -12,3 +12,4 @@ postgres/
 *.swp
 mosquitto/log/
 client_secret*.json
+command.txt
