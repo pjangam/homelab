@@ -1,0 +1,246 @@
+- id: '1781541681051'
+  name: Ojaswi sleeping
+  entities:
+    switch.white_noise:
+      state: 'on'
+    switch.bedroom_tubelight:
+      icon: mdi:lightbulb-fluorescent-tube
+      friendly_name: bedroom Tubelight
+      state: 'off'
+    switch.bedroom_led_bulb_2:
+      icon: mdi:lightbulb
+      friendly_name: bedroom LED Bulb
+      state: 'on'
+    switch.bedroom_balcony:
+      icon: mdi:lightbulb
+      friendly_name: bedroom Balcony
+      state: 'off'
+    fan.bedroom_fan_2:
+      preset_modes:
+      - Low
+      - Medium
+      - High
+      preset_mode: Low
+      icon: mdi:fan
+      friendly_name: bedfan
+      supported_features: 56
+      state: 'on'
+    climate.panasonic_ac_panasonic_ac:
+      hvac_modes:
+      - auto
+      - cool
+      - dry
+      - fan_only
+      - 'off'
+      min_temp: 16
+      max_temp: 30
+      target_temp_step: 1
+      fan_modes:
+      - auto
+      - quiet
+      - low
+      - medium
+      - high
+      icon: mdi:air-conditioner
+      friendly_name: PANASONIC AC PANASONIC AC
+      supported_features: 393
+      current_temperature: 25
+      temperature: 24
+      fan_mode: auto
+      hvac_action: cooling
+      state: cool
+    media_player.spotify_pramod:
+      source_list:
+      - xero
+      - Sonali’s MacBook Pro
+      volume_level: 0.5
+      media_content_id: spotify:track:3aWEzWRjMqRHfKxGhRLrPb
+      media_content_type: music
+      media_duration: 174
+      media_position: 19
+      media_position_updated_at: '2026-06-24T06:28:38.577146+00:00'
+      media_title: White Noise Waves
+      media_artist: The BD Noise Maker
+      media_album_name: White Noise Waves
+      media_track: 1
+      media_playlist: White Noise Waves
+      source: xero
+      shuffle: false
+      repeat: all
+      entity_picture: /api/media_player_proxy/media_player.spotify_pramod?token=REDACTED-SPOTIFY-TOKEN&cache=3217bb735926622c
+      friendly_name: Spotify Pramod
+      supported_features: 444983
+      state: playing
+  metadata: {}
+- id: '1781576403960'
+  name: Ojaswi awake
+  entities:
+    switch.white_noise:
+      state: 'off'
+    switch.bedroom_tubelight:
+      icon: mdi:lightbulb-fluorescent-tube
+      friendly_name: bedroom Tubelight
+      state: 'on'
+    switch.bedroom_led_bulb_2:
+      icon: mdi:lightbulb
+      friendly_name: bedroom LED Bulb
+      state: 'off'
+    switch.bedroom_balcony:
+      icon: mdi:lightbulb
+      friendly_name: bedroom Balcony
+      state: 'off'
+    fan.bedroom_fan_2:
+      preset_modes:
+      - Low
+      - Medium
+      - High
+      preset_mode: Low
+      icon: mdi:fan
+      friendly_name: bedfan
+      supported_features: 56
+      state: 'off'
+    climate.panasonic_ac_panasonic_ac:
+      hvac_modes:
+      - auto
+      - cool
+      - dry
+      - fan_only
+      - 'off'
+      min_temp: 16
+      max_temp: 30
+      target_temp_step: 1
+      fan_modes:
+      - auto
+      - quiet
+      - low
+      - medium
+      - high
+      current_temperature: 25
+      temperature: 30
+      fan_mode: auto
+      hvac_action: 'off'
+      icon: mdi:air-conditioner
+      friendly_name: PANASONIC AC PANASONIC AC
+      supported_features: 393
+      state: 'off'
+    media_player.spotify_pramod:
+      source_list:
+      - xero
+      volume_level: 0.5
+      media_content_id: spotify:track:3aWEzWRjMqRHfKxGhRLrPb
+      media_content_type: music
+      media_duration: 174
+      media_position: 170
+      media_position_updated_at: '2026-06-24T06:51:57.000332+00:00'
+      media_title: White Noise Waves
+      media_artist: The BD Noise Maker
+      media_album_name: White Noise Waves
+      media_track: 1
+      media_playlist: White Noise Waves
+      source: xero
+      shuffle: false
+      repeat: all
+      entity_picture: /api/media_player_proxy/media_player.spotify_pramod?token=REDACTED-SPOTIFY-TOKEN&cache=3217bb735926622c
+      friendly_name: Spotify Pramod
+      supported_features: 444983
+      state: paused
+  metadata:
+    media_player.spotify_pramod:
+      entity_only: true
+- id: '1781576428786'
+  name: New scene
+  entities:
+    switch.bedroom_tubelight:
+      icon: mdi:lightbulb-fluorescent-tube
+      friendly_name: bedroom Tubelight
+      state: 'on'
+    switch.bedroom_led_bulb_2:
+      icon: mdi:lightbulb
+      friendly_name: bedroom LED Bulb
+      state: 'off'
+    switch.bedroom_balcony:
+      icon: mdi:lightbulb
+      friendly_name: bedroom Balcony
+      state: 'off'
+    fan.bedroom_fan_2:
+      preset_modes:
+      - Low
+      - Medium
+      - High
+      preset_mode: Low
+      icon: mdi:fan
+      friendly_name: bedfan
+      supported_features: 56
+      state: 'on'
+    climate.panasonic_ac_panasonic_ac:
+      hvac_modes:
+      - auto
+      - cool
+      - dry
+      - fan_only
+      - 'off'
+      min_temp: 16
+      max_temp: 30
+      target_temp_step: 1
+      fan_modes:
+      - auto
+      - quiet
+      - low
+      - medium
+      - high
+      current_temperature: 26.5
+      temperature: 30
+      fan_mode: auto
+      hvac_action: 'off'
+      icon: mdi:air-conditioner
+      friendly_name: PANASONIC AC PANASONIC AC
+      supported_features: 393
+      state: 'off'
+  metadata: {}
+- id: '1781596554665'
+  name: 'bedroom empty '
+  entities:
+    switch.bedroom_tubelight:
+      icon: mdi:lightbulb-fluorescent-tube
+      friendly_name: bedroom Tubelight
+      state: 'off'
+    switch.bedroom_led_bulb_2:
+      icon: mdi:lightbulb
+      friendly_name: bedroom LED Bulb
+      state: 'off'
+    switch.bedroom_balcony:
+      icon: mdi:lightbulb
+      friendly_name: bedroom Balcony
+      state: 'off'
+    fan.bedroom_fan_2:
+      preset_modes:
+      - Low
+      - Medium
+      - High
+      preset_mode: Low
+      icon: mdi:fan
+      friendly_name: bedfan
+      supported_features: 56
+      state: 'off'
+    climate.panasonic_ac_panasonic_ac:
+      restored: true
+      hvac_modes:
+      - auto
+      - cool
+      - dry
+      - fan_only
+      - 'off'
+      min_temp: 16
+      max_temp: 30
+      target_temp_step: 1
+      fan_modes:
+      - auto
+      - quiet
+      - low
+      - medium
+      - high
+      icon: mdi:air-conditioner
+      friendly_name: PANASONIC AC
+      supported_features: 393
+      state: unavailable
+  metadata: {}

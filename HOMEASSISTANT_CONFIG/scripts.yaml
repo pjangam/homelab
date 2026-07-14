@@ -1,0 +1,16 @@
+new_script:
+  sequence:
+  - action: spotcast.start
+    metadata: {}
+    data:
+      limit: 20
+      force_playback: false
+      random_song: false
+      repeat: 'off'
+      shuffle: false
+      offset: 0
+      start_position: 0
+      ignore_fully_played: false
+      device_name: xero
+  alias: New script
+  description: ''
