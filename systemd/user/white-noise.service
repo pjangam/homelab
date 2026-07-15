@@ -3,7 +3,7 @@ Description=Brown Noise Player
 After=sound.target
 
 [Service]
-ExecStart=play -n -q synth brownnoise
+ExecStart=/home/pramod/code/homelab/scripts/white-noise-play.sh
 Restart=on-failure
 RestartSec=3
 

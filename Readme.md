@@ -86,7 +86,7 @@ How the HA white noise switch works, end to end:
 1. **HA command_line switch** — Home Assistant sends HTTP requests to `localhost:8765` when you toggle the switch (`setup_white_noise_ha.sh` adds this to `configuration.yaml`)
 2. **Python HTTP service** (`scripts/white-noise-api.py`) — listens on port 8765, translates `POST /white-noise/on|off` into systemctl calls (`systemd/user/white-noise-api.service`)
 3. **systemctl** — starts/stops the `white-noise` user service (`systemd/user/white-noise.service`)
-4. **sox** — the actual audio: `play -n -q synth brownnoise` generates and plays brown noise through the speakers until stopped (`sudo apt install sox`)
+4. **sox**, via a volume-ramp wrapper (`scripts/white-noise-play.sh`) — starts `play -n -q synth brownnoise` (`sudo apt install sox`) and ramps the ALSA `Speaker` control (card 1, the USB speaker pinned as default in `~/.asoundrc`) from 5% to 100% over ~30s on start, and back down over ~1.2s before killing the process on stop. This is the point to tune if you want a different fade timing or volume range — it's independent of sox/HA, just an `amixer` ramp around the `play` process.
 
 **Install / reinstall:**
 ```bash
