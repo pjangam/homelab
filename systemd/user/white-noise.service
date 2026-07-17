@@ -3,7 +3,9 @@ Description=Brown Noise Player
 After=sound.target
 
 [Service]
-ExecStart=/home/pramod/code/homelab/scripts/white-noise-play.sh
+ExecStartPre=/usr/bin/amixer -c 1 sset Speaker 59%
+ExecStart=/usr/bin/play -n -q synth brownnoise fade t 60
+ExecStop=/bin/bash -c 'for v in 45 32 18 5; do amixer -c 1 sset Speaker "$v%" >/dev/null; sleep 0.3; done; kill $MAINPID 2>/dev/null; sleep 0.3; amixer -c 1 sset Speaker 59% >/dev/null'
 Restart=on-failure
 RestartSec=3
 

@@ -85,8 +85,7 @@ How the HA white noise switch works, end to end:
 
 1. **HA command_line switch** — Home Assistant sends HTTP requests to `localhost:8765` when you toggle the switch (`setup_white_noise_ha.sh` adds this to `configuration.yaml`)
 2. **Python HTTP service** (`scripts/white-noise-api.py`) — listens on port 8765, translates `POST /white-noise/on|off` into systemctl calls (`systemd/user/white-noise-api.service`)
-3. **systemctl** — starts/stops the `white-noise` user service (`systemd/user/white-noise.service`)
-4. **sox**, via a volume-ramp wrapper (`scripts/white-noise-play.sh`) — starts `play -n -q synth brownnoise` (`sudo apt install sox`) and ramps the ALSA `Speaker` control (card 1, the USB speaker pinned as default in `~/.asoundrc`) from 5% to 100% over ~30s on start, and back down over ~1.2s before killing the process on stop. This is the point to tune if you want a different fade timing or volume range — it's independent of sox/HA, just an `amixer` ramp around the `play` process.
+3. **systemctl** — starts/stops the `white-noise` user service (`systemd/user/white-noise.service`), which runs `sox` (`play -n -q synth brownnoise fade t 60`, `sudo apt install sox`) directly. SoX's own `fade` effect ramps volume in over ~60s in software — no wrapper script needed. The unit's `ExecStartPre`/`ExecStop` pin the ALSA `Speaker` control (card 1, the USB speaker pinned as default in `~/.asoundrc`) to a fixed 59% ceiling and do a quick ~1.2s ALSA ramp-down before killing the process on stop, so it doesn't cut out abruptly. This is the point to tune if you want a different fade timing or volume range.
 
 **Install / reinstall:**
 ```bash
