@@ -60,6 +60,6 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = HTTPServer(("0.0.0.0", 8765), Handler)
+    server = HTTPServer(("127.0.0.1", 8765), Handler)
     print("white-noise-api listening on :8765")
     server.serve_forever()
