@@ -100,6 +100,29 @@ systemctl --user enable --now white-noise-api
 
 ---
 
+## Tinxy Watchdog (ISP-outage auto-restart)
+
+**Why:** a flood damaged nearby ISP infra, causing frequent connectivity drops. Tinxy is cloud-push (MQTT to `mqtt.tinxy.in`), so every ISP blip makes all Tinxy devices show "unavailable" in HA until the MQTT client reconnects on its own. `watchdog_tinxy.sh` restarts the `homeassistant` container only if that reconnect doesn't happen — it's a bandage for the ISP issue, meant to be disabled once it's resolved.
+
+**How it works:**
+1. Every 5 minutes (cron), the script tails `HOMEASSISTANT_CONFIG/home-assistant.log` for the Tinxy coordinator's own signal lines: `Tinxy: MQTT disconnected – marking all N relays offline` (down) vs `Tinxy MQTT: connected to ...` (up).
+2. If the most recent of those two lines is a "disconnected", it starts a clock in `~/.cache/tinxy-watchdog/down-since`.
+3. Only after **20 continuous minutes** of disconnection does it run `docker restart homeassistant` — short blips (the common case with a flaky ISP) resolve on their own and never trigger a restart. After restarting, it resets the clock so it won't restart again for another 20 minutes if the ISP is still down.
+4. All actions are logged via `logger -t tinxy-watchdog` (`journalctl -t tinxy-watchdog`) and to `tinxy-watchdog.log` in the repo root.
+
+**Disable / re-enable** (no need to touch cron):
+```bash
+touch ~/.tinxy-watchdog-disabled   # disable
+rm ~/.tinxy-watchdog-disabled      # re-enable
+```
+
+**Cron entry** (`crontab -e`):
+```
+*/5 * * * * /home/pramod/code/homelab/watchdog_tinxy.sh >> /home/pramod/code/homelab/tinxy-watchdog.log 2>&1
+```
+
+---
+
 ## Vaultwarden
 
 Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compose.yml`). To allow a new account, temporarily set it to `"true"`, run `sudo docker compose up -d vaultwarden`, create the account, then set it back to `"false"`.
@@ -117,6 +140,7 @@ Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compos
 - [x] Tailscale
 - [x] Caddy: reverse proxy with TLS
 - [x] Watchtower: auto-update containers
+- [x] Tinxy watchdog: auto-restarts HA after sustained ISP-outage disconnects (temporary, see below)
 - [ ] ftp server to dump files
 - [ ] ftp backups — compress and encrypt
 - [x] Immich data redundancy: ZFS mirror for the photo volume — backup is skipped due to size, so disk redundancy is the safety net
