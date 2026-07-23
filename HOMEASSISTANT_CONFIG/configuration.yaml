@@ -19,12 +19,3 @@ http:
   trusted_proxies:
     - 100.64.0.0/10
 
-command_line:
-  - switch:
-      name: White Noise
-      unique_id: white_noise_switch
-      command_on: "curl -s -X POST http://localhost:8765/white-noise/on"
-      command_off: "curl -s -X POST http://localhost:8765/white-noise/off"
-      command_state: "curl -s http://localhost:8765/white-noise/status"
-      value_template: "{{ value_json.state == 'active' }}"
-      icon: mdi:weather-windy

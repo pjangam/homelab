@@ -83,19 +83,19 @@ Webhook URL: `http://<ha-ip>:8123/api/webhook/alfred_motion`
 
 How the HA white noise switch works, end to end:
 
-1. **HA command_line switch** — Home Assistant sends HTTP requests to `localhost:8765` when you toggle the switch (`setup_white_noise_ha.sh` adds this to `configuration.yaml`)
-2. **Python HTTP service** (`scripts/white-noise-api.py`) — listens on port 8765, translates `POST /white-noise/on|off` into systemctl calls (`systemd/user/white-noise-api.service`)
+1. **HA MQTT switch** — `switch.white_noise` is created via MQTT discovery (no YAML entity config needed); toggling it publishes `ON`/`OFF` to `whitenoise/set` on the local Mosquitto broker (`localhost:1883`, container name `mosquitto`)
+2. **MQTT bridge** (`scripts/white-noise-mqtt.py`) — a `uv run --script` (deps declared inline, no venv to manage) that subscribes to `whitenoise/set`, translates it into systemctl calls, and publishes retained state/availability back to `whitenoise/state` / `whitenoise/available` so HA reflects reality instantly instead of polling (`systemd/user/white-noise-mqtt.service`)
 3. **systemctl** — starts/stops the `white-noise` user service (`systemd/user/white-noise.service`), which runs `sox` (`play -n -q synth brownnoise fade t 60`, `sudo apt install sox`) directly. SoX's own `fade` effect ramps volume in over ~60s in software — no wrapper script needed. The unit's `ExecStartPre`/`ExecStop` pin the ALSA `Speaker` control (card 1, the USB speaker pinned as default in `~/.asoundrc`) to a fixed 59% ceiling and do a quick ~1.2s ALSA ramp-down before killing the process on stop, so it doesn't cut out abruptly. This is the point to tune if you want a different fade timing or volume range.
+
+Both `white-noise.service` and `white-noise-mqtt.service` are `systemd --user` units, so `loginctl enable-linger pramod` must be set — otherwise they die whenever the login session they started under ends, and the HA switch silently stops responding (this bit us once: see git history).
 
 **Install / reinstall:**
 ```bash
-cp systemd/user/white-noise.service     ~/.config/systemd/user/
-cp systemd/user/white-noise-api.service ~/.config/systemd/user/
+cp systemd/user/white-noise.service      ~/.config/systemd/user/
+cp systemd/user/white-noise-mqtt.service ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now white-noise-api
-
-# one-time HA config setup:
-./setup_white_noise_ha.sh && docker restart homeassistant
+systemctl --user enable --now white-noise-mqtt
+sudo loginctl enable-linger pramod
 ```
 
 ---
