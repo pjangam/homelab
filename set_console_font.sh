@@ -40,10 +40,16 @@ grep -q '^FONT=' /etc/default/console-setup \
 
 # Persist: getty drop-in runs setfont before each TTY login prompt
 # (more reliable than console-setup.service which runs before framebuffer is ready)
+#
+# Try largest-to-smallest at every getty start, not just a hardcoded font: the
+# video mode negotiated at boot varies (e.g. depending on whether a monitor is
+# attached), so a font baked in from one successful run can start failing on a
+# later boot with a different console geometry, crash-looping getty entirely.
+# The trailing `; true` guarantees getty always starts even if no font fits.
 sudo mkdir -p /etc/systemd/system/getty@.service.d
 sudo tee /etc/systemd/system/getty@.service.d/powerline-font.conf > /dev/null <<EOF
 [Service]
-ExecStartPre=/usr/bin/setfont /usr/share/consolefonts/${CHOSEN}.psf.gz
+ExecStartPre=/bin/sh -c 'for f in ${FONTS}; do setfont /usr/share/consolefonts/\${f}.psf.gz 2>/dev/null && break; done; true'
 EOF
 sudo systemctl daemon-reload
 
