@@ -20,6 +20,8 @@ library/
 postgres/
 .env
 .env.backup
+.env.healthcheck
+.healthcheck_state
 *.log
 *.swp
 mosquitto/log/
