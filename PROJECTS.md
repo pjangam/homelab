@@ -56,6 +56,11 @@ Status: 🟢 active · 🟡 parked (revisit when it becomes a real problem, not 
 **State:** not started - the healthcheck/notification project was picked over this one when choosing what to build.
 **Next step:** none, purely a backlog idea.
 
+### Tinxy: smarter recovery + stale device cleanup
+**Why:** 2026-07-27 ISP outage - `watchdog_tinxy.sh` correctly restarted HA 3x on sustained MQTT disconnects, but the last restart landed while the network was still recovering, and the Tinxy custom integration's setup got stuck in a way the watchdog can't see (it only greps for MQTT disconnect/connect log lines, not a stalled integration setup). A full `docker restart homeassistant` didn't immediately fix it either; what actually worked was reloading just the Tinxy config entry via the API (`POST /api/config/config_entries/entry/{id}/reload`) - much less disruptive than a full container restart, and entities recovered gradually afterward as each physical device individually reconnected to Tinxy's cloud. Separately: some Tinxy devices are old/decommissioned and will always show offline, which is just noise, not a real problem - they should be removed from the Tinxy account so they stop appearing in HA at all.
+**State:** not started, explicitly not urgent.
+**Next step:** whenever picked up - (1) consider having recovery try a config-entry reload before escalating to a full HA restart, (2) remove the stale/unused devices from the Tinxy account so only in-use devices show up in HACS.
+
 ---
 
 ## ✅ Done
