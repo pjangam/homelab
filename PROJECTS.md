@@ -56,10 +56,10 @@ Status: 🟢 active · 🟡 parked (revisit when it becomes a real problem, not 
 **State:** not started - the healthcheck/notification project was picked over this one when choosing what to build.
 **Next step:** none, purely a backlog idea.
 
-### Tinxy: smarter recovery + stale device cleanup
-**Why:** 2026-07-27 ISP outage - `watchdog_tinxy.sh` correctly restarted HA 3x on sustained MQTT disconnects, but the last restart landed while the network was still recovering, and the Tinxy custom integration's setup got stuck in a way the watchdog can't see (it only greps for MQTT disconnect/connect log lines, not a stalled integration setup). A full `docker restart homeassistant` didn't immediately fix it either; what actually worked was reloading just the Tinxy config entry via the API (`POST /api/config/config_entries/entry/{id}/reload`) - much less disruptive than a full container restart, and entities recovered gradually afterward as each physical device individually reconnected to Tinxy's cloud. Separately: some Tinxy devices are old/decommissioned and will always show offline, which is just noise, not a real problem - they should be removed from the Tinxy account so they stop appearing in HA at all.
+### Tinxy: remove stale/decommissioned devices from account
+**Why:** some Tinxy devices are old/decommissioned and will always show offline, which is just noise (they made up ~60% of registered entities being unavailable even in the healthy baseline, discovered while tuning the watchdog's detection threshold below).
 **State:** not started, explicitly not urgent.
-**Next step:** whenever picked up - (1) consider having recovery try a config-entry reload before escalating to a full HA restart, (2) remove the stale/unused devices from the Tinxy account so only in-use devices show up in HACS.
+**Next step:** remove the stale/unused devices from the Tinxy account so only in-use devices show up in HACS.
 
 ---
 
@@ -79,3 +79,6 @@ Found real CVEs unpatched because `unattended-upgrades` only covers Ubuntu's own
 
 ### ZFS `copies=2` on Immich datasets
 Found real, previously-unnoticed data corruption in `datapool` (6 blocks, from a 2026-07-12 scrub that was never surfaced) while building the ZFS check above. Set `copies=2` on `datapool/immich-upload` and `datapool/immich-db` - free, uses existing hardware, gives real self-healing for isolated corruption (exactly what was found) going forward. Does not fix the already-corrupted blocks (still recoverable from the intact Takeout zips whenever needed) or protect against full-disk failure (needs the real mirror project above).
+
+### Tinxy watchdog: two-tier recovery + entity-based down-detection
+2026-07-27 ISP outage exposed two gaps in `watchdog_tinxy.sh`. (1) Detection only grepped MQTT connect/disconnect log lines - blind to a stalled integration setup that logged nothing distinctive after one of the watchdog's own restarts. Fixed by adding a second signal: querying actual Tinxy entity availability via the HA API, tripping at >=90% unavailable (had to be that high since ~60% of registered entities are *always* unavailable already, from old/decommissioned devices - see backlog item above). (2) Recovery jumped straight to a full `docker restart homeassistant` - now tries a lighter config-entry reload first (what actually fixed the outage) at 20min, only escalating to a full restart at 35min if that doesn't clear it. All three tiers (start watch, reload, escalate to restart) tested live against the real script and real data, including one real end-to-end restart.
