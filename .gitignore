@@ -27,3 +27,4 @@ postgres/
 mosquitto/log/
 client_secret*.json
 command.txt
+__pycache__/
