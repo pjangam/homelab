@@ -61,11 +61,6 @@ The viable path is different: a **standalone script** using the Anthropic SDK's 
 **State:** `scripts/qwen_delegate_repl.py` written and committed - a REPL loop (`while True: input() -> tool_runner turn -> print reply`) that persists conversation history across turns, defines `delegate_to_local_model` as a custom tool wrapping Ollama's local HTTP API, and prints `[-> delegating to qwen2.5:1.5b: ...]` / `[<- ... replied: ...]` markers so delegation is visible live. Orchestrator defaults to `claude-opus-5` (swappable to sonnet/haiku for cost). Syntax-checked only - **not yet run**, since it needs to execute on the Mac, which I (Claude, running via SSH on the homelab server) have no access to.
 **Next step:** on the Mac - install Ollama, `ollama pull qwen2.5:1.5b`, set `ANTHROPIC_API_KEY`, then `uv run scripts/qwen_delegate_repl.py` (needs `uv`, or fall back to `pip install anthropic requests` and drop the `uv run --script` shebang). User will need to run and debug this themselves since it's on a different machine.
 
-### Monitor for silent backup failures
-**Why:** `healthcheck.sh` checks containers, systemd units, ZFS health, disk space, and linger, but not whether last night's Vaultwarden/HA backup actually succeeded. If `rclone`'s auth token expires or the remote fills up, those backup scripts could fail silently for weeks with nobody noticing until a backup is actually needed.
-**State:** just kicked off, not yet built.
-**Next step:** extend `healthcheck.sh` (or the backup scripts themselves) to verify recent backup success - e.g. check `backup.log` for a recent success line, or verify a fresh file landed on the Dropbox remote - and fold it into the existing email-alert/dedup pattern.
-
 ### Consolidated status dashboard
 **Why:** right now the only way to know something's wrong is a `healthcheck.sh` email after the fact. An at-a-glance view (containers, Tinxy state, backup freshness, disk usage) would be a nicer day-to-day way to just check "is everything actually fine" without waiting for a failure alert.
 **State:** just kicked off, not yet built.
@@ -143,3 +138,6 @@ Surfaced while brainstorming graceful-shutdown options for the power watchdog: a
 
 ### Tinxy watchdog: two-tier recovery + entity-based down-detection
 2026-07-27 ISP outage exposed two gaps in `watchdog_tinxy.sh`. (1) Detection only grepped MQTT connect/disconnect log lines - blind to a stalled integration setup that logged nothing distinctive after one of the watchdog's own restarts. Fixed by adding a second signal: querying actual Tinxy entity availability via the HA API, tripping at >=90% unavailable (had to be that high since ~60% of registered entities are *always* unavailable already, from old/decommissioned devices - see backlog item above). (2) Recovery jumped straight to a full `docker restart homeassistant` - now tries a lighter config-entry reload first (what actually fixed the outage) at 20min, only escalating to a full restart at 35min if that doesn't clear it. All three tiers (start watch, reload, escalate to restart) tested live against the real script and real data, including one real end-to-end restart.
+
+### Monitor for silent backup failures
+`backup_vaultwarden.sh`/`backup_homeassistant.sh` run daily via cron and log to `backup.log`, but nothing checked whether they actually succeeded - an expired rclone token or full remote could fail them silently for weeks. Extended `healthcheck.sh` to check the age of the last success line for each (>=30h flags a problem - daily cadence plus slack, not tied to time-of-day). Tested against the real log (correctly clean), a simulated stale log, and a missing-log case.
