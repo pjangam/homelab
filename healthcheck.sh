@@ -56,6 +56,37 @@ done < <(df -h --output=target,pcent / /datapool 2>/dev/null | tail -n +2)
 linger=$(loginctl show-user pramod -p Linger 2>/dev/null)
 [ "$linger" != "Linger=yes" ] && problems+=("systemd linger is disabled for pramod ($linger) - user services will die on logout")
 
+# Backup freshness: backup_vaultwarden.sh/backup_homeassistant.sh run daily
+# via cron and report success into backup.log, but nothing was checking
+# whether they actually succeeded - an expired rclone token or a full
+# remote could fail them silently for weeks until a backup is needed.
+BACKUP_LOG="$SCRIPT_DIR/backup.log"
+MAX_BACKUP_AGE_HOURS=30  # daily cadence + generous slack, not tied to time-of-day
+
+check_backup_freshness() {
+  local label="$1" pattern="$2"
+  local last_line last_ts last_epoch age_hours
+  last_line=$(grep -F "$pattern" "$BACKUP_LOG" 2>/dev/null | tail -1)
+  if [ -z "$last_line" ]; then
+    problems+=("$label backup: no successful run ever found in backup.log")
+    return
+  fi
+  last_ts=$(echo "$last_line" | grep -oP '(?<=\[)[^]]+(?=\])')
+  if ! last_epoch=$(date -d "$last_ts" +%s 2>/dev/null); then
+    problems+=("$label backup: couldn't parse timestamp '$last_ts' from log")
+    return
+  fi
+  age_hours=$(( ($(date +%s) - last_epoch) / 3600 ))
+  [ "$age_hours" -ge "$MAX_BACKUP_AGE_HOURS" ] && problems+=("$label backup hasn't succeeded in ${age_hours}h (last: $last_ts)")
+}
+
+if [ -f "$BACKUP_LOG" ]; then
+  check_backup_freshness "Vaultwarden" "Backup complete: vaultwarden_"
+  check_backup_freshness "Home Assistant" "] Done."
+else
+  problems+=("backup.log not found at $BACKUP_LOG - can't verify backup freshness")
+fi
+
 # Heartbeat: proves this script ran to completion, regardless of what it
 # found. If the machine hard-locks (e.g. the ZFS+postgres freeze from
 # 2026-06-29) and cron itself stops running, this ping goes silent and
