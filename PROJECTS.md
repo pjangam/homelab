@@ -61,6 +61,16 @@ The viable path is different: a **standalone script** using the Anthropic SDK's 
 **State:** `scripts/qwen_delegate_repl.py` written and committed - a REPL loop (`while True: input() -> tool_runner turn -> print reply`) that persists conversation history across turns, defines `delegate_to_local_model` as a custom tool wrapping Ollama's local HTTP API, and prints `[-> delegating to qwen2.5:1.5b: ...]` / `[<- ... replied: ...]` markers so delegation is visible live. Orchestrator defaults to `claude-opus-5` (swappable to sonnet/haiku for cost). Syntax-checked only - **not yet run**, since it needs to execute on the Mac, which I (Claude, running via SSH on the homelab server) have no access to.
 **Next step:** on the Mac - install Ollama, `ollama pull qwen2.5:1.5b`, set `ANTHROPIC_API_KEY`, then `uv run scripts/qwen_delegate_repl.py` (needs `uv`, or fall back to `pip install anthropic requests` and drop the `uv run --script` shebang). User will need to run and debug this themselves since it's on a different machine.
 
+### Monitor for silent backup failures
+**Why:** `healthcheck.sh` checks containers, systemd units, ZFS health, disk space, and linger, but not whether last night's Vaultwarden/HA backup actually succeeded. If `rclone`'s auth token expires or the remote fills up, those backup scripts could fail silently for weeks with nobody noticing until a backup is actually needed.
+**State:** just kicked off, not yet built.
+**Next step:** extend `healthcheck.sh` (or the backup scripts themselves) to verify recent backup success - e.g. check `backup.log` for a recent success line, or verify a fresh file landed on the Dropbox remote - and fold it into the existing email-alert/dedup pattern.
+
+### Consolidated status dashboard
+**Why:** right now the only way to know something's wrong is a `healthcheck.sh` email after the fact. An at-a-glance view (containers, Tinxy state, backup freshness, disk usage) would be a nicer day-to-day way to just check "is everything actually fine" without waiting for a failure alert.
+**State:** just kicked off, not yet built.
+**Next step:** decide on the shape - likely an HA Lovelace dashboard reusing data `healthcheck.sh` already collects, rather than a separate custom webpage.
+
 ---
 
 ## 🟡 Parked
@@ -75,10 +85,10 @@ The viable path is different: a **standalone script** using the Anthropic SDK's 
 **State:** details not recalled, not investigated this round.
 **Next step:** none until it becomes an active problem for her.
 
-### Offsite backup (photos / general)
+### Offsite backup for Immich photo data
 **Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no offsite copy - only the ZFS pool itself (single disk, see above) and the original Google Takeout zips on a separate local disk.
-**State:** not started, lower priority than the ZFS corruption/replication work.
-**Next step:** none for now.
+**State:** reconsidered, not started. A naive rclone-to-Dropbox push (same pattern as Vaultwarden/HA) doesn't actually make sense here: the whole point of self-hosting Immich is avoiding paying for cloud photo storage, so continuously syncing the full photo set to cloud storage undermines that. If pursued, needs a different shape - compress/archive first, and use a cold-storage tier (e.g. S3 Glacier / Glacier Deep Archive) priced for rarely-accessed disaster-recovery data rather than active-sync storage, not a Dropbox-style always-on sync.
+**Next step:** none for now - needs the compress + cold-storage approach worked out before this is worth starting, not just "run rclone".
 
 ### FTP replacement (Syncthing or rclone+Dropbox)
 **Why:** wanted a serverless way to drop files onto the homelab, like KeePass doesn't need a server - avoids running/hardening an FTP daemon.
@@ -88,7 +98,7 @@ The viable path is different: a **standalone script** using the Anthropic SDK's 
 ### Immich re-enablement
 **Why:** ~13k photos already migrated from Google Takeout, but Immich is disabled - 8GB RAM isn't enough with ML enabled.
 **State:** parked for "at least a couple quarters" due to the current chip-price spike delaying any hardware upgrade. Fastest partial fix (disable just `immich-machine-learning`, keep the server running without face/object search) was suggested but not applied, since the user wants it parked entirely for now.
-**Next step:** revisit once hardware budget/pricing allows. When resumed: recover the 2 corrupted "library" originals (`20170305_135159.jpg`, `GOPR0276.MP4`) from the intact Takeout zips in `/home/pramod/Downloads/` first.
+**Next step:** revisit once hardware budget/pricing allows. The 2 corrupted "library" originals (`20170305_135159.jpg`, `GOPR0276.MP4`) have already been recovered from the intact Takeout zips and verified clean via a fresh scrub (2026-07-29) - no longer a blocker when this resumes.
 
 ---
 
@@ -103,6 +113,11 @@ The viable path is different: a **standalone script** using the Anthropic SDK's 
 **Why:** some Tinxy devices are old/decommissioned and will always show offline, which is just noise (they made up ~60% of registered entities being unavailable even in the healthy baseline, discovered while tuning the watchdog's detection threshold below).
 **State:** not started, explicitly not urgent.
 **Next step:** remove the stale/unused devices from the Tinxy account so only in-use devices show up in HACS.
+
+### Backup restore drill
+**Why:** Vaultwarden and HA config are backed up daily to Dropbox via rclone, but the restore path has never actually been tested - only that the upload step succeeds. "Untested backups aren't backups."
+**State:** not started, explicitly for later.
+**Next step:** pull a recent backup down and actually restore it (to a scratch/test location, not overwriting production) to confirm it works when needed.
 
 ---
 
