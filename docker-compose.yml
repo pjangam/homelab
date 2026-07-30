@@ -190,6 +190,22 @@ services:
         max-file: "3"
     restart: unless-stopped
 
+  samba:
+    image: dperson/samba
+    container_name: samba
+    restart: unless-stopped
+    ports:
+      - "139:139"
+      - "445:445"
+    volumes:
+      - ${PHONE_UPLOADS_LOCATION}:/share
+    command:
+      - "-p"
+      - "-u"
+      - "${SAMBA_USER};${SAMBA_PASSWORD};1000;1000;1000"
+      - "-s"
+      - "phone-uploads;/share;yes;no;no;${SAMBA_USER};;;iPhone video drop zone"
+
 volumes:
   # model-cache:  # immich-machine-learning — disabled
   node-red-data:
