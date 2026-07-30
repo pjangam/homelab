@@ -141,3 +141,6 @@ Surfaced while brainstorming graceful-shutdown options for the power watchdog: a
 
 ### Monitor for silent backup failures
 `backup_vaultwarden.sh`/`backup_homeassistant.sh` run daily via cron and log to `backup.log`, but nothing checked whether they actually succeeded - an expired rclone token or full remote could fail them silently for weeks. Extended `healthcheck.sh` to check the age of the last success line for each (>=30h flags a problem - daily cadence plus slack, not tied to time-of-day). Tested against the real log (correctly clean), a simulated stale log, and a missing-log case.
+
+### iPhone → ZFS video uploads via local SMB share
+Immich (the normal ingestion path) is currently disabled, but videos still needed to get off the phone. Rejected a Dropbox-relay approach as an unnecessary cloud round-trip since phone and server share the same LAN. Set up a `dperson/samba` container serving a new, separate ZFS dataset (`datapool/phone-uploads`, deliberately isolated from Immich's managed datasets) over SMB. Credentials pushed into Vaultwarden (not relayed through chat) for retrieval via the Bitwarden mobile app. Confirmed the container is healthy and the share config (`valid users = phoneupload`, `read only = No`) is correct; connects from iOS via Files app → Connect to Server → `smb://192.168.1.123`.
