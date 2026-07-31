@@ -61,11 +61,6 @@ The viable path is different: a **standalone script** using the Anthropic SDK's 
 **State:** `scripts/qwen_delegate_repl.py` written and committed - a REPL loop (`while True: input() -> tool_runner turn -> print reply`) that persists conversation history across turns, defines `delegate_to_local_model` as a custom tool wrapping Ollama's local HTTP API, and prints `[-> delegating to qwen2.5:1.5b: ...]` / `[<- ... replied: ...]` markers so delegation is visible live. Orchestrator defaults to `claude-opus-5` (swappable to sonnet/haiku for cost). Syntax-checked only - **not yet run**, since it needs to execute on the Mac, which I (Claude, running via SSH on the homelab server) have no access to.
 **Next step:** on the Mac - install Ollama, `ollama pull qwen2.5:1.5b`, set `ANTHROPIC_API_KEY`, then `uv run scripts/qwen_delegate_repl.py` (needs `uv`, or fall back to `pip install anthropic requests` and drop the `uv run --script` shebang). User will need to run and debug this themselves since it's on a different machine.
 
-### Consolidated status dashboard
-**Why:** right now the only way to know something's wrong is a `healthcheck.sh` email after the fact. An at-a-glance view (containers, Tinxy state, backup freshness, disk usage) would be a nicer day-to-day way to just check "is everything actually fine" without waiting for a failure alert.
-**State:** just kicked off, not yet built.
-**Next step:** decide on the shape - likely an HA Lovelace dashboard reusing data `healthcheck.sh` already collects, rather than a separate custom webpage.
-
 ---
 
 ## 🟡 Parked
@@ -147,3 +142,6 @@ Surfaced while brainstorming graceful-shutdown options for the power watchdog: a
 Immich (the normal ingestion path) is currently disabled, but videos still needed to get off the phone. Rejected a Dropbox-relay approach as an unnecessary cloud round-trip since phone and server share the same LAN. Set up a `dperson/samba` container serving a new, separate ZFS dataset (`datapool/phone-uploads`, deliberately isolated from Immich's managed datasets) over SMB. Credentials pushed into Vaultwarden (not relayed through chat) for retrieval via the Bitwarden mobile app. Confirmed the container is healthy and the share config (`valid users = phoneupload`, `read only = No`) is correct; connects from iOS via Files app → Connect to Server → `smb://192.168.1.123`.
 
 Actual driving need: reclaiming phone storage, which was running low - this is a plain file dump, not photo management. Explicitly a stopgap: it loses the AI features (face/object search, memories, etc.) that Google Photos/Immich provide, so it's not a replacement for Immich re-enablement (parked above), just what's usable in the meantime. First real batch: 53 large video files uploaded and moved off the phone (2026-07-31), all verified non-corrupt via `ffprobe`.
+
+### Consolidated status dashboard
+Previously the only way to know something's wrong was a `healthcheck.sh` email after the fact. Extended `healthcheck.sh` to publish its check results (containers, systemd units, ZFS pool health, disk usage, backup freshness) to MQTT with HA discovery, grouped under a "Homelab Healthcheck" device - 9 entities total, published on every 15min cron run independent of the email-alert path so a publish failure can't suppress a real alert. Added a "Homelab Health" section to the existing "Stats" Lovelace dashboard with tile cards for all 9 entities (required stopping HA briefly to hand-edit the storage-mode dashboard file directly, since it's UI-managed rather than YAML). Verified end-to-end: entities confirmed live via the HA REST API, dashboard confirmed intact after restart with no lovelace-related errors in logs.
