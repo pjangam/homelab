@@ -18,18 +18,21 @@ export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
 
 problems=()
+docker_bad_containers=()
 
 # Docker containers: anything not running, or running but unhealthy
 while IFS=$'\t' read -r name state status; do
   [ -z "$name" ] && continue
   if [ "$state" != "running" ]; then
     problems+=("Container $name is $state ($status)")
+    docker_bad_containers+=("$name")
   fi
 done < <(docker ps -a --format '{{.Names}}	{{.State}}	{{.Status}}')
 
 while read -r name; do
   [ -z "$name" ] && continue
   problems+=("Container $name is unhealthy")
+  docker_bad_containers+=("$name")
 done < <(docker ps --filter health=unhealthy --format '{{.Names}}')
 
 # systemd --user failed units (this is what caught the white-noise/linger bug)
@@ -45,8 +48,14 @@ zfs_status=$(zpool status -x 2>&1)
 [ "$zfs_status" != "all pools are healthy" ] && problems+=("ZFS pool issue: $zfs_status")
 
 # Disk space
+disk_root_pct=""
+disk_datapool_pct=""
 while read -r mount pct; do
   pct_num="${pct%\%}"
+  case "$mount" in
+    /) disk_root_pct="$pct_num" ;;
+    /datapool) disk_datapool_pct="$pct_num" ;;
+  esac
   if [ "$pct_num" -ge 90 ]; then
     problems+=("Disk $mount is ${pct} full")
   fi
@@ -64,7 +73,7 @@ BACKUP_LOG="$SCRIPT_DIR/backup.log"
 MAX_BACKUP_AGE_HOURS=30  # daily cadence + generous slack, not tied to time-of-day
 
 check_backup_freshness() {
-  local label="$1" pattern="$2"
+  local label="$1" pattern="$2" outvar="$3"
   local last_line last_ts last_epoch age_hours
   last_line=$(grep -F "$pattern" "$BACKUP_LOG" 2>/dev/null | tail -1)
   if [ -z "$last_line" ]; then
@@ -77,12 +86,15 @@ check_backup_freshness() {
     return
   fi
   age_hours=$(( ($(date +%s) - last_epoch) / 3600 ))
+  printf -v "$outvar" '%s' "$age_hours"
   [ "$age_hours" -ge "$MAX_BACKUP_AGE_HOURS" ] && problems+=("$label backup hasn't succeeded in ${age_hours}h (last: $last_ts)")
 }
 
+backup_vw_age_hours=""
+backup_ha_age_hours=""
 if [ -f "$BACKUP_LOG" ]; then
-  check_backup_freshness "Vaultwarden" "Backup complete: vaultwarden_"
-  check_backup_freshness "Home Assistant" "] Done."
+  check_backup_freshness "Vaultwarden" "Backup complete: vaultwarden_" backup_vw_age_hours
+  check_backup_freshness "Home Assistant" "] Done." backup_ha_age_hours
 else
   problems+=("backup.log not found at $BACKUP_LOG - can't verify backup freshness")
 fi
@@ -93,6 +105,52 @@ fi
 # healthchecks.io alerts on the missing check-in - the one failure mode a
 # script running ON this machine can never detect about itself.
 curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
+
+# Publish results to MQTT (HA discovery) for the consolidated status
+# dashboard - independent of the email-dedup logic below, so it runs on
+# every invocation including all-clear ones. A publish failure here must
+# never break the actual alerting this script exists for.
+{
+  docker_problem_bool=false
+  [ ${#docker_bad_containers[@]} -gt 0 ] && docker_problem_bool=true
+  systemd_problem_bool=false
+  { [ -n "$user_failed" ] || [ -n "$sys_failed" ]; } && systemd_problem_bool=true
+  zfs_ok_bool=true
+  [ "$zfs_status" != "all pools are healthy" ] && zfs_ok_bool=false
+  overall_problem_bool=false
+  [ ${#problems[@]} -gt 0 ] && overall_problem_bool=true
+
+  docker_bad_json=$(jq -n --args '$ARGS.positional' "${docker_bad_containers[@]}")
+  problems_json=$(jq -n --args '$ARGS.positional' "${problems[@]}")
+
+  jq -n \
+    --argjson docker_problem "$docker_problem_bool" \
+    --argjson docker_bad "$docker_bad_json" \
+    --argjson systemd_problem "$systemd_problem_bool" \
+    --arg systemd_failed_text "$(printf '%s\n%s' "$user_failed" "$sys_failed" | sed '/^$/d')" \
+    --argjson zfs_ok "$zfs_ok_bool" \
+    --arg zfs_status "$zfs_status" \
+    --argjson overall_problem "$overall_problem_bool" \
+    --argjson problems "$problems_json" \
+    --arg disk_root "${disk_root_pct:-}" \
+    --arg disk_datapool "${disk_datapool_pct:-}" \
+    --arg backup_vw_age "${backup_vw_age_hours:-}" \
+    --arg backup_ha_age "${backup_ha_age_hours:-}" \
+    '{
+      docker_problem: $docker_problem,
+      docker_bad: $docker_bad,
+      systemd_problem: $systemd_problem,
+      systemd_failed_text: $systemd_failed_text,
+      zfs_ok: $zfs_ok,
+      zfs_status: $zfs_status,
+      overall_problem: $overall_problem,
+      problems: $problems,
+      disk_root: (if $disk_root == "" then null else ($disk_root|tonumber) end),
+      disk_datapool: (if $disk_datapool == "" then null else ($disk_datapool|tonumber) end),
+      backup_vw_age_hours: (if $backup_vw_age == "" then null else ($backup_vw_age|tonumber) end),
+      backup_ha_age_hours: (if $backup_ha_age == "" then null else ($backup_ha_age|tonumber) end)
+    }' | "$SCRIPT_DIR/scripts/publish_healthcheck_mqtt.py"
+} || true
 
 send_email() {
   python3 - "$1" "$2" <<'EOF'
