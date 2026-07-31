@@ -85,10 +85,11 @@ The viable path is different: a **standalone script** using the Anthropic SDK's 
 **State:** reconsidered, not started. A naive rclone-to-Dropbox push (same pattern as Vaultwarden/HA) doesn't actually make sense here: the whole point of self-hosting Immich is avoiding paying for cloud photo storage, so continuously syncing the full photo set to cloud storage undermines that. If pursued, needs a different shape - compress/archive first, and use a cold-storage tier (e.g. S3 Glacier / Glacier Deep Archive) priced for rarely-accessed disaster-recovery data rather than active-sync storage, not a Dropbox-style always-on sync.
 **Next step:** none for now - needs the compress + cold-storage approach worked out before this is worth starting, not just "run rclone".
 
-### FTP replacement (Syncthing or rclone+Dropbox)
-**Why:** wanted a serverless way to drop files onto the homelab, like KeePass doesn't need a server - avoids running/hardening an FTP daemon.
-**State:** discussed two options (Syncthing: true peer-to-peer, no cloud dependency, new tool to install; reuse rclone+Dropbox: zero new infra, reuses the trusted backup pattern). Leaned toward extending the existing rclone+Dropbox pattern. Not started.
-**Next step:** none, explicitly not highest priority.
+### Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement
+**Why:** currently uses Dropbox to keep sensitive personal documents (ID cards, tax documents, etc.) available across devices. Problems with that: cloud storage is a leak risk for this class of document, has a storage limit, needs internet connectivity, and the work laptop specifically avoids Dropbox's offline-files feature out of concern the employer could flag/ban Dropbox on a work machine - meaning that device currently has no reliable access at all. This is a distinct need from the iPhone-upload SMB share (Done section) - continuous, automatic, always-available-everywhere sync, not a manual one-off drop zone.
+**State:** not started. Syncthing identified as the right fit - true peer-to-peer, no cloud storage or third-party leak surface, no storage cap, works over LAN and (via Tailscale) when away from home. Homelab server would act as an always-on peer so devices stay in sync even when not simultaneously online.
+**Open question:** how the work laptop fits in - same policy-visibility risk that ruled out Dropbox offline-files there could apply to installing any sync client. Not yet decided whether that machine gets a full Syncthing client, browser/web-GUI-only access, no access at all, or gets figured out later. Scope for phone + personal devices + homelab server first.
+**Next step:** none yet, not started.
 
 ### Immich re-enablement
 **Why:** ~13k photos already migrated from Google Takeout, but Immich is disabled - 8GB RAM isn't enough with ML enabled.
