@@ -123,6 +123,37 @@ rm ~/.tinxy-watchdog-disabled      # re-enable
 
 ---
 
+## Power Watchdog (clean shutdown on extended outage)
+
+**Why:** this server runs on its own UPS battery (separate from the router's). If the battery fully drains before mains returns, the server crashes uncontrolled - the likely cause of ZFS corruption found in `datapool` on 2026-07-12. `watchdog_power.sh` shuts the server down cleanly well before that happens instead.
+
+**How it works:**
+1. Every 5 minutes (cron), checks `/sys/class/net/enp1s0/carrier` - `enp1s0` connects through a WiFi extender with no battery backup of its own, so losing carrier is a reliable proxy for "mains is out, running on UPS battery."
+2. On carrier loss, starts a clock in `~/.cache/power-watchdog/down-since`.
+3. Once down for **200 minutes** (`DOWN_THRESHOLD_MIN` in the script), runs `sudo /usr/sbin/shutdown -h now`. This threshold is grounded in a real measurement: a live outage test on 2026-07-31 found actual UPS runtime under this server's load is ~288 minutes (4h49m), so 200min leaves ~88min of real margin.
+4. All actions logged via `logger -t power-watchdog` (`journalctl -t power-watchdog`) and to `power-watchdog.log` in the repo root.
+
+**Currently armed** - this will actually shut the server down on a real extended outage, not just log.
+
+**Arm / disarm** (no need to touch cron):
+```bash
+touch ~/.power-watchdog-armed        # arm (enables the real shutdown)
+rm ~/.power-watchdog-armed           # disarm (back to dry-run/logging only)
+touch ~/.power-watchdog-disabled     # fully disable (skips the check entirely)
+rm ~/.power-watchdog-disabled        # re-enable
+```
+
+Arming for the first time also requires a one-time sudoers setup (`bash setup_power_watchdog_sudoers.sh`) granting passwordless sudo for `/usr/sbin/shutdown -h now` only, since the watchdog runs unattended from cron.
+
+**Known gap:** a graceful shutdown here doesn't automatically solve "how does the server turn back on" once mains returns - since the UPS keeps the server's PSU continuously powered throughout (before, during, and after the shutdown), the BIOS's "Restore on AC Power Loss" setting never actually triggers (it only fires on a genuine AC-loss-then-restore event at the PSU, which doesn't happen here). See the "Power-outage watchdog" entry in `PROJECTS.md` for the current plan (Wake-on-LAN via a mains-powered ESP32, in progress under `esp32/wol_on_boot/`).
+
+**Cron entry** (`crontab -e`):
+```
+*/5 * * * * /home/pramod/code/homelab/watchdog_power.sh >> /home/pramod/code/homelab/power-watchdog.log 2>&1
+```
+
+---
+
 ## Vaultwarden
 
 Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compose.yml`). To allow a new account, temporarily set it to `"true"`, run `sudo docker compose up -d vaultwarden`, create the account, then set it back to `"false"`.
