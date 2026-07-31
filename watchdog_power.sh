@@ -7,11 +7,16 @@
 # Context: enp1s0 connects through a WiFi extender with no battery backup
 # of its own (see setup_wifi_failover.sh). When it loses carrier, mains
 # power is very likely out, and this server is separately running on its
-# own RouterUPS battery (~3-4hr real runtime under this load - it's rated
-# 8h, but that's for the lighter router/modem load it's normally sold for).
-# If that battery runs out before mains returns, the server crashes
-# uncontrolled. A clean shutdown well before that happens avoids it
-# entirely - everything unmounts properly, no torn writes.
+# own RouterUPS battery - measured at ~288min (4h49m) real runtime under
+# this load via a live outage test on 2026-07-31 (rated 8h, but that's for
+# the lighter router/modem load it's normally sold for). If that battery
+# runs out before mains returns, the server crashes uncontrolled - which is
+# exactly what happened during that same test, since the watchdog was still
+# unarmed (dry-run only) the whole time. ZFS came back healthy afterward,
+# but that's not something to rely on happening again. Threshold set to
+# 200min, leaving ~88min of real margin before the confirmed failure point.
+# A clean shutdown well before that happens avoids it entirely - everything
+# unmounts properly, no torn writes.
 #
 # Safety: defaults to DRY RUN (logs what it would do, never actually shuts
 # down) until armed. Arm with: touch ~/.power-watchdog-armed
@@ -29,7 +34,7 @@ ARM_FLAG="$HOME/.power-watchdog-armed"
 IFACE="enp1s0"
 STATE_DIR="$HOME/.cache/power-watchdog"
 DOWN_SINCE_FILE="$STATE_DIR/down-since"
-DOWN_THRESHOLD_MIN=90
+DOWN_THRESHOLD_MIN=200
 LOG_TAG="power-watchdog"
 
 if [ -f "$DISABLE_FLAG" ]; then
