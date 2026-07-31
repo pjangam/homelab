@@ -197,6 +197,13 @@ services:
     ports:
       - "139:139"
       - "445:445"
+    environment:
+      # Files land on disk owned by smbuser regardless of which login
+      # authenticated - this is what actually controls on-disk uid/gid,
+      # not the uid/gid fields on the -u flag below (those only set the
+      # phoneupload login's own uid in the container's /etc/passwd).
+      USERID: 1000
+      GROUPID: 1000
     volumes:
       - ${PHONE_UPLOADS_LOCATION}:/share
     command:
