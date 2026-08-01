@@ -61,3 +61,24 @@
       entity_id: scene.ojaswi_sleeping
     data: {}
   mode: single
+- id: white_noise_night_auto_off
+  alias: White noise auto-off at night
+  description: Safety net in case white noise is left on overnight - checked at four times rather than once, so a single missed trigger doesn't leave it running all night.
+  triggers:
+  - trigger: time
+    at: '23:00:00'
+  - trigger: time
+    at: '23:30:00'
+  - trigger: time
+    at: '00:00:00'
+  - trigger: time
+    at: '00:30:00'
+  conditions:
+  - condition: state
+    entity_id: switch.white_noise
+    state: 'on'
+  actions:
+  - action: switch.turn_off
+    target:
+      entity_id: switch.white_noise
+  mode: single
