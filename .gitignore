@@ -28,3 +28,5 @@ mosquitto/log/
 client_secret*.json
 command.txt
 __pycache__/
+esp32/wol_on_boot/src/secrets.h
+esp32/wol_on_boot/.pio/
