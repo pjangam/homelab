@@ -99,6 +99,34 @@ else
   problems+=("backup.log not found at $BACKUP_LOG - can't verify backup freshness")
 fi
 
+# spotifyd watchdog (watchdog_spotifyd.sh): it silently self-heals a single
+# stuck-connection hang by restarting the service, which never shows up as a
+# failed systemd unit. Two things surface here: "stuck right now" (the
+# watchdog is mid-countdown, for the dashboard tile) and "flapped repeatedly"
+# (restarting every few minutes means something's actually wrong, e.g. a
+# network issue, not a one-off - that's worth an email, not just a tile).
+SPOTIFYD_STATE_DIR="$HOME/.cache/spotifyd-watchdog"
+SPOTIFYD_DOWN_SINCE_FILE="$SPOTIFYD_STATE_DIR/down-since"
+SPOTIFYD_RESTART_LOG="$SPOTIFYD_STATE_DIR/restarts.log"
+SPOTIFYD_RESTART_THRESHOLD=3
+
+spotifyd_stuck_now=false
+[ -f "$SPOTIFYD_DOWN_SINCE_FILE" ] && spotifyd_stuck_now=true
+
+spotifyd_restarts_24h=0
+if [ -f "$SPOTIFYD_RESTART_LOG" ]; then
+  cutoff_epoch=$(date -d "-24 hours" +%s)
+  while read -r ts; do
+    [ -z "$ts" ] && continue
+    ts_epoch=$(date -d "$ts" +%s 2>/dev/null) || continue
+    [ "$ts_epoch" -ge "$cutoff_epoch" ] && spotifyd_restarts_24h=$((spotifyd_restarts_24h + 1))
+  done < "$SPOTIFYD_RESTART_LOG"
+fi
+
+if [ "$spotifyd_restarts_24h" -ge "$SPOTIFYD_RESTART_THRESHOLD" ]; then
+  problems+=("spotifyd watchdog restarted it $spotifyd_restarts_24h times in the last 24h (threshold $SPOTIFYD_RESTART_THRESHOLD) - investigate")
+fi
+
 # Heartbeat: proves this script ran to completion, regardless of what it
 # found. If the machine hard-locks (e.g. the ZFS+postgres freeze from
 # 2026-06-29) and cron itself stops running, this ping goes silent and
@@ -120,6 +148,9 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
   overall_problem_bool=false
   [ ${#problems[@]} -gt 0 ] && overall_problem_bool=true
 
+  spotifyd_problem_bool=$spotifyd_stuck_now
+  [ "$spotifyd_restarts_24h" -ge "$SPOTIFYD_RESTART_THRESHOLD" ] && spotifyd_problem_bool=true
+
   docker_bad_json=$(jq -n --args '$ARGS.positional' "${docker_bad_containers[@]}")
   problems_json=$(jq -n --args '$ARGS.positional' "${problems[@]}")
 
@@ -136,6 +167,9 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
     --arg disk_datapool "${disk_datapool_pct:-}" \
     --arg backup_vw_age "${backup_vw_age_hours:-}" \
     --arg backup_ha_age "${backup_ha_age_hours:-}" \
+    --argjson spotifyd_problem "$spotifyd_problem_bool" \
+    --argjson spotifyd_stuck_now "$spotifyd_stuck_now" \
+    --arg spotifyd_restarts_24h "$spotifyd_restarts_24h" \
     '{
       docker_problem: $docker_problem,
       docker_bad: $docker_bad,
@@ -148,7 +182,10 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
       disk_root: (if $disk_root == "" then null else ($disk_root|tonumber) end),
       disk_datapool: (if $disk_datapool == "" then null else ($disk_datapool|tonumber) end),
       backup_vw_age_hours: (if $backup_vw_age == "" then null else ($backup_vw_age|tonumber) end),
-      backup_ha_age_hours: (if $backup_ha_age == "" then null else ($backup_ha_age|tonumber) end)
+      backup_ha_age_hours: (if $backup_ha_age == "" then null else ($backup_ha_age|tonumber) end),
+      spotifyd_problem: $spotifyd_problem,
+      spotifyd_stuck_now: $spotifyd_stuck_now,
+      spotifyd_restarts_24h: ($spotifyd_restarts_24h|tonumber)
     }' | "$SCRIPT_DIR/scripts/publish_healthcheck_mqtt.py"
 } || true
 

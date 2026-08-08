@@ -61,6 +61,7 @@ BINARY_SENSORS = {
     "docker": binary_sensor("docker", "Homelab Docker Containers", "mdi:docker"),
     "systemd": binary_sensor("systemd", "Homelab Systemd Units", "mdi:cog-outline"),
     "zfs": binary_sensor("zfs", "Homelab ZFS Pool", "mdi:harddisk"),
+    "spotifyd": binary_sensor("spotifyd", "Homelab Spotifyd", "mdi:spotify"),
     "overall": binary_sensor("overall", "Homelab Overall Status", "mdi:server"),
 }
 
@@ -72,6 +73,9 @@ SENSORS = {
     ),
     "backup_homeassistant_age": sensor(
         "backup_homeassistant_age", "Home Assistant Backup Age", "mdi:clock-alert-outline", unit="h"
+    ),
+    "spotifyd_restarts_24h": sensor(
+        "spotifyd_restarts_24h", "Spotifyd Restarts (24h)", "mdi:restart-alert"
     ),
     "last_check": sensor(
         "last_check", "Homelab Last Healthcheck", "mdi:calendar-check", device_class="timestamp"
@@ -103,12 +107,18 @@ def main():
     pub_binary("docker", data["docker_problem"], {"bad_containers": data["docker_bad"]})
     pub_binary("systemd", data["systemd_problem"], {"failed_units": data["systemd_failed_text"]})
     pub_binary("zfs", not data["zfs_ok"], {"status": data["zfs_status"]})
+    pub_binary(
+        "spotifyd",
+        data["spotifyd_problem"],
+        {"stuck_now": data["spotifyd_stuck_now"], "restarts_24h": data["spotifyd_restarts_24h"]},
+    )
     pub_binary("overall", data["overall_problem"], {"problems": data["problems"]})
 
     pub_sensor("disk_root", data["disk_root"])
     pub_sensor("disk_datapool", data["disk_datapool"])
     pub_sensor("backup_vaultwarden_age", data["backup_vw_age_hours"])
     pub_sensor("backup_homeassistant_age", data["backup_ha_age_hours"])
+    pub_sensor("spotifyd_restarts_24h", data["spotifyd_restarts_24h"])
     pub_sensor("last_check", datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     time.sleep(0.5)  # let publishes flush before disconnecting
