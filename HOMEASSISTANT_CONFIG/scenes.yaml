@@ -2,28 +2,8 @@
   name: Ojaswi sleeping
   entities:
     switch.white_noise:
-      state: 'on'
-    switch.bedroom_tubelight:
-      icon: mdi:lightbulb-fluorescent-tube
-      friendly_name: bedroom Tubelight
-      state: 'off'
-    switch.bedroom_led_bulb_2:
-      icon: mdi:lightbulb
-      friendly_name: bedroom LED Bulb
-      state: 'on'
-    switch.bedroom_balcony:
-      icon: mdi:lightbulb
-      friendly_name: bedroom Balcony
-      state: 'off'
-    fan.bedroom_fan_2:
-      preset_modes:
-      - Low
-      - Medium
-      - High
-      preset_mode: Low
-      icon: mdi:fan
-      friendly_name: bedfan
-      supported_features: 56
+      icon: mdi:weather-windy
+      friendly_name: White Noise
       state: 'on'
     climate.panasonic_ac_panasonic_ac:
       hvac_modes:
@@ -44,34 +24,32 @@
       icon: mdi:air-conditioner
       friendly_name: PANASONIC AC PANASONIC AC
       supported_features: 393
-      current_temperature: 25
-      temperature: 24
-      fan_mode: auto
-      hvac_action: cooling
-      state: cool
-    media_player.spotify_pramod:
-      source_list:
-      - xero
-      - Sonali’s MacBook Pro
-      volume_level: 0.5
-      media_content_id: spotify:track:3aWEzWRjMqRHfKxGhRLrPb
-      media_content_type: music
-      media_duration: 174
-      media_position: 19
-      media_position_updated_at: '2026-06-24T06:28:38.577146+00:00'
-      media_title: White Noise Waves
-      media_artist: The BD Noise Maker
-      media_album_name: White Noise Waves
-      media_track: 1
-      media_playlist: White Noise Waves
-      source: xero
-      shuffle: false
-      repeat: all
-      entity_picture: /api/media_player_proxy/media_player.spotify_pramod?token=REDACTED-SPOTIFY-TOKEN&cache=3217bb735926622c
-      friendly_name: Spotify Pramod
-      supported_features: 444983
-      state: playing
-  metadata: {}
+      state: unavailable
+    fan.bedroom_fan_2:
+      preset_modes:
+      - Low
+      - Medium
+      - High
+      preset_mode: Medium
+      icon: mdi:fan
+      friendly_name: bedfan
+      supported_features: 56
+      state: 'on'
+    switch.bedroom_tubelight:
+      icon: mdi:lightbulb-fluorescent-tube
+      friendly_name: bedroom Tubelight
+      state: 'off'
+    switch.bedroom_led_bulb_2:
+      icon: mdi:lightbulb
+      friendly_name: bedroom LED Bulb
+      state: 'on'
+  metadata:
+    fan.bedroom_fan_2:
+      entity_only: true
+    switch.bedroom_tubelight:
+      entity_only: true
+    switch.bedroom_led_bulb_2:
+      entity_only: true
 - id: '1781576403960'
   name: Ojaswi awake
   entities:
@@ -140,7 +118,6 @@
       source: xero
       shuffle: false
       repeat: all
-      entity_picture: /api/media_player_proxy/media_player.spotify_pramod?token=REDACTED-SPOTIFY-TOKEN&cache=3217bb735926622c
       friendly_name: Spotify Pramod
       supported_features: 444983
       state: paused

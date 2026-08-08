@@ -2,8 +2,8 @@
     auto_https off
 }
 
-xero.REDACTED-TAILNET-ID.ts.net {
-    tls /certs/xero.REDACTED-TAILNET-ID.ts.net.crt /certs/xero.REDACTED-TAILNET-ID.ts.net.key
+xero.{$TAILNET_SUFFIX} {
+    tls /certs/xero.{$TAILNET_SUFFIX}.crt /certs/xero.{$TAILNET_SUFFIX}.key
     reverse_proxy localhost:8080
 }
 

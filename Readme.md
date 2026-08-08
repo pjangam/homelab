@@ -11,7 +11,7 @@ Run `new_machine_setup.sh` then complete these manual steps:
    PIHOLE_PASSWORD=<your-password>
    ```
    Pi-hole password is stored in `.env` on the server (not in git). Check Bitwarden for the current value.
-3. **Tailscale** — `sudo tailscale up` and follow the auth URL, then re-run the script so `tailscale cert` can generate the SSL cert for Caddy
+3. **Tailscale** — `sudo tailscale up` and follow the auth URL, then re-run the script so `tailscale cert` can generate the SSL cert for Caddy. The script will prompt for your tailnet's domain suffix (e.g. `tailXXXXX.ts.net`, shown in the Tailscale admin console) on first run and save it to `.env` as `TAILNET_SUFFIX`.
 4. **Reboot** — required for the C-state GRUB fix to take effect (N5105 machines only)
 
 ---

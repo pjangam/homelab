@@ -40,10 +40,21 @@ cp /usr/share/applications/com.github.hluk.copyq.desktop ~/.config/autostart/
 
 # Schedule daily Vaultwarden backup at 2 AM
 HOMELAB_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Tailnet suffix (e.g. tailXXXXX.ts.net) - kept out of tracked files, lives in .env
+ENV_FILE="$HOMELAB_DIR/.env"
+if [[ -f "$ENV_FILE" ]]; then
+  set -a; source "$ENV_FILE"; set +a
+fi
+if [[ -z "${TAILNET_SUFFIX:-}" ]]; then
+  read -r -p "Tailscale tailnet domain suffix (e.g. tailXXXXX.ts.net): " TAILNET_SUFFIX
+  echo "TAILNET_SUFFIX=$TAILNET_SUFFIX" >> "$ENV_FILE"
+fi
+
 (crontab -l 2>/dev/null | grep -v "backup_vaultwarden.sh"; echo "0 2 * * * $HOMELAB_DIR/backup_vaultwarden.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 (crontab -l 2>/dev/null | grep -v "backup_homeassistant.sh"; echo "0 3 * * * $HOMELAB_DIR/backup_homeassistant.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 # Renew Tailscale cert monthly (cert validity is ~90 days)
-(crontab -l 2>/dev/null | grep -v "tailscale cert"; echo "0 4 1 * * sudo tailscale cert --cert-file $HOMELAB_DIR/certs/xero.REDACTED-TAILNET-ID.ts.net.crt --key-file $HOMELAB_DIR/certs/xero.REDACTED-TAILNET-ID.ts.net.key xero.REDACTED-TAILNET-ID.ts.net && sudo chown $USER:$USER $HOMELAB_DIR/certs/* && sudo docker kill --signal=USR1 caddy >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v "tailscale cert"; echo "0 4 1 * * sudo tailscale cert --cert-file $HOMELAB_DIR/certs/xero.$TAILNET_SUFFIX.crt --key-file $HOMELAB_DIR/certs/xero.$TAILNET_SUFFIX.key xero.$TAILNET_SUFFIX && sudo chown $USER:$USER $HOMELAB_DIR/certs/* && sudo docker kill --signal=USR1 caddy >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 
 git config --global user.email "pjangam2015@gmail.com"
 git config --global user.name "Pramod"
@@ -71,9 +82,9 @@ until tailscale status &>/dev/null; do
 done
 if tailscale status &>/dev/null; then
   sudo tailscale cert \
-    --cert-file "$HOMELAB_DIR/certs/xero.REDACTED-TAILNET-ID.ts.net.crt" \
-    --key-file  "$HOMELAB_DIR/certs/xero.REDACTED-TAILNET-ID.ts.net.key" \
-    xero.REDACTED-TAILNET-ID.ts.net
+    --cert-file "$HOMELAB_DIR/certs/xero.$TAILNET_SUFFIX.crt" \
+    --key-file  "$HOMELAB_DIR/certs/xero.$TAILNET_SUFFIX.key" \
+    "xero.$TAILNET_SUFFIX"
   sudo chown "$USER:$USER" "$HOMELAB_DIR/certs/"*
 fi
 

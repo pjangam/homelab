@@ -119,7 +119,7 @@ services:
     environment:
       WEBSOCKET_ENABLED: 'true'
       SIGNUPS_ALLOWED: 'false'
-      DOMAIN: 'https://xero.REDACTED-TAILNET-ID.ts.net'
+      DOMAIN: 'https://xero.${TAILNET_SUFFIX}'
   homeassistant:
     container_name: homeassistant
     image: "ghcr.io/home-assistant/home-assistant:stable"
@@ -164,6 +164,8 @@ services:
     image: caddy:latest
     container_name: caddy
     network_mode: host
+    environment:
+      - TAILNET_SUFFIX=${TAILNET_SUFFIX}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./certs:/certs:ro
