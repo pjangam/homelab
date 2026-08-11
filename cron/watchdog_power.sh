@@ -5,7 +5,7 @@
 # most likely from the 2026-06-29 kernel-lockup hard power cycle).
 #
 # Context: enp1s0 connects through a WiFi extender with no battery backup
-# of its own (see setup_wifi_failover.sh). When it loses carrier, mains
+# of its own (see the WiFi failover step in new_machine_setup.sh). When it loses carrier, mains
 # power is very likely out, and this server is separately running on its
 # own RouterUPS battery - measured at ~288min (4h49m) real runtime under
 # this load via a live outage test on 2026-07-31 (rated 8h, but that's for
@@ -23,8 +23,8 @@
 # Disarm/disable anytime with: rm ~/.power-watchdog-armed
 #                          or: touch ~/.power-watchdog-disabled
 #
-# Requires passwordless sudo for /usr/sbin/shutdown only (see
-# setup_power_watchdog_sudoers.sh) since this runs unattended from cron.
+# Requires passwordless sudo for /usr/sbin/shutdown only (installed by
+# new_machine_setup.sh) since this runs unattended from cron.
 #
 # Run via cron every 5 minutes.
 set -euo pipefail

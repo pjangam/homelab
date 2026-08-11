@@ -118,7 +118,7 @@ rm ~/.tinxy-watchdog-disabled      # re-enable
 
 **Cron entry** (`crontab -e`):
 ```
-*/5 * * * * /home/pramod/code/homelab/watchdog_tinxy.sh >> /home/pramod/code/homelab/tinxy-watchdog.log 2>&1
+*/5 * * * * /home/pramod/code/homelab/cron/watchdog_tinxy.sh >> /home/pramod/code/homelab/tinxy-watchdog.log 2>&1
 ```
 
 ---
@@ -143,13 +143,13 @@ touch ~/.power-watchdog-disabled     # fully disable (skips the check entirely)
 rm ~/.power-watchdog-disabled        # re-enable
 ```
 
-Arming for the first time also requires a one-time sudoers setup (`bash setup_power_watchdog_sudoers.sh`) granting passwordless sudo for `/usr/sbin/shutdown -h now` only, since the watchdog runs unattended from cron.
+Arming for the first time also requires a one-time sudoers setup (installed by `new_machine_setup.sh`) granting passwordless sudo for `/usr/sbin/shutdown -h now` only, since the watchdog runs unattended from cron.
 
 **Known gap:** a graceful shutdown here doesn't automatically solve "how does the server turn back on" once mains returns - since the UPS keeps the server's PSU continuously powered throughout (before, during, and after the shutdown), the BIOS's "Restore on AC Power Loss" setting never actually triggers (it only fires on a genuine AC-loss-then-restore event at the PSU, which doesn't happen here). See the "Power-outage watchdog" entry in `PROJECTS.md` for the current plan (Wake-on-LAN via a mains-powered ESP32, in progress under `esp32/wol_on_boot/`).
 
 **Cron entry** (`crontab -e`):
 ```
-*/5 * * * * /home/pramod/code/homelab/watchdog_power.sh >> /home/pramod/code/homelab/power-watchdog.log 2>&1
+*/5 * * * * /home/pramod/code/homelab/cron/watchdog_power.sh >> /home/pramod/code/homelab/power-watchdog.log 2>&1
 ```
 
 ---
@@ -291,10 +291,7 @@ sudo systemctl start graphical.target
 
 The TTY uses a Terminus powerline PSF font so that oh-my-zsh agnoster theme renders correctly (git branch icon, arrow separators).
 
-**Setup** (run after a fresh install or if font resets):
-```bash
-~/code/homelab/set_console_font.sh
-```
+**Setup** (run after a fresh install or if font resets): the N5105-specific block in `new_machine_setup.sh` installs this automatically; re-run that script to reapply it.
 
 **How it works:**
 - GRUB sets framebuffer to 1024×768 (`GRUB_GFXMODE=1024x768x32`, `GRUB_GFXPAYLOAD_LINUX=keep`) — makes the font readable

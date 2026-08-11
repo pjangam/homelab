@@ -5,7 +5,7 @@
 # actually wrong - silent on success to avoid alert fatigue.
 set -uo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 set -a
 source "$SCRIPT_DIR/.env.healthcheck"
 set +a

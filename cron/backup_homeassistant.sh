@@ -4,7 +4,7 @@
 # Requires rclone configured with a remote named "backup" (run: rclone config)
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 HA_BACKUP_DIR="$SCRIPT_DIR/HOMEASSISTANT_CONFIG/backups"
 RCLONE_REMOTE="backup:homeassistant"
 KEEP_COUNT=7

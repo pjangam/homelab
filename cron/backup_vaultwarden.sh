@@ -5,7 +5,7 @@
 #   - rclone configured with a remote named "backup" (run: rclone config)
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BACKUP_DIR="$SCRIPT_DIR/backups"
 DATA_DIR="$SCRIPT_DIR/vw-data"
 RCLONE_REMOTE="backup:vaultwarden"
