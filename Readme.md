@@ -16,6 +16,16 @@ Run `new_machine_setup.sh` then complete these manual steps:
 
 ---
 
+## HACS custom components
+
+`HOMEASSISTANT_CONFIG/custom_components/` holds Home Assistant integrations installed via [HACS](https://hacs.xyz/). These are third-party projects managed and updated by HACS at runtime, not part of this repo — install them through HACS rather than copying files, and see each project for its own license:
+
+- [spotcast](https://github.com/fondberg/spotcast) (Apache-2.0)
+- [ssh](https://github.com/zhbjsh/homeassistant-ssh) (MIT)
+- [tinxy](https://github.com/arevindh/ha-tinxy-cloud) (AGPL-3.0)
+
+---
+
 ## Miraie AC (Node-RED + MQTT)
 
 Mosquitto and the `node-red-contrib-ha-miraie-ac` node are set up automatically. Manual steps after first run:

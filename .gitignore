@@ -12,6 +12,9 @@ HOMEASSISTANT_CONFIG/.cloud/
 HOMEASSISTANT_CONFIG/tts/
 HOMEASSISTANT_CONFIG/.ha_run.lock
 HOMEASSISTANT_CONFIG/custom_components/hacs/
+HOMEASSISTANT_CONFIG/custom_components/spotcast/
+HOMEASSISTANT_CONFIG/custom_components/ssh/
+HOMEASSISTANT_CONFIG/custom_components/tinxy/
 HOMEASSISTANT_CONFIG/custom_components/**/__pycache__/
 etc-pihole/
 backups/
