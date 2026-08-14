@@ -124,6 +124,12 @@ The viable path is different: a **standalone script** using the Anthropic SDK's 
 **State:** not started, explicitly for later.
 **Next step:** pull a recent backup down and actually restore it (to a scratch/test location, not overwriting production) to confirm it works when needed.
 
+### Move some load to the Raspberry Pi
+**Why:** the `wol-sender` Pi (see the WoL sender build under Power-outage watchdog, active) currently only sends a boot-time magic packet to `xero` - a trivially light job for a whole Pi, real spare capacity going unused.
+**State:** not started, purely an idea.
+**Constraint:** unlike the main server (on the RouterUPS), the Pi is on direct mains power with no battery backup, so it goes offline during any power outage. Only safe to migrate loads that can tolerate being unavailable during an outage - not anything outage-sensitive like the white-noise automation or the power watchdog itself. Alternative: give the Pi its own small UPS/battery hat if a candidate load turns out to need outage tolerance.
+**Next step:** none yet - identify which current services are stateless/non-critical enough to be good candidates before picking one to actually move.
+
 ---
 
 ## ✅ Done
