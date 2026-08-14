@@ -1,21 +1,8 @@
 vw-data/
 certs/
-# HA runtime / secrets — keep config files, exclude everything else
-HOMEASSISTANT_CONFIG/secrets.yaml
-HOMEASSISTANT_CONFIG/home-assistant*.log*
-HOMEASSISTANT_CONFIG/home-assistant_v2.db*
-HOMEASSISTANT_CONFIG/backups/
-HOMEASSISTANT_CONFIG/deps/
-HOMEASSISTANT_CONFIG/.storage/
-HOMEASSISTANT_CONFIG/.cache/
-HOMEASSISTANT_CONFIG/.cloud/
-HOMEASSISTANT_CONFIG/tts/
-HOMEASSISTANT_CONFIG/.ha_run.lock
-HOMEASSISTANT_CONFIG/custom_components/hacs/
-HOMEASSISTANT_CONFIG/custom_components/spotcast/
-HOMEASSISTANT_CONFIG/custom_components/ssh/
-HOMEASSISTANT_CONFIG/custom_components/tinxy/
-HOMEASSISTANT_CONFIG/custom_components/**/__pycache__/
+# HA runtime — fully covered by the automatic HA backup synced to Dropbox
+# (cron/backup_homeassistant.sh), so no need to track any of it in git.
+HOMEASSISTANT_CONFIG/
 etc-pihole/
 backups/
 .imich/

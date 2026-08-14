@@ -16,13 +16,9 @@ Run `new_machine_setup.sh` then complete these manual steps:
 
 ---
 
-## HACS custom components
+## Home Assistant config
 
-`HOMEASSISTANT_CONFIG/custom_components/` holds Home Assistant integrations installed via [HACS](https://hacs.xyz/). These are third-party projects managed and updated by HACS at runtime, not part of this repo — install them through HACS rather than copying files, and see each project for its own license:
-
-- [spotcast](https://github.com/fondberg/spotcast) (Apache-2.0)
-- [ssh](https://github.com/zhbjsh/homeassistant-ssh) (MIT)
-- [tinxy](https://github.com/arevindh/ha-tinxy-cloud) (AGPL-3.0)
+`HOMEASSISTANT_CONFIG/` is gitignored, not part of this repo. It's covered end-to-end by Home Assistant's own automatic backup, synced to Dropbox by `cron/backup_homeassistant.sh` — tracking it in git would just duplicate that and drift out of sync (especially for `custom_components/`, which [HACS](https://hacs.xyz/) installs and updates at runtime: currently spotcast (Apache-2.0), ssh (MIT), tinxy (AGPL-3.0) — install these through HACS, not by copying files).
 
 ---
 
