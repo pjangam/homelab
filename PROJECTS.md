@@ -127,8 +127,12 @@ The viable path is different: a **standalone script** using the Anthropic SDK's 
 ### Move some load to the Raspberry Pi
 **Why:** the `wol-sender` Pi (see the WoL sender build under Power-outage watchdog, active) currently only sends a boot-time magic packet to `xero` - a trivially light job for a whole Pi, real spare capacity going unused.
 **State:** not started, purely an idea.
-**Constraint:** unlike the main server (on the RouterUPS), the Pi is on direct mains power with no battery backup, so it goes offline during any power outage. Only safe to migrate loads that can tolerate being unavailable during an outage - not anything outage-sensitive like the white-noise automation or the power watchdog itself. Alternative: give the Pi its own small UPS/battery hat if a candidate load turns out to need outage tolerance.
-**Next step:** none yet - identify which current services are stateless/non-critical enough to be good candidates before picking one to actually move.
+**Constraint:** unlike the main server (on the RouterUPS), the Pi is on direct mains power with no battery backup, so it goes offline during any power outage. Crucially, the LAN/router stays up during an outage (confirmed - the whole house doesn't lose network, just the Pi), so anything actively depended on over the network during an outage must NOT move here unless the Pi also gets battery backup - rules out Pi-hole (DNS), Mosquitto (MQTT - HA, watchdogs, white-noise automation all depend on it continuously), Caddy (remote-access entry point), and Home Assistant itself.
+**Candidates considered:**
+- **Vaultwarden** - Bitwarden clients keep a local encrypted vault cache, so an outage just pauses sync/new-entry creation rather than locking users out of existing passwords. Looks viable.
+- **Watchtower** - non-interactive image auto-updater, nobody notices if it's briefly offline. Looks viable.
+- **Samba** (phone-upload dump share) - low usage criticality (only touched when actively uploading), but likely not actually feasible: the ZFS pool/SSD it stores `datapool/phone-uploads` on lives on `xero`, not the Pi, so moving the container without moving the storage doesn't make sense - would need either a share back to `xero`'s ZFS (defeats the point of moving it) or real local storage on the Pi (SD card/USB, a downgrade from ZFS). Doubtful this one's worth pursuing.
+**Next step:** none yet - Vaultwarden and Watchtower are the more promising candidates to actually try; Samba's storage-location mismatch needs resolving first if pursued at all.
 
 ---
 
