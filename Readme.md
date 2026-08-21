@@ -1,3 +1,5 @@
+> See `PROJECTS.md` for the working list of active/parked/backlog projects and their current state.
+
 ## New Machine Setup
 
 Run `new_machine_setup.sh` then complete these manual steps:
