@@ -91,6 +91,25 @@ The viable path is different: a **standalone script** using the Anthropic SDK's 
 **State:** not checked yet.
 **Next step:** user to physically check the sticks (or pull exact specs via OS tooling) and report back exact capacity/type/speed, then evaluate whether replacing makes sense.
 
+### Home power audit - smart/network devices + major appliances
+**Why:** triggered by a tangent while discussing whether a new WiFi button (Shelly) would raise the electricity bill - user wants to know the actual continuous background draw of always-on smart/network gear versus the usage-driven draw of major appliances, to know where money is actually going.
+**State:** first pass done (2026-08-22), estimated from specs/datasheets (no plug meter available - see caveat below). Confirmed real hardware details for two of the "always-on" devices by querying them directly: `xero` is a Beelink mini PC, Celeron N5105 (10W TDP), 2x SSD (Kingston SA400 960GB + Biwin 128GB boot), no spinning disk; the wol-sender Pi is a **Raspberry Pi 3 Model B Rev 1.2** (not 4 or Zero as assumed) with a GPIO-wired fan as extra continuous load, and `vcgencmd get_throttled` shows a sticky historical under-voltage flag consistent with the known wall-mount power-cable issue tracked elsewhere (not current-state undervoltage).
+
+Estimated always-on draw (rounded, spec-based):
+| Device | Est. watts (continuous) | Basis |
+|---|---|---|
+| Airtel router | ~8W | general router range (5-20W), no exact model datasheet found |
+| TP-Link WiFi extender | ~4W | TP-Link range-extender models measured 3-4.8W |
+| xero (Beelink N5105, 2 SSD) | ~12W | N5105 mini PCs commonly idle 10-14W depending on PSU/RAM config |
+| wol-sender Pi 3B + fan | ~2.5W | Pi 3B measured idle ~1.2-2W; GPIO fan adds continuous draw on top |
+| Tinxy 4-node switch x2 (self-consumption only, not switched load) | ~2W each (~4W total) | no official datasheet number found; general WiFi relay module self-consumption is ~0.5-1.5W per relay, shared control board per unit |
+| **Total** | **~30W continuous** | → ~21.6 kWh/month → roughly ₹130-175/month at typical India residential rates (₹6-8/kWh) |
+
+Fridge is the only major appliance with a comparable continuous-ish profile (compressor duty-cycling): a typical double-door fridge averages ~60-90W day-long, a 5-star inverter model less (~30-50W) - likely **larger than the entire smart/network stack combined**, but wasn't measured here. Washing machine, dishwasher, and microwave standby draw is negligible (~1-3W each when idle); their real cost is almost entirely usage-frequency driven (cycles/week, not standby watts) and wasn't estimated - needs the user's actual usage pattern to be worth calculating.
+
+**Caveat:** all "always-on" numbers above are spec/datasheet estimates, not measured - could realistically be off ±30-40% per device without a real inline meter. Good enough to rank contributors and sanity-check "does this add to my bill" questions (context: prompted by the Shelly WiFi-button power question), not precise enough to reconcile against an actual bill.
+**Next step:** if precision matters, a cheap plug-in energy meter (or checking whether the Tinxy app/HA integration exposes real energy-monitoring data for whatever's wired behind the two Tinxy units) would replace the router/extender/xero/Pi estimates with real numbers cheaply. Fridge is the highest-value next target to actually measure, since it's likely the single biggest line item of everything in this audit.
+
 ---
 
 ## 🟡 Parked
