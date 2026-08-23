@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Runs gitleaks before every push to catch secrets in committed history.
+set -euo pipefail
+
+if ! command -v gitleaks &>/dev/null; then
+  echo "WARNING: gitleaks not found, skipping secret scan. Install it to enable this check."
+  exit 0
+fi
+
+echo "[pre-push] Running gitleaks..."
+gitleaks detect --source . --redact --exit-code 1

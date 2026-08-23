@@ -18,6 +18,17 @@ Run `new_machine_setup.sh` then complete these manual steps:
 
 ---
 
+## Git hooks (leak scanning)
+
+`new_machine_setup.sh` sets `git config core.hooksPath .githooks` so both hooks below are active on every clone - `.git/hooks/` itself is per-clone and untracked, so hooks placed there wouldn't survive a fresh `git clone`.
+
+- **`.githooks/pre-commit`** — scans staged changes for public IPs (private/loopback ranges and well-known DNS resolvers like `8.8.8.8` allowlisted), Tailscale `*.ts.net` hostnames, PII (phone numbers, emails outside a small allowlist), and PCI data (card numbers, Luhn-checked to cut noise). Runs at commit time so a leak never even lands in local history. Added 2026-08-23 - gitleaks (below) only catches credential-shaped secrets, not this class of leak.
+- **`.githooks/pre-push`** — runs [gitleaks](https://github.com/gitleaks/gitleaks) against the whole repo history to catch committed credentials/secrets before they reach the remote. Requires `gitleaks` on `PATH`; skips with a warning if it's not installed.
+
+Both print what they found and how to bypass a confirmed false positive: `git commit --no-verify` / `git push --no-verify`.
+
+---
+
 ## Home Assistant config
 
 `HOMEASSISTANT_CONFIG/` is gitignored, not part of this repo. It's covered end-to-end by Home Assistant's own automatic backup, synced to Dropbox by `cron/backup_homeassistant.sh` — tracking it in git would just duplicate that and drift out of sync (especially for `custom_components/`, which [HACS](https://hacs.xyz/) installs and updates at runtime: currently spotcast (Apache-2.0), ssh (MIT), tinxy (AGPL-3.0) — install these through HACS, not by copying files).

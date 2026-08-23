@@ -4,6 +4,13 @@ set -euo pipefail
 sudo apt install -y openssh-server
 sudo systemctl enable --now ssh
 
+# Point git at the repo's tracked hooks (.githooks/) instead of the
+# untracked, per-clone-only .git/hooks/ default - pre-commit scans staged
+# changes for PII/public-IP/Tailscale-hostname/card-number leaks, pre-push
+# runs gitleaks for credential leaks. Local git config, so this must be set
+# on every clone/machine.
+git config core.hooksPath .githooks
+
 sudo apt install -y net-tools copyq gnupg rclone fzf zsh thefuck gh
 
 # Extend unattended-upgrades (already running twice daily via

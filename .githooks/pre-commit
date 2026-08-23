@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# Scans staged changes for public IPs, Tailscale hostnames, PII (phone
+# numbers, unexpected emails), and PCI data (card numbers) before every
+# commit - the classes of leak gitleaks (pre-push, credentials/secrets
+# only) doesn't cover. Runs at commit time (earlier than push) so a leak
+# never even lands in local history.
+#
+# False positive? Confirm it's actually fine, then bypass for that one
+# commit: git commit --no-verify
+set -euo pipefail
+
+# Known-legitimate values already intentionally committed in this repo -
+# anything else matching the same pattern gets flagged.
+ALLOWED_EMAILS=(pjangam2015@gmail.com)
+ALLOWED_IPS=(1.1.1.1 8.8.8.8 8.8.4.4 1.0.0.1)          # well-known public DNS resolvers
+ALLOWED_HOSTS=(tailXXXXX.ts.net)                        # doc placeholder, not a real host
+
+contains() {
+  local needle="$1"; shift
+  local x
+  for x in "$@"; do [ "$x" = "$needle" ] && return 0; done
+  return 1
+}
+
+added_lines() {
+  git diff --cached -U0 --diff-filter=ACM -- . ':!.githooks/*' \
+    | grep -E '^\+' | grep -Ev '^\+\+\+' || true
+}
+
+lines="$(added_lines)"
+[ -z "$lines" ] && exit 0
+
+problems=()
+
+# --- Public IPv4 addresses (private/loopback/link-local ranges excluded) ---
+while IFS= read -r ip; do
+  [ -z "$ip" ] && continue
+  case "$ip" in
+    10.*|127.*|169.254.*|192.168.*) continue ;;
+    172.1[6-9].*|172.2[0-9].*|172.3[0-1].*) continue ;;
+  esac
+  contains "$ip" "${ALLOWED_IPS[@]}" && continue
+  problems+=("public-looking IP address: $ip")
+done < <(echo "$lines" | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' | sort -u)
+
+# --- Tailscale MagicDNS hostnames ---
+while IFS= read -r host; do
+  [ -z "$host" ] && continue
+  contains "$host" "${ALLOWED_HOSTS[@]}" && continue
+  problems+=("Tailscale hostname: $host")
+done < <(echo "$lines" | grep -oE '[a-zA-Z0-9-]+\.tail[a-zA-Z0-9]*\.ts\.net' | sort -u)
+
+# --- Email addresses not on the allowlist ---
+while IFS= read -r email; do
+  [ -z "$email" ] && continue
+  contains "$email" "${ALLOWED_EMAILS[@]}" && continue
+  problems+=("unexpected email address: $email")
+done < <(echo "$lines" | grep -oE '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' | sort -u)
+
+# --- Phone numbers: international (+countrycode) or dash-grouped formats ---
+while IFS= read -r phone; do
+  [ -z "$phone" ] && continue
+  problems+=("phone-number-looking string: $phone")
+done < <(echo "$lines" | grep -oE '\+[0-9]{7,15}\b|\b[0-9]{3,4}-[0-9]{3,4}-[0-9]{3,4}\b' | sort -u)
+
+# --- Card numbers (PCI): 13-19 digit candidates, Luhn-checked to cut noise ---
+luhn_valid() {
+  local digits="$1" sum=0 alt=0 i n rev
+  rev=$(printf '%s' "$digits" | rev)
+  for (( i=0; i<${#rev}; i++ )); do
+    n=${rev:$i:1}
+    if (( alt )); then
+      n=$(( n * 2 ))
+      (( n > 9 )) && n=$(( n - 9 ))
+    fi
+    sum=$(( sum + n ))
+    alt=$(( 1 - alt ))
+  done
+  (( sum % 10 == 0 ))
+}
+while IFS= read -r candidate; do
+  [ -z "$candidate" ] && continue
+  digits="${candidate//[- ]/}"
+  [ ${#digits} -lt 13 ] || [ ${#digits} -gt 19 ] && continue
+  if luhn_valid "$digits"; then
+    problems+=("card-number-looking string (passes Luhn check): $candidate")
+  fi
+done < <(echo "$lines" | grep -oE '\b[0-9]{4}[- ]?[0-9]{4}[- ]?[0-9]{4}[- ]?[0-9]{1,7}\b' | sort -u)
+
+if [ ${#problems[@]} -gt 0 ]; then
+  echo "[pre-commit] Possible sensitive data in staged changes:"
+  printf '  - %s\n' "${problems[@]}"
+  echo
+  echo "If these are false positives, commit with: git commit --no-verify"
+  exit 1
+fi
