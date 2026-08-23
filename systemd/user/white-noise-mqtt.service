@@ -4,6 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+EnvironmentFile=/home/pramod/code/homelab/.env.mqtt
 ExecStart=%h/.local/bin/uv run --script /home/pramod/code/homelab/scripts/white-noise-mqtt.py
 Restart=on-failure
 RestartSec=3

@@ -137,28 +137,14 @@ services:
     ports:
       - "1883:1883"
     volumes:
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mosquitto:/mosquitto/config
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
-    networks:
-      - node-red-net
     restart: unless-stopped
 
-  node-red:
-    image: nodered/node-red:latest
-    environment:
-      - TZ=Asia/Kolkata
-    ports:
-      - "1880:1880"
-    networks:
-      - node-red-net
-    volumes:
-      - node-red-data:/data
-    depends_on:
-      - mosquitto
-    restart: unless-stopped
-    # Wait for DNS to resolve Miraie's auth endpoint before starting — prevents failed init on power-cut recovery
-    entrypoint: sh -c "until nslookup auth.miraie.in > /dev/null 2>&1; do echo 'waiting for DNS...'; sleep 5; done && npm install --prefix /data && node-red --userDir /data"
+  # node-red moved to the Pi (wol-sender, 192.168.1.124) - see PROJECTS.md
+  # "Move some load to the Raspberry Pi". Mosquitto stays here; the Pi's
+  # Node-RED reaches it over the LAN via the published 1883 port above.
 
   caddy:
     image: caddy:latest
@@ -217,11 +203,10 @@ services:
 
 volumes:
   # model-cache:  # immich-machine-learning — disabled
-  node-red-data:
+  # node-red-data: no longer declared here (node-red moved to the Pi) - the
+  # actual volume (homelab_node-red-data) is left in place on disk as a
+  # rollback net; not deleted yet.
   mosquitto-data:
   mosquitto-log:
   caddy_data:
   caddy_config:
-
-networks:
-  node-red-net:

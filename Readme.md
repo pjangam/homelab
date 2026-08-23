@@ -26,20 +26,18 @@ Run `new_machine_setup.sh` then complete these manual steps:
 
 ## Miraie AC (Node-RED + MQTT)
 
-Mosquitto and the `node-red-contrib-ha-miraie-ac` node are set up automatically. Manual steps after first run:
+Mosquitto runs on `xero`; Node-RED itself runs on the Pi (`wol-sender`, `192.168.1.124`) - moved there 2026-08-22, see `PROJECTS.md` "Move some load to the Raspberry Pi". The `node-red-contrib-ha-miraie-ac` node is set up automatically. Manual steps after first run:
 
-1. Open Node-RED at `http://192.168.1.123:1880`
+1. Open Node-RED at `http://192.168.1.124:1880` - the editor now requires login (`adminAuth` in `settings.js`, enabled 2026-08-22 since it's reachable over Wi-Fi rather than only from xero itself; previously had no auth at all). Username `pramod`; the password should be saved in Vaultwarden as "Node-RED admin" (check there first - if missing, it was generated during the 2026-08-22 migration and needs resetting via `node-red admin hash-pw` + editing `settings.js`'s `adminAuth` block on the Pi).
 2. Find the `ha-miraie-ac` node in the palette (left sidebar), drag it into a flow
 3. Double-click the node and configure:
    - **Mobile number** — Miraie registered phone number
    - **Password** — Miraie app password
-   - **MQTT broker** — host `mosquitto`, port `1883` (no username/password)
-4. Click Deploy (top right) — node status should show "HA broker connected" and "MirAIe broker connected"
-5. In Home Assistant: Settings → Integrations → Add Integration → MQTT → host `192.168.1.123`, port `1883`, no credentials
+   - **MQTT broker** — host `192.168.1.123` (xero's LAN IP - Node-RED isn't on the same Docker network as Mosquitto anymore, so the `mosquitto` container hostname won't resolve), port `1883`, username `homelab` + password (Mosquitto requires auth as of the 2026-08-23 security pass — see Vaultwarden "Mosquitto MQTT")
+4. Click Deploy (top right) — node status should show "HA broker connected" and "MirAIe broker connected". If credentials were entered via the node's config panel, they must land nested under the node's "credentials" store, not as flat fields - if the broker doesn't connect after Deploy, a full container restart (`docker restart node-red`), not just a redeploy, may be needed to pick them up.
+5. In Home Assistant: Settings → Integrations → Add Integration → MQTT → host `192.168.1.123`, port `1883`, username `homelab` + password
 6. AC appears under Settings → Devices & Services → MQTT as "PANASONIC AC"
 7. If entity shows "Unavailable", turn the AC on/off physically to trigger a state update
-
-> Mosquitto has no authentication (`allow_anonymous true`). Fine for homelab, can add credentials later.
 
 > **TODO (deferred): Full automation approach**
 > 1. Store Miraie credentials in Bitwarden
@@ -47,6 +45,30 @@ Mosquitto and the `node-red-contrib-ha-miraie-ac` node are set up automatically.
 > 3. Export working Node-RED flow as `nodered-flows.json` in repo, inject credentials and POST to Node-RED API
 > 4. Set up HA MQTT integration via HA REST API using a long-lived token (no Selenium needed)
 > 5. Only manual step: generate the HA long-lived token once
+
+### Node-RED Watchdog (MQTT bridge health)
+
+**Why:** the `ha-miraie-ac` node can end up in a stale connection loop - confirmed once (2026-08-23), where credentials were correctly stored but the live MQTT connection to Mosquitto kept silently failing until a full container restart, not just a flow redeploy. `watchdog_nodered.sh` (on the Pi) checks the container's actual TCP state and restarts it if the bridge isn't connected.
+
+**How it works:**
+1. Every 10 minutes (cron, on the Pi), the script checks `/proc/net/tcp` inside the `node-red` container for two ESTABLISHED connections: one to MirAIe's cloud MQTT broker (port 8883) and one to Mosquitto on xero (port 1883).
+2. If either is missing, it runs `docker restart node-red`.
+3. Deliberately does **not** wait for AC state/availability MQTT messages (the original design) - Node-RED only publishes those once per reconnect (not retained by the node's own code), so nothing arrives while the AC is powered off, which is most of the year outside summer. That caused a false restart on every single run regardless of actual bridge health.
+4. All actions logged via `logger -t nodered-watchdog` (`journalctl -t nodered-watchdog`) and to `nodered-watchdog.log` on the Pi.
+
+**Currently disabled** (2026-08-23) - the AC is off for the season, so there's nothing for this watchdog to protect against; it's fully skipped rather than left running against a bridge nobody needs connected right now.
+
+**Disable / re-enable** (no need to touch cron; edit on the Pi): the toggle lives in `WATCHDOG_ENABLED` inside `/home/pramod/nodered-watchdog.env`, next to the script itself - a plain env file rather than a hidden dotfile, so it's easier to stumble on again next summer.
+```bash
+# on the Pi: edit /home/pramod/nodered-watchdog.env
+WATCHDOG_ENABLED=false   # disable (e.g. AC off for the season)
+WATCHDOG_ENABLED=true    # re-enable (e.g. before summer AC season)
+```
+
+**Cron entry** (`crontab -e` on the Pi):
+```
+*/10 * * * * /home/pramod/watchdog_nodered.sh >> /home/pramod/nodered-watchdog.log 2>&1
+```
 
 ---
 

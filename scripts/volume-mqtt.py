@@ -4,6 +4,7 @@
 # ///
 """MQTT bridge exposing the amixer Master volume as a Home Assistant number entity."""
 import json
+import os
 import re
 import subprocess
 import time
@@ -75,6 +76,7 @@ def on_message(client, userdata, msg):
 
 def main():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="volume-bridge")
+    client.username_pw_set(os.environ["MQTT_USERNAME"], os.environ["MQTT_PASSWORD"])
     client.will_set(AVAILABILITY_TOPIC, "offline", retain=True)
     client.on_connect = on_connect
     client.on_message = on_message

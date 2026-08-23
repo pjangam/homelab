@@ -11,10 +11,12 @@ postgres/
 .env
 .env.backup
 .env.healthcheck
+.env.mqtt
 .healthcheck_state
 *.log
 *.swp
 mosquitto/log/
+mosquitto/passwd
 client_secret*.json
 command.txt
 __pycache__/

@@ -10,6 +10,7 @@ long-lived daemon like white-noise-mqtt.py.
 """
 import datetime
 import json
+import os
 import sys
 import time
 
@@ -87,6 +88,7 @@ def main():
     data = json.load(sys.stdin)
 
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="homelab-healthcheck-publisher")
+    client.username_pw_set(os.environ["MQTT_USERNAME"], os.environ["MQTT_PASSWORD"])
     client.connect(BROKER, PORT, keepalive=10)
     client.loop_start()
 

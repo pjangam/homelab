@@ -8,6 +8,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 set -a
 source "$SCRIPT_DIR/.env.healthcheck"
+source "$SCRIPT_DIR/.env.mqtt"
 set +a
 
 # cron runs with no XDG_RUNTIME_DIR, so `systemctl --user` fails with

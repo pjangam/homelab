@@ -80,6 +80,7 @@ def on_message(client, userdata, msg):
 
 def main():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="white-noise-bridge")
+    client.username_pw_set(os.environ["MQTT_USERNAME"], os.environ["MQTT_PASSWORD"])
     client.will_set(AVAILABILITY_TOPIC, "offline", retain=True)
     client.on_connect = on_connect
     client.on_message = on_message
