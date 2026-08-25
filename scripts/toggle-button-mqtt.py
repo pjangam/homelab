@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# dependencies = ["paho-mqtt", "gpiozero", "RPi.GPIO"]
+# dependencies = ["paho-mqtt", "gpiozero", "rpi-lgpio"]
 # ///
 """MQTT bridge for a physical toggle switch wired to a Pi GPIO pin.
 

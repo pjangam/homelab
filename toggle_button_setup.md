@@ -34,14 +34,36 @@ ESP32/xero since the button sits right next to an existing host).
 
    [Service]
    User=pramod
+   WorkingDirectory=/home/pramod
    EnvironmentFile=/home/pramod/toggle-button-mqtt.env
-   ExecStart=/home/pramod/toggle-button-mqtt.py
+   Environment=GPIOZERO_PIN_FACTORY=lgpio
+   ExecStart=/home/pramod/.local/bin/uv run /home/pramod/toggle-button-mqtt.py
    Restart=always
    RestartSec=5
 
    [Install]
    WantedBy=multi-user.target
    ```
+   Notes:
+   - `ExecStart` calls `uv` by its full path rather than relying on the
+     script's `#!/usr/bin/env -S uv run --script` shebang - systemd's default
+     `PATH` doesn't include `~/.local/bin`, so a bare `ExecStart=/home/pramod/toggle-button-mqtt.py`
+     fails with "No such file or directory" even though the same script runs
+     fine over an interactive SSH session.
+   - `WorkingDirectory=/home/pramod` is required. The `lgpio` Python library
+     creates a notification file (`.lgd-nfy-N`) in the process's *current
+     working directory* at import time. systemd's default cwd (when
+     unset) is `/`, which `pramod` can't write to - this makes gpiozero's
+     `lgpio` pin factory fail to import, and it silently falls back to the
+     broken legacy `native`/sysfs backend instead of raising a clear error
+     (looks like the original `RPi.GPIO` edge-detection failure again, but
+     isn't). Setting `Environment=GPIOZERO_PIN_FACTORY=lgpio` is what makes
+     the real error surface instead of a silent fallback - worth keeping in
+     the unit even now, so any future failure is loud rather than silent.
+   - `~/toggle-button-mqtt.env` is created via `scripts/setup_toggle_button_env.sh`
+     (prompts for the MQTT password interactively, avoids pasting a heredoc
+     with a secret over SSH).
+
    Then:
    ```
    sudo systemctl daemon-reload
@@ -53,12 +75,16 @@ ESP32/xero since the button sits right next to an existing host).
    OFF should each trigger (e.g. white noise on/off, or a scene) and build it
    as a normal HA automation.
 
-## Known risk
+## Known risk (resolved)
 
-`RPi.GPIO` (a script dependency) needs to compile against the Pi's GPIO
-headers when `uv` builds its isolated venv. Should work out of the box on Pi
-OS, but if `uv run` fails on that dependency, switch the pin factory to
-`lgpio` instead.
+`RPi.GPIO` doesn't work on newer Pi OS kernels (`gpiochip` character-device
+interface instead of legacy sysfs) - fails with `RuntimeError: Failed to add
+edge detection`. Fixed by switching the script's dependency to `rpi-lgpio`
+(drop-in replacement, same `RPi.GPIO` import namespace). Building it from
+source on first `uv run` needs two system packages not present by default:
+```
+sudo apt-get install -y swig python3-dev build-essential liblgpio-dev
+```
 
 ## After this works
 
