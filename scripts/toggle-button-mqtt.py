@@ -15,7 +15,6 @@ each) to decide what each position should trigger.
 """
 import json
 import os
-import time
 
 import paho.mqtt.client as mqtt
 from gpiozero import Button
@@ -63,19 +62,8 @@ def main():
     button.when_pressed = lambda: publish_state(client)
     button.when_released = lambda: publish_state(client)
 
-    while True:
-        try:
-            client.connect(BROKER, PORT, keepalive=30)
-        except OSError:
-            time.sleep(5)
-            continue
-        client.loop_start()
-        try:
-            while client.is_connected():
-                time.sleep(15)
-        finally:
-            client.loop_stop()
-        time.sleep(5)
+    client.connect_async(BROKER, PORT, keepalive=30)
+    client.loop_forever()
 
 
 if __name__ == "__main__":
