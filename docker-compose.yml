@@ -208,7 +208,7 @@ services:
     container_name: projects-ui
     restart: unless-stopped
     ports:
-      - "8090:80"  # access at http://<LAN-IP>:8090
+      - "8125:80"  # access at http://<LAN-IP>:8125
     volumes:
       - ./PROJECTS.md:/usr/share/nginx/html/PROJECTS.md:ro
 
