@@ -19,6 +19,7 @@ mosquitto/log/
 mosquitto/passwd
 client_secret*.json
 hardware.md
+security_findings*.md
 command.txt
 __pycache__/
 esp32/wol_on_boot/src/secrets.h
