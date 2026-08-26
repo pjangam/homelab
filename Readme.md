@@ -141,6 +141,21 @@ sudo loginctl enable-linger pramod
 
 ---
 
+## Physical GPIO Buttons (wol-sender Pi)
+
+**Why:** the rest of the household and house help don't want to use the HA app or voice control - physical buttons wired to the wol-sender Pi's GPIO give a simple, no-app way to trigger specific things. See `PROJECTS.md` ("Easier HA control for household + house help") for the full research/decision history.
+
+1. **Toggle switch → white noise** (`scripts/toggle-button-mqtt.py`, `toggle-button-mqtt.service` on the Pi) — a physical toggle switch (GPIO17/pin 11 ↔ GND/pin 9) publishes its ON/OFF position as `binary_sensor.toggle_switch_1` via MQTT discovery. Two HA automations (`toggle1_white_noise_on`/`_off` in `automations.yaml`) call `switch.turn_on`/`turn_off` on `switch.white_noise` — edge-triggered on the switch's own transitions only, so scene/dashboard control of white noise isn't overridden by the switch's resting position. Setup details: `toggle_button_setup.md`.
+2. **Push buttons → oju sleep/awake scenes** (`scripts/scene-buttons-mqtt.py`, `scene-buttons-mqtt.service` on the Pi) — two momentary push buttons (GPIO27/pin 13 and GPIO22/pin 15, both ↔ GND/pin 14) each publish a plain non-retained MQTT message on press; two HA automations (`scene_button_oju_sleep`/`_awake`) call `scene.turn_on` directly. Deliberately no persisted state/entity here (unlike the toggle switch) — a momentary trigger doesn't need one, and it sidesteps a real bug class hit with the toggle switch (see below). Setup details: `scene_buttons_setup.md`.
+
+**GPIO pinout reference:** `gpio_pinout.md` — the Pi's full 40-pin header layout, marked up with what's already wired and which pins are free for the next button.
+
+**Reconnect-loop bug (2026-08-25):** `toggle-button-mqtt.py`'s original manual MQTT reconnect loop was racy — checking `client.is_connected()` right after `loop_start()` could read `False` before the CONNACK was processed, tearing the connection down and reconnecting on a ~5s cycle indefinitely. Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire its HA automation every 5 seconds — overriding manual scene/dashboard control of white noise regardless of the physical switch's actual position. Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). `scene-buttons-mqtt.py` was written to avoid the whole bug class by design — no retained state to republish in the first place.
+
+Both bridge scripts need MQTT credentials for the `homelab` Mosquitto user (`~/toggle-button-mqtt.env` on the Pi, shared between both services) and `WorkingDirectory=/home/pramod` + `Environment=GPIOZERO_PIN_FACTORY=lgpio` in their systemd units — see `toggle_button_setup.md` for why those two matter on this hardware/kernel combination.
+
+---
+
 ## Tinxy Watchdog (ISP-outage auto-restart)
 
 **Why:** a flood damaged nearby ISP infra, causing frequent connectivity drops. Tinxy is cloud-push (MQTT to `mqtt.tinxy.in`), so every ISP blip makes all Tinxy devices show "unavailable" in HA until the MQTT client reconnects on its own. `watchdog_tinxy.sh` restarts the `homeassistant` container only if that reconnect doesn't happen — it's a bandage for the ISP issue, meant to be disabled once it's resolved.
