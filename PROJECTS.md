@@ -40,11 +40,6 @@ User is leaning toward (D) despite the safety stakes, with real safety practices
 **State:** **confirmed expandable (2026-08-21)** - opened the case. RAM is a removable SO-DIMM: 8GB DDR4 2666MHz. Also noted while inside: the boot SSD is a Biwin NP202 128GB.
 **Next step:** RAM being genuinely upgradeable reopens the cheaper-path option - price a second/replacement DDR4 2666MHz SO-DIMM (check whether the second slot is free for a straight add, or occupied meaning it'd need a swap to a larger single stick) and re-evaluate the Immich parking decision against that cost instead of waiting out the chip-price spike for a whole new machine. Separately, 128GB is small for a boot drive running 7+ containers - worth keeping an eye on free space, though not urgent unless it becomes one.
 
-### Clean dust with a blower
-**Why:** general preventive maintenance - dust buildup increases fan speed/noise and raises operating temperature over time. Already a sensitive area for this machine specifically: the N5105 CPU idles at ~65°C and spikes under load (per Readme's machine-specific config notes), so dust accumulation compounds an already-tight thermal margin.
-**State:** done (2026-08-21), during the same case-open as the RAM check above - fan didn't actually have much dust buildup, but cleaned out whatever was there anyway.
-**Next step:** none - done. Revisit opportunistically during a future case-open rather than as its own task.
-
 ### Power-outage watchdog - real UPS runtime measured, threshold updated, armed
 **Why:** this server runs on its own RouterUPS battery, separate from the router's UPS. An uncontrolled crash when the battery dies is the likely cause of the ZFS corruption found in `datapool` (see below) - a clean shutdown before that happens avoids torn writes entirely.
 **State:** `watchdog_power.sh` built and cron-wired (every 5 min), detects `enp1s0` losing carrier (proxy for "on battery," via the existing WiFi-failover extender). Defaults to dry-run (logs only, never shuts down) until armed via `touch ~/.power-watchdog-armed` - **armed** (see confirmation below).
@@ -73,7 +68,10 @@ Root cause not fully diagnosed (unclear whether it's the first-boot resize servi
 
 **IP pinned to static (2026-08-21):** the Pi had been reachable at `192.168.1.103` (its DHCP-assigned address) throughout everything above, but a lease renewal silently reassigned it to `.105` - a real risk once Node-RED depends on this Pi being reachable at a known address (see "Move some load to the Raspberry Pi" below). Rather than reuse `.103` - low DHCP addresses are more likely to get leased to some other device later and collide - pinned it static at **`192.168.1.124`** (next to xero's own `.123`) via `scripts/set_wol_sender_static_ip.sh` (nmcli, run interactively for the sudo password). Confirmed holding at `.124` with no `dynamic` flag on the interface. All mentions of `192.168.1.103` above are historical (accurate as of when each test ran) - the Pi's current address is `192.168.1.124`.
 
-**Remaining/ongoing:** (1) the overlay filesystem is back to **not enabled** (reverted) - if revisited, needs the actual boot-hang cause root-caused first, not just re-applied blindly, given it matters more than usual here since this device's whole job is repeatedly losing power abruptly. (2) **Pi power instability recurring, appears tied to its wall-mount location/cable specifically (2026-08-21).** After the successful test, the Pi's red PWR LED started flickering again once it was put back on its wall mount - the same undervoltage symptom as the original boot-hang investigation, but this time it resolved during bench testing with an 18W GaN charger + fresh cable, then came back once reinstalled at the wall mount. Points at the wall-mount's specific power cable (not the Pi, not the adapter itself) as the actual culprit. Also noted: a fan wired directly to the Pi's 5V GPIO pin is a continuous load on top of everything else, a plausible contributing factor. **Next step:** replace the cable used at the wall-mount location specifically (not just the adapter tested on the bench).
+**Remaining/ongoing:**
+
+1. The overlay filesystem is back to **not enabled** (reverted) - if revisited, needs the actual boot-hang cause root-caused first, not just re-applied blindly, given it matters more than usual here since this device's whole job is repeatedly losing power abruptly.
+2. **Pi power instability recurring, appears tied to its wall-mount location/cable specifically (2026-08-21).** After the successful test, the Pi's red PWR LED started flickering again once it was put back on its wall mount - the same undervoltage symptom as the original boot-hang investigation, but this time it resolved during bench testing with an 18W GaN charger + fresh cable, then came back once reinstalled at the wall mount. Points at the wall-mount's specific power cable (not the Pi, not the adapter itself) as the actual culprit. Also noted: a fan wired directly to the Pi's 5V GPIO pin is a continuous load on top of everything else, a plausible contributing factor. **Next step:** replace the cable used at the wall-mount location specifically (not just the adapter tested on the bench).
 
 ### Local Qwen (Ollama) delegation experiment
 **Why:** wanted to test routing trivial subagent tasks to a locally-hosted model (Qwen via Ollama) instead of Anthropic's cloud models, to see if cost/latency can be saved on simple work while keeping a cloud Claude model for anything nontrivial. Manual/semi-automatic invocation is an explicitly acceptable bar for a first pass, full auto-detection would be a bonus.
@@ -204,6 +202,9 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 ---
 
 ## ✅ Done
+
+### Clean dust with a blower
+General preventive maintenance - dust buildup increases fan speed/noise and raises operating temperature over time, and this N5105 CPU already runs a tight thermal margin (idles ~65°C). Done (2026-08-21), during the same case-open as the RAM check above (see 🟢 Active) - fan didn't actually have much dust buildup, but cleaned out whatever was there anyway. Revisit opportunistically during a future case-open rather than as its own task.
 
 ### UI to visualize PROJECTS.md
 **Why:** this file is a flat markdown doc with a growing wall of text per project - a visual/interactive view could make it easier to scan state at a glance than scrolling raw markdown. Ruled out publishing it publicly (GitHub Pages / `pjangam.github.io`) since the file contains private LAN IPs, a MAC address, and family members' names - kept LAN-only instead, same exposure pattern as Pi-hole/Node-RED.
