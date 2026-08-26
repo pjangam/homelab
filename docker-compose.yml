@@ -210,7 +210,10 @@ services:
     ports:
       - "8125:80"  # access at http://<LAN-IP>:8125
     volumes:
-      - ./PROJECTS.md:/usr/share/nginx/html/PROJECTS.md:ro
+      # Whole repo root, read-only - nginx.conf only actually serves
+      # /PROJECTS.md from it (see projects-ui/nginx.conf for why this is a
+      # directory mount rather than a single-file one).
+      - .:/data:ro
 
   samba:
     image: dperson/samba
