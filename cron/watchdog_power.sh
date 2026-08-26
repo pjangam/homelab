@@ -34,7 +34,16 @@ ARM_FLAG="$HOME/.power-watchdog-armed"
 IFACE="enp1s0"
 STATE_DIR="$HOME/.cache/power-watchdog"
 DOWN_SINCE_FILE="$STATE_DIR/down-since"
+LAST_MILESTONE_FILE="$STATE_DIR/last-logged-milestone-min"
+THRESHOLD_CROSSED_FILE="$STATE_DIR/threshold-crossed"
 DOWN_THRESHOLD_MIN=200
+# How often to re-log while still down and below threshold, so a long
+# outage doesn't spam a near-duplicate line every 5-minute cron tick (a
+# real 288min test outage produced 48+ near-identical "waiting" lines,
+# burying the two moments that actually matter: carrier lost/restored and
+# the threshold being crossed). Those two moments are still logged
+# immediately, every time, regardless of this interval.
+MILESTONE_INTERVAL_MIN=30
 LOG_TAG="power-watchdog"
 
 if [ -f "$DISABLE_FLAG" ]; then
@@ -49,13 +58,14 @@ if [ "$carrier" = "1" ]; then
   if [ -f "$DOWN_SINCE_FILE" ]; then
     logger -t "$LOG_TAG" "$IFACE carrier restored - clearing watch"
   fi
-  rm -f "$DOWN_SINCE_FILE"
+  rm -f "$DOWN_SINCE_FILE" "$LAST_MILESTONE_FILE" "$THRESHOLD_CROSSED_FILE"
   exit 0
 fi
 
 # Currently no carrier. Start (or continue) the clock.
 if [ ! -f "$DOWN_SINCE_FILE" ]; then
   date +%s > "$DOWN_SINCE_FILE"
+  rm -f "$LAST_MILESTONE_FILE" "$THRESHOLD_CROSSED_FILE"
   logger -t "$LOG_TAG" "$IFACE lost carrier - likely on UPS battery, starting watch"
   exit 0
 fi
@@ -64,13 +74,32 @@ down_since=$(cat "$DOWN_SINCE_FILE")
 now=$(date +%s)
 elapsed_min=$(( (now - down_since) / 60 ))
 
+last_milestone=0
+if [ -f "$LAST_MILESTONE_FILE" ]; then
+  last_milestone=$(cat "$LAST_MILESTONE_FILE")
+fi
+at_milestone=0
+if [ "$elapsed_min" -ge $(( last_milestone + MILESTONE_INTERVAL_MIN )) ]; then
+  at_milestone=1
+fi
+
 if [ "$elapsed_min" -ge "$DOWN_THRESHOLD_MIN" ]; then
   if [ -f "$ARM_FLAG" ]; then
     logger -t "$LOG_TAG" "$IFACE down for ${elapsed_min}m (>=${DOWN_THRESHOLD_MIN}m) - shutting down cleanly to avoid a hard power-loss crash"
     sudo /usr/sbin/shutdown -h now
   else
-    logger -t "$LOG_TAG" "[DRY RUN] $IFACE down for ${elapsed_min}m (>=${DOWN_THRESHOLD_MIN}m) - would shut down now (touch ~/.power-watchdog-armed to arm)"
+    # First crossing logs immediately regardless of the milestone interval -
+    # this is the critical "would shut down now" moment. Repeats after that
+    # are throttled to the same milestone cadence as the waiting branch.
+    if [ ! -f "$THRESHOLD_CROSSED_FILE" ] || [ "$at_milestone" = 1 ]; then
+      logger -t "$LOG_TAG" "[DRY RUN] $IFACE down for ${elapsed_min}m (>=${DOWN_THRESHOLD_MIN}m) - would shut down now (touch ~/.power-watchdog-armed to arm)"
+      touch "$THRESHOLD_CROSSED_FILE"
+      echo "$elapsed_min" > "$LAST_MILESTONE_FILE"
+    fi
   fi
 else
-  logger -t "$LOG_TAG" "$IFACE down for ${elapsed_min}m (threshold ${DOWN_THRESHOLD_MIN}m) - waiting"
+  if [ "$at_milestone" = 1 ]; then
+    logger -t "$LOG_TAG" "$IFACE down for ${elapsed_min}m (threshold ${DOWN_THRESHOLD_MIN}m) - waiting"
+    echo "$elapsed_min" > "$LAST_MILESTONE_FILE"
+  fi
 fi
