@@ -199,6 +199,19 @@ services:
         max-file: "3"
     restart: unless-stopped
 
+  # Read-only dashboard view of PROJECTS.md - React app built at image-build
+  # time, PROJECTS.md itself mounted read-only so edits show up on refresh
+  # without rebuilding the image. LAN-only, same pattern as pihole/vaultwarden.
+  projects-ui:
+    build:
+      context: ./projects-ui
+    container_name: projects-ui
+    restart: unless-stopped
+    ports:
+      - "8090:80"  # access at http://<LAN-IP>:8090
+    volumes:
+      - ./PROJECTS.md:/usr/share/nginx/html/PROJECTS.md:ro
+
   samba:
     image: dperson/samba
     container_name: samba
