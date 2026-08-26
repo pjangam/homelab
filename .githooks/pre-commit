@@ -38,6 +38,8 @@ while IFS= read -r ip; do
   case "$ip" in
     10.*|127.*|169.254.*|192.168.*) continue ;;
     172.1[6-9].*|172.2[0-9].*|172.3[0-1].*) continue ;;
+    # Tailscale's CGNAT range (RFC 6598 shared address space), not publicly routable
+    100.6[4-9].*|100.[7-9][0-9].*|100.1[01][0-9].*|100.12[0-7].*) continue ;;
   esac
   contains "$ip" "${ALLOWED_IPS[@]}" && continue
   problems+=("public-looking IP address: $ip")

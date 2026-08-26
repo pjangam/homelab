@@ -131,6 +131,27 @@ services:
     privileged: true
     network_mode: host
 
+  # Gives HA its own clean Tailscale hostname/cert (ha.${TAILNET_SUFFIX})
+  # without touching Caddy (which still only serves Vaultwarden). Runs in
+  # userspace networking mode - xero already runs its own native tailscaled
+  # via systemd, so this can't use network_mode: host (would conflict).
+  # HA itself is unmoved (network_mode: host, 192.168.1.123:8123); this
+  # sidecar reaches it over the LAN, same as any other client would.
+  ha-tailscale:
+    image: tailscale/tailscale:latest
+    container_name: ha-tailscale
+    hostname: ha
+    restart: unless-stopped
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY_HA}
+      TS_HOSTNAME: ha
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/serve-config.json
+    volumes:
+      - ha-tailscale-state:/var/lib/tailscale
+      - ./ts-ha-config:/config
+
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
@@ -210,3 +231,4 @@ volumes:
   mosquitto-log:
   caddy_data:
   caddy_config:
+  ha-tailscale-state:
