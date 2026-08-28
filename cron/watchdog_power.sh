@@ -29,6 +29,12 @@
 # Run via cron every 5 minutes.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+set -a
+source "$SCRIPT_DIR/.env.healthcheck"
+set +a
+source "$SCRIPT_DIR/scripts/send_email.sh"
+
 DISABLE_FLAG="$HOME/.power-watchdog-disabled"
 ARM_FLAG="$HOME/.power-watchdog-armed"
 IFACE="enp1s0"
@@ -57,6 +63,7 @@ carrier=$(cat "/sys/class/net/$IFACE/carrier" 2>/dev/null || echo "1")
 if [ "$carrier" = "1" ]; then
   if [ -f "$DOWN_SINCE_FILE" ]; then
     logger -t "$LOG_TAG" "$IFACE carrier restored - clearing watch"
+    send_email "[homelab] $IFACE carrier restored" "$IFACE carrier restored at $(date). Power watchdog watch cleared." || true
   fi
   rm -f "$DOWN_SINCE_FILE" "$LAST_MILESTONE_FILE" "$THRESHOLD_CROSSED_FILE"
   exit 0
@@ -67,6 +74,7 @@ if [ ! -f "$DOWN_SINCE_FILE" ]; then
   date +%s > "$DOWN_SINCE_FILE"
   rm -f "$LAST_MILESTONE_FILE" "$THRESHOLD_CROSSED_FILE"
   logger -t "$LOG_TAG" "$IFACE lost carrier - likely on UPS battery, starting watch"
+  send_email "[homelab] $IFACE lost carrier" "$IFACE lost carrier at $(date). Likely on UPS battery - power watchdog is now watching (shuts down cleanly after ${DOWN_THRESHOLD_MIN}m if armed)." || true
   exit 0
 fi
 

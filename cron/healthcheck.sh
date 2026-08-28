@@ -128,6 +128,23 @@ if [ "$spotifyd_restarts_24h" -ge "$SPOTIFYD_RESTART_THRESHOLD" ]; then
   problems+=("spotifyd watchdog restarted it $spotifyd_restarts_24h times in the last 24h (threshold $SPOTIFYD_RESTART_THRESHOLD) - investigate")
 fi
 
+# Power watchdog (watchdog_power.sh): surfaces whether enp1s0 is currently
+# down (proxy for "on UPS battery") on the dashboard, not just in
+# power-watchdog.log/journalctl. Dashboard-only signal, not added to
+# problems[] - a carrier-loss email already fires directly from
+# watchdog_power.sh (see cron/watchdog_power.sh) so this wouldn't add
+# anything except a duplicate alert.
+POWER_STATE_DIR="$HOME/.cache/power-watchdog"
+POWER_DOWN_SINCE_FILE="$POWER_STATE_DIR/down-since"
+
+power_on_battery=false
+power_down_minutes=""
+if [ -f "$POWER_DOWN_SINCE_FILE" ]; then
+  power_on_battery=true
+  power_down_since=$(cat "$POWER_DOWN_SINCE_FILE")
+  power_down_minutes=$(( ($(date +%s) - power_down_since) / 60 ))
+fi
+
 # Heartbeat: proves this script ran to completion, regardless of what it
 # found. If the machine hard-locks (e.g. the ZFS+postgres freeze from
 # 2026-06-29) and cron itself stops running, this ping goes silent and
@@ -171,6 +188,8 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
     --argjson spotifyd_problem "$spotifyd_problem_bool" \
     --argjson spotifyd_stuck_now "$spotifyd_stuck_now" \
     --arg spotifyd_restarts_24h "$spotifyd_restarts_24h" \
+    --argjson power_on_battery "$power_on_battery" \
+    --arg power_down_minutes "${power_down_minutes:-}" \
     '{
       docker_problem: $docker_problem,
       docker_bad: $docker_bad,
@@ -186,30 +205,13 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
       backup_ha_age_hours: (if $backup_ha_age == "" then null else ($backup_ha_age|tonumber) end),
       spotifyd_problem: $spotifyd_problem,
       spotifyd_stuck_now: $spotifyd_stuck_now,
-      spotifyd_restarts_24h: ($spotifyd_restarts_24h|tonumber)
+      spotifyd_restarts_24h: ($spotifyd_restarts_24h|tonumber),
+      power_on_battery: $power_on_battery,
+      power_down_minutes: (if $power_down_minutes == "" then null else ($power_down_minutes|tonumber) end)
     }' | "$SCRIPT_DIR/scripts/publish_healthcheck_mqtt.py"
 } || true
 
-send_email() {
-  python3 - "$1" "$2" <<'EOF'
-import os, smtplib, sys
-from email.mime.text import MIMEText
-
-subject, body = sys.argv[1], sys.argv[2]
-user = os.environ["GMAIL_USER"]
-password = os.environ["GMAIL_APP_PASSWORD"]
-
-msg = MIMEText(body)
-msg["Subject"] = subject
-msg["From"] = user
-msg["To"] = user
-
-with smtplib.SMTP("smtp.gmail.com", 587) as s:
-    s.starttls()
-    s.login(user, password)
-    s.send_message(msg)
-EOF
-}
+source "$SCRIPT_DIR/scripts/send_email.sh"
 
 # Only email on a *change* from the last alert (new/different problems, or a
 # prior problem clearing) - not on every repeat of the same ongoing issue.

@@ -63,6 +63,7 @@ BINARY_SENSORS = {
     "systemd": binary_sensor("systemd", "Homelab Systemd Units", "mdi:cog-outline"),
     "zfs": binary_sensor("zfs", "Homelab ZFS Pool", "mdi:harddisk"),
     "spotifyd": binary_sensor("spotifyd", "Homelab Spotifyd", "mdi:spotify"),
+    "power_watchdog": binary_sensor("power_watchdog", "Homelab Power Watchdog", "mdi:power-plug-off"),
     "overall": binary_sensor("overall", "Homelab Overall Status", "mdi:server"),
 }
 
@@ -77,6 +78,9 @@ SENSORS = {
     ),
     "spotifyd_restarts_24h": sensor(
         "spotifyd_restarts_24h", "Spotifyd Restarts (24h)", "mdi:restart-alert"
+    ),
+    "power_watchdog_down_minutes": sensor(
+        "power_watchdog_down_minutes", "Power Watchdog Down Duration", "mdi:timer-alert-outline", unit="min"
     ),
     "last_check": sensor(
         "last_check", "Homelab Last Healthcheck", "mdi:calendar-check", device_class="timestamp"
@@ -114,6 +118,11 @@ def main():
         data["spotifyd_problem"],
         {"stuck_now": data["spotifyd_stuck_now"], "restarts_24h": data["spotifyd_restarts_24h"]},
     )
+    pub_binary(
+        "power_watchdog",
+        data["power_on_battery"],
+        {"down_minutes": data["power_down_minutes"]},
+    )
     pub_binary("overall", data["overall_problem"], {"problems": data["problems"]})
 
     pub_sensor("disk_root", data["disk_root"])
@@ -121,6 +130,7 @@ def main():
     pub_sensor("backup_vaultwarden_age", data["backup_vw_age_hours"])
     pub_sensor("backup_homeassistant_age", data["backup_ha_age_hours"])
     pub_sensor("spotifyd_restarts_24h", data["spotifyd_restarts_24h"])
+    pub_sensor("power_watchdog_down_minutes", data["power_down_minutes"])
     pub_sensor("last_check", datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     time.sleep(0.5)  # let publishes flush before disconnecting
