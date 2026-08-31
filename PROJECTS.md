@@ -98,12 +98,15 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 **Caveat:** all "always-on" numbers above are spec/datasheet estimates, not measured - could realistically be off ±30-40% per device without a real inline meter. Good enough to rank contributors and sanity-check "does this add to my bill" questions (context: prompted by the Shelly WiFi-button power question), not precise enough to reconcile against an actual bill.
 **Next step:** if precision matters, a cheap plug-in energy meter (or checking whether the Tinxy app/HA integration exposes real energy-monitoring data for whatever's wired behind the two Tinxy units) would replace the router/extender/xero/Pi estimates with real numbers cheaply. Fridge is the highest-value next target to actually measure, since it's likely the single biggest line item of everything in this audit.
 
-### Easier HA control for household + house help
-**Why:** the rest of the household and house help don't want to use the HA app/voice - need a simpler physical way to trigger scenes, white noise, scripts etc. Three approaches under consideration: (1) remote control/buttons, (2) a cheap wall-mounted tablet running HA (kiosk-style) plus a client for Claude/Alfred-style assistant access, (3) physical USB/GPIO buttons for specific controls HA doesn't otherwise expose a hardware affordance for.
+---
 
-**State:** approach (1) researched in some depth, (2) and (3) not yet explored.
+## 🟡 Parked
 
-**Approach 1 findings - dedicated remote/button device:**
+### Easier HA control for household + house help - approach 2/3 remaining
+**Why:** the rest of the household and house help don't want to use the HA app/voice - need a simpler physical way to trigger scenes, white noise, scripts etc. Three approaches were considered: (1) remote control/buttons, (2) a cheap wall-mounted tablet running HA (kiosk-style) plus a client for Claude/Alfred-style assistant access, (3) physical USB/GPIO buttons for specific controls HA doesn't otherwise expose a hardware affordance for.
+**State:** approach (1)/(3) (GPIO buttons on the wol-sender Pi) is done - see ✅ Done below for the full build. Approach (2) (tablet) was never explored. Also still open: whether to move to ESP32/ESPHome for button locations not near an existing host (the Pi's GPIO approach only works because this button happens to sit next to it).
+
+**Approach 1 findings - dedicated remote/button device (superseded by the DIY GPIO build, kept for reference):**
 - Preference throughout: WiFi/Bluetooth-native devices that join existing infra directly, over Zigbee/IR which need an extra gateway/coordinator.
 - **Shelly Plus i4** is discontinued; successor is **Shelly i4 Gen3** - WiFi-native 4-input scene controller, input-only (no relay/load-switching, unlike Tinxy where the module IS the switch), local API, native HA integration. Normally mounted behind a wall switch box.
 - **True Shelly cost is roughly double the bare-device price** once a surface board, switches, wiring, and casing are added - bare device alone isn't a fair comparison to a self-contained button.
@@ -112,48 +115,9 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 - **Tinxy** sells 4/8-button RF remotes, but only as accessories for their own RF-paired relay switches - not standalone WiFi/BLE scene buttons usable independently.
 - **SwitchBot Button Pusher**: a different category entirely - a BLE "fingerbot" that physically presses an *existing* wall switch, not a programmable scene button. Genuinely available on Amazon.in, but needs a SwitchBot Hub Mini for HA integration.
 - **India availability blocker:** user confirmed neither Flic nor Shelly are reliably available as genuine local stock in India (Amazon.in listings suspected to be reseller/import markups, not real local retail) - this ruled out both as the primary recommendation despite fitting the spec well.
-- **Current recommendation, pending user decision: DIY ESP32/ESP8266 + ESPHome button.** Leverages that the user already writes ESP32 firmware for this homelab (`esp32/wol_on_boot/`); boards are genuinely available domestically (Robu.in, Robocraze, Quartz Components, or Amazon.in from Indian sellers) for ~₹150-300; ESPHome-flashed boards join existing WiFi directly and appear as native HA entities with zero gateway needed.
-**Timeline of the toggle switch + scene buttons build:**
+- **DIY ESP32/ESP8266 + ESPHome button** was the recommendation pending user decision - not needed for the wol-sender Pi buttons since GPIO wired directly there instead, but still the likely answer for a button location not near an existing host.
 
-- **First physical button in progress (2026-08-24):**
-  - User has a salvaged latching/toggle mechanical switch and jumper cables on hand - decided to wire it directly into the wol-sender Pi's GPIO (not xero, which has no GPIO; not ESP32, since this button's location is right next to a host already, the case where GPIO wins per the earlier build-effort discussion).
-  - `scripts/toggle-button-mqtt.py` written (committed) - publishes the switch's ON/OFF position as an HA `binary_sensor` via MQTT discovery (topic `homeassistant/binary_sensor/toggle_switch_1/config`), matching the existing `white-noise-mqtt.py` bridge style.
-  - Wiring: GPIO17 (physical pin 11) to GND (physical pin 9), no resistor (uses the Pi's internal pull-up).
-
-- **PoC method until the real switch/housing exists (2026-08-25):**
-  - Couldn't find the salvaged switch right now - standing in for it by manually bridging GPIO17 (physical pin 11) to GND (physical pin 9) with a female-to-male jumper cable, plugging/unplugging by hand.
-  - Confirmed safe: that pin is 3.3V logic (not the 5V rail, which is separate physical pins 2/4), current-limited to microamps by the internal pull-up - fine for repeated manual make/break.
-  - This stands in for the real switch until it's found (or a replacement bought) and a housing is built.
-
-- **Running as a systemd service (2026-08-25):**
-  - Installed as `toggle-button-mqtt.service` on the Pi (see `toggle_button_setup.md`) so it survives SSH sessions ending and reboots.
-  - Needed two systemd-specific fixes beyond the original `RPi.GPIO` → `rpi-lgpio` dependency swap: (a) `ExecStart` must call `uv` by full path (`/home/pramod/.local/bin/uv`), since systemd's default `PATH` excludes `~/.local/bin`; (b) `WorkingDirectory=/home/pramod` is required - `lgpio` writes a notification file into the process's current working directory at import time, which defaults to `/` under systemd (unwritable by `pramod`), and without `WorkingDirectory` set, `gpiozero` silently falls back to a broken legacy sysfs backend instead of raising a clear error.
-  - Service confirmed stable (`active`, 0 restarts).
-  - Wired to a first automation: `binary_sensor.toggle_switch_1` on/off now calls `switch.turn_on`/`turn_off` on `switch.white_noise` (`toggle1_white_noise_on`/`_off` in `HOMEASSISTANT_CONFIG/automations.yaml`) - edge-triggered on the switch's own state transitions only, so scenes/dashboard control of white noise are untouched unless the physical switch is also flipped.
-
-- **Reconnect-loop bug found and fixed (2026-08-25):**
-  - First automation test immediately turned white noise back off every time it was turned on via a scene, with the physical switch never touched.
-  - Root cause: `scripts/toggle-button-mqtt.py`'s manual MQTT reconnect loop (`while client.is_connected(): sleep(...)` right after `loop_start()`) was racy and reconnected on a ~5s cycle indefinitely (confirmed via Mosquitto's own log, not just the Pi's systemd restart count, which stayed at 0 the whole time since the process itself never crashed). Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire the `to: 'off'` automation trigger every 5 seconds.
-  - Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). Confirmed stable via Mosquitto's log (90+ seconds with zero reconnects) before re-enabling the automation.
-
-- **Working end-to-end (2026-08-26):** user confirmed the physical switch + automation combination now works correctly - flipping the switch reliably toggles white noise, and scene/dashboard control of `switch.white_noise` is no longer overridden by the switch's resting position. First physical HA button is done. Permanent switch + housing still pending (current PoC is manual jumper-wire bridging).
-
-- **Second/third buttons: fully deployed in software, only physical wiring left (2026-08-26).**
-  - Next candidate: two momentary push buttons for `scene.ojaswi_sleeping`/`scene.ojaswi_awake` (currently only reachable via NFC tag automations, see `automations.yaml`).
-  - Considered a single two-position toggle (ON → sleep, OFF → awake) vs. two independent push buttons - **decided: two push buttons**, since sleep/awake are one-shot scene triggers, not a persisted state like white noise, so a toggle's resting position doesn't map cleanly onto them (re-triggering sleep via a toggle would mean flipping OFF→ON, firing the awake scene on the way through - the same spurious cross-firing already fought off for white noise).
-  - `scripts/scene-buttons-mqtt.py` (GPIO27/pin 13 → sleep, GPIO22/pin 15 → awake, distinct from GPIO17 used by the toggle switch) is deployed and running as `scene-buttons-mqtt.service` on the Pi (single service for both buttons - one MQTT connection, shared credentials file with the toggle switch).
-  - The two HA automations (`scene_button_oju_sleep`/`_awake`) are applied to `automations.yaml` and confirmed YAML-valid.
-  - Deliberately a different shape from the toggle switch's bridge: publishes a plain non-retained MQTT message only on an actual press, no persisted state/availability topic at all, sidestepping the whole reconnect-loop bug class rather than just this instance of it.
-  - `gpio_pinout.md` added as a standing reference for the Pi's 40-pin header (current wiring + free pins for the next button).
-
-- **GPIO17 toggle switch swapped for two momentary push buttons (2026-08-31):** the latching toggle switch was replaced with independent start/stop push buttons - GPIO17 (pin 11, existing) now starts white noise, GPIO18 (pin 12, newly wired) stops it, both to GND, no resistor. Rebuilt in the momentary-button shape already proven out for the scene buttons: `scripts/white-noise-buttons-mqtt.py` (replaces `toggle-button-mqtt.py`) publishes a plain non-retained MQTT message per press, no retained `binary_sensor`/availability topic - sidesteps the reconnect-loop bug class entirely rather than just fixing this instance of it (see the same-day fix note below, which found the underlying race was still live in `white-noise-mqtt.py` itself, independent of this button change). New automations `white_noise_button_start`/`_stop` (in `HOMEASSISTANT_CONFIG/automations.yaml`, applied via `scripts/apply_white_noise_button_automations.sh`) replace the dead `toggle1_white_noise_on`/`_off`. Details: `white_noise_buttons_setup.md`.
-- **Same-day, separate bug:** while debugging why the HA white-noise switch wasn't responding, found `white-noise-mqtt.py` (the switch's own MQTT bridge, unrelated to the physical buttons) had the identical unfixed reconnect race from before the 2026-08-25 fix - `whitenoise/available` was flapping offline/online every ~5s. Fixed the same way (`connect_async()` + `loop_forever()`); see `Readme.md`'s White Noise section.
-
-**Next step:** deploy `white-noise-buttons-mqtt.service` on the Pi and run `apply_white_noise_button_automations.sh` on xero (both need an interactive sudo password, so left for the user to run - see `white_noise_buttons_setup.md`). Separately, still open: approach 2 (tablet), and whether to move to ESP32/ESPHome for locations not near an existing host.
-
----
-
-## 🟡 Parked
+**Next step:** revisit if/when a button location comes up that isn't next to the wol-sender Pi (then it's ESP32/ESPHome), or if the tablet approach becomes worth exploring. Not proactive - parked until one of those becomes a real need.
 
 ### ZFS mirror (real redundancy for datapool)
 **Why:** `datapool` is a single disk (`sda`, Kingston SA400 - budget SSD, no power-loss protection) with no mirror, despite the Readme claiming one exists. That false assumption is also why backup was skipped for this data. `copies=2` (done, see below) gives free self-healing for isolated corruption but not full-disk failure - only a real second disk fixes that.
@@ -237,6 +201,45 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 ---
 
 ## ✅ Done
+
+### Physical GPIO buttons (wol-sender Pi) - white noise start/stop + oju sleep/awake scenes
+**Why:** the rest of the household and house help don't want to use the HA app/voice - physical buttons wired to the wol-sender Pi's GPIO give a simple, no-app way to trigger white noise and the sleep/awake scenes. Part of "Easier HA control for household + house help" - see 🟡 Parked for the still-open tablet/ESP32 threads.
+**State:** four buttons across two bridge services, both confirmed working end-to-end against live HA switches/scenes (verified 2026-08-31).
+
+- **First physical button in progress (2026-08-24):**
+  - User has a salvaged latching/toggle mechanical switch and jumper cables on hand - decided to wire it directly into the wol-sender Pi's GPIO (not xero, which has no GPIO; not ESP32, since this button's location is right next to a host already, the case where GPIO wins per the earlier build-effort discussion).
+  - `scripts/toggle-button-mqtt.py` written (committed) - publishes the switch's ON/OFF position as an HA `binary_sensor` via MQTT discovery (topic `homeassistant/binary_sensor/toggle_switch_1/config`), matching the existing `white-noise-mqtt.py` bridge style.
+  - Wiring: GPIO17 (physical pin 11) to GND (physical pin 9), no resistor (uses the Pi's internal pull-up).
+
+- **PoC method until the real switch/housing exists (2026-08-25):**
+  - Couldn't find the salvaged switch right now - standing in for it by manually bridging GPIO17 (physical pin 11) to GND (physical pin 9) with a female-to-male jumper cable, plugging/unplugging by hand.
+  - Confirmed safe: that pin is 3.3V logic (not the 5V rail, which is separate physical pins 2/4), current-limited to microamps by the internal pull-up - fine for repeated manual make/break.
+  - This stands in for the real switch until it's found (or a replacement bought) and a housing is built.
+
+- **Running as a systemd service (2026-08-25):**
+  - Installed as `toggle-button-mqtt.service` on the Pi so it survives SSH sessions ending and reboots.
+  - Needed two systemd-specific fixes beyond the original `RPi.GPIO` → `rpi-lgpio` dependency swap: (a) `ExecStart` must call `uv` by full path (`/home/pramod/.local/bin/uv`), since systemd's default `PATH` excludes `~/.local/bin`; (b) `WorkingDirectory=/home/pramod` is required - `lgpio` writes a notification file into the process's current working directory at import time, which defaults to `/` under systemd (unwritable by `pramod`), and without `WorkingDirectory` set, `gpiozero` silently falls back to a broken legacy sysfs backend instead of raising a clear error.
+  - Service confirmed stable (`active`, 0 restarts).
+  - Wired to a first automation: `binary_sensor.toggle_switch_1` on/off now calls `switch.turn_on`/`turn_off` on `switch.white_noise` (`toggle1_white_noise_on`/`_off` in `HOMEASSISTANT_CONFIG/automations.yaml`) - edge-triggered on the switch's own state transitions only, so scenes/dashboard control of white noise are untouched unless the physical switch is also flipped.
+
+- **Reconnect-loop bug found and fixed (2026-08-25):**
+  - First automation test immediately turned white noise back off every time it was turned on via a scene, with the physical switch never touched.
+  - Root cause: `scripts/toggle-button-mqtt.py`'s manual MQTT reconnect loop (`while client.is_connected(): sleep(...)` right after `loop_start()`) was racy and reconnected on a ~5s cycle indefinitely (confirmed via Mosquitto's own log, not just the Pi's systemd restart count, which stayed at 0 the whole time since the process itself never crashed). Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire the `to: 'off'` automation trigger every 5 seconds.
+  - Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). Confirmed stable via Mosquitto's log (90+ seconds with zero reconnects) before re-enabling the automation.
+
+- **Working end-to-end (2026-08-26):** user confirmed the physical switch + automation combination now works correctly - flipping the switch reliably toggles white noise, and scene/dashboard control of `switch.white_noise` is no longer overridden by the switch's resting position.
+
+- **Scene buttons deployed (2026-08-26):**
+  - Two momentary push buttons for `scene.ojaswi_sleeping`/`scene.ojaswi_awake` (previously only reachable via NFC tag automations).
+  - Considered a single two-position toggle (ON → sleep, OFF → awake) vs. two independent push buttons - **decided: two push buttons**, since sleep/awake are one-shot scene triggers, not a persisted state like white noise, so a toggle's resting position doesn't map cleanly onto them (re-triggering sleep via a toggle would mean flipping OFF→ON, firing the awake scene on the way through - the same spurious cross-firing already fought off for white noise).
+  - `scripts/scene-buttons-mqtt.py` (GPIO27/pin 13 → sleep, GPIO22/pin 15 → awake) deployed and running as `scene-buttons-mqtt.service` on the Pi.
+  - The two HA automations (`scene_button_oju_sleep`/`_awake`) applied to `automations.yaml` and confirmed working.
+  - Deliberately a different shape from the toggle switch's bridge: publishes a plain non-retained MQTT message only on an actual press, no persisted state/availability topic at all, sidestepping the whole reconnect-loop bug class rather than just this instance of it.
+  - `gpio_pinout.md` added as a standing reference for the Pi's 40-pin header.
+
+- **GPIO17 toggle switch swapped for two momentary push buttons (2026-08-31):** the latching toggle switch was replaced with independent start/stop push buttons - GPIO17 (pin 11, existing) now starts white noise, GPIO18 (pin 12, newly wired) stops it, both to GND, no resistor. Rebuilt in the momentary-button shape already proven out for the scene buttons: `scripts/white-noise-buttons-mqtt.py` (replaces `toggle-button-mqtt.py`) publishes a plain non-retained MQTT message per press, no retained `binary_sensor`/availability topic - sidesteps the reconnect-loop bug class entirely rather than just fixing this instance of it. New automations `white_noise_button_start`/`_stop` replace the dead `toggle1_white_noise_on`/`_off`. Details: `white_noise_buttons_setup.md`.
+- **Same-day, separate bug:** while debugging why the HA white-noise switch wasn't responding, found `white-noise-mqtt.py` (the switch's own MQTT bridge, unrelated to the physical buttons) had the identical unfixed reconnect race from before the 2026-08-25 fix - `whitenoise/available` was flapping offline/online every ~5s. Fixed the same way (`connect_async()` + `loop_forever()`); see `Readme.md`'s White Noise section.
+- **Confirmed working (2026-08-31):** user verified both the start and stop buttons correctly toggle `switch.white_noise` in HA.
 
 ### Power-outage watchdog - real UPS runtime measured, threshold updated, armed
 **Why:** this server runs on its own RouterUPS battery, separate from the router's UPS. An uncontrolled crash when the battery dies is the likely cause of the ZFS corruption found in `datapool` (see below) - a clean shutdown before that happens avoids torn writes entirely.
