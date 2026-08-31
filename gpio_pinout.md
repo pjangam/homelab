@@ -8,13 +8,18 @@ re-Googling every time a new button/sensor gets wired in.
 
 | Pin(s) | GPIO | Used for |
 |---|---|---|
-| 11 + 9 | GPIO17 + GND | Toggle switch → white noise (`scripts/toggle-button-mqtt.py`) |
+| 11 + 9 | GPIO17 + GND | White noise start button (`scripts/white-noise-buttons-mqtt.py`) |
+| 12 + 14 | GPIO18 + GND | White noise stop button (`scripts/white-noise-buttons-mqtt.py`) |
 | 13 + 14 | GPIO27 + GND | Sleep button (`scripts/scene-buttons-mqtt.py`) |
 | 15 + 14 | GPIO22 + GND | Awake button (`scripts/scene-buttons-mqtt.py`) |
 | 2 or 4 (5V) + a GND | - | Cooling fan (always-on load, exact pin not recorded) |
 
-All three buttons wire directly between a GPIO pin and GND - no resistor
-needed, each script sets the pin's internal pull-up in software
+GPIO17 originally carried a latching toggle switch (see git history /
+`white_noise_buttons_setup.md`), swapped for two independent momentary push
+buttons - GPIO18 is the newly-used pin for the second (stop) button.
+
+All buttons wire directly between a GPIO pin and GND - no resistor needed,
+each script sets the pin's internal pull-up in software
 (`gpiozero.Button(pin, pull_up=True)`).
 
 ## Full 40-pin layout
@@ -25,7 +30,7 @@ needed, each script sets the pin's internal pull-up in software
    GPIO3 (SCL)    [ 5] [ 6]  GND
          GPIO4    [ 7] [ 8]  GPIO14 (TXD)
      >>>  GND  <<<[ 9] [10]  GPIO15 (RXD)
-  >>> GPIO17 <<<   [11] [12]  GPIO18
+  >>> GPIO17 <<<   [11] [12]  >>> GPIO18 <<<
   >>> GPIO27 <<<   [13] [14]  >>>  GND  <<<
   >>> GPIO22 <<<   [15] [16]  GPIO23
             3.3V  [17] [18]  GPIO24
