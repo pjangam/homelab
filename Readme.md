@@ -139,6 +139,22 @@ systemctl --user enable --now white-noise-mqtt
 sudo loginctl enable-linger pramod
 ```
 
+**Starting/stopping directly (bypassing HA/MQTT):**
+```bash
+systemctl --user start white-noise   # fades in, pins volume to 59%
+systemctl --user stop  white-noise   # fades out, kills sox, resets volume to 59%
+```
+Always go through `systemctl`, never run the `ExecStartPre`/`ExecStop` lines from `white-noise.service` by hand — `kill $MAINPID` in the `ExecStop` line only works because systemd injects `$MAINPID` when it runs that line as part of stopping the unit. Run standalone in a shell, `$MAINPID` is empty, so `kill ""` silently no-ops and `sox` keeps playing — it looks like the stop "didn't take" or "restarted" when really it just never stopped.
+
+**Debugging the HA switch:**
+```bash
+systemctl --user status white-noise white-noise-mqtt   # both should be active (running)
+journalctl --user -u white-noise-mqtt -n 50             # bridge logs
+docker exec mosquitto mosquitto_sub -h localhost -p 1883 \
+  -u homelab -P "$(grep MQTT_PASSWORD .env.mqtt | cut -d= -f2)" -t 'whitenoise/#' -v
+```
+The last command should show one retained `whitenoise/available online` and one `whitenoise/state ON`/`OFF` — if `available` keeps flapping `offline`/`online` every few seconds, HA will show the switch as unavailable on and off, and presses made during an "offline" blip get dropped. That flapping is exactly the same reconnect-loop bug documented below for `toggle-button-mqtt.py` (found again in `white-noise-mqtt.py` on 2026-08-31 and fixed the same way).
+
 ---
 
 ## Physical GPIO Buttons (wol-sender Pi)
@@ -150,7 +166,7 @@ sudo loginctl enable-linger pramod
 
 **GPIO pinout reference:** `gpio_pinout.md` — the Pi's full 40-pin header layout, marked up with what's already wired and which pins are free for the next button.
 
-**Reconnect-loop bug (2026-08-25):** `toggle-button-mqtt.py`'s original manual MQTT reconnect loop was racy — checking `client.is_connected()` right after `loop_start()` could read `False` before the CONNACK was processed, tearing the connection down and reconnecting on a ~5s cycle indefinitely. Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire its HA automation every 5 seconds — overriding manual scene/dashboard control of white noise regardless of the physical switch's actual position. Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). `scene-buttons-mqtt.py` was written to avoid the whole bug class by design — no retained state to republish in the first place.
+**Reconnect-loop bug (2026-08-25, recurred 2026-08-31):** `toggle-button-mqtt.py`'s original manual MQTT reconnect loop was racy — checking `client.is_connected()` right after `loop_start()` could read `False` before the CONNACK was processed, tearing the connection down and reconnecting on a ~5s cycle indefinitely. Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire its HA automation every 5 seconds — overriding manual scene/dashboard control of white noise regardless of the physical switch's actual position. Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). `scene-buttons-mqtt.py` was written to avoid the whole bug class by design — no retained state to republish in the first place. The same buggy pattern was independently present in `scripts/white-noise-mqtt.py` (it predates the 2026-08-25 fix and wasn't back-ported) and caused the same `whitenoise/available` flapping, making the HA white-noise switch flicker unavailable every ~5s. Fixed the same way on 2026-08-31, with the periodic `publish_state` poll moved to a background thread since `loop_forever()` blocks the main thread.
 
 Both bridge scripts need MQTT credentials for the `homelab` Mosquitto user (`~/toggle-button-mqtt.env` on the Pi, shared between both services) and `WorkingDirectory=/home/pramod` + `Environment=GPIOZERO_PIN_FACTORY=lgpio` in their systemd units — see `toggle_button_setup.md` for why those two matter on this hardware/kernel combination.
 
