@@ -11,6 +11,12 @@
 # see .env / Readme.md), e.g.:
 #   export CLAWLIGHT_SERVER_URL=https://xero.<your-tailnet-suffix>
 #
+# CLAWLIGHT_HOST_NAME overrides the reported host label (default: `hostname`,
+# which can be an ugly DHCP/cloud-provider name like
+# ip-192-168-1-101.ec2.internal) - set it in your shell profile for a friendly
+# display name without touching the machine's actual system hostname, e.g.:
+#   export CLAWLIGHT_HOST_NAME=mac
+#
 # Never fails the hook on a network error - a status report is best-effort and
 # must not block or break the actual Claude Code turn.
 set -u
@@ -21,7 +27,7 @@ server_url="${CLAWLIGHT_SERVER_URL:-http://localhost:8126}"
 hook_input="$(cat)"
 session_id="$(printf '%s' "$hook_input" | jq -r '.session_id // "unknown"' 2>/dev/null)"
 cwd="$(printf '%s' "$hook_input" | jq -r '.cwd // empty' 2>/dev/null)"
-host="$(hostname)"
+host="${CLAWLIGHT_HOST_NAME:-$(hostname)}"
 
 payload="$(jq -n --arg session_id "$session_id" --arg host "$host" --arg state "$state" --arg cwd "$cwd" \
   '{session_id: $session_id, host: $host, state: $state, cwd: $cwd}' 2>/dev/null)"
