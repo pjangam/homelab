@@ -129,14 +129,36 @@ function drawCanvas() {
     ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+
     const lines = relevant.slice(0, 3).map((s) => `${s.host}:${s.label}`);
-    const lineHeight = 16;
-    const startOffset = -((lines.length - 1) * lineHeight) / 2;
-    lines.forEach((line, i) => {
-      ctx.fillText(line, 0, startOffset + i * lineHeight, canvas.height - 12);
+    const maxLen = canvas.height - 12; // available run length after rotation
+
+    // Shrink the font (not canvas's maxWidth squish, which distorts text)
+    // until the longest line actually fits, down to a readable floor -
+    // below that, truncate with an ellipsis instead of going illegible.
+    let fontSize = 13;
+    const fits = (size) => {
+      ctx.font = `bold ${size}px sans-serif`;
+      return Math.max(...lines.map((l) => ctx.measureText(l).width));
+    };
+    while (fontSize > 7 && fits(fontSize) > maxLen) fontSize--;
+    ctx.font = `bold ${fontSize}px sans-serif`;
+
+    const displayLines = lines.map((line) => {
+      if (ctx.measureText(line).width <= maxLen) return line;
+      let truncated = line;
+      while (ctx.measureText(truncated + '…').width > maxLen && truncated.length > 1) {
+        truncated = truncated.slice(0, -1);
+      }
+      return truncated + '…';
+    });
+
+    const lineHeight = fontSize + 4;
+    const startOffset = -((displayLines.length - 1) * lineHeight) / 2;
+    displayLines.forEach((line, i) => {
+      ctx.fillText(line, 0, startOffset + i * lineHeight);
     });
     ctx.restore();
   }
