@@ -79,6 +79,7 @@ const video = document.getElementById('pip-video');
 
 let currentState = 'idle';
 let currentSessions = [];
+let videoTrack = null; // set once the capture stream exists; drawCanvas() pushes frames through it
 
 function applyState(data) {
   const state = COLORS[data.state] ? data.state : 'idle';
@@ -103,6 +104,7 @@ function drawCanvas() {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(label, canvas.width / 2, canvas.height / 2);
+  if (videoTrack) videoTrack.requestFrame();
 }
 
 async function fetchStatus() {
@@ -134,10 +136,21 @@ if (!('pictureInPictureEnabled' in document)) {
   // AbortError. So by the time the button is clicked, the video is already
   // playing and the click handler calls requestPictureInPicture() with no
   // awaits ahead of it.
-  drawCanvas();
-  const stream = canvas.captureStream(2);
+  //
+  // captureStream(0) means "no automatic frame timer" - we push frames
+  // ourselves via videoTrack.requestFrame() from drawCanvas(). This gets the
+  // video its first frame (and real dimensions) immediately instead of
+  // waiting up to one frame interval, which otherwise races a fast click:
+  // Chromium refuses PiP with "video element is not ready" until the video
+  // has valid loaded metadata.
+  const stream = canvas.captureStream(0);
+  videoTrack = stream.getVideoTracks()[0];
   video.srcObject = stream;
   video.play().catch(() => {}); // autoplay may be deferred; harmless either way
+  drawCanvas(); // pushes the first frame now that videoTrack exists
+
+  floatBtn.disabled = true;
+  video.addEventListener('loadedmetadata', () => { floatBtn.disabled = false; }, { once: true });
 
   floatBtn.addEventListener('click', () => {
     if (document.pictureInPictureElement) {
