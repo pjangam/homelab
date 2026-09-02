@@ -408,6 +408,7 @@ Full write-ups live in [`incidents/`](incidents/), one file per incident (sympto
 
 - [`2026-06-29-zfs-postgres-freeze.md`](incidents/2026-06-29-zfs-postgres-freeze.md) — SSH + display dead, Docker still accessible; orphaned `immich_postgres` container deadlocked on ZFS I/O
 - [`2026-08-31-white-noise-mqtt-reconnect-loop.md`](incidents/2026-08-31-white-noise-mqtt-reconnect-loop.md) — racy manual MQTT reconnect loop flapping HA switches "unavailable" every ~5s; found in `toggle-button-mqtt.py` (2026-08-25), recurred in `white-noise-mqtt.py` (2026-08-31)
+- [`2026-07-23-getty-tty1-crash-loop.md`](incidents/2026-07-23-getty-tty1-crash-loop.md) — `getty@tty1` crash-looped after a reboot changed the console video mode; a hardcoded TTY font choice stopped fitting. Includes a corrected theory ruling this out as the cause of the same-day white-noise bug
 
 ---
 
