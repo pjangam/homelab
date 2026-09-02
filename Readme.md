@@ -351,7 +351,7 @@ do-release-upgrade -c
 
 Timers `apt-daily.timer` / `apt-daily-upgrade.timer` (installed by the `unattended-upgrades` package) drive this daily — `systemctl list-timers apt-daily*` to check next run.
 
-**One-off manual full-upgrade + backup** (`cron/backup_and_apt_update.sh`) — separate from the above, used for catching up a large backlog (like the initial 53 packages) rather than day-to-day patching. Backs up `/etc`, package selections, crontabs, systemd unit state, Docker state, and the `/dev/sdb` partition table to `/datapool/system-backups/pre-update-<timestamp>.tar.gz`, then runs `apt full-upgrade` + `autoremove`. Must run as root (invoke directly, not via `sudo`, in a cron/systemd-run context — see script header for why).
+**One-off manual full-upgrade + backup** (`cron/backup_and_apt_update.sh`) — separate from the above, for catching up a large backlog rather than day-to-day patching. Backs up `/etc`, package selections, crontabs, systemd unit state, Docker state, and the `/dev/sdb` partition table to `/datapool/system-backups/pre-update-<timestamp>.tar.gz`, then runs `apt full-upgrade` + `autoremove`. Must run as root (invoke directly, not via `sudo`, in a cron/systemd-run context — see script header for why). Written and tested standalone for the initial 53-package backlog (2026-09-01), but a one-shot `systemd-run --on-calendar` job scheduled to run it never actually fired (no journal entry, no backup produced) - that backlog ended up clearing on its own via `unattended-upgrades` instead once the `-updates` origin was enabled below. Script is real and untested-in-anger since; next large backlog is the actual first live run.
 
 ---
 

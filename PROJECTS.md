@@ -171,6 +171,11 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **State:** not started, explicitly for later.
 **Next step:** pull a recent backup down and actually restore it (to a scratch/test location, not overwriting production) to confirm it works when needed.
 
+### Shopping list display (touchscreen e-ink)
+**Why:** an always-visible, low-power household shopping list mounted somewhere shared (e.g. kitchen) - anyone can add/check off items via touch without opening an app. E-ink specifically for the always-on, no-glow, negligible-power display characteristics (fits the same "no app needed" philosophy as the physical GPIO buttons).
+**State:** idea only - had been in mind but never written down anywhere until now (2026-09-02). No hardware chosen, no research done yet.
+**Next step:** research touchscreen e-ink modules (existing all-in-one boards like Inkplate, vs. a bare e-ink panel + separate touch overlay + driving MCU) and how list state would sync back to HA/a shared list source.
+
 ## 🔌 ESP32 Projects
 
 ### In-house smart switch to replace Tinxy
