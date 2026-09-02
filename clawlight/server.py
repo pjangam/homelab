@@ -21,7 +21,8 @@ PORT = 8126
 PREFIX = "/clawlight"
 WEB_DIR = Path(__file__).parent / "web"
 STALE_AFTER_SECONDS = 30 * 60
-VALID_STATES = {"active", "waiting", "idle"}
+FOREGROUND_STATES = {"active", "waiting"}
+BACKGROUND_STATES = {"task_start", "task_end"}
 
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -30,7 +31,15 @@ MIME_TYPES = {
 }
 
 lock = threading.Lock()
-sessions: dict[str, dict] = {}  # session_id -> {state, host, ts}
+# session_id -> {foreground: active|waiting, background: int, host, ts}
+#
+# `foreground` tracks the main turn (UserPromptSubmit/Stop/Notification).
+# `background` counts running subagents/forked tasks (SubagentStart+TaskCreated
+# increment, SubagentStop+TaskCompleted decrement) - these run independently of
+# the main turn (e.g. a forked background agent), so Stop firing while one is
+# still working must not read as "waiting", or the light lies about needing
+# your input when Claude is still actually working.
+sessions: dict[str, dict] = {}
 
 
 def prune_locked():
@@ -45,8 +54,28 @@ def report(session_id: str, host: str, state: str):
         prune_locked()
         if state == "end":
             sessions.pop(session_id, None)
-        elif state in VALID_STATES:
-            sessions[session_id] = {"state": state, "host": host, "ts": time.time()}
+            return
+
+        entry = sessions.get(session_id)
+        if entry is None:
+            entry = {"foreground": "active", "background": 0, "host": host, "ts": 0.0}
+            sessions[session_id] = entry
+
+        entry["host"] = host
+        entry["ts"] = time.time()
+
+        if state in FOREGROUND_STATES:
+            entry["foreground"] = state
+        elif state == "task_start":
+            entry["background"] += 1
+        elif state == "task_end":
+            entry["background"] = max(0, entry["background"] - 1)
+
+
+def effective_state(entry: dict) -> str:
+    if entry["background"] > 0:
+        return "active"
+    return entry["foreground"]
 
 
 def snapshot() -> dict:
@@ -54,16 +83,18 @@ def snapshot() -> dict:
         prune_locked()
         items = list(sessions.values())
 
-    if any(s["state"] == "waiting" for s in items):
+    states = [effective_state(s) for s in items]
+
+    if "waiting" in states:
         agg = "waiting"
-    elif any(s["state"] == "active" for s in items):
+    elif "active" in states:
         agg = "active"
     else:
         agg = "idle"
 
     return {
         "state": agg,
-        "sessions": [{"host": s["host"], "state": s["state"]} for s in items],
+        "sessions": [{"host": s["host"], "state": st} for s, st in zip(items, states)],
     }
 
 
@@ -101,7 +132,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(400)
             return
 
-        if state != "end" and state not in VALID_STATES:
+        if state != "end" and state not in FOREGROUND_STATES and state not in BACKGROUND_STATES:
             self.send_error(400)
             return
 
