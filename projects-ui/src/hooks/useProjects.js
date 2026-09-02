@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { parseProjects } from '../lib/parseProjects'
 
-export function useProjects(url = '/PROJECTS.md') {
+export function useProjects(url = `${import.meta.env.BASE_URL}PROJECTS.md`) {
   const [state, setState] = useState({ status: 'loading', sections: [], error: null })
 
   useEffect(() => {

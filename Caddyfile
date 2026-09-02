@@ -4,6 +4,18 @@
 
 xero.{$TAILNET_SUFFIX} {
     tls /certs/xero.{$TAILNET_SUFFIX}.crt /certs/xero.{$TAILNET_SUFFIX}.key
-    reverse_proxy localhost:8080
+
+    # projects-ui dashboard (see docker-compose.yml) - handle picks the
+    # first matching block, so this must come before the catch-all below.
+    # Path kept intact (not stripped) since projects-ui's own nginx.conf
+    # serves it under a matching /projects/ location.
+    @projects path /projects /projects/*
+    handle @projects {
+        reverse_proxy localhost:8125
+    }
+
+    handle {
+        reverse_proxy localhost:8080
+    }
 }
 
