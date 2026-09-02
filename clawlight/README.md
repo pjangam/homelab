@@ -63,15 +63,23 @@ running, in whichever repo:
 - `Stop` → `clawlight/set-status.sh waiting`
 - `Notification` → `clawlight/set-status.sh waiting`
 - `PermissionRequest` → `clawlight/set-status.sh waiting`
+- `PostToolUse` → `clawlight/set-status.sh active`
 - `SessionEnd` → `clawlight/set-status.sh end`
 - `SubagentStart` → `clawlight/set-status.sh task_start`
 - `SubagentStop` → `clawlight/set-status.sh task_end`
 - `TaskCreated` → `clawlight/set-status.sh task_start`
 - `TaskCompleted` → `clawlight/set-status.sh task_end`
 
+`PostToolUse` exists specifically to close a gap: approving a permission
+prompt (which set `waiting` via `PermissionRequest`) has no dedicated
+"resolved" hook, so nothing flipped the state back once Claude resumed - the
+next tool call succeeding is the natural "I'm working again" signal instead.
+
 (Set up via the `update-config` skill rather than hand-edited, to keep the
 hooks JSON schema correct. Hooks are only loaded when a session starts, so
-changes take effect on the *next* new session, never the one that made them.)
+changes take effect on the *next* new session, never the one that made them -
+`PostToolUse` is the one exception, since its own next firing is itself the
+proof it works.)
 
 ## Setup on another machine (e.g. the MacBook)
 
@@ -84,7 +92,7 @@ changes take effect on the *next* new session, never the one that made them.)
    export CLAWLIGHT_SERVER_URL=https://xero.<your-tailnet-suffix>
    export CLAWLIGHT_HOST_NAME=mac
    ```
-3. Wire the same nine hooks in that machine's global `~/.claude/settings.json`,
+3. Wire the same ten hooks in that machine's global `~/.claude/settings.json`,
    pointing at the local copy of `set-status.sh`. Hook commands don't source
    your shell profile, so embed both env vars directly in each command
    instead of relying on step 2's exports, e.g.:
