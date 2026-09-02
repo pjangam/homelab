@@ -68,7 +68,7 @@
     Picture-in-Picture isn't supported in this browser - the light still updates on this page.
   </div>
 
-  <canvas id="canvas" width="200" height="200" hidden></canvas>
+  <canvas id="canvas" width="60" height="220" hidden></canvas>
   <video id="pip-video" muted playsinline></video>
 
 <script>
@@ -106,14 +106,12 @@ function applyState(data) {
 }
 
 function drawCanvas() {
-  const { css, label } = COLORS[currentState];
+  // Thin vertical bar - just a solid color fill, like the LED it's standing
+  // in for. Too narrow for the state label to fit legibly, and the whole
+  // point of PiP is a glanceable color; the label is still shown on the page.
+  const { css } = COLORS[currentState];
   ctx.fillStyle = css;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#000';
-  ctx.font = 'bold 20px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(label, canvas.width / 2, canvas.height / 2);
   if (videoTrack) videoTrack.requestFrame();
 }
 
