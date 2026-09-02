@@ -128,11 +128,6 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 **State:** not started. Needs a physical second disk (same/larger than 894GB) and `zpool attach`.
 **Next step:** decide on and buy a second disk, whenever justified.
 
-### Bhakti's Tailscale exit-node issue
-**Why:** flagged as a known open item in the Readme - another household member can't connect to the exit node.
-**State:** details not recalled, not investigated this round.
-**Next step:** none until it becomes an active problem for her.
-
 ### Offsite backup for Immich photo data
 **Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no offsite copy - only the ZFS pool itself (single disk, see above) and the original Google Takeout zips on a separate local disk.
 **State:** reconsidered, not started. A naive rclone-to-Dropbox push (same pattern as Vaultwarden/HA) doesn't actually make sense here: the whole point of self-hosting Immich is avoiding paying for cloud photo storage, so continuously syncing the full photo set to cloud storage undermines that. If pursued, needs a different shape - compress/archive first, and use a cold-storage tier (e.g. S3 Glacier / Glacier Deep Archive) priced for rarely-accessed disaster-recovery data rather than active-sync storage, not a Dropbox-style always-on sync.
@@ -159,32 +154,6 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 **Google Takeout export - incomplete, gap unresolved (2026-08-26).** The full export (23 parts, `takeout-20260625T094226Z-3-*.zip`, downloaded 2026-06-25/26) is missing part `019` - re-downloading just that part turns out not to be possible. Moved the 22 complete parts off the nearly-full boot disk to `datapool/google-takeout/` (see disk-space cleanup below) regardless, since they're safe to keep either way. How to actually fill the gap (full fresh re-export vs. living with one missing part) is unresolved - deferred, not blocking anything while Immich itself is on hold.
 
-### Move some load to the Raspberry Pi
-**Why:** the `wol-sender` Pi (see the WoL sender build under Power-outage watchdog, active) previously only sent a boot-time magic packet to `xero` - a trivially light job for a whole Pi, real spare capacity going unused.
-**State:** **Node-RED migrated (2026-08-22).**
-- Copied `xero`'s `homelab_node-red-data` Docker volume (flows, credentials, the Miraie AC config) over to the Pi, cleared `node_modules` first (built on xero's x86_64, not the Pi's arm64 - Node-RED's own `npm install --prefix /data` on startup rebuilt it correctly), and started it there via plain `docker run` (Debian's default repos don't carry `docker-compose-plugin`, and it's just one container).
-- Verified both required MQTT connections live at the socket level (`192.168.1.123:1883` for the local HA broker, an external `:8883` TLS connection for MirAIe's cloud broker) since the custom node doesn't log connection status to stdout.
-- `watchdog_nodered.sh` moved to the Pi's own crontab as `scripts/watchdog_nodered_pi.sh` (pointed at xero's LAN IP instead of `localhost`) - also fixed a pre-existing bug found along the way: the old cron job's log redirect (`/var/log/nodered-watchdog.log`) wasn't writable by a non-root cron job, so it had been silently failing since well before this migration (last real log entry: 2026-07-13).
-- Removed the `node-red` service from `xero`'s `docker-compose.yml` (mosquitto stays there); the old `homelab_node-red-data` volume is left in place on disk for now as a rollback net, not yet deleted.
-
-**Constraint:** unlike the main server (on the RouterUPS), the Pi is on direct mains power with no battery backup, so it goes offline during any power outage. Crucially, the LAN/router stays up during an outage (confirmed - the whole house doesn't lose network, just the Pi), so anything actively depended on over the network during an outage must NOT move here unless the Pi also gets battery backup - rules out Pi-hole (DNS), Mosquitto (see below), Caddy (remote-access entry point), and Home Assistant itself.
-**Candidates considered:**
-- **Node-RED** - done, see above.
-- **Vaultwarden** - deprioritized to last resort (2026-08-20 decision). Bitwarden clients keep a local encrypted vault cache so an outage just pauses sync rather than locking users out, but the user prefers keeping the actual server available over relying on that client-side tolerance - only move this if there's still meaningful CPU/memory headroom left to gain on the Pi after Node-RED.
-- **Watchtower** - ruled out (2026-08-20). It drives updates through the local Docker socket (`/var/run/docker.sock`), so on the Pi it could only update the Pi's own containers, not xero's - it can't do its actual job unless xero's Docker API is exposed over the network, a real security tradeoff not worth it for something this low-value.
-- **Mosquitto** - ruled out. Verified its actual dependents (grep across the repo, 2026-08-14): it's the shared local MQTT broker for HA's whole MQTT integration - Node-RED/AC, `white-noise-mqtt.py`, `volume-mqtt.py`, and `publish_healthcheck_mqtt.py` (the 9-entity healthcheck dashboard) all publish through it. (Correction: Tinxy does *not* depend on it - Tinxy uses its own cloud broker, `mqtt.tinxy.in`, entirely separate from local Mosquitto.) Moving it risks breaking all of those at once for the sake of freeing up not much.
-- **Samba** (phone-upload dump share) - dropped. Its storage (`datapool/phone-uploads`) lives on `xero`'s ZFS pool, not the Pi - moving just the container means either a network round-trip back to `xero` (defeats the point) or real separate storage on the Pi (SD card downgrade, or a USB SSD + new unmanaged ZFS pool - real migration work). Also lightweight on `xero` already, so little load to relieve by moving it.
-**Watchdog fixed and redesigned (2026-08-23).**
-- The security pass below (Mosquitto auth) initially broke `watchdog_nodered.sh` on the Pi - it called `mosquitto_sub` with no credentials, so it always got "not authorised" and restarted `node-red` on every single 10-minute cron run.
-- Fixing that surfaced a deeper, pre-existing bug (present since the watchdog's first commit, confirmed via `git log` - not something the migration introduced): its `AC_TOPIC` never matched what the `ha-miraie-ac` node actually publishes to (`miraie-ac/<deviceName>/state`, not `homeassistant/climate/panasonic-ac/state`), and even the correct topic wouldn't have helped since that node only publishes state/availability once per reconnect (not retained) - nothing arrives while the AC sits idle, which is most of the year outside summer.
-- Rewrote the check entirely: it now inspects the `node-red` container's own `/proc/net/tcp` for ESTABLISHED connections to MirAIe's cloud broker (port 8883) and Mosquitto (port 1883), independent of the AC's power state.
-- Toggle lives in `WATCHDOG_ENABLED` inside `/home/pramod/nodered-watchdog.env` on the Pi (plain env file next to the script, not a hidden dotfile, per user request "easier to find") - **currently `false`**, since the AC is off for the season; re-enable before next summer.
-- Documented in `Readme.md` under "Node-RED Watchdog (MQTT bridge health)".
-
-**Next step:** delete the old `homelab_node-red-data` volume on `xero` after a few days once the Pi's copy has proven stable. Vaultwarden remains the only other live candidate, still deprioritized to last resort.
-
----
-
 ## 💡 Backlog ideas
 
 ### Miraie AC self-healing
@@ -201,6 +170,26 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Why:** Vaultwarden and HA config are backed up daily to Dropbox via rclone, but the restore path has never actually been tested - only that the upload step succeeds. "Untested backups aren't backups."
 **State:** not started, explicitly for later.
 **Next step:** pull a recent backup down and actually restore it (to a scratch/test location, not overwriting production) to confirm it works when needed.
+
+## 🔌 ESP32 Projects
+
+### In-house smart switch to replace Tinxy
+**Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
+**State:** not started - brainstormed 2026-09-02. Two directions considered:
+- **Reflash existing Tinxy units with Tasmota/ESPHome** - cheapest, reuses hardware already wired into the walls, would get fully local MQTT control with zero cloud dependency. Risk: Tinxy isn't a known-flashable brand like Sonoff, so it's a per-unit gamble (open one up, identify the chip, risk bricking it) before knowing if it's worth doing for the rest.
+- **Replace with switches built for local control from the start** - Shelly (local HTTP/MQTT API) or Zigbee units behind a local Zigbee2MQTT coordinator. Zigbee in particular never touches the internet at all, only local HA, so it sidesteps the ISP-outage problem structurally rather than depending on a reflash succeeding. Real cost: these are wall-mounted and already installed, not a five-minute swap, and Shelly historically runs ~2x the bare-device price once wiring/casing is counted (see cost note under "Easier HA control" above).
+**Next step:** crack open one existing Tinxy switch to see what's actually inside (chip ID, whether it's a known-flashable module) before committing to either path.
+
+### Claw Light (clawlight.dev) - agent status indicator
+**Why:** a physical desk light that shows at-a-glance status for coding agent sessions (Claude Code, Opencode, Codex CLI, GitHub Copilot CLI) via color-coded LEDs - green for active work, red when input is needed - so a running session doesn't need active alt-tabbing to check on.
+**Hardware:** ESP32-C6, diffused RGB LED (3-lens beacon), USB-C powered, <0.5W. Open-source - firmware, CLI daemon, and hardware design all public on GitHub; sold pre-flashed but self-buildable/flashable too.
+**State:** not started - noted as a candidate build 2026-09-02.
+**Next step:** decide whether to buy the pre-built unit or source an ESP32-C6 + LED and flash the open-source firmware directly; check the GitHub repo for BOM/wiring if going the DIY route.
+
+### Remote control for scenes/scripts (Spotify, white noise, etc.)
+**Why:** the existing physical GPIO buttons (wol-sender Pi, see ✅ Done) prove the pattern - a button publishes an MQTT message, an HA automation fires a scene/script - but that only works for locations physically next to a host with GPIO. An ESP32/ESPHome-based remote would extend the same no-app physical-control idea (see "Easier HA control for household + house help" above) to a standalone battery/USB device controllable from anywhere, not tied to the Pi's location - e.g. a bedside remote for white noise start/stop or Spotify play/pause/skip without opening the HA app.
+**State:** not started - the ESP32/ESPHome route was already flagged as the likely answer for "a button location that isn't next to an existing host" in the parked scene-buttons project; this generalizes that to Spotify/media control specifically.
+**Next step:** decide button layout/count needed (e.g. white noise on/off, Spotify play/pause/skip) and whether to build on ESPHome's native HA integration (least custom code, matches the existing MQTT-bridge pattern) or a fully custom firmware.
 
 ---
 
@@ -388,3 +377,14 @@ Actual driving need: reclaiming phone storage, which was running low - this is a
 
 ### Consolidated status dashboard
 Previously the only way to know something's wrong was a `healthcheck.sh` email after the fact. Extended `healthcheck.sh` to publish its check results (containers, systemd units, ZFS pool health, disk usage, backup freshness) to MQTT with HA discovery, grouped under a "Homelab Healthcheck" device - 9 entities total, published on every 15min cron run independent of the email-alert path so a publish failure can't suppress a real alert. Added a "Homelab Health" section to the existing "Stats" Lovelace dashboard with tile cards for all 9 entities (required stopping HA briefly to hand-edit the storage-mode dashboard file directly, since it's UI-managed rather than YAML). Verified end-to-end: entities confirmed live via the HA REST API, dashboard confirmed intact after restart with no lovelace-related errors in logs.
+
+### Move some load to the Raspberry Pi
+**Why:** the `wol-sender` Pi previously only sent a boot-time magic packet to `xero` - a trivially light job for a whole Pi, real spare capacity going unused.
+
+**Node-RED migrated (2026-08-22)** - flows/credentials/Miraie AC config copied to the Pi, started via plain `docker run`, both required MQTT connections (local HA broker, MirAIe cloud broker) confirmed live at the socket level. Removed `node-red` from `xero`'s `docker-compose.yml`.
+
+**Constraint identified along the way:** the Pi has no battery backup (unlike `xero`, on the UPS), but the LAN/router stays up during an outage - so anything actively network-depended-on during an outage can't move here without the Pi also getting battery backup. Ruled out Pi-hole, Mosquitto, Caddy, and Home Assistant on those grounds. Also ruled out: Watchtower (can only manage the Pi's own containers via its local Docker socket, not `xero`'s), Samba (storage lives on `xero`'s ZFS pool, moving just the container adds a network round-trip or needs real separate storage on the Pi).
+
+**Watchdog fixed and redesigned (2026-08-23)** - the Mosquitto-auth security pass broke `watchdog_nodered.sh` (no credentials passed), which surfaced a deeper pre-existing bug: its `AC_TOPIC` never matched what the `ha-miraie-ac` node actually publishes, and that data isn't retained anyway (only sent once per reconnect). Rewrote to check the container's own `/proc/net/tcp` for ESTABLISHED connections instead - independent of the AC's power state. Documented in `Readme.md` under "Node-RED Watchdog (MQTT bridge health)".
+
+**Closed out (2026-09-02):** the old `homelab_node-red-data` volume on `xero`, left as a rollback net, is confirmed gone (`docker volume ls` no longer lists it). Vaultwarden was the only other live candidate and stays deliberately deprioritized to last resort (2026-08-20 decision, see git history) rather than an open action item - re-open only if real headroom pressure shows up on the Pi.

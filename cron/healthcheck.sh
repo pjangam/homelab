@@ -18,6 +18,12 @@ set +a
 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
 
+# cron's PATH doesn't include ~/.local/bin, so publish_healthcheck_mqtt.py's
+# `#!/usr/bin/env -S uv run --script` shebang can't find uv - it fails with
+# "uv: No such file or directory" on every run, silently going nowhere since
+# the publish step is wrapped in `|| true` below.
+export PATH="$HOME/.local/bin:$PATH"
+
 problems=()
 docker_bad_containers=()
 

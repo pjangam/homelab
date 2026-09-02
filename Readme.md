@@ -248,7 +248,6 @@ Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compos
 - [ ] ftp backups — compress and encrypt
 - [x] Immich data redundancy: ZFS mirror for the photo volume — backup is skipped due to size, so disk redundancy is the safety net
 - [x] Immich: Google Photos imported via immich-go — 12,913 photos/videos uploaded (22/23 takeout parts). 21 files from part 019 missing, listed in `google_takeout_missing.md`, to be uploaded manually.
-  - [ ] Bhakti user not able to connect to exit node
 
 ## Immich hardware requirements
 
@@ -324,6 +323,35 @@ systemctl --user enable --now spotifyd
 ```bash
 amixer sset Master 50%
 ```
+
+---
+
+## Automatic OS updates
+
+Regular point-release package updates (`noble-updates`) install automatically via `unattended-upgrades`, which was already handling security updates but not this origin - 53 packages had piled up unapplied (2026-09-01) because `Allowed-Origins` in `/etc/apt/apt.conf.d/50unattended-upgrades` only covered `-security` and GA by default.
+
+**Enable it** (uncomments the `-updates` origin, one-time):
+```bash
+sudo sed -i '15s|^//\t|\t|' /etc/apt/apt.conf.d/50unattended-upgrades
+grep -A1 'codename}-updates' /etc/apt/apt.conf.d/50unattended-upgrades   # confirm uncommented
+```
+
+**Reboots stay manual** — `Unattended-Upgrade::Automatic-Reboot` is left `false` (the default). A kernel/library update that needs a reboot just sets `/var/run/reboot-required`; nothing reboots the box on its own. Check it and reboot when convenient:
+```bash
+[ -f /var/run/reboot-required ] && cat /var/run/reboot-required.pkgs
+```
+
+**Release upgrades (24.04 → 26.04) are never automatic, structurally** — `unattended-upgrades` only ever installs package-level updates within the current release. Moving to a new LTS is a separate, manually-run tool (`do-release-upgrade`), untouched by any of the above.
+
+**26.04 isn't available yet regardless.** Canonical's meta-release feed lists Resolute Raccoon (26.04, released 2026-04-23) but flags it `Supported: 0` - the LTS-to-LTS path only opens once that flips to `1`, independent of any point-release announced elsewhere. Check before attempting:
+```bash
+do-release-upgrade -c
+# or, for the raw flag: curl -fsS http://changelogs.ubuntu.com/meta-release-lts | grep -A1 resolute
+```
+
+Timers `apt-daily.timer` / `apt-daily-upgrade.timer` (installed by the `unattended-upgrades` package) drive this daily — `systemctl list-timers apt-daily*` to check next run.
+
+**One-off manual full-upgrade + backup** (`cron/backup_and_apt_update.sh`) — separate from the above, used for catching up a large backlog (like the initial 53 packages) rather than day-to-day patching. Backs up `/etc`, package selections, crontabs, systemd unit state, Docker state, and the `/dev/sdb` partition table to `/datapool/system-backups/pre-update-<timestamp>.tar.gz`, then runs `apt full-upgrade` + `autoremove`. Must run as root (invoke directly, not via `sudo`, in a cron/systemd-run context — see script header for why).
 
 ---
 
