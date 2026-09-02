@@ -47,6 +47,16 @@
   }
   button:disabled { opacity: 0.5; cursor: default; }
   #unsupported { font-size: 0.9rem; color: #888; max-width: 280px; text-align: center; }
+  /* The PiP source video must stay in the layout (not display:none) or
+     Chromium silently refuses to actually create the floating window even
+     though requestPictureInPicture() resolves - so hide it visually instead. */
+  #pip-video {
+    position: fixed;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
@@ -59,7 +69,7 @@
   </div>
 
   <canvas id="canvas" width="200" height="200" hidden></canvas>
-  <video id="pip-video" muted playsinline hidden></video>
+  <video id="pip-video" muted playsinline></video>
 
 <script>
 const COLORS = {
