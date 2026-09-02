@@ -186,10 +186,14 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** crack open one existing Tinxy switch to see what's actually inside (chip ID, whether it's a known-flashable module) before committing to either path.
 
 ### Claw Light (clawlight.dev) - agent status indicator
-**Why:** a physical desk light that shows at-a-glance status for coding agent sessions (Claude Code, Opencode, Codex CLI, GitHub Copilot CLI) via color-coded LEDs - green for active work, red when input is needed - so a running session doesn't need active alt-tabbing to check on.
-**Hardware:** ESP32-C6, diffused RGB LED (3-lens beacon), USB-C powered, <0.5W. Open-source - firmware, CLI daemon, and hardware design all public on GitHub; sold pre-flashed but self-buildable/flashable too.
-**State:** not started - noted as a candidate build 2026-09-02.
-**Next step:** decide whether to buy the pre-built unit or source an ESP32-C6 + LED and flash the open-source firmware directly; check the GitHub repo for BOM/wiring if going the DIY route.
+**Why:** a desk light that shows at-a-glance status for coding agent sessions (Claude Code, Opencode, Codex CLI, GitHub Copilot CLI) via color-coded signal - green for active work, red when input is needed - so a running session doesn't need active alt-tabbing to check on.
+**Hardware version:** ESP32-C6, diffused RGB LED (3-lens beacon), USB-C powered, <0.5W. Open-source - firmware, CLI daemon, and hardware design all public on GitHub; sold pre-flashed but self-buildable/flashable too.
+**Hardware state:** not started - noted as a candidate build 2026-09-02.
+
+**Software-only version (`clawlight/`, built 2026-09-02):** no hardware - a web page (`clawlight/web/index.html`) served by `clawlight/server.py` on xero (port 8126, proxied at `/clawlight` by Caddy), showing the same green/red/gray states. "Always on top" is done via native video Picture-in-Picture (canvas → `captureStream()` → PiP), which works the same way on desktop Safari/Chrome and iOS Safari - one page covers both Mac and iOS, no OS-level always-on-top tooling needed.
+- Status is driven by Claude Code hooks (`UserPromptSubmit`→active, `Stop`/`Notification`→waiting, `SessionEnd`→end) calling `clawlight/set-status.sh`, which POSTs to the server. The server aggregates across **all** reporting sessions, on **any** host (xero and the MacBook, over Tailscale) - red if any session needs input, green if any is active, gray otherwise. Both of the user's accounts (personal, enterprise) share one login per machine at a time, so no per-account tracking is needed.
+- **State:** built, not yet installed as a running service - see `clawlight/README.md` for the systemd unit, Caddy reload, and hook-wiring steps.
+- **Next step:** install `clawlight-server.service` on xero, wire the global Claude Code hooks (via the `update-config` skill), and set up `set-status.sh` + `CLAWLIGHT_SERVER_URL` on the MacBook.
 
 ### Remote control for scenes/scripts (Spotify, white noise, etc.)
 **Why:** the existing physical GPIO buttons (wol-sender Pi, see ✅ Done) prove the pattern - a button publishes an MQTT message, an HA automation fires a scene/script - but that only works for locations physically next to a host with GPIO. An ESP32/ESPHome-based remote would extend the same no-app physical-control idea (see "Easier HA control for household + house help" above) to a standalone battery/USB device controllable from anywhere, not tied to the Pi's location - e.g. a bedside remote for white noise start/stop or Spotify play/pause/skip without opening the HA app.

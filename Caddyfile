@@ -14,6 +14,14 @@ xero.{$TAILNET_SUFFIX} {
         reverse_proxy localhost:8125
     }
 
+    # clawlight status light (see clawlight/README.md) - path kept intact since
+    # clawlight/server.py routes on the /clawlight prefix itself, same reasoning
+    # as the /projects block above.
+    @clawlight path /clawlight /clawlight/*
+    handle @clawlight {
+        reverse_proxy localhost:8126
+    }
+
     handle {
         reverse_proxy localhost:8080
     }

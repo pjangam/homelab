@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clawlight</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0b0b0d;
+    font-family: -apple-system, system-ui, sans-serif;
+    color: #eee;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+  #light {
+    width: min(70vw, 320px);
+    height: min(70vw, 320px);
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 0 60px 10px currentColor;
+  }
+  #label {
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  #sublabel {
+    font-size: 0.85rem;
+    color: #999;
+  }
+  button {
+    font-size: 1rem;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background: #1a1a1e;
+    color: #eee;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #unsupported { font-size: 0.9rem; color: #888; max-width: 280px; text-align: center; }
+</style>
+</head>
+<body>
+  <div id="light"></div>
+  <div id="label">connecting…</div>
+  <div id="sublabel"></div>
+  <button id="float-btn">Float</button>
+  <div id="unsupported" hidden>
+    Picture-in-Picture isn't supported in this browser - the light still updates on this page.
+  </div>
+
+  <canvas id="canvas" width="200" height="200" hidden></canvas>
+  <video id="pip-video" muted playsinline hidden></video>
+
+<script>
+const COLORS = {
+  active:  { css: '#22c55e', label: 'active' },
+  waiting: { css: '#ef4444', label: 'needs input' },
+  idle:    { css: '#6b7280', label: 'idle' },
+};
+
+const lightEl = document.getElementById('light');
+const labelEl = document.getElementById('label');
+const sublabelEl = document.getElementById('sublabel');
+const floatBtn = document.getElementById('float-btn');
+const unsupportedEl = document.getElementById('unsupported');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const video = document.getElementById('pip-video');
+
+let currentState = 'idle';
+let currentSessions = [];
+
+function applyState(data) {
+  const state = COLORS[data.state] ? data.state : 'idle';
+  currentState = state;
+  currentSessions = data.sessions || [];
+  const { css, label } = COLORS[state];
+  lightEl.style.backgroundColor = css;
+  lightEl.style.color = css;
+  labelEl.textContent = label;
+  sublabelEl.textContent = currentSessions.length
+    ? `${currentSessions.length} session${currentSessions.length === 1 ? '' : 's'} (${[...new Set(currentSessions.map(s => s.host))].join(', ')})`
+    : 'no active sessions';
+  drawCanvas();
+}
+
+function drawCanvas() {
+  const { css, label } = COLORS[currentState];
+  ctx.fillStyle = css;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, canvas.width / 2, canvas.height / 2);
+}
+
+async function fetchStatus() {
+  try {
+    const res = await fetch('/clawlight/api/status', { cache: 'no-store' });
+    applyState(await res.json());
+  } catch (e) {
+    labelEl.textContent = 'unreachable';
+  }
+}
+
+function connectEvents() {
+  const source = new EventSource('/clawlight/api/events');
+  source.onmessage = (ev) => applyState(JSON.parse(ev.data));
+  source.onerror = () => {
+    source.close();
+    setTimeout(connectEvents, 3000);
+  };
+}
+
+if (!('pictureInPictureEnabled' in document)) {
+  floatBtn.hidden = true;
+  unsupportedEl.hidden = false;
+} else {
+  floatBtn.addEventListener('click', async () => {
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        return;
+      }
+      drawCanvas();
+      const stream = canvas.captureStream(2);
+      video.srcObject = stream;
+      await video.play();
+      await video.requestPictureInPicture();
+    } catch (e) {
+      unsupportedEl.textContent = 'Could not start Picture-in-Picture: ' + e.message;
+      unsupportedEl.hidden = false;
+    }
+  });
+  video.addEventListener('leavepictureinpicture', () => {
+    floatBtn.textContent = 'Float';
+  });
+  document.addEventListener('enterpictureinpicture', () => {
+    floatBtn.textContent = 'Stop floating';
+  });
+}
+
+fetchStatus();
+connectEvents();
+</script>
+</body>
+</html>
