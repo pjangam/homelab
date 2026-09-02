@@ -127,27 +127,34 @@ if (!('pictureInPictureEnabled' in document)) {
   floatBtn.hidden = true;
   unsupportedEl.hidden = false;
 } else {
-  floatBtn.addEventListener('click', async () => {
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-        return;
-      }
-      drawCanvas();
-      const stream = canvas.captureStream(2);
-      video.srcObject = stream;
-      await video.play();
-      await video.requestPictureInPicture();
-    } catch (e) {
+  // Set the video playing as soon as the page loads (muted autoplay needs no
+  // user gesture), not inside the button handler. iOS Safari drops the "this
+  // came from a real tap" flag if anything is awaited before
+  // requestPictureInPicture() - even `await video.play()` - and throws
+  // AbortError. So by the time the button is clicked, the video is already
+  // playing and the click handler calls requestPictureInPicture() with no
+  // awaits ahead of it.
+  drawCanvas();
+  const stream = canvas.captureStream(2);
+  video.srcObject = stream;
+  video.play().catch(() => {}); // autoplay may be deferred; harmless either way
+
+  floatBtn.addEventListener('click', () => {
+    if (document.pictureInPictureElement) {
+      document.exitPictureInPicture().catch(() => {});
+      return;
+    }
+    video.requestPictureInPicture().catch((e) => {
       unsupportedEl.textContent = 'Could not start Picture-in-Picture: ' + e.message;
       unsupportedEl.hidden = false;
-    }
+    });
   });
   video.addEventListener('leavepictureinpicture', () => {
     floatBtn.textContent = 'Float';
   });
   document.addEventListener('enterpictureinpicture', () => {
     floatBtn.textContent = 'Stop floating';
+    unsupportedEl.hidden = true;
   });
 }
 
