@@ -153,14 +153,20 @@ if (!('pictureInPictureEnabled' in document)) {
   video.addEventListener('loadedmetadata', () => { floatBtn.disabled = false; }, { once: true });
 
   floatBtn.addEventListener('click', () => {
+    if (floatBtn.disabled) return; // a request is already in flight
     if (document.pictureInPictureElement) {
       document.exitPictureInPicture().catch(() => {});
       return;
     }
-    video.requestPictureInPicture().catch((e) => {
-      unsupportedEl.textContent = 'Could not start Picture-in-Picture: ' + e.message;
-      unsupportedEl.hidden = false;
-    });
+    // Only one PiP request may be in flight at a time - the browser throws if
+    // a second call overlaps the first. Disable the button for the duration.
+    floatBtn.disabled = true;
+    video.requestPictureInPicture()
+      .catch((e) => {
+        unsupportedEl.textContent = 'Could not start Picture-in-Picture: ' + e.message;
+        unsupportedEl.hidden = false;
+      })
+      .finally(() => { floatBtn.disabled = false; });
   });
   video.addEventListener('leavepictureinpicture', () => {
     floatBtn.textContent = 'Float';
