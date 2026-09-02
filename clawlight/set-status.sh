@@ -20,10 +20,11 @@ server_url="${CLAWLIGHT_SERVER_URL:-http://localhost:8126}"
 
 hook_input="$(cat)"
 session_id="$(printf '%s' "$hook_input" | jq -r '.session_id // "unknown"' 2>/dev/null)"
+cwd="$(printf '%s' "$hook_input" | jq -r '.cwd // empty' 2>/dev/null)"
 host="$(hostname)"
 
-payload="$(jq -n --arg session_id "$session_id" --arg host "$host" --arg state "$state" \
-  '{session_id: $session_id, host: $host, state: $state}' 2>/dev/null)"
+payload="$(jq -n --arg session_id "$session_id" --arg host "$host" --arg state "$state" --arg cwd "$cwd" \
+  '{session_id: $session_id, host: $host, state: $state, cwd: $cwd}' 2>/dev/null)"
 
 [ -n "$payload" ] && curl -fsS -m 3 -X POST "$server_url/clawlight/api/report" \
   -H 'Content-Type: application/json' \

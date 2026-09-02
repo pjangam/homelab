@@ -99,19 +99,48 @@ function applyState(data) {
   lightEl.style.backgroundColor = css;
   lightEl.style.color = css;
   labelEl.textContent = label;
-  sublabelEl.textContent = currentSessions.length
-    ? `${currentSessions.length} session${currentSessions.length === 1 ? '' : 's'} (${[...new Set(currentSessions.map(s => s.host))].join(', ')})`
-    : 'no active sessions';
+
+  sublabelEl.innerHTML = '';
+  if (currentSessions.length) {
+    currentSessions.forEach((s) => {
+      const row = document.createElement('div');
+      row.textContent = `${s.host}/${s.label}: ${COLORS[s.state] ? COLORS[s.state].label : s.state}`;
+      sublabelEl.appendChild(row);
+    });
+  } else {
+    sublabelEl.textContent = 'no active sessions';
+  }
+
   drawCanvas();
 }
 
 function drawCanvas() {
-  // Thin vertical bar - just a solid color fill, like the LED it's standing
-  // in for. Too narrow for the state label to fit legibly, and the whole
-  // point of PiP is a glanceable color; the label is still shown on the page.
+  // Thin vertical bar - solid color fill, like the LED it's standing in for.
   const { css } = COLORS[currentState];
   ctx.fillStyle = css;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Identify which console(s) are driving this color (e.g. which one needs
+  // input when red) - too narrow at 60px for horizontal text, so rotate it
+  // to run the long way down the bar.
+  const relevant = currentSessions.filter((s) => s.state === currentState);
+  if (relevant.length) {
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const lines = relevant.slice(0, 3).map((s) => `${s.host}:${s.label}`);
+    const lineHeight = 16;
+    const startOffset = -((lines.length - 1) * lineHeight) / 2;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, 0, startOffset + i * lineHeight, canvas.height - 12);
+    });
+    ctx.restore();
+  }
+
   if (videoTrack) videoTrack.requestFrame();
 }
 

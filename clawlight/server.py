@@ -49,7 +49,7 @@ def prune_locked():
         del sessions[sid]
 
 
-def report(session_id: str, host: str, state: str):
+def report(session_id: str, host: str, state: str, cwd: str = ""):
     with lock:
         prune_locked()
         if state == "end":
@@ -58,11 +58,13 @@ def report(session_id: str, host: str, state: str):
 
         entry = sessions.get(session_id)
         if entry is None:
-            entry = {"foreground": "active", "background": 0, "host": host, "ts": 0.0}
+            entry = {"foreground": "active", "background": 0, "host": host, "cwd": "", "ts": 0.0}
             sessions[session_id] = entry
 
         entry["host"] = host
         entry["ts"] = time.time()
+        if cwd:  # not every hook event necessarily carries cwd - don't clobber a known value with blank
+            entry["cwd"] = cwd
 
         if state in FOREGROUND_STATES:
             entry["foreground"] = state
@@ -78,12 +80,21 @@ def effective_state(entry: dict) -> str:
     return entry["foreground"]
 
 
+def label_for(entry: dict, session_id: str) -> str:
+    # Prefer the session's project directory (last path segment of cwd) to
+    # identify which console this is - falls back to a short session id when
+    # a hook event didn't carry cwd (e.g. it fired before the first one that does).
+    if entry["cwd"]:
+        return entry["cwd"].rstrip("/").rsplit("/", 1)[-1] or entry["cwd"]
+    return session_id[:8]
+
+
 def snapshot() -> dict:
     with lock:
         prune_locked()
-        items = list(sessions.values())
+        items = list(sessions.items())
 
-    states = [effective_state(s) for s in items]
+    states = [effective_state(s) for _, s in items]
 
     if "waiting" in states:
         agg = "waiting"
@@ -94,7 +105,10 @@ def snapshot() -> dict:
 
     return {
         "state": agg,
-        "sessions": [{"host": s["host"], "state": st} for s, st in zip(items, states)],
+        "sessions": [
+            {"host": s["host"], "state": st, "label": label_for(s, sid)}
+            for (sid, s), st in zip(items, states)
+        ],
     }
 
 
@@ -128,6 +142,7 @@ class Handler(BaseHTTPRequestHandler):
             session_id = str(data["session_id"])
             host = str(data.get("host", "unknown"))
             state = str(data["state"])
+            cwd = str(data.get("cwd", ""))
         except (KeyError, ValueError, json.JSONDecodeError):
             self.send_error(400)
             return
@@ -136,7 +151,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(400)
             return
 
-        report(session_id, host, state)
+        report(session_id, host, state, cwd)
         self._send_json({"ok": True})
 
     def _send_json(self, data: dict):
