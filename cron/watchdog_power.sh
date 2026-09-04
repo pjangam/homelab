@@ -32,8 +32,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 set -a
 source "$SCRIPT_DIR/.env.healthcheck"
+# Optional: push alerts to self-hosted ntfy as well as email. Guarded because
+# this file only exists on xero, where ntfy runs.
+[ -f "$SCRIPT_DIR/.env.ntfy" ] && source "$SCRIPT_DIR/.env.ntfy"
 set +a
 source "$SCRIPT_DIR/scripts/send_email.sh"
+source "$SCRIPT_DIR/scripts/push_ntfy.sh"
 
 DISABLE_FLAG="$HOME/.power-watchdog-disabled"
 ARM_FLAG="$HOME/.power-watchdog-armed"
@@ -64,6 +68,7 @@ if [ "$carrier" = "1" ]; then
   if [ -f "$DOWN_SINCE_FILE" ]; then
     logger -t "$LOG_TAG" "$IFACE carrier restored - clearing watch"
     send_email "[homelab] $IFACE carrier restored" "$IFACE carrier restored at $(date). Power watchdog watch cleared." || true
+    push_ntfy "Power: $IFACE carrier restored" "Carrier restored at $(date). Power watchdog watch cleared." 3 white_check_mark
   fi
   rm -f "$DOWN_SINCE_FILE" "$LAST_MILESTONE_FILE" "$THRESHOLD_CROSSED_FILE"
   exit 0
@@ -75,6 +80,11 @@ if [ ! -f "$DOWN_SINCE_FILE" ]; then
   rm -f "$LAST_MILESTONE_FILE" "$THRESHOLD_CROSSED_FILE"
   logger -t "$LOG_TAG" "$IFACE lost carrier - likely on UPS battery, starting watch"
   send_email "[homelab] $IFACE lost carrier" "$IFACE lost carrier at $(date). Likely on UPS battery - power watchdog is now watching (shuts down cleanly after ${DOWN_THRESHOLD_MIN}m if armed)." || true
+  # Caveat: carrier loss usually means the switch/router lost power too, so
+  # neither this push nor the email above can actually leave the house until
+  # the link returns. Sent anyway - it costs nothing, and it does get through
+  # when the loss is upstream of the LAN rather than a whole-house outage.
+  push_ntfy "Power: $IFACE lost carrier" "Lost carrier at $(date). Likely on UPS battery - shutting down cleanly after ${DOWN_THRESHOLD_MIN}m if armed." 5 electric_plug
   exit 0
 fi
 

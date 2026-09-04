@@ -228,16 +228,7 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
 
 source "$SCRIPT_DIR/scripts/send_email.sh"
 
-# Push to self-hosted ntfy in addition to email. Email is easy to miss on a
-# phone; this is the same alert with a real notification attached. Best-effort:
-# a push failure must never stop the email from going out.
-push_ntfy() {
-  [ -n "${NTFY_CLAWLIGHT_TOKEN:-}" ] || return 0
-  curl -sS -m 10 -o /dev/null \
-    -H "Authorization: Bearer $NTFY_CLAWLIGHT_TOKEN" \
-    -H "Title: $1" -H "Priority: ${3:-4}" -H "Tags: ${4:-warning}" \
-    -d "$2" "http://127.0.0.1:8127/clawlight" || true
-}
+source "$SCRIPT_DIR/scripts/push_ntfy.sh"
 
 # Only email on a *change* from the last alert (new/different problems, or a
 # prior problem clearing) - not on every repeat of the same ongoing issue.

@@ -274,19 +274,40 @@ APNs wake-up relayed via `ntfy.sh` is contentless by design (it carries only a
 message ID and a SHA256 of the topic URL - never the message body), so without
 the tailnet the notification arrives generic.
 
+### What alerts here
+
+| source | notifies via |
+|---|---|
+| `clawlight/server.py` | ntfy (edge-triggered on `waiting`) |
+| `cron/healthcheck.sh` | email + ntfy — containers, units, ZFS, disk, backups, **cert expiry** |
+| `cron/watchdog_power.sh` | email + ntfy — carrier lost/restored |
+| `cron/renew_certs.sh` | ntfy on failure |
+
+The tinxy and spotifyd watchdogs, and the backup scripts, do not alert directly
+— they surface through `healthcheck.sh`, which checks their state and freshness.
+
 ### Adding another alert source
 
-Publish to the topic with the write-only token:
+Source the shared helper (companion to `scripts/send_email.sh`):
 
 ```bash
-. .env.ntfy
-curl -H "Authorization: Bearer $NTFY_CLAWLIGHT_TOKEN" \
-     -H "Title: something happened" -H "Priority: 4" \
-     -d "details" http://127.0.0.1:8127/clawlight
+[ -f "$SCRIPT_DIR/.env.ntfy" ] && { set -a; . "$SCRIPT_DIR/.env.ntfy"; set +a; }
+source "$SCRIPT_DIR/scripts/push_ntfy.sh"
+
+push_ntfy "title" "body" [priority] [tags]    # priority defaults 4, tags "warning"
 ```
+
+It is a silent no-op when `NTFY_CLAWLIGHT_TOKEN` is unset, so scripts that also
+run on machines without ntfy keep working unchanged, and it never fails the
+caller — an alert that cannot be sent must not take down the watchdog sending it.
 
 Give a genuinely separate alert its own topic and ACL rather than reusing
 `clawlight`, so each can be muted independently on the phone.
+
+**Caveat for power alerts:** a `lost carrier` event usually means the switch or
+router lost power too, so neither the push nor the email can leave the house
+until the link returns. It is still sent — it costs nothing and does get through
+when the loss is upstream of the LAN rather than a whole-house outage.
 
 ### Gotchas
 
