@@ -192,6 +192,39 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 **Next step (if picked up):** self-host ntfy as a container on `xero`, configure `upstream-base-url` to `ntfy.sh` for iOS relay, wire a POST into `clawlight/server.py` on the `waiting` transition (edge-triggered, not per-poll) with a long random topic and a minimal payload. Not urgent - parked until the "I missed an alert because I wasn't looking at the light" problem actually happens enough to be worth the build.
 
+### Automatic plant watering (balcony)
+**Why:** long-standing idea (predates this list) - water the balcony plants automatically instead of by hand. Noted 2026-09-04.
+**State:** not started. **Blocked on plumbing, not electronics** - which is why it never got built despite being wanted from the start.
+- **The actuation half is already mostly solved with hardware on hand:** a spare Tinxy valve can be opened/closed from its electric switch or Tinxy's remote API, and a reservoir already exists in the bathroom.
+- **The blocker is getting water to the balcony at all** - the supply is in the bathroom, so any version needs a pipe run through a wall, i.e. drilling and laying pipe. That is construction work, not a weekend electronics build.
+- **The bathroom reservoir does not sidestep this** - it is on the wrong side of the same wall. The only variant that avoids drilling is a reservoir physically sited on the balcony (manual refilling, plus somewhere to put it) with a small submersible pump instead of a valve.
+- **Caveat on using the Tinxy valve:** it is cloud-dependent like the rest of the Tinxy gear (see "In-house smart switch to replace Tinxy" below) - watering would stop working during an ISP outage, and it inherits the same privacy concern. Fine for a first pass; an ESP32/ESPHome + solenoid valve would be the local-only version.
+
+**Design notes captured 2026-09-04** for whenever this unblocks - nothing built, but these are the decisions that usually decide whether such a build survives:
+- Use **capacitive** soil moisture sensors, not resistive - resistive probes pass current through wet soil and corrode through in weeks. Most common failure of this project.
+- **Water on a schedule with moisture as a veto**, rather than triggering on the sensor - a drifted or dead sensor then cannot flood the plants or starve them, it only loses the skip-if-already-wet optimisation.
+- Put a **hard max-runtime cutoff on the device itself** (ESPHome `on_turn_on` -> delay -> `turn_off`), not only in an HA automation. Given the bridge-flapping history here (Node-RED MQTT drops, the `white-noise-mqtt.py` reconnect loop), a valve that only closes when HA tells it to is a flood waiting for the next hiccup. Prefer a normally-closed valve so a power cut means no water.
+
+**Next step:** none - parked on the wall/pipe work. Revisit if that construction happens anyway for another reason, or if a balcony-sited reservoir turns out to be acceptable.
+
+### Pigeon deterrent - motion-triggered sprinkler (balcony railing/parapet)
+**Why:** pigeons roost on the balcony railing/parapet. Original idea was image recognition + sprinkler. Noted 2026-09-04.
+**State:** not started.
+- **Image recognition ruled out on `xero`** - Celeron N5105, no GPU, 8GB RAM with Immich's ML already disabled for exactly this reason, and a history of memory-pressure lockups. Continuous object detection there would put the whole homelab at risk. Real CV would need dedicated hardware (Pi 5 + Hailo hat, or a Coral TPU), roughly a Rs 15-25k project - not a weekend build.
+- **The CV is probably unnecessary anyway** - commercial motion-activated sprinklers (e.g. Orbit Yard Enforcer) are just a PIR sensor and a valve, no detection at all. Outdoor PIR does false-trigger on heat and moving shadows, but the cost of a false positive here is a cup of water. Build the dumb version first and only escalate to detection if it genuinely does not work.
+- **Shares the watering project's blocker** - a sprinkler on the balcony needs water at the balcony, the same wall/pipe run described above. If that ever gets solved, both projects unlock together.
+- **Two real-world constraints to settle before buying anything:** (1) **runoff** - the railing/parapet is an open edge, so spray falls onto whatever or whoever is below; worth confirming that is acceptable first, since it is the kind of thing that kills a project after it is built. (2) **habituation** - pigeons adapt fast to anything predictable, so randomise spray timing and duration rather than firing a fixed pattern.
+**Next step:** none - gated on the same balcony water supply as the watering project, and on the runoff question.
+
+### Remote controlled curtains
+**Why:** long-standing idea - open/close curtains from HA (and on a schedule/scene) instead of by hand. Noted 2026-09-04.
+**State:** not started. Inverted difficulty from most projects here - the software is the easy part (ESPHome has a native `cover` component, HA support is a solved problem), and the blocker is entirely physical hardware and cost.
+- **The curtains are fabric on a rod with rings** - the awkward middle case. A roller blind would be nearly trivial (a tube motor drops straight in) and a sliding track needs a belt-drive carriage; a rod with rings usually means either a friction drive against the rod, or swapping the rod out for a track first.
+- **Readymade motorised hardware is expensive** - the main reason this stalled, consistent with the earlier finding that Shelly-class gear runs ~2x its bare-device price once mounting and wiring are counted.
+- **Possible synergy:** the "In-house smart switch to replace Tinxy" project below is leaning toward Zigbee for structurally avoiding the ISP-outage problem. If a Zigbee coordinator gets bought for that, off-the-shelf Zigbee curtain motors become a much better deal - one coordinator, two projects - than a DIY stepper/belt build.
+**Next step:** none - parked on hardware cost. Revisit if a Zigbee coordinator gets bought for the switch project, or if a cheap enough motor/track option turns up.
+
+
 ## 🔌 ESP32 Projects
 
 ### In-house smart switch to replace Tinxy
