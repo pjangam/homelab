@@ -10,9 +10,18 @@ re-Googling every time a new button/sensor gets wired in.
 |---|---|---|
 | 11 + 9 | GPIO17 + GND | White noise start button (`scripts/white-noise-buttons-mqtt.py`) |
 | 12 + 14 | GPIO18 + GND | White noise stop button (`scripts/white-noise-buttons-mqtt.py`) |
-| 13 + 14 | GPIO27 + GND | Sleep button (`scripts/scene-buttons-mqtt.py`) |
-| 15 + 14 | GPIO22 + GND | Awake button (`scripts/scene-buttons-mqtt.py`) |
+| 13 + 14 | GPIO27 + GND | Sleep button (`scripts/scene-buttons-mqtt.py`) - **claimed, nothing wired** |
+| 15 + 14 | GPIO22 + GND | Awake button (`scripts/scene-buttons-mqtt.py`) - **claimed, nothing wired** |
 | 2 or 4 (5V) + a GND | - | Cooling fan (always-on load, exact pin not recorded) |
+
+The two scene-button pins have no buttons attached at the moment (noted
+2026-09-04). They still count as in use: `scene-buttons-mqtt.service` runs at
+boot and claims both pins the moment it starts, so nothing else can have them
+while it does. If those buttons are not going to be wired, disabling the
+service (`sudo systemctl disable --now scene-buttons-mqtt` on the Pi) frees
+GPIO27 and GPIO22 - and removes a GPIO process, which is worth doing on its
+own merits: see `incidents/2026-09-04-lgpio-notify-fifo-collision.md`, where
+this idle service silently broke the white-noise buttons.
 
 GPIO17 originally carried a latching toggle switch (see git history /
 `white_noise_buttons_setup.md`), swapped for two independent momentary push
