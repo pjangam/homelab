@@ -9,7 +9,7 @@ pid 1044 (scene-buttons)       fd 3,4 -> /home/pramod/.lgd-nfy0   inode=62680
 pid 1045 (white-noise-buttons) fd 3,4 -> /home/pramod/.lgd-nfy0   inode=62680
 ```
 
-A FIFO delivers each byte to exactly one reader, so every GPIO edge report went to whichever process read it first. The idle `scene-buttons-mqtt` process (no buttons wired, nothing of its own to receive) sat on the same FIFO consuming and discarding a share of the white-noise bridge's edge reports - which is why presses appeared dead but occasionally worked (a press at 11:31:23 on the day of the fix did get through and started white noise). The wasted reads also explain the ~5% steady CPU each process had been burning while "idle".
+A FIFO delivers each byte to exactly one reader, so every GPIO edge report went to whichever process read it first. The idle `scene-buttons-mqtt` process (no buttons wired, nothing of its own to receive) sat on the same FIFO consuming and discarding a share of the white-noise bridge's edge reports - which is why presses appeared dead but occasionally worked (a press at 11:31:23 on the day of the fix did get through and started white noise).
 
 Note the failure needs no second *set of buttons* - only a second lgpio *process* sharing the working directory. A bridge with nothing wired to it is just as destructive as a busy one.
 
@@ -31,3 +31,5 @@ os.chdir(run_dir)
 Both scripts also log now - notify dir, each watched pin/topic, MQTT connect/disconnect, and one line per press with the publish rc.
 
 **Prevention:** any future `gpiozero`/`lgpio` service on the Pi must get its own working directory (or call the same helper). Two lgpio processes must never share a CWD. `scripts/deploy_button_bridges_pi.sh` pushes both scripts and restarts both services without needing the Pi's sudo password (the units run as `pramod` with `Restart=always`, so killing the main pid is enough).
+
+**Not part of this bug:** each bridge process burns a steady ~4-5% of one core while idle. That was initially assumed to be the collision (two processes churning through reports they don't own), but it measured the same after the fix - it is just what `gpiozero` + `lgpio` costs at rest on this Pi 3B. Roughly 10% of one core across both services; not worth chasing for now, but noted so it isn't mistaken for a symptom next time.
