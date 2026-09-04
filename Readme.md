@@ -471,6 +471,58 @@ The TTY uses a Terminus powerline PSF font so that oh-my-zsh agnoster theme rend
 
 ---
 
+## TLS certificates (Caddy-served names)
+
+`xero.<tailnet>` is served by Caddy from static files in `certs/`, renewed by
+`cron/renew_certs.sh` (Sundays 05:00). Caddy runs with `auto_https off`, so
+nothing renews these on its own - the script is the only thing that does.
+
+```bash
+./cron/renew_certs.sh          # safe to run any time; a no-op unless <30d left
+cat cert-renew.log             # every run is logged
+```
+
+It renews via `tailscale cert --min-validity 720h`, writes to temp files and
+validates them before installing, and **pushes a priority-5 ntfy alert on any
+failure** - see "Push Notifications" above. That alerting exists because this
+job failed silently for three months
+(`incidents/2026-09-04-tls-cert-renewal-silently-broken.md`).
+
+Two things that will bite you if you edit it:
+- **No `sudo`.** This user has `NOPASSWD` only for `shutdown`, so any `sudo` in
+  cron fails with no TTY. Cert access comes from `tailscale set --operator=pramod`,
+  run once.
+- **`--min-validity` is mandatory.** Without it `tailscale cert` returns the
+  cached cert until it has effectively expired. Use Go duration units (`720h`) -
+  there is no `d` unit, and `30d` is a parse error.
+
+### Independent expiry check
+
+`renew_certs.sh` alerts when it *fails*, but it cannot alert if it never runs at
+all - a removed crontab line, a deleted script, or a machine that was off every
+Sunday are all indistinguishable from silence, and that is exactly the failure
+that went unnoticed for three months. So `cron/check_certs.sh` checks expiry
+independently, called from `healthcheck.sh` every 15 minutes, sharing no
+machinery with the thing it is checking.
+
+It warns below **21 days**: renewal runs weekly with a 30-day `--min-validity`,
+so a cert can legitimately sit just under 30d for up to a week before the next
+Sunday run - below 21d means renewal has missed at least one scheduled run plus
+slack. Problems go to email *and* an ntfy push.
+
+```bash
+./cron/check_certs.sh                  # silent when healthy; exits 1 if not
+./scripts/test_cert_expiry_check.sh    # 8 cases against synthetic certs
+```
+
+The test drives the real script against generated certs (89d/30d/22d silent,
+20d/5d warn, expired, missing dir, malformed) rather than re-implementing its
+logic - its first version asserted silence against fixtures that had failed to
+generate, and "passed" while testing nothing.
+
+`ha.<tailnet>` and `ntfy.<tailnet>` do **not** use any of this - their tailscale
+sidecars renew their own certs internally, with no cron and no files in `certs/`.
+
 ## Past incidents
 
 Full write-ups live in [`incidents/`](incidents/), one file per incident (symptom/root cause/diagnosis/fix/prevention):
@@ -478,6 +530,7 @@ Full write-ups live in [`incidents/`](incidents/), one file per incident (sympto
 - [`2026-06-29-zfs-postgres-freeze.md`](incidents/2026-06-29-zfs-postgres-freeze.md) — SSH + display dead, Docker still accessible; orphaned `immich_postgres` container deadlocked on ZFS I/O
 - [`2026-08-31-white-noise-mqtt-reconnect-loop.md`](incidents/2026-08-31-white-noise-mqtt-reconnect-loop.md) — racy manual MQTT reconnect loop flapping HA switches "unavailable" every ~5s; found in `toggle-button-mqtt.py` (2026-08-25), recurred in `white-noise-mqtt.py` (2026-08-31)
 - [`2026-07-23-getty-tty1-crash-loop.md`](incidents/2026-07-23-getty-tty1-crash-loop.md) — `getty@tty1` crash-looped after a reboot changed the console video mode; a hardcoded TTY font choice stopped fitting. Includes a corrected theory ruling this out as the cause of the same-day white-noise bug
+- [`2026-09-04-tls-cert-renewal-silently-broken.md`](incidents/2026-09-04-tls-cert-renewal-silently-broken.md) — the monthly `tailscale cert` cron produced no effect for 3 months and was found 5 days from expiry; `sudo` cannot run from this crontab, the `&&`-chain sent the error to unread cron mail, and `tailscale cert` without `--min-validity` returns the cached cert rather than renewing
 
 ---
 

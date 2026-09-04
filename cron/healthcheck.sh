@@ -9,6 +9,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 set -a
 source "$SCRIPT_DIR/.env.healthcheck"
 source "$SCRIPT_DIR/.env.mqtt"
+# Optional: push alerts to self-hosted ntfy as well as email. Guarded because
+# this file only exists on xero, where ntfy runs.
+[ -f "$SCRIPT_DIR/.env.ntfy" ] && source "$SCRIPT_DIR/.env.ntfy"
 set +a
 
 # cron runs with no XDG_RUNTIME_DIR, so `systemctl --user` fails with
@@ -105,6 +108,12 @@ if [ -f "$BACKUP_LOG" ]; then
 else
   problems+=("backup.log not found at $BACKUP_LOG - can't verify backup freshness")
 fi
+
+# TLS cert expiry - see cron/check_certs.sh for why this is an independent
+# check rather than something renew_certs.sh reports on itself.
+while IFS= read -r cert_problem; do
+  [ -n "$cert_problem" ] && problems+=("$cert_problem")
+done < <("$SCRIPT_DIR/cron/check_certs.sh")
 
 # spotifyd watchdog (watchdog_spotifyd.sh): it silently self-heals a single
 # stuck-connection hang by restarting the service, which never shows up as a
@@ -219,6 +228,17 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
 
 source "$SCRIPT_DIR/scripts/send_email.sh"
 
+# Push to self-hosted ntfy in addition to email. Email is easy to miss on a
+# phone; this is the same alert with a real notification attached. Best-effort:
+# a push failure must never stop the email from going out.
+push_ntfy() {
+  [ -n "${NTFY_CLAWLIGHT_TOKEN:-}" ] || return 0
+  curl -sS -m 10 -o /dev/null \
+    -H "Authorization: Bearer $NTFY_CLAWLIGHT_TOKEN" \
+    -H "Title: $1" -H "Priority: ${3:-4}" -H "Tags: ${4:-warning}" \
+    -d "$2" "http://127.0.0.1:8127/clawlight" || true
+}
+
 # Only email on a *change* from the last alert (new/different problems, or a
 # prior problem clearing) - not on every repeat of the same ongoing issue.
 # Otherwise an unresolved problem (like the ZFS corruption found while
@@ -230,6 +250,7 @@ previous=""
 if [ ${#problems[@]} -eq 0 ]; then
   if [ -n "$previous" ]; then
     send_email "[homelab] healthcheck: all clear" "Previously reported issue(s) resolved:"$'\n\n'"$previous"
+    push_ntfy "homelab: all clear" "Previously reported issue(s) resolved." 3 white_check_mark
     rm -f "$STATE_FILE"
   fi
   exit 0
@@ -238,5 +259,6 @@ fi
 current=$(printf '%s\n\n' "${problems[@]}")
 if [ "$current" != "$previous" ]; then
   send_email "[homelab] healthcheck found problems" "$current"
+  push_ntfy "homelab: healthcheck found problems" "$current"
   printf '%s' "$current" > "$STATE_FILE"
 fi
