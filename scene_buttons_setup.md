@@ -79,3 +79,11 @@ whole bug class by design: it publishes a plain, non-retained message only
 on an actual button press, with no persisted state at all for a reconnect to
 replay. It also already uses the fixed `connect_async()` + `loop_forever()`
 pattern from the start, not the original racy manual loop.
+
+## Troubleshooting
+
+Same failure modes and tooling as the white-noise buttons - see the
+"Troubleshooting" section of `white_noise_buttons_setup.md`. Both bridges run
+on the same Pi and hit the same lgpio notify-FIFO collision on 2026-09-04
+(`incidents/2026-09-04-lgpio-notify-fifo-collision.md`); redeploy either with
+`scripts/deploy_button_bridges_pi.sh`.

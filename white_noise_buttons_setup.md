@@ -70,3 +70,29 @@ replay/refire).
    in HA within a couple seconds; press stop, confirm it turns off. No
    entity/state to check first - like the scene buttons, these publish a
    plain non-retained MQTT message straight to an MQTT-trigger automation.
+
+## Troubleshooting
+
+**Buttons do nothing, service looks healthy.** Check the journal first - the
+bridge logs its notify dir, each watched pin/topic, MQTT connect/disconnect,
+and one line per press:
+
+```
+ssh pramod@192.168.1.124 'journalctl -u white-noise-buttons-mqtt -f'
+```
+
+- **Press lines appear, HA does nothing** - the break is MQTT/HA side. Check
+  the automations are loaded and `switch.white_noise` responds to a synthetic
+  press: `scripts/diagnose_white_noise_buttons.sh --inject`.
+- **No press lines at all** - either the wiring or the GPIO layer. Run
+  `scripts/capture_white_noise_button_presses.sh`, which logs `pinctrl poll`
+  edges on the Pi next to the MQTT messages. Edges but no MQTT means the
+  bridge process isn't seeing its own edge notifications - see
+  `incidents/2026-09-04-lgpio-notify-fifo-collision.md` (two lgpio processes
+  sharing a working directory fight over one `.lgd-nfy0` FIFO; each script
+  now `chdir`s into its own `~/.lgpio/<script>/` to prevent it).
+
+**Redeploying either bridge script** after an edit:
+`scripts/deploy_button_bridges_pi.sh` - copies both scripts to the Pi and
+restarts both services. No sudo needed (the units run as `pramod` with
+`Restart=always`, so killing the main pid restarts them).
