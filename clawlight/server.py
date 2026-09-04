@@ -11,8 +11,11 @@ in memory only; a server restart just waits for the next hook event per session
 to repopulate, which is fine since UserPromptSubmit/Stop fire constantly.
 """
 import json
+import os
 import threading
 import time
+import urllib.error
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -23,6 +26,24 @@ WEB_DIR = Path(__file__).parent / "web"
 STALE_AFTER_SECONDS = 30 * 60
 FOREGROUND_STATES = {"active", "waiting"}
 BACKGROUND_STATES = {"task_start", "task_end"}
+
+# --- push notifications (self-hosted ntfy) -----------------------------------
+# Published over loopback rather than the tailnet URL: no TLS dependency, the
+# publish token never leaves the host, and it still works if the tailnet is
+# having a moment. The token is write-only on this topic (see
+# scripts/setup_ntfy_users.sh), so a leak cannot read notification history.
+#
+# Credentials come from .env.ntfy via the systemd unit's EnvironmentFile.
+# Unset token = notifications silently disabled, which is the correct
+# behaviour on any machine that isn't xero.
+NTFY_URL = os.environ.get("NTFY_URL", "http://127.0.0.1:8127/clawlight")
+NTFY_TOKEN = os.environ.get("NTFY_CLAWLIGHT_TOKEN", "")
+# Where the notification should take you when tapped. Optional.
+NTFY_CLICK_URL = os.environ.get("CLAWLIGHT_PUBLIC_URL", "")
+# Don't re-alert for this long after alerting. A session that flaps
+# waiting->active->waiting (e.g. several permission prompts in a row) is one
+# interruption, not several - you are already looking at the screen by then.
+NOTIFY_COOLDOWN_SECONDS = 60
 
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -41,6 +62,12 @@ lock = threading.Lock()
 # your input when Claude is still actually working.
 sessions: dict[str, dict] = {}
 
+# Aggregate state as of the last report, so notifications are EDGE-triggered on
+# the transition into `waiting` rather than fired on every hook event while a
+# session sits at a prompt. Guarded by `lock` along with `sessions`.
+last_aggregate = "idle"
+last_notify_ts = 0.0
+
 
 def prune_locked():
     now = time.time()
@@ -49,11 +76,66 @@ def prune_locked():
         del sessions[sid]
 
 
+def push_notification(labels: list[str]):
+    """Best-effort ntfy push. Runs on its own thread; never raises into a hook."""
+    body = ", ".join(labels) if labels else "a session"
+    req = urllib.request.Request(
+        NTFY_URL,
+        data=body.encode(),
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {NTFY_TOKEN}",
+            "Title": "Claude needs you",
+            "Tags": "bell",
+            "Priority": "4",
+            **({"Click": NTFY_CLICK_URL} if NTFY_CLICK_URL else {}),
+        },
+    )
+    try:
+        urllib.request.urlopen(req, timeout=5).close()
+    except (urllib.error.URLError, OSError):
+        pass  # same contract as set-status.sh: a push must never break a turn
+
+
+def aggregate_locked() -> tuple[str, list[str]]:
+    """Aggregate state, plus labels of the sessions driving `waiting`.
+
+    Caller must hold `lock`. Mirrors snapshot()'s precedence rules.
+    """
+    agg = "idle"
+    waiting = []
+    for sid, entry in sessions.items():
+        st = effective_state(entry)
+        if st == "waiting":
+            waiting.append(f"{entry['host']}/{label_for(entry, sid)}")
+            agg = "waiting"
+        elif st == "active" and agg != "waiting":
+            agg = "active"
+    return agg, waiting
+
+
+def maybe_notify_locked():
+    """Fire a push if the aggregate just entered `waiting`. Caller holds `lock`."""
+    global last_aggregate, last_notify_ts
+
+    agg, waiting = aggregate_locked()
+    previous, last_aggregate = last_aggregate, agg
+
+    if not NTFY_TOKEN or agg != "waiting" or previous == "waiting":
+        return
+    now = time.time()
+    if now - last_notify_ts < NOTIFY_COOLDOWN_SECONDS:
+        return
+    last_notify_ts = now
+    threading.Thread(target=push_notification, args=(waiting,), daemon=True).start()
+
+
 def report(session_id: str, host: str, state: str, cwd: str = ""):
     with lock:
         prune_locked()
         if state == "end":
             sessions.pop(session_id, None)
+            maybe_notify_locked()
             return
 
         entry = sessions.get(session_id)
@@ -72,6 +154,8 @@ def report(session_id: str, host: str, state: str, cwd: str = ""):
             entry["background"] += 1
         elif state == "task_end":
             entry["background"] = max(0, entry["background"] - 1)
+
+        maybe_notify_locked()
 
 
 def effective_state(entry: dict) -> str:

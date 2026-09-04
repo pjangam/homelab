@@ -1,0 +1,39 @@
+# ntfy self-hosted config. Reachable at https://ntfy.<tailnet>, served by the
+# ntfy-tailscale sidecar (its own tailnet hostname + auto-renewing cert) - NOT
+# through Caddy, because ntfy cannot be hosted under a sub-path: upstream
+# declined that outright (binwiederhier/ntfy#1009, closed 2026-06-08), and
+# setting a sub-path in base-url makes the container refuse to start.
+#
+# base-url is NOT set here - it comes from NTFY_BASE_URL in docker-compose.yml
+# so the tailnet name stays out of git, same convention as the Caddyfile's
+# {$TAILNET_SUFFIX}. It must exactly match the URL entered in the mobile app,
+# or iOS instant delivery breaks (see upstream-base-url below).
+
+listen-http: ":80"
+
+# The sidecar terminates TLS and proxies in, so trust its forwarded headers
+# for client IP (used by rate limiting).
+behind-proxy: true
+
+cache-file: /var/cache/ntfy/cache.db
+cache-duration: "12h"
+attachment-cache-dir: /var/cache/ntfy/attachments
+
+# Users + ACLs live here. deny-all means nothing is readable or writable
+# without explicit per-user, per-topic grants - this is the whole reason for
+# self-hosting rather than using ntfy.sh, where "the topic name is your
+# password". Users are created with `ntfy user add` / `ntfy access`.
+auth-file: /var/lib/ntfy/auth.db
+auth-default-access: "deny-all"
+
+# iOS instant delivery. No self-hosted server can wake an iOS app directly -
+# only Apple's APNs can, and only ntfy.sh's app bundle is registered with it.
+# So a poll request goes upstream to ntfy.sh carrying ONLY the message ID and
+# a SHA256 of the topic URL; the message body never leaves this server. The
+# phone gets a contentless wake-up, then fetches the real message from here
+# over Tailscale.
+upstream-base-url: "https://ntfy.sh"
+
+# No public signups - this is a single-household server, accounts are made by hand.
+enable-signup: false
+enable-login: true

@@ -4,6 +4,10 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+# ntfy publish token + click-through URL (see scripts/setup_ntfy_users.sh).
+# The dash prefix keeps the service starting on a machine that has no
+# .env.ntfy - clawlight then simply runs without push notifications.
+EnvironmentFile=-/home/pramod/code/homelab/.env.ntfy
 ExecStart=%h/.local/bin/uv run --script /home/pramod/code/homelab/clawlight/server.py
 Restart=on-failure
 RestartSec=3

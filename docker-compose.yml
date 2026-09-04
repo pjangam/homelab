@@ -1,3 +1,23 @@
+# Shared shape for the Tailscale sidecars that give a service its own tailnet
+# hostname and an auto-renewing HTTPS cert, without touching Caddy. Used by
+# ha-tailscale and ntfy-tailscale below; the only per-service differences are
+# the auth key, the hostname, the state volume and the config dir.
+#
+# Why sidecars at all: xero already runs its own native tailscaled via systemd,
+# so these cannot use network_mode: host (would conflict) - hence userspace mode.
+#
+# The cert is the real payoff. `tailscale serve` provisions and RENEWS the
+# cert itself inside the container's state volume, unlike the static files in
+# certs/ that Caddy serves with auto_https off and that nothing rotates.
+x-tailscale-sidecar: &tailscale-sidecar
+  image: tailscale/tailscale:latest
+  restart: unless-stopped
+
+x-tailscale-sidecar-env: &tailscale-sidecar-env
+  TS_STATE_DIR: /var/lib/tailscale
+  TS_USERSPACE: "true"
+  TS_SERVE_CONFIG: /config/serve-config.json
+
 services:
   ### photos servers start — disabled: 8GB RAM insufficient to run Immich alongside other services
   # Needs more RAM or dedicated machine. Data is safe on ZFS pool (datapool/immich-upload).
@@ -138,18 +158,18 @@ services:
   # HA itself is unmoved (network_mode: host, 192.168.1.123:8123); this
   # sidecar reaches it over the LAN, same as any other client would.
   ha-tailscale:
-    image: tailscale/tailscale:latest
+    <<: *tailscale-sidecar
     container_name: ha-tailscale
     hostname: ha
-    restart: unless-stopped
     environment:
+      <<: *tailscale-sidecar-env
       TS_AUTHKEY: ${TS_AUTHKEY_HA}
       TS_HOSTNAME: ha
-      TS_STATE_DIR: /var/lib/tailscale
-      TS_USERSPACE: "true"
-      TS_SERVE_CONFIG: /config/serve-config.json
     volumes:
       - ha-tailscale-state:/var/lib/tailscale
+      # Proxies to HA over the LAN (192.168.1.123:8123) rather than by container
+      # name, because HA runs with network_mode: host and so isn't on this
+      # compose network. Rendered by scripts/render_ts_serve_config.sh.
       - ./ts-ha-config:/config
 
   mosquitto:
@@ -215,6 +235,55 @@ services:
       # directory mount rather than a single-file one).
       - .:/data:ro
 
+  # Self-hosted push notifications (PROJECTS.md "iOS push notifications").
+  # Bound to loopback only: the tailnet path in is the sidecar below, and
+  # 127.0.0.1:8127 is for publishers running on xero itself (clawlight), which
+  # keeps basic-auth credentials off the LAN in plaintext.
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    command: serve
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8127:80"
+    environment:
+      # Must match the URL entered in the mobile app exactly - iOS instant
+      # delivery derives its upstream topic hash from this value.
+      NTFY_BASE_URL: "https://ntfy.${TAILNET_SUFFIX}"
+    volumes:
+      - ./ntfy/server.yml:/etc/ntfy/server.yml:ro
+      - ntfy-cache:/var/cache/ntfy
+      - ntfy-auth:/var/lib/ntfy
+    networks:
+      default:
+        aliases:
+          # The sidecar must reach this container by a name that is NOT "ntfy".
+          # ntfy-tailscale sets hostname: ntfy for its tailnet identity, which
+          # registers "ntfy" in Docker's embedded DNS pointing at the SIDECAR -
+          # so http://ntfy:80 from inside the sidecar resolves to itself and
+          # returns connection refused (a 502 out of tailscale serve). On top of
+          # that, tailscaled writes "search <tailnet> / ndots:0" into the
+          # sidecar's resolv.conf, so bare names can resolve via MagicDNS before
+          # Docker DNS. A distinct alias avoids both traps.
+          - ntfy-server
+
+  ntfy-tailscale:
+    <<: *tailscale-sidecar
+    container_name: ntfy-tailscale
+    hostname: ntfy
+    environment:
+      <<: *tailscale-sidecar-env
+      TS_AUTHKEY: ${TS_AUTHKEY_NTFY}
+      TS_HOSTNAME: ntfy
+    volumes:
+      - ntfy-tailscale-state:/var/lib/tailscale
+      # Unlike ha-tailscale, this proxies to the ntfy container by service name
+      # over the compose network - ntfy isn't host-networked, so it needs no
+      # LAN-exposed port at all.
+      - ./ts-ntfy-config:/config
+    depends_on:
+      - ntfy
+
   samba:
     image: dperson/samba
     container_name: samba
@@ -245,6 +314,9 @@ volumes:
   # rollback net; not deleted yet.
   mosquitto-data:
   mosquitto-log:
+  ntfy-cache:
+  ntfy-auth:
+  ntfy-tailscale-state:
   caddy_data:
   caddy_config:
   ha-tailscale-state:

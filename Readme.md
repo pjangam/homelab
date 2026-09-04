@@ -232,6 +232,71 @@ Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compos
 
 ---
 
+## Push Notifications (self-hosted ntfy)
+
+Native push to the phone for clawlight's "needs your input" state, self-hosted
+so message content and credentials stay on `xero`.
+
+**Reachable at** `https://ntfy.<tailnet>` (tailnet only). It is **not** behind
+Caddy: ntfy cannot run under a sub-path (upstream declined it,
+binwiederhier/ntfy#1009), so it gets its own tailnet hostname from the
+`ntfy-tailscale` sidecar - the same pattern as `ha`, shared via the
+`x-tailscale-sidecar` anchor in `docker-compose.yml`. The sidecar provisions and
+**auto-renews** its own cert, unlike the static files in `certs/`.
+
+The ntfy container itself listens on `127.0.0.1:8127` only - never the LAN - so
+basic-auth credentials are not sent in plaintext anywhere. Local publishers
+(clawlight) use that loopback port; the phone uses the HTTPS tailnet name.
+
+### Accounts
+
+`auth-default-access` is `deny-all`; nothing is readable or writable without an
+explicit grant.
+
+| user | access to `clawlight` | used by |
+|---|---|---|
+| `pramod` | read-write | the phone app / web UI |
+| `clawlight` | **write-only**, via a non-expiring token | `clawlight/server.py` |
+
+The split is deliberate: a leaked publish token cannot read notification history.
+Credentials live in gitignored `.env.ntfy` (mode 600), created by:
+
+```bash
+./scripts/setup_ntfy_users.sh   # idempotent, safe to re-run
+```
+
+### Phone setup
+
+Install the ntfy app, then **Add server** → `https://ntfy.<tailnet>`, log in as
+`pramod` with `NTFY_ADMIN_PASSWORD` from `.env.ntfy`, and subscribe to
+`clawlight`. Tailscale must be up on the phone to *fetch* message content: the
+APNs wake-up relayed via `ntfy.sh` is contentless by design (it carries only a
+message ID and a SHA256 of the topic URL - never the message body), so without
+the tailnet the notification arrives generic.
+
+### Adding another alert source
+
+Publish to the topic with the write-only token:
+
+```bash
+. .env.ntfy
+curl -H "Authorization: Bearer $NTFY_CLAWLIGHT_TOKEN" \
+     -H "Title: something happened" -H "Priority: 4" \
+     -d "details" http://127.0.0.1:8127/clawlight
+```
+
+Give a genuinely separate alert its own topic and ACL rather than reusing
+`clawlight`, so each can be muted independently on the phone.
+
+### Gotchas
+
+- These tailscale sidecars need `TS_AUTHKEY`. `containerboot` hard-deadlines
+  `tailscale up` at 60s, so interactive login usually loses the race, restarts,
+  and leaves an orphan machine record squatting the DNS name.
+- The sidecar's `hostname: ntfy` shadows the `ntfy` service in Docker DNS, hence
+  the `ntfy-server` alias the serve config proxies to. Do not "simplify" it back.
+- `config.js` showing `"base_url": ""` is normal - the web app uses relative URLs.
+
 ## Services to run
 
 - [x] Pi-hole: ad blocker
