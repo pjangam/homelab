@@ -1,0 +1,16 @@
+[Unit]
+Description=Scene buttons MQTT bridge (oju sleep/awake)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pramod
+WorkingDirectory=/home/pramod
+EnvironmentFile=/home/pramod/toggle-button-mqtt.env
+Environment=GPIOZERO_PIN_FACTORY=lgpio
+ExecStart=/home/pramod/.local/bin/uv run /home/pramod/scene-buttons-mqtt.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

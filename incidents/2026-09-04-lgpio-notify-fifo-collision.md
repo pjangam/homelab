@@ -104,10 +104,34 @@ Deployed with `scripts/deploy_button_bridges_pi.sh`, which needs no sudo on the 
 
 ## Prevention
 
-- **Any future `gpiozero`/`lgpio` service on this Pi must get its own working directory** (or call the same `isolate_lgpio_notify_dir()` helper). Two lgpio processes must never share a CWD. This is the rule to check first whenever a third GPIO service is added.
+**The standing rule: every GPIO process gets its own pipe.** Any process that talks to GPIO through `gpiozero`/`lgpio` must run in a directory no other GPIO process uses, so its `.lgd-nfy0` is its own. Concretely, any new bridge script starts with the same helper:
+
+```python
+run_dir = Path.home() / ".lgpio" / Path(__file__).stem
+run_dir.mkdir(parents=True, exist_ok=True)
+os.chdir(run_dir)
+```
+
+Naming the directory after the script (`Path(__file__).stem`) is what makes it safe by construction - two scripts cannot collide unless they have the same filename, and they cannot, since they live side by side in `scripts/`. This holds no matter how the process is launched: systemd, by hand from a shell, or during debugging.
+
+As of 2026-09-04 the Pi runs exactly two GPIO processes, both bridges, both fixed (verified by scanning every `/proc/*/fd` for a `gpiochip` handle). The rule matters for the third one, whenever it appears - and a process with nothing wired to it counts, since that is precisely what broke the working one here.
 - **Every bridge logs its presses.** The fix that matters as much as the chdir: a silent service is indistinguishable from a broken one, and this bug was invisible for 21h purely because nothing wrote a line.
 - **`LG_WD` is the config-level equivalent, if it is ever wanted.** liblgpio reads that environment variable and `chdir()`s the whole process to it at init (verified: `cwd before: /tmp/nfycwd` -> `cwd after: /tmp/nfywd`), so `Environment=LG_WD=...` in a unit does the same job as the in-script chdir - but the directory must already exist, and it is undone by anyone editing the unit. The in-script version creates its own directory and travels with the script.
 - `scene-buttons-mqtt.service` still runs with nothing wired to it. Harmless now, but it is the process that broke the working one - if those buttons are not going to be wired, `sudo systemctl disable --now scene-buttons-mqtt` removes the whole class of interaction.
+
+## Where the fix lives, and what is checked in
+
+Worth being explicit, because there are three separate pieces of code involved and only one of them needed changing:
+
+| Piece | What it does | Where it lives | Changed? |
+| --- | --- | --- | --- |
+| `scripts/white-noise-buttons-mqtt.py`, `scripts/scene-buttons-mqtt.py` | The relay: watches the pins, publishes a `PRESS` to MQTT. This is the process that owns the pipe. | Checked in. Deployed to `~/` on the Pi as a copy. | **Yes - this is the fix** |
+| `scripts/deploy_white_noise_buttons_pi.sh` | The installer: writes the systemd unit and enables it. Runs once at setup. | Checked in. | No |
+| `/etc/systemd/system/*.service` on the Pi | Tells systemd how to launch the relay, including the `WorkingDirectory` line that armed the bug. | Lives on the Pi. Reference copies now checked in at `systemd/wol-sender/`. | No - deliberately |
+
+The fix is in **the relay scripts, not the installer**, and that choice is the point. The bug came from unit configuration, so the natural instinct is to fix the installer and the unit files. But then correctness depends on every future unit being written correctly - and units get copy-pasted, hand-edited on the box, and (as here) written months apart by someone not thinking about pipes. Putting it in the relay means the process fixes its own environment on startup, whatever launched it and whatever the unit says.
+
+The deployed copies on the Pi (`~/white-noise-buttons-mqtt.py`, `~/scene-buttons-mqtt.py`) are exactly that - copies. `scripts/deploy_button_bridges_pi.sh` pushes the repo versions and restarts both services; `md5sum` on both sides is the check that they have not drifted.
 
 ## Not part of this bug
 

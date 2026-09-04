@@ -1,0 +1,11 @@
+[Unit]
+Description=Send Wake-on-LAN magic packet to xero on boot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wol-xero-sender.sh
+
+[Install]
+WantedBy=multi-user.target
