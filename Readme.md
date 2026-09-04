@@ -523,6 +523,13 @@ generate, and "passed" while testing nothing.
 `ha.<tailnet>` and `ntfy.<tailnet>` do **not** use any of this - their tailscale
 sidecars renew their own certs internally, with no cron and no files in `certs/`.
 
+Vaultwarden and projects-ui deliberately **stay** under `xero.<tailnet>` rather
+than moving to that pattern (decided 2026-09-05). Moving them would retire this
+script, but Vaultwarden's `DOMAIN` is pinned to `https://xero.<tailnet>` - a new
+hostname would invalidate passkey/WebAuthn origins and force every client to be
+re-pointed. So the renewal and independent-check scripts above are **permanent
+infrastructure, not a stopgap**.
+
 ## Past incidents
 
 Full write-ups live in [`incidents/`](incidents/), one file per incident (symptom/root cause/diagnosis/fix/prevention):
