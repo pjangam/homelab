@@ -106,9 +106,9 @@ fi
 # cert lapses. 5am not 4am to avoid racing watchtower, which restarts containers
 # on Sundays at 4.
 #
-# Prerequisite, still a manual one-time step: `tailscale set --operator=$USER`,
-# so renew_certs.sh can run unprivileged from cron. See the header of
-# cron/renew_certs.sh - without it, renewal fails on every run.
+# Prerequisite: the tailscale operator must be set to $USER so renew_certs.sh
+# can run unprivileged from cron - without it, renewal fails on every run. That
+# is handled automatically further down, in the Tailscale section.
 (crontab -l 2>/dev/null | grep -vE "tailscale cert|renew_certs.sh"; echo "0 5 * * 0 $HOMELAB_DIR/cron/renew_certs.sh") | crontab -
 
 # Let pramod run ONLY `shutdown` without a password, so watchdog_power.sh
@@ -145,11 +145,29 @@ until tailscale status &>/dev/null; do
   TAILSCALE_ELAPSED=$((TAILSCALE_ELAPSED + 5))
 done
 if tailscale status &>/dev/null; then
-  sudo tailscale cert \
+  # Let $USER drive tailscale without sudo. This is what makes the weekly
+  # cron/renew_certs.sh job work: cron has no TTY, so a `sudo tailscale cert`
+  # in there fails instantly and silently - which is exactly how renewal went
+  # unnoticed for three months (see incidents/2026-09-04-tls-cert-renewal-
+  # silently-broken.md). Idempotent, so re-running this script is harmless.
+  sudo tailscale set --operator="$USER"
+  # Read the setting back rather than trusting the exit code. If the operator
+  # didn't actually take, renewal would fail the same silent way it did before,
+  # and shipping that again is the one outcome this block exists to prevent.
+  ts_operator=$(tailscale debug prefs 2>/dev/null |
+    python3 -c "import json,sys; print(json.load(sys.stdin).get('OperatorUser') or '')" 2>/dev/null || true)
+  if [ "$ts_operator" = "$USER" ]; then
+    echo "OK: tailscale operator is $USER - cron/renew_certs.sh can run unprivileged"
+  else
+    echo "WARNING: tailscale operator is '${ts_operator:-unset}', expected '$USER' - cron/renew_certs.sh will fail silently every week. Fix with: sudo tailscale set --operator=$USER"
+  fi
+
+  # Unprivileged now that the operator is set - no sudo, and so no chown to
+  # undo root ownership afterwards.
+  tailscale cert \
     --cert-file "$HOMELAB_DIR/certs/xero.$TAILNET_SUFFIX.crt" \
     --key-file  "$HOMELAB_DIR/certs/xero.$TAILNET_SUFFIX.key" \
     "xero.$TAILNET_SUFFIX"
-  sudo chown "$USER:$USER" "$HOMELAB_DIR/certs/"*
 fi
 
 # Free port 53 for Pi-hole

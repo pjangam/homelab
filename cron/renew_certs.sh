@@ -6,8 +6,9 @@
 # months (Jul/Aug/Sep 2026). Two reasons, both fixed here:
 #   1. It used `sudo tailscale cert`, but sudoers only grants NOPASSWD for
 #      `shutdown`. Cron has no TTY, so sudo failed instantly every time.
-#      Fixed by `tailscale set --operator=$USER` (run once, manually), which
-#      lets this run unprivileged - no sudoers exception needed.
+#      Fixed by `tailscale set --operator=$USER`, which lets this run
+#      unprivileged - no sudoers exception needed. Applied and verified
+#      automatically by new_machine_setup.sh, so a fresh machine gets it.
 #   2. Its `>> log 2>&1` bound only to the LAST command of an && chain, so the
 #      failing first command's output went to unread cron mail. This script
 #      logs every run, and pushes an ntfy alert if anything goes wrong.
