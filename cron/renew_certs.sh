@@ -86,9 +86,23 @@ install -m 644 "$TMP_CRT" "$CRT"
 install -m 600 "$TMP_KEY" "$KEY"
 log "installed cert with ${after}d remaining"
 
-# Caddy caches certs read from disk; USR1 makes it reload config and re-read them.
-if docker kill --signal=USR1 caddy >/dev/null 2>&1; then
-  log "signalled caddy to reload"
+# Caddy caches certs read from disk, so it needs a reload to pick up the new
+# ones. This deliberately does NOT use `docker kill --signal=USR1 caddy`, which
+# is what it used to do: any `docker kill` sets Docker's internal
+# HasBeenManuallyStopped flag on the container, even for a signal like USR1
+# that leaves it running. With `restart: unless-stopped`, Docker then treats it
+# as deliberately stopped and refuses to start it after the next reboot - so a
+# successful renewal silently guaranteed caddy would not come back. That's
+# exactly what happened on 2026-09-06 (see incidents/).
+#
+# `caddy reload` goes through Caddy's own admin API instead and never touches
+# Docker's container state. --address is explicit because `localhost` resolves
+# to ::1 first inside the container while Caddy binds 127.0.0.1 only, so the
+# default would fail with connection refused.
+if docker exec caddy caddy reload \
+     --config /etc/caddy/Caddyfile \
+     --address 127.0.0.1:2019 >/dev/null 2>&1; then
+  log "reloaded caddy via admin API"
 else
   alert "cert renewed but caddy reload failed - it may still serve the old cert"
   exit 1

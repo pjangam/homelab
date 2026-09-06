@@ -26,6 +26,15 @@ fi
 mkdir -p "$BACKUP_DIR"
 
 echo "[$(date)] Stopping vaultwarden..."
+# Guard the restart before stopping. Under `set -euo pipefail`, a failure in the
+# tar/gpg steps below would otherwise exit with vaultwarden still stopped - and
+# `docker stop` also sets Docker's HasBeenManuallyStopped flag, so
+# `restart: unless-stopped` would leave it down through the next reboot as well,
+# not just until someone noticed. That is exactly how caddy went missing on
+# 2026-09-06 (see incidents/). The trap fires on every exit path, success or not;
+# `docker start` on an already-running container is a harmless no-op, so it stays
+# correct alongside the explicit start below.
+trap 'docker start vaultwarden >/dev/null 2>&1 || true' EXIT
 docker stop vaultwarden
 
 echo "[$(date)] Creating encrypted backup..."

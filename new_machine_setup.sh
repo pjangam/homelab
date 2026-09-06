@@ -92,8 +92,24 @@ fi
 
 (crontab -l 2>/dev/null | grep -v "backup_vaultwarden.sh"; echo "0 2 * * * $HOMELAB_DIR/cron/backup_vaultwarden.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 (crontab -l 2>/dev/null | grep -v "backup_homeassistant.sh"; echo "0 3 * * * $HOMELAB_DIR/cron/backup_homeassistant.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
-# Renew Tailscale cert monthly (cert validity is ~90 days)
-(crontab -l 2>/dev/null | grep -v "tailscale cert"; echo "0 4 1 * * sudo tailscale cert --cert-file $HOMELAB_DIR/certs/xero.$TAILNET_SUFFIX.crt --key-file $HOMELAB_DIR/certs/xero.$TAILNET_SUFFIX.key xero.$TAILNET_SUFFIX && sudo chown $USER:$USER $HOMELAB_DIR/certs/* && sudo docker kill --signal=USR1 caddy >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
+# Renew Tailscale certs weekly, via cron/renew_certs.sh.
+#
+# This used to be a long inline entry running `sudo tailscale cert ... && sudo
+# docker kill --signal=USR1 caddy`. That entry failed silently for three months
+# (sudo has no NOPASSWD for tailscale and cron has no TTY), and its caddy reload
+# also marked the container manually-stopped so it never came back after a
+# reboot. Both are written up in incidents/ (2026-09-04 and 2026-09-06). The
+# live crontab was replaced on 2026-09-04; this line was stale until 2026-09-06,
+# meaning a freshly provisioned machine would have reintroduced both bugs.
+#
+# Weekly, not monthly: a monthly job that fails has no retry before a 90-day
+# cert lapses. 5am not 4am to avoid racing watchtower, which restarts containers
+# on Sundays at 4.
+#
+# Prerequisite, still a manual one-time step: `tailscale set --operator=$USER`,
+# so renew_certs.sh can run unprivileged from cron. See the header of
+# cron/renew_certs.sh - without it, renewal fails on every run.
+(crontab -l 2>/dev/null | grep -vE "tailscale cert|renew_certs.sh"; echo "0 5 * * 0 $HOMELAB_DIR/cron/renew_certs.sh") | crontab -
 
 # Let pramod run ONLY `shutdown` without a password, so watchdog_power.sh
 # can act unattended from cron. Scoped to that single command - no broader
