@@ -170,11 +170,38 @@ if tailscale status &>/dev/null; then
     "xero.$TAILNET_SUFFIX"
 fi
 
-# Free port 53 for Pi-hole
+# Free port 53 for Pi-hole. systemd-resolved squats on it and Pi-hole can't
+# bind until it's gone, so this part is load-bearing.
 sudo systemctl disable systemd-resolved
 sudo systemctl stop systemd-resolved
-sudo rm /etc/resolv.conf
-printf "nameserver 127.0.0.1\nnameserver 1.1.1.1\n" | sudo tee /etc/resolv.conf
+
+# Deliberately NOT writing /etc/resolv.conf here.
+#
+# This used to do `rm /etc/resolv.conf` followed by a hand-written
+# `nameserver 127.0.0.1 / nameserver 1.1.1.1`, to point the machine at its own
+# Pi-hole. That line never survived: tailscale runs with --accept-dns on by
+# default, owns /etc/resolv.conf, and rewrites it to the MagicDNS resolver
+# (100.100.100.100) - and it runs *before* this point in the script, so the
+# hand-written file was overwritten at the next tailscale reconfigure. It had
+# been dead on xero for a long time before anyone noticed (2026-09-06).
+#
+# What actually routes this machine's own queries into Pi-hole is a setting
+# this script cannot make, because it lives in the Tailscale admin console:
+#   Tailscale admin -> DNS -> Nameservers -> this host's 100.x address
+# With that set, the chain is
+#   host -> MagicDNS (100.100.100.100) -> this host:53 -> Pi-hole -> upstream
+# so MagicDNS keeps working *and* Pi-hole's blocklist still applies. Verified
+# on xero by sending a uniquely-named query to 100.100.100.100 and finding it
+# in Pi-hole's log arriving from the host's own tailscale address.
+#
+# LAN clients are unaffected by any of this - they get Pi-hole's LAN address
+# from the router's DHCP, not from this file.
+#
+# The old `1.1.1.1` fallback is intentionally not reinstated either: it would
+# mean that with Pi-hole down the machine silently resolves unfiltered through
+# Cloudflare rather than failing visibly.
+#
+# check_dns_reaches_pihole() below verifies all of this once Pi-hole is up.
 
 # Install ZFS userspace tools (no DKMS — use pre-built kernel module)
 if ! command -v zfs &>/dev/null; then
@@ -214,6 +241,50 @@ sudo usermod -aG docker "$USER"
 # Start services
 cd "$(dirname "$0")"
 sudo docker compose up -d
+
+# Verify DNS actually ends up at Pi-hole, rather than assuming it does. The
+# resolv.conf note further up explains why this can't be asserted from config
+# alone: the path runs through MagicDNS and depends on a Tailscale admin-console
+# setting this script can't make. Warnings only - a fresh machine may legitimately
+# not have that setting yet, and this shouldn't abort provisioning.
+check_dns_reaches_pihole() {
+  local marker blocked waited=0
+  echo "Verifying DNS..."
+
+  # Pi-hole needs to be answering before any of this means anything.
+  until sudo docker exec pihole true 2>/dev/null && getent hosts github.com >/dev/null 2>&1; do
+    if [ "$waited" -ge 60 ]; then
+      echo "WARNING: Pi-hole not resolving after 60s - skipping DNS verification. Check: docker logs pihole"
+      return 0
+    fi
+    sleep 5
+    waited=$((waited + 5))
+  done
+  echo "OK: name resolution works ($(getent hosts github.com | awk '{print $1}' | head -1) for github.com)"
+
+  # Does *this host's* traffic actually traverse Pi-hole? A uniquely-named
+  # query through the system resolver must show up in Pi-hole's own log. This
+  # is the check that config inspection can't replace - resolution succeeding
+  # proves nothing about which resolver did the work.
+  marker="setup-check-$(date +%s).example.com"
+  getent hosts "$marker" >/dev/null 2>&1 || true   # expected not to resolve
+  sleep 2
+  if sudo docker exec pihole grep -q "$marker" /var/log/pihole/pihole.log 2>/dev/null; then
+    echo "OK: this host's queries reach Pi-hole"
+  else
+    echo "WARNING: this host's queries are NOT reaching Pi-hole - it is resolving somewhere else."
+    echo "         Set the tailnet nameserver to this host: Tailscale admin -> DNS -> Nameservers -> $(tailscale ip -4 2>/dev/null || echo '<this host 100.x address>')"
+  fi
+
+  # And is the blocklist actually applied? A Pi-hole that resolves everything
+  # but blocks nothing looks perfectly healthy to a plain lookup.
+  blocked=$(getent hosts doubleclick.net 2>/dev/null | awk '{print $1}' | head -1)
+  case "$blocked" in
+    ""|"0.0.0.0"|"::") echo "OK: blocklist is active (doubleclick.net -> ${blocked:-NXDOMAIN})" ;;
+    *) echo "WARNING: blocklist does not appear active - doubleclick.net resolved to $blocked. Check gravity: docker exec pihole pihole -g" ;;
+  esac
+}
+check_dns_reaches_pihole
 
 # Install HACS if not already installed
 if [[ ! -d "$HOMELAB_DIR/HOMEASSISTANT_CONFIG/custom_components/hacs" ]]; then
