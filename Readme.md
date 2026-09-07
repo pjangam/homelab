@@ -57,6 +57,50 @@ Mosquitto runs on `xero`; Node-RED itself runs on the Pi (`wol-sender`, `192.168
 > 4. Set up HA MQTT integration via HA REST API using a long-lived token (no Selenium needed)
 > 5. Only manual step: generate the HA long-lived token once
 
+### Fixing a dead bridge by hand
+
+**Symptom:** the AC is `unavailable` in HA, usually with *"This entity is no
+longer being provided by the mqtt integration"*. That message means HA still
+has the entity in its registry but no MQTT discovery config behind it -
+Node-RED publishes `homeassistant/climate/panasonic-ac/config` on every
+connect, so if the bridge is down it never gets republished.
+
+```bash
+scripts/fix_miraie_ac.sh           # no-op if the bridge is already healthy
+scripts/fix_miraie_ac.sh --force   # restart anyway (republishes discovery)
+scripts/diagnose_miraie_ac.sh      # read-only: what is actually broken
+```
+
+The fix is one `docker restart node-red` on the Pi - nothing on xero needs
+restarting, Mosquitto and HA are unaffected. The script wraps that restart in
+the two things that actually matter:
+
+1. **It checks DNS first and refuses to restart if `miraie.in` isn't
+   resolving.** Restarting into broken DNS silently recreates the original
+   failure rather than fixing it (see below).
+2. **It verifies the bridge came back**, polling for both ESTABLISHED
+   connections. `docker restart` exiting 0 proves nothing, and neither does
+   the container healthcheck - that only means Node-RED's web UI answers on
+   1880.
+
+**Root cause of the 2026-09-07 outage**, which is the failure mode to expect
+again: a single DNS lookup failed at Node-RED startup and the node never
+retried.
+
+```
+6 Sep 12:17:43 - [error] [ha-miraie-ac:MirAIe] There was an error logging in.
+                         getaddrinfo EAI_AGAIN auth.miraie.in
+```
+
+The container then sat `Up (healthy)` for 29 hours holding **zero** broker
+connections. Note the entrypoint's `until nslookup auth.miraie.in` guard did
+not help: it passed, and DNS failed again five seconds later at login.
+
+`scripts/diagnose_miraie_ac.sh --capture` restarts Node-RED while sniffing
+MQTT, which is the only way to see this path's traffic - `ha-miraie-ac`
+publishes state and availability with `retain=false`, so subscribing while the
+AC sits idle shows nothing whether the bridge is healthy or dead.
+
 ### Node-RED Watchdog (MQTT bridge health)
 
 **Why:** the `ha-miraie-ac` node can end up in a stale connection loop - confirmed once (2026-08-23), where credentials were correctly stored but the live MQTT connection to Mosquitto kept silently failing until a full container restart, not just a flow redeploy. `watchdog_nodered.sh` (on the Pi) checks the container's actual TCP state and restarts it if the bridge isn't connected.
