@@ -211,6 +211,43 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 ## 🔌 ESP32 Projects
 
+### 🟢 Sound-reactive aarti lights (Ganapati decoration)
+**Why:** festival decoration for Ganesh Chaturthi - a WS2812 backdrop behind the makhar that pulses to the aarti in real time. Chosen over the other decoration ideas brainstormed 2026-09-07 (fountain + mist bowl, ghanta/bell striker, fiber-optic star canopy, infinity mirror halo, water curtain) on wow-per-rupee and on being the only one whose long-lead part could still arrive in time. Incidentally the first fully local light in the house - no cloud, unlike the Tinxy gear the project below is trying to replace.
+
+**Hard deadline:** Ganesh Chaturthi, mid-September 2026. Vendor shipping (Robu / Robocraze / Robokits) is 2-4 days, so parts must be ordered by ~2026-09-09 to leave any slack.
+
+**State:** decided 2026-09-07, nothing ordered or flashed yet.
+
+**Design decisions already made:**
+- **WLED, not ESPHome.** WLED gives 100+ effects, a phone app, 2D matrix support and a native HA integration for free; ESPHome would mean hand-writing effects. If the ghanta/fountain get built later they go on a *second* ESP32 running ESPHome - WLED's firmware isn't meant to co-host control logic.
+- **A microphone, not beat-detection in software.** Audio reaches the room as spotcast → speaker, so there is no stream for HA to analyse. A mic sidesteps that entirely, and also picks up the live aarti, the ghanta and taalis - which looks better than clean beat-sync to a recording anyway.
+- **INMP441 I2S digital mic, not analog** (MAX4466/MAX9814) - the analog modules are noisy and WLED's AudioReactive tuning assumes I2S.
+- **Diffuse the strip, don't point it at the room.** Bare WS2812s read as a row of dots and look cheap. Bouncing the strip off the wall behind the makhar is free and looks better than any diffuser.
+
+**Shopping list** (ballpark Indian street prices, not quotes - same vendors as the ESP32-CAM pricing above):
+
+| Part | Compact (~2m, 120 LED) | Full (~5m, 300 LED) |
+|---|---|---|
+| WS2812B strip, 60 LED/m, IP30 | ₹500-800 | ₹1,300-2,000 |
+| 5V supply | 5A / ₹350-500 | 10A / ₹600-900 |
+| INMP441 I2S mic | ₹150-300 | ₹150-300 |
+| 74AHCT125 level shifter | ₹30-60 | ₹30-60 |
+| 1000µF cap + 470Ω resistor | ₹25 | ₹25 |
+| 18AWG wire (power injection) | ₹80 | ₹150 |
+| Barrel jack → screw terminal | ₹40 | ₹40 |
+| Dupont jumpers + perfboard | ₹150 | ₹150 |
+| **Subtotal** | **~₹1,400-1,900** | **~₹2,500-3,500** |
+
+Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP8266**, AudioReactive needs the ESP32's I2S peripheral. A soldering iron (~₹500-800) is needed for strip cut-points and power injection; buy it in the same order rather than discovering the gap on build day.
+
+**Main risk - resolve before the parts arrive:** WLED's AudioReactive is a *usermod*, not in the default binary. The WLED web installer offers an audioreactive ESP32 build; if it flashes cleanly this is a 10-minute step, and if it doesn't it means compiling WLED in PlatformIO (+1-2h and a toolchain that isn't set up on either machine). Flashing the board already owned costs 30 minutes and collapses the single biggest source of variance in the estimate.
+
+**Power gotcha:** 300 LEDs at full white is ~18A, far beyond a 10A supply. Set WLED's max-current limit to the supply's rating - it auto-caps brightness, so it is safe by construction. Never power the strip from the ESP32's 5V pin.
+
+**Estimate:** 6-12h total, which is one day *after* the parts land, not a day from now. Roughly: flash 0.5-1h, bench test 0.5-1h, mic wiring 1-2h, mounting + diffusion 2-4h (the phase that always overruns), HA presets 1-2h, tuning gain/squelch in the actual room at real volume 1-2h. Tune last and in the evening - the room's acoustics and real aarti volume are the only settings that matter and cannot be faked at midday.
+
+**Next step:** (1) flash the audioreactive WLED build onto the ESP32 already owned - today, before anything is ordered; (2) order parts, checking the strip listing is WS2812B and 5V (not WS2811/SK6812, not 12V) and checking the strip itself on arrival rather than on build day.
+
 ### In-house smart switch to replace Tinxy
 **Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
 **State:** not started - brainstormed 2026-09-02. Two directions considered:
