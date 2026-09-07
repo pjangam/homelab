@@ -175,6 +175,26 @@ fi
 sudo systemctl disable systemd-resolved
 sudo systemctl stop systemd-resolved
 
+# Disabling the service isn't enough: the systemd-resolved *package* also ships
+# /usr/sbin/resolvconf as a symlink to resolvectl, and that stays behind.
+# tailscaled probes for a resolvconf binary, finds it, picks resolvconf mode,
+# and then every DNS update fails with
+#   Failed to resolve interface "tailscale": No such device
+# because resolvectl wants a real kernel interface while tailscale passes the
+# logical name "tailscale" (the interface is tailscale0) - and with the service
+# disabled there's nothing behind the shim anyway.
+#
+# The failure is silent in the worst way: /etc/resolv.conf keeps whatever it
+# last had, so DNS looks fine while nothing is maintaining it. Found on xero
+# 2026-09-07, where it had been failing on every link change.
+#
+# Divert (not rm) so a systemd upgrade can't restore it, and so it's reversible.
+# With the shim gone tailscaled falls through to its "direct" manager and writes
+# /etc/resolv.conf itself, which is what the note below assumes.
+if ! dpkg-divert --list | grep -q '/usr/sbin/resolvconf'; then
+  sudo dpkg-divert --local --rename --add /usr/sbin/resolvconf
+fi
+
 # Deliberately NOT writing /etc/resolv.conf here.
 #
 # This used to do `rm /etc/resolv.conf` followed by a hand-written
