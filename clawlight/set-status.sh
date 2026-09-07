@@ -17,17 +17,38 @@
 # display name without touching the machine's actual system hostname, e.g.:
 #   export CLAWLIGHT_HOST_NAME=mac
 #
+# A single session can be hidden from the light by creating a marker file named
+# after its session id (CLAWLIGHT_IGNORE_DIR overrides the location):
+#   touch ~/.claude/clawlight-ignore/<session_id>
+# Per-session rather than per-machine, so one noisy session can be silenced
+# without dropping the hooks for every other session on the same host. Delete
+# the marker to unhide.
+#
 # Never fails the hook on a network error - a status report is best-effort and
 # must not block or break the actual Claude Code turn.
 set -u
 
 state="${1:?usage: set-status.sh <active|waiting|end>}"
 server_url="${CLAWLIGHT_SERVER_URL:-http://localhost:8126}"
+ignore_dir="${CLAWLIGHT_IGNORE_DIR:-$HOME/.claude/clawlight-ignore}"
 
 hook_input="$(cat)"
 session_id="$(printf '%s' "$hook_input" | jq -r '.session_id // "unknown"' 2>/dev/null)"
 cwd="$(printf '%s' "$hook_input" | jq -r '.cwd // empty' 2>/dev/null)"
 host="${CLAWLIGHT_HOST_NAME:-$(hostname)}"
+
+# A hidden session reports `end` rather than simply going quiet: going quiet
+# would leave whatever state it last reported sitting on the light until the
+# server's 30-minute staleness prune, so hiding a `waiting` session would keep
+# the light red for half an hour. `end` removes it on the very next hook event,
+# and re-sending it on subsequent events is a harmless no-op server-side.
+#
+# The session id becomes a filename here, so ignore anything that isn't a plain
+# token rather than letting a `/` or `..` walk the path somewhere unintended.
+case "$session_id" in
+  "" | *[!A-Za-z0-9_-]*) ;;
+  *) if [ -e "$ignore_dir/$session_id" ]; then state="end"; fi ;;
+esac
 
 payload="$(jq -n --arg session_id "$session_id" --arg host "$host" --arg state "$state" --arg cwd "$cwd" \
   '{session_id: $session_id, host: $host, state: $state, cwd: $cwd}' 2>/dev/null)"

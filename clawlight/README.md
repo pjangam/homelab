@@ -15,7 +15,8 @@ floating on top of everything else via the browser's native Picture-in-Picture.
 - `set-status.sh` is called by Claude Code hooks on every relevant event. It
   reads the session ID (and cwd, for labeling) from the hook's stdin JSON and
   POSTs the new state to the server. Failures are swallowed so a network
-  hiccup never blocks an actual Claude Code turn.
+  hiccup never blocks an actual Claude Code turn. It also honours a
+  per-session ignore marker - see "Hiding a single session" below.
 - Each session tracks two things: a **foreground** state (`active`/`waiting`,
   from `UserPromptSubmit`/`Stop`/`Notification`/`PermissionRequest`) and a
   **background** task counter (from `SubagentStart`/`SubagentStop`/
@@ -102,6 +103,29 @@ proof it works.)
 
 Both accounts on the MacBook share the same hook config (since only one is
 logged in at a time), so no extra setup is needed per account.
+
+## Hiding a single session
+
+To keep one session off the light without dropping the hooks for every other
+session on that machine, create a marker file named after its session id:
+
+```sh
+mkdir -p ~/.claude/clawlight-ignore
+touch ~/.claude/clawlight-ignore/<session_id>
+```
+
+Delete the marker to unhide it. `CLAWLIGHT_IGNORE_DIR` overrides the location.
+
+An ignored session reports `end` instead of its real state rather than just
+going quiet. Going quiet would leave whatever it last reported sitting on the
+light until the server's 30-minute staleness prune, so hiding a session that
+was `waiting` would keep the light red for half an hour; reporting `end`
+removes it on its very next hook event.
+
+The marker is keyed by session id, so it only ever applies to one session and
+is dead weight once that session is gone - `~/.claude/clawlight-ignore` is
+worth emptying occasionally. `scripts/test_clawlight_ignore.sh` exercises this
+against the running server using a throwaway session id.
 
 ## Viewing it
 
