@@ -31,6 +31,17 @@ server_url="${CLAWLIGHT_SERVER_URL:-http://localhost:8126}"
 host="${CLAWLIGHT_HOST_NAME:-$(hostname)}"
 focus_app="${CLAWLIGHT_FOCUS_APP:-}"
 
+# Resolved once, by path as well as by PATH. macOS keeps lsof in /usr/sbin,
+# which is not on a launchd agent's PATH - so "command -v lsof" alone reported
+# it missing on a machine that had it all along, and the ssh half of every
+# cross-host jump silently did nothing.
+LSOF="$(command -v lsof 2>/dev/null || true)"
+if [ -z "$LSOF" ]; then
+  for candidate in /usr/sbin/lsof /usr/bin/lsof /sbin/lsof /bin/lsof; do
+    [ -x "$candidate" ] && { LSOF="$candidate"; break; }
+  done
+fi
+
 log() { printf '%s clawlight-focus-agent: %s\n' "$(date '+%H:%M:%S')" "$*" >&2; }
 
 # tmux against a named socket, or the default one when the socket is empty.
@@ -185,10 +196,13 @@ announce_ssh_client() {
 raise_ssh_tab() {
   local port="$1" peer="$2" pid tty pane_line pane sess
 
-  command -v lsof >/dev/null 2>&1 || { log "lsof not installed - cannot surface ssh tabs"; return 0; }
+  if [ -z "$LSOF" ]; then
+    log "lsof not found on PATH ($PATH) nor in /usr/sbin - cannot surface ssh tabs"
+    return 0
+  fi
 
   # Match on "<local port>-><peer>" so a coincidental remote port can't hit.
-  pid="$(lsof -nP -iTCP -sTCP:ESTABLISHED 2>/dev/null \
+  pid="$("$LSOF" -nP -iTCP -sTCP:ESTABLISHED 2>/dev/null \
          | awk -v m=":$port->$peer" 'index($0, m) { print $2; exit }')"
   if [ -z "$pid" ]; then
     # Expected on every machine that isn't the one holding the connection -

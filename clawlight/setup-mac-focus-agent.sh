@@ -128,7 +128,7 @@ else
     <key>CLAWLIGHT_FOCUS_APP</key>
     <string>$focus_app</string>
     <key>PATH</key>
-    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
   <key>RunAtLoad</key>
   <true/>

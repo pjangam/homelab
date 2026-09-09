@@ -38,9 +38,10 @@
          should raise the app; if it errors, the name is wrong. -->
     <key>CLAWLIGHT_FOCUS_APP</key>
     <string>REPLACE-ME-see-comment-above</string>
-    <!-- launchd agents get a minimal PATH; tmux/jq from Homebrew are not on it. -->
+    <!-- launchd agents get a minimal PATH: tmux/jq from Homebrew are not on
+         it, and neither is /usr/sbin, where macOS keeps lsof. -->
     <key>PATH</key>
-    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
 
   <key>RunAtLoad</key>

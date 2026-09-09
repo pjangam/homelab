@@ -81,6 +81,28 @@ else
   note "launchctl load $PLIST"
 fi
 
+# Check the tools against the AGENT's environment, not this shell's. They
+# differ - that difference is what hid the lsof bug: it resolves fine here and
+# not for a launchd agent, whose PATH omits /usr/sbin where macOS keeps lsof.
+agent_path="$(/usr/libexec/PlistBuddy -c 'Print :EnvironmentVariables:PATH' "$PLIST" 2>/dev/null || true)"
+for tool in lsof tmux jq; do
+  found=""
+  case "$tool" in
+    lsof) for c in /usr/sbin/lsof /usr/bin/lsof /sbin/lsof; do [ -x "$c" ] && { found="$c"; break; }; done ;;
+  esac
+  if [ -z "$found" ]; then
+    old_ifs="$IFS"; IFS=:
+    for d in $agent_path; do [ -x "$d/$tool" ] && { found="$d/$tool"; break; }; done
+    IFS="$old_ifs"
+  fi
+  if [ -n "$found" ]; then
+    ok "$tool reachable by the agent: $found"
+  else
+    bad "$tool NOT reachable by the agent (its PATH is $agent_path)"
+    note "it may still work in your shell - that is not the same thing"
+  fi
+done
+
 app="$(/usr/libexec/PlistBuddy -c 'Print :EnvironmentVariables:CLAWLIGHT_FOCUS_APP' "$PLIST" 2>/dev/null || true)"
 case "$app" in
   ""|REPLACE-ME*) bad "CLAWLIGHT_FOCUS_APP is unset - no tab can be selected"; app="" ;;
