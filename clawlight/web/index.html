@@ -131,6 +131,15 @@ function applyState(data) {
   drawCanvas();
 }
 
+function noteSpan(text) {
+  // Leading separator so the row still reads correctly when copied as plain
+  // text, where the CSS gap disappears and it would run together.
+  const note = document.createElement('span');
+  note.className = 'note';
+  note.textContent = '· ' + text;
+  return note;
+}
+
 function sessionRow(s) {
   const stateLabel = COLORS[s.state] ? COLORS[s.state].label : s.state;
   const text = `${s.host}/${s.label}: ${stateLabel}`;
@@ -140,12 +149,14 @@ function sessionRow(s) {
   if (!s.reachable) {
     const row = document.createElement('div');
     row.className = 'session unreachable';
-    row.title = 'not running under tmux - nothing to jump to';
+    // Two different causes look identical from here, and the second one bites
+    // whenever a machine hasn't been updated yet - so name both rather than
+    // asserting the tmux one and sending you to check a terminal that is
+    // already in tmux.
+    row.title = 'no tmux pane reported - either this session is not running '
+      + 'under tmux, or set-status.sh on ' + s.host + ' predates jump-to-console';
     row.textContent = text;
-    const note = document.createElement('span');
-    note.className = 'note';
-    note.textContent = 'unreachable';
-    row.appendChild(note);
+    row.appendChild(noteSpan('unreachable'));
     return row;
   }
 
@@ -162,9 +173,7 @@ function flashRow(row, cls, note) {
   // click that quietly did nothing is the failure mode this whole feature
   // exists to avoid, so it must never look the same as one that worked.
   row.classList.add(cls);
-  const badge = document.createElement('span');
-  badge.className = 'note';
-  badge.textContent = note;
+  const badge = noteSpan(note);
   row.appendChild(badge);
   setTimeout(() => {
     row.classList.remove(cls);
