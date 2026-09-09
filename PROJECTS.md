@@ -4,6 +4,15 @@ Working list of homelab projects and their state, so context survives across ses
 
 Status: 🟢 active · 🟡 parked (revisit when it becomes a real problem, not proactively) · 💡 backlog idea (not started) · ✅ done
 
+**Parts lists:** a project that needs things bought carries a fenced ` ```parts ` block, one line per item:
+
+```
+qty | item | est | note
+1 | INMP441 I2S mic | 150-300 | digital I2S, NOT analog MAX4466
+```
+
+`est` is rupees for the whole quantity, `400` or `150-300`; leave it blank if unknown. The projects dashboard (`projects-ui`, at `https://xero.<tailnet>/projects`) renders these as a parts table with an **Add to shopping list** checkbox, and merges the selected projects into one list for a single shop trip - deduping anything more than one project wants, and totalling as you tick items off. The selection survives a reload, since it gets used standing in a shop rather than at the machine.
+
 ---
 
 ## 🟢 Active
@@ -226,17 +235,20 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 **Shopping list** (ballpark Indian street prices, not quotes - same vendors as the ESP32-CAM pricing above):
 
-| Part | Compact (~2m, 120 LED) | Full (~5m, 300 LED) |
-|---|---|---|
-| WS2812B strip, 60 LED/m, IP30 | ₹500-800 | ₹1,300-2,000 |
-| 5V supply | 5A / ₹350-500 | 10A / ₹600-900 |
-| INMP441 I2S mic | ₹150-300 | ₹150-300 |
-| 74AHCT125 level shifter | ₹30-60 | ₹30-60 |
-| 1000µF cap + 470Ω resistor | ₹25 | ₹25 |
-| 18AWG wire (power injection) | ₹80 | ₹150 |
-| Barrel jack → screw terminal | ₹40 | ₹40 |
-| Dupont jumpers + perfboard | ₹150 | ₹150 |
-| **Subtotal** | **~₹1,400-1,900** | **~₹2,500-3,500** |
+```parts
+qty | item | est | note
+5m | WS2812B strip 60 LED/m IP30 | 1300-2000 | must be WS2812B and 5V - not WS2811/SK6812, not 12V
+1 | 5V 10A power supply | 600-900 | 5A/Rs 350-500 is enough for the 2m compact build
+1 | INMP441 I2S mic | 150-300 | digital I2S, NOT analog MAX4466/MAX9814
+1 | 74AHCT125 level shifter | 30-60 | 3.3V->5V data; skippable at 2m, not at 5m
+1 | 1000uF capacitor + 470R resistor | 25 | across strip power in, inline on data
+2m | 18AWG wire | 150 | power injection at both ends of a 5m run
+1 | Barrel jack to screw terminal | 40 |
+1 | Dupont jumpers + perfboard | 150 |
+1 | Soldering iron kit | 500-800 | only if not already owned - needed for cut-points and injection
+```
+
+A **compact ~2m / 120 LED** version works out at roughly ₹1,400-1,900 instead: smaller strip, a 5A supply, and the level shifter becomes optional.
 
 Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP8266**, AudioReactive needs the ESP32's I2S peripheral. A soldering iron (~₹500-800) is needed for strip cut-points and power injection; buy it in the same order rather than discovering the gap on build day.
 

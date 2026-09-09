@@ -1,6 +1,6 @@
 import { ProjectCard } from './ProjectCard'
 
-export function StatusSection({ section, openIds, onToggleProject }) {
+export function StatusSection({ section, openIds, onToggleProject, listIds, onToggleInList }) {
   return (
     <section className="status-section" data-status={section.id}>
       <h2>
@@ -13,6 +13,8 @@ export function StatusSection({ section, openIds, onToggleProject }) {
             project={project}
             isOpen={openIds.has(project.id)}
             onToggle={onToggleProject}
+            inList={listIds.has(project.id)}
+            onToggleInList={onToggleInList}
           />
         ))}
       </div>

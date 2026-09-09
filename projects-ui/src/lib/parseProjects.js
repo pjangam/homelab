@@ -1,4 +1,5 @@
 import { marked } from 'marked'
+import { parseParts } from './parts'
 
 function slugify(text) {
   return text
@@ -32,8 +33,13 @@ export function parseProjects(markdown) {
       sections.push(currentSection)
       currentProject = null
     } else if (token.type === 'heading' && token.depth === 3 && currentSection) {
-      currentProject = { id: slugify(token.text), title: token.text, tokens: [] }
+      currentProject = { id: slugify(token.text), title: token.text, tokens: [], parts: [] }
       currentSection.projects.push(currentProject)
+    } else if (currentProject && token.type === 'code' && token.lang === 'parts') {
+      // Held out of the body deliberately: a parts block is data, and gets
+      // rendered as a table plus a shopping-list checkbox rather than as the
+      // raw code block marked would otherwise produce.
+      currentProject.parts.push(...parseParts(token.text))
     } else if (currentProject) {
       currentProject.tokens.push(token)
     }
