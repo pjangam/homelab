@@ -76,3 +76,39 @@ scutil --dns 2>/dev/null | awk '/nameserver\[/{print $3}' | sort -u | while read
   printf '  %-16s ' "$s"
   ping -c1 -W1500 "$s" >/dev/null 2>&1 && echo "reachable" || echo "UNREACHABLE"
 done
+
+echo
+echo "=== WHO owns the DNS setting: persistent (Setup:) vs runtime (State:) ==="
+# This is the question that decides whether it is safe to clear.
+#   Setup:  = written by System Settings / `networksetup`. Survives reboots.
+#             Clearing this does NOT touch OpenVPN.
+#   State:  = written at runtime by DHCP or a VPN client (OpenVPN/Tunnelblick
+#             push DNS here, never into Setup:). Clearing Setup: leaves these
+#             alone; the VPN re-applies them on every connect.
+# So: if the off-subnet servers appear under Setup:, they are a stale manual
+# override and OpenVPN is not involved. If they appear only under State: bound
+# to a tunnel interface, OpenVPN is the owner and must be fixed at its config.
+for k in $(scutil <<< "list" 2>/dev/null | awk '/Network\/Service\/.*\/DNS$/{print $NF}'); do
+  case "$k" in
+    Setup:*) layer="Setup (persistent/manual)" ;;
+    State:*) layer="State (runtime: DHCP or VPN)" ;;
+    *)       layer="?" ;;
+  esac
+  servers=$(scutil <<< "show $k" 2>/dev/null | awk '/^ *[0-9]+ *:/{printf "%s ", $NF}')
+  [ -n "$servers" ] && printf '  %-30s %s\n' "$layer" "$servers"
+done
+
+echo
+echo "=== configured VPN services ==="
+scutil --nc list 2>/dev/null || echo "  (none)"
+
+echo
+echo "=== running VPN clients ==="
+ps aux 2>/dev/null \
+  | grep -iE 'openvpn|tunnelblick|viscosity|anyconnect|globalprotect|zscaler|wireguard|nordvpn|expressvpn' \
+  | grep -v grep \
+  | awk '{print "  " $11 " " $12}' | sort -u || echo "  (none running)"
+
+echo
+echo "=== tunnel interfaces present ==="
+ifconfig 2>/dev/null | awk '/^(utun|ppp|ipsec|tun)[0-9]*:/{iface=$1} /inet /{if(iface){print "  " iface " " $2; iface=""}}'
