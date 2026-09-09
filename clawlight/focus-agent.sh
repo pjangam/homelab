@@ -41,38 +41,99 @@ valid_target() {
   return 0
 }
 
+# Bring the terminal tab that owns this tty to the front.
+#
+# Activating the app is NOT enough when each terminal tab holds its own tmux
+# client: the app comes forward still showing whichever tab you left it on, so
+# the jump lands you in the wrong place while looking like it worked. tmux
+# cannot help here - it has no idea which GUI tab wraps a given client - so the
+# terminal itself has to be asked to select the tab whose tty matches.
+select_terminal_tab() {
+  local tty="$1"
+
+  [ -n "$focus_app" ] || return 0
+  command -v osascript >/dev/null 2>&1 || return 0
+  # This is interpolated into AppleScript, so accept only what tmux emits.
+  case "$tty" in
+    /dev/[A-Za-z0-9/]*) ;;
+    *) tty="" ;;
+  esac
+
+  if [ -n "$tty" ]; then
+    case "$focus_app" in
+      iTerm|iTerm2)
+        if osascript >/dev/null 2>&1 <<APPLESCRIPT
+tell application "iTerm"
+  activate
+  repeat with w in windows
+    repeat with t in tabs of w
+      repeat with theSession in sessions of t
+        if tty of theSession is "$tty" then
+          select w
+          select t
+          select theSession
+          return
+        end if
+      end repeat
+    end repeat
+  end repeat
+  error "no tab owns $tty"
+end tell
+APPLESCRIPT
+        then
+          return 0
+        fi
+        # Falls through to a plain activate below. Expected whenever the tmux
+        # client is remote (an ssh session into another host's tmux): its tty
+        # is a pty on that machine, so no local tab owns it.
+        log "no $focus_app tab owns $tty - raising the app only"
+        ;;
+    esac
+  fi
+
+  # Loud on failure: a wrong app name (iTerm2's AppleScript name is "iTerm",
+  # not "iTerm2") otherwise fails invisibly, and the jump looks broken for a
+  # reason nothing reports.
+  if ! osascript -e "tell application \"$focus_app\" to activate" >/dev/null 2>&1; then
+    log "could not activate \"$focus_app\" - check CLAWLIGHT_FOCUS_APP"
+  fi
+}
+
 focus() {
-  local sock="$1" pane="$2" session tty
+  local sock="$1" pane="$2" session target_tty ctty csess
 
   # Order matters: make the pane current within its window, then its window
-  # current within its session, and only then move the attached client(s) to
-  # that session. Doing it the other way round lands you on the session's
-  # previously-current window instead of the one that wants you.
+  # current within its session, and only then move a client to that session.
+  # Doing it the other way round lands you on the session's previously-current
+  # window instead of the one that wants you.
   tmux -S "$sock" select-pane -t "$pane" 2>/dev/null || { log "no pane $pane"; return; }
   tmux -S "$sock" select-window -t "$pane" 2>/dev/null || return
 
   session="$(tmux -S "$sock" display-message -p -t "$pane" '#{session_name}' 2>/dev/null)"
   [ -n "$session" ] || return
 
-  # Every attached client is switched, not just one. With the usual single
-  # client this is exactly right; with several, moving them all is at least
-  # predictable, and you asked to be taken here.
-  for tty in $(tmux -S "$sock" list-clients -F '#{client_tty}' 2>/dev/null); do
-    tmux -S "$sock" switch-client -c "$tty" -t "$session" 2>/dev/null
-  done
+  # Prefer a client already attached to this session, and switch nothing. The
+  # earlier version switched EVERY client, which on a setup where each terminal
+  # tab attaches its own session dragged all of them onto one - destroying the
+  # arrangement in order to reach one pane.
+  target_tty=""
+  while read -r ctty csess; do
+    [ "$csess" = "$session" ] && { target_tty="$ctty"; break; }
+  done <<CLIENTS
+$(tmux -S "$sock" list-clients -F '#{client_tty} #{client_session}' 2>/dev/null)
+CLIENTS
 
-  # Raising the terminal app is the other half of the jump on macOS - without
-  # it tmux switches a window you still can't see behind the browser.
-  if [ -n "$focus_app" ] && command -v osascript >/dev/null 2>&1; then
-    # Loud on failure: a wrong app name here (iTerm2's AppleScript name is
-    # "iTerm", not "iTerm2") otherwise fails invisibly, and the jump looks
-    # broken for a reason nothing reports.
-    if ! osascript -e "tell application \"$focus_app\" to activate" >/dev/null 2>&1; then
-      log "could not activate \"$focus_app\" - check CLAWLIGHT_FOCUS_APP"
-    fi
+  # Nobody is showing it, so move the most recently used client - the one you
+  # were last looking at, which is the least surprising to repurpose.
+  if [ -z "$target_tty" ]; then
+    target_tty="$(tmux -S "$sock" list-clients -F '#{client_activity} #{client_tty}' 2>/dev/null \
+                  | sort -rn | head -1 | cut -d' ' -f2)"
+    [ -n "$target_tty" ] && tmux -S "$sock" switch-client -c "$target_tty" -t "$session" 2>/dev/null
   fi
 
-  log "focused $session ($pane)"
+  select_terminal_tab "$target_tty"
+
+  log "focused $session ($pane) on ${target_tty:-no client}"
 }
 
 log "watching $server_url for host=$host"

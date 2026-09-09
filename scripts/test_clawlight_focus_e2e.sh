@@ -111,6 +111,23 @@ check "...and to the target pane" \
 check "the attached client is on that session" \
   "$(tmux -S "$SOCK" list-clients -F '#{client_session}' | head -1)" "e2e"
 
+# --- a client sitting on a different session gets moved ---------------------
+# The other half of the client-picking rule: when nothing is already showing
+# the target session, the most recently used client is switched to it.
+tmux -S "$SOCK" new-session -d -s elsewhere -n away sleep 600
+tmux -S "$SOCK" switch-client -c "$(tmux -S "$SOCK" list-clients -F '#{client_tty}' | head -1)" -t elsewhere
+sleep 1
+check "client parked on an unrelated session" \
+  "$(tmux -S "$SOCK" list-clients -F '#{client_session}' | head -1)" "elsewhere"
+
+curl -fsS -m 3 -X POST "$SERVER_URL/clawlight/api/focus" \
+  -H 'Content-Type: application/json' -d "{\"session_id\":\"$SESSION_ID\"}" >/dev/null
+sleep 2
+check "...is switched to the session that was asked for" \
+  "$(tmux -S "$SOCK" list-clients -F '#{client_session}' | head -1)" "e2e"
+check "...landing on the target window" \
+  "$(tmux -S "$SOCK" display-message -p -t e2e '#{window_name}')" "target"
+
 # --- a jump for a host with no agent must not queue up forever --------------
 tmux -S "$SOCK" select-window -t e2e:decoy
 curl -fsS -m 3 -X POST "$SERVER_URL/clawlight/api/report" \

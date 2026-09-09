@@ -195,7 +195,16 @@ A few consequences worth knowing:
   and clicks silently do nothing.
 - **On macOS, set `CLAWLIGHT_FOCUS_APP`** to the terminal app you run tmux in.
   Switching the tmux window is useless if the terminal is still behind the
-  browser; the agent runs `osascript ... activate` to raise it.
+  browser. For iTerm the agent goes further and selects the *tab* that owns
+  the tmux client's tty - activating the app alone leaves it on whatever tab
+  you were last on, which looks like the jump went to the wrong place.
+- **A session on another host, viewed over ssh, can only be half-jumped.**
+  Clicking a xero session switches xero's tmux correctly, but the agent on
+  xero cannot raise the iTerm tab on the Mac that holds the ssh session - the
+  two agents can't see into each other's world, and the tmux client's tty
+  there is a pty on xero, not a local tab. So the jump lands, but you may
+  still have to switch to that tab yourself. If that host's tmux has only one
+  window (as xero's often does), the click will look like it did nothing.
 - **You can't click the PiP window** - it's a video frame, not a page. Jumping
   happens from the actual page, which is also where an ntfy notification's
   click-through lands you, so "phone buzzes → tap → jump" is one path.
