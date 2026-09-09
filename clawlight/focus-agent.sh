@@ -99,7 +99,10 @@ APPLESCRIPT
   fi
 }
 
-focus() {
+# Set by tmux_focus_pane to the tty of the client that ended up on the pane.
+FOCUS_TTY=""
+
+tmux_focus_pane() {
   local sock="$1" pane="$2" session target_tty ctty csess
 
   # Order matters: make the pane current within its window, then its window
@@ -131,9 +134,73 @@ CLIENTS
     [ -n "$target_tty" ] && tmux -S "$sock" switch-client -c "$target_tty" -t "$session" 2>/dev/null
   fi
 
-  select_terminal_tab "$target_tty"
-
+  FOCUS_TTY="$target_tty"
   log "focused $session ($pane) on ${target_tty:-no client}"
+}
+
+# If the client we just moved reached this host over ssh, the terminal tab that
+# actually shows it is on the machine at the other end. Announce the connection
+# so that machine can surface it - see the server's SSH_PEER_RE comment.
+#
+# Reads the client process's environment, which is Linux-only. That is the
+# right scope: on macOS the client is a local tab, already handled directly.
+announce_ssh_client() {
+  local sock="$1" tty="$2" cpid conn ip port peer_ip peer_port
+
+  [ -n "$tty" ] || return 0
+  [ -r /proc/self/environ ] || return 0
+
+  cpid="$(tmux -S "$sock" list-clients -F '#{client_tty} #{client_pid}' 2>/dev/null \
+          | awk -v t="$tty" '$1 == t { print $2; exit }')"
+  [ -n "$cpid" ] || return 0
+
+  conn="$(tr '\0' '\n' < "/proc/$cpid/environ" 2>/dev/null | sed -n 's/^SSH_CONNECTION=//p' | head -1)"
+  [ -n "$conn" ] || return 0   # a local client; nothing to raise elsewhere
+
+  # "<client ip> <client port> <server ip> <server port>"
+  ip="$(printf '%s' "$conn" | cut -d' ' -f1)"
+  port="$(printf '%s' "$conn" | cut -d' ' -f2)"
+  peer_ip="$(printf '%s' "$conn" | cut -d' ' -f3)"
+  peer_port="$(printf '%s' "$conn" | cut -d' ' -f4)"
+  case "$port" in ''|*[!0-9]*) return 0 ;; esac
+
+  log "client came over ssh from $ip:$port - asking other hosts to surface it"
+  curl -fsS -m 3 -X POST "$server_url/clawlight/api/raise-ssh" \
+    -H 'Content-Type: application/json' \
+    -d "{\"source_port\":$port,\"peer\":\"$peer_ip:$peer_port\",\"from_host\":\"$host\"}" \
+    >/dev/null 2>&1
+}
+
+# The other end of that announcement. Find the local ssh process holding this
+# source port, work out which terminal tab it is running in, and surface it.
+# On a machine that does not own the port this finds nothing and returns.
+raise_ssh_tab() {
+  local port="$1" peer="$2" pid tty pane_line pane sess
+
+  command -v lsof >/dev/null 2>&1 || { log "lsof not installed - cannot surface ssh tabs"; return 0; }
+
+  # Match on "<local port>-><peer>" so a coincidental remote port can't hit.
+  pid="$(lsof -nP -iTCP -sTCP:ESTABLISHED 2>/dev/null \
+         | awk -v m=":$port->$peer" 'index($0, m) { print $2; exit }')"
+  [ -n "$pid" ] || return 0
+
+  tty="$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')"
+  [ -n "$tty" ] && [ "$tty" != "??" ] || return 0
+  tty="/dev/$tty"
+
+  # That tty may itself be a local tmux pane (ssh running inside tmux here, not
+  # just in a bare tab). If so, jump to that pane first and then aim the tab
+  # selection at the local client's tty rather than the pane's.
+  pane_line="$(tmux list-panes -a -F '#{pane_tty} #{pane_id}' 2>/dev/null \
+               | awk -v t="$tty" '$1 == t { print $2; exit }')"
+  if [ -n "$pane_line" ]; then
+    log "ssh runs inside local tmux pane $pane_line - jumping there first"
+    tmux_focus_pane "$(printf '%s' "${TMUX:-/dev/null}" | cut -d, -f1)" "$pane_line"
+    [ -n "$FOCUS_TTY" ] && tty="$FOCUS_TTY"
+  fi
+
+  log "surfacing the tab that owns $tty (ssh :$port -> $peer)"
+  select_terminal_tab "$tty"
 }
 
 log "watching $server_url for host=$host"
@@ -150,13 +217,31 @@ while :; do
       *) continue ;;
     esac
     payload="${line#data:}"
-    sock="$(printf '%s' "$payload" | jq -r '.tmux_socket // empty' 2>/dev/null)"
-    pane="$(printf '%s' "$payload" | jq -r '.tmux_pane // empty' 2>/dev/null)"
-    if valid_target "$sock" "$pane"; then
-      focus "$sock" "$pane"
-    else
-      log "ignoring malformed focus request"
-    fi
+    kind="$(printf '%s' "$payload" | jq -r '.kind // "tmux"' 2>/dev/null)"
+    case "$kind" in
+      raise_ssh)
+        port="$(printf '%s' "$payload" | jq -r '.source_port // empty' 2>/dev/null)"
+        peer="$(printf '%s' "$payload" | jq -r '.peer // empty' 2>/dev/null)"
+        case "$port" in ''|*[!0-9]*) port="" ;; esac
+        case "$peer" in *[!0-9a-fA-F.:]*|'') peer="" ;; esac
+        if [ -n "$port" ] && [ -n "$peer" ]; then
+          raise_ssh_tab "$port" "$peer"
+        else
+          log "ignoring malformed raise request"
+        fi
+        ;;
+      *)
+        sock="$(printf '%s' "$payload" | jq -r '.tmux_socket // empty' 2>/dev/null)"
+        pane="$(printf '%s' "$payload" | jq -r '.tmux_pane // empty' 2>/dev/null)"
+        if valid_target "$sock" "$pane"; then
+          tmux_focus_pane "$sock" "$pane"
+          select_terminal_tab "$FOCUS_TTY"
+          announce_ssh_client "$sock" "$FOCUS_TTY"
+        else
+          log "ignoring malformed focus request"
+        fi
+        ;;
+    esac
   done
 
   # Reconnect, but not in a tight spin if the server is down for a while.

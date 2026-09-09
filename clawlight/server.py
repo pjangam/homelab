@@ -97,9 +97,19 @@ FOCUS_REQUEST_TTL_SECONDS = 15
 # `tmux`, so they are validated on the way in and never trusted from the wire.
 PANE_RE = re.compile(r"^%\d+$")
 
-# host -> {tmux_socket, tmux_pane, ts}. Only the newest request per host is
-# kept: focusing is a "take me there now" action, so a backlog of them is
-# never what you want.
+# A tmux client that reached its session over ssh is only half the journey: the
+# pane lives here, but the window you look at it through is a terminal tab on
+# another machine, and neither agent can see into the other's world. The one
+# thing that identifies that tab uniquely is the ssh connection's source port -
+# exactly one process on exactly one machine owns it. So the agent that handled
+# the tmux half announces that connection, the server hands it to every other
+# host, and only the machine that actually owns the port finds anything. No
+# address-to-host mapping to maintain, and the wrong machine simply no-ops.
+SSH_PEER_RE = re.compile(r"^[0-9a-fA-F.:]{3,45}:\d{1,5}$")
+
+# host -> request dict, tagged by "kind": "tmux" carries tmux_socket/tmux_pane,
+# "raise_ssh" carries source_port/peer. Only the newest per host is kept:
+# focusing is a "take me there now" action, so a backlog is never what you want.
 pending_focus: dict[str, dict] = {}
 
 # host -> number of focus agents currently holding the SSE stream open. Used
@@ -307,11 +317,32 @@ def request_focus(session_id: str) -> tuple[bool, str]:
         if not focus_listeners.get(entry["host"]):
             return False, f"no focus agent running on {entry['host']}"
         pending_focus[entry["host"]] = {
+            "kind": "tmux",
             "tmux_socket": entry["tmux_socket"],
             "tmux_pane": entry["tmux_pane"],
             "ts": time.time(),
         }
     return True, "queued"
+
+
+def request_raise_ssh(source_port: int, peer: str, from_host: str) -> int:
+    """Ask every other host to surface the terminal tab owning this ssh link.
+
+    Broadcast rather than addressed, because the announcing host knows the
+    connection but not which clawlight host label sits at the other end of it.
+    Only the machine that actually holds that source port will match, so the
+    others cost nothing.
+    """
+    with lock:
+        targets = [h for h in focus_listeners if h != from_host]
+        for host in targets:
+            pending_focus[host] = {
+                "kind": "raise_ssh",
+                "source_port": source_port,
+                "peer": peer,
+                "ts": time.time(),
+            }
+    return len(targets)
 
 
 def take_focus(host: str) -> dict | None:
@@ -320,7 +351,7 @@ def take_focus(host: str) -> dict | None:
         req = pending_focus.pop(host, None)
     if req is None or time.time() - req["ts"] > FOCUS_REQUEST_TTL_SECONDS:
         return None
-    return {"tmux_socket": req["tmux_socket"], "tmux_pane": req["tmux_pane"]}
+    return {k: v for k, v in req.items() if k != "ts"}
 
 
 def start_mqtt():
@@ -397,6 +428,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == f"{PREFIX}/api/focus":
             self._handle_focus()
             return
+        if path == f"{PREFIX}/api/raise-ssh":
+            self._handle_raise_ssh()
+            return
         if path != f"{PREFIX}/api/report":
             self.send_error(404)
             return
@@ -431,6 +465,24 @@ class Handler(BaseHTTPRequestHandler):
             return
         ok, reason = request_focus(session_id)
         self._send_json({"ok": ok, "reason": reason})
+
+    def _handle_raise_ssh(self):
+        """Posted by a focus agent after it handled the tmux half of a jump."""
+        length = int(self.headers.get("Content-Length", 0))
+        try:
+            data = json.loads(self.rfile.read(length) or b"{}")
+            source_port = int(data["source_port"])
+            peer = str(data["peer"])
+            from_host = str(data.get("from_host", ""))
+        except (KeyError, ValueError, TypeError, json.JSONDecodeError):
+            self.send_error(400)
+            return
+        # Both become arguments to lsof/awk on whichever machine picks this up.
+        if not (0 < source_port < 65536) or not SSH_PEER_RE.match(peer):
+            self.send_error(400)
+            return
+        sent = request_raise_ssh(source_port, peer, from_host)
+        self._send_json({"ok": True, "hosts": sent})
 
     def _send_json(self, data: dict):
         body = json.dumps(data).encode()

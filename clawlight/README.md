@@ -198,13 +198,26 @@ A few consequences worth knowing:
   browser. For iTerm the agent goes further and selects the *tab* that owns
   the tmux client's tty - activating the app alone leaves it on whatever tab
   you were last on, which looks like the jump went to the wrong place.
-- **A session on another host, viewed over ssh, can only be half-jumped.**
-  Clicking a xero session switches xero's tmux correctly, but the agent on
-  xero cannot raise the iTerm tab on the Mac that holds the ssh session - the
-  two agents can't see into each other's world, and the tmux client's tty
-  there is a pty on xero, not a local tab. So the jump lands, but you may
-  still have to switch to that tab yourself. If that host's tmux has only one
-  window (as xero's often does), the click will look like it did nothing.
+- **A session reached over ssh needs both machines, and gets them.** Clicking
+  a xero session that you are viewing through an ssh tab on the Mac is two
+  jobs: xero switches its tmux, and the Mac surfaces the tab holding that ssh
+  session. Neither agent can see into the other's world, and the tmux client's
+  tty on xero is a pty there, not a local tab - so the link between them is
+  the ssh connection's **source port**, which exactly one process on exactly
+  one machine owns.
+
+  After handling the tmux half, the agent reads `SSH_CONNECTION` out of the
+  tmux client's environment and announces it. The server broadcasts that to
+  every other host rather than addressing it, because the announcing host
+  knows the connection but not which clawlight host label sits at the far end;
+  each agent runs one `lsof` for that port and only the real owner finds
+  anything. That agent then resolves the owning process to a tty - stepping
+  through a local tmux pane first if the ssh is itself running inside tmux -
+  and selects the terminal tab for it.
+
+  Needs `lsof` on the far machine, and only announces from Linux (it reads
+  `/proc/<pid>/environ`); a macOS client is local and already handled
+  directly.
 - **You can't click the PiP window** - it's a video frame, not a page. Jumping
   happens from the actual page, which is also where an ntfy notification's
   click-through lands you, so "phone buzzes → tap → jump" is one path.

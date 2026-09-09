@@ -81,7 +81,8 @@ check("queueing succeeds for a tmux session", srv.request_focus("s-mac"), (True,
 check("the request lands on the owning host only", sorted(srv.pending_focus), ["mac"])
 check("the other host collects nothing", srv.take_focus("xero"), None)
 check("the owning host collects the right pane",
-      srv.take_focus("mac"), {"tmux_socket": "/private/tmp/tmux-501/default", "tmux_pane": "%7"})
+      srv.take_focus("mac"),
+      {"kind": "tmux", "tmux_socket": "/private/tmp/tmux-501/default", "tmux_pane": "%7"})
 check("a collected request is not delivered twice", srv.take_focus("mac"), None)
 
 # Only the newest matters: clicking twice should take you to the second one,
@@ -90,7 +91,8 @@ srv.request_focus("s-xero")
 srv.report("s-xero2", "xero", "waiting", "/home/pramod/code/second", "/tmp/tmux-1000/default", "%9")
 srv.request_focus("s-xero2")
 check("a newer request replaces the older one for that host",
-      srv.take_focus("xero"), {"tmux_socket": "/tmp/tmux-1000/default", "tmux_pane": "%9"})
+      srv.take_focus("xero"),
+      {"kind": "tmux", "tmux_socket": "/tmp/tmux-1000/default", "tmux_pane": "%9"})
 
 # --- (c) staleness ----------------------------------------------------------
 reset("xero")
@@ -114,6 +116,44 @@ srv.request_focus("s-xero")
 srv.focus_listeners.clear()
 srv.pending_focus.clear()  # what _stream_focus's finally: block does on disconnect
 check("a request is dropped when its agent disconnects", srv.take_focus("xero"), None)
+
+# --- (e) the ssh hand-off to the host holding the terminal tab --------------
+# A session reached over ssh needs two machines: one switches tmux, the other
+# surfaces the tab. The announcing host knows the connection but not which
+# clawlight host sits at the far end, so the request is broadcast and only the
+# machine owning that source port acts on it.
+reset("xero", "mac", "other")
+check("a raise goes to every host except the announcer",
+      srv.request_raise_ssh(63170, "192.168.1.123:22", "xero"), 2)
+check("...and reaches them", sorted(srv.pending_focus), ["mac", "other"])
+check("...carrying the connection, tagged as a raise",
+      srv.take_focus("mac"),
+      {"kind": "raise_ssh", "source_port": 63170, "peer": "192.168.1.123:22"})
+check("the announcer is not asked to raise anything", srv.take_focus("xero"), None)
+
+reset("xero")
+check("a raise with nobody else listening reaches no one",
+      srv.request_raise_ssh(63170, "192.168.1.123:22", "xero"), 0)
+
+# A tmux jump must stay distinguishable from a raise, or the agent runs the
+# wrong half on the wrong machine.
+reset("xero")
+srv.report("s-x", "xero", "waiting", "/home/pramod/code/homelab", "/tmp/tmux-1000/default", "%3")
+srv.request_focus("s-x")
+check("a tmux jump is tagged as such", srv.take_focus("xero")["kind"], "tmux")
+
+# peer becomes an lsof match string on whichever machine picks it up.
+peers = [
+    ("192.168.1.123:22", True, "ipv4 host:port"),
+    ("100.70.215.25:22", True, "tailscale address"),
+    ("fe80::1:22", True, "ipv6-ish"),
+    ("192.168.1.123", False, "no port"),
+    ("192.168.1.123:22; id", False, "command injection"),
+    ("$(id):22", False, "substitution"),
+    ("", False, "empty"),
+]
+for peer, want, desc in peers:
+    check(f"peer validation: {desc}", bool(srv.SSH_PEER_RE.match(peer)), want)
 
 # --- (d) validation of wire-supplied tmux coordinates -----------------------
 cases = [
@@ -144,7 +184,7 @@ srv.report("s-x", "xero", "active", "/home/pramod/code/homelab", "/tmp/tmux-1000
 srv.report("s-x", "xero", "waiting")
 check("a later hook event without tmux info keeps the known pane",
       srv.take_focus("xero") if srv.request_focus("s-x")[0] else None,
-      {"tmux_socket": "/tmp/tmux-1000/default", "tmux_pane": "%3"})
+      {"kind": "tmux", "tmux_socket": "/tmp/tmux-1000/default", "tmux_pane": "%3"})
 
 print()
 if failures:
