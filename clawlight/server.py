@@ -12,12 +12,14 @@ to repopulate, which is fine since UserPromptSubmit/Stop fire constantly.
 """
 import json
 import os
+import re
 import threading
 import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 HOST = "0.0.0.0"
 PORT = 8126
@@ -44,6 +46,39 @@ NTFY_CLICK_URL = os.environ.get("CLAWLIGHT_PUBLIC_URL", "")
 # waiting->active->waiting (e.g. several permission prompts in a row) is one
 # interruption, not several - you are already looking at the screen by then.
 NOTIFY_COOLDOWN_SECONDS = 60
+
+# --- jump-to-console (focus) -----------------------------------------------
+# Clicking a session on the light should take you to the terminal that needs
+# you. This server deliberately does NOT run tmux itself, not even for sessions
+# on its own host: it can only reach xero's tmux, never the MacBook's, so doing
+# it here would mean two implementations of the same thing. Instead every host
+# runs focus-agent.sh, which holds open an SSE connection to
+# /api/focus-stream?host=<its own host> and executes the tmux commands locally.
+# The server just routes, and one code path serves both machines.
+#
+# A request is held for at most this long. If the agent on that host is down,
+# a click does nothing rather than queueing up a jump that yanks you somewhere
+# unexpected minutes later. Acting on a stale request is worse than dropping
+# it: the terminal moves at a moment you have no reason to expect it to.
+FOCUS_REQUEST_TTL_SECONDS = 15
+
+# A pane id is always %<digits>; a socket is always an absolute path. Both
+# arrive over the network from another machine and end up as arguments to
+# `tmux`, so they are validated on the way in and never trusted from the wire.
+PANE_RE = re.compile(r"^%\d+$")
+
+# host -> {tmux_socket, tmux_pane, ts}. Only the newest request per host is
+# kept: focusing is a "take me there now" action, so a backlog of them is
+# never what you want.
+pending_focus: dict[str, dict] = {}
+
+# host -> number of focus agents currently holding the SSE stream open. Used
+# to refuse a jump outright when nothing is listening, rather than accepting
+# it and letting the page flash success at a click that cannot possibly work.
+# A control that lies about having worked is worse than one that says it
+# didn't - you stop trusting the honest cases too.
+focus_listeners: dict[str, int] = {}
+
 
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -130,7 +165,23 @@ def maybe_notify_locked():
     threading.Thread(target=push_notification, args=(waiting,), daemon=True).start()
 
 
-def report(session_id: str, host: str, state: str, cwd: str = ""):
+def valid_tmux(tmux_socket: str, tmux_pane: str) -> bool:
+    """Are these usable as `tmux -S <socket> ... -t <pane>` arguments?
+
+    Both come off the wire from another machine, so anything not matching the
+    shapes tmux actually produces is dropped rather than passed to the agent.
+    """
+    return bool(
+        PANE_RE.match(tmux_pane)
+        and tmux_socket.startswith("/")
+        and "\n" not in tmux_socket
+        and "\x00" not in tmux_socket
+        and len(tmux_socket) < 256
+    )
+
+
+def report(session_id: str, host: str, state: str, cwd: str = "",
+           tmux_socket: str = "", tmux_pane: str = ""):
     with lock:
         prune_locked()
         if state == "end":
@@ -140,13 +191,19 @@ def report(session_id: str, host: str, state: str, cwd: str = ""):
 
         entry = sessions.get(session_id)
         if entry is None:
-            entry = {"foreground": "active", "background": 0, "host": host, "cwd": "", "ts": 0.0}
+            entry = {"foreground": "active", "background": 0, "host": host, "cwd": "",
+                     "tmux_socket": "", "tmux_pane": "", "ts": 0.0}
             sessions[session_id] = entry
 
         entry["host"] = host
         entry["ts"] = time.time()
         if cwd:  # not every hook event necessarily carries cwd - don't clobber a known value with blank
             entry["cwd"] = cwd
+        # Same rule as cwd, plus: a session outside tmux reports these blank
+        # forever, which is exactly how it ends up shown as unreachable.
+        if valid_tmux(tmux_socket, tmux_pane):
+            entry["tmux_socket"] = tmux_socket
+            entry["tmux_pane"] = tmux_pane
 
         if state in FOREGROUND_STATES:
             entry["foreground"] = state
@@ -190,10 +247,50 @@ def snapshot() -> dict:
     return {
         "state": agg,
         "sessions": [
-            {"host": s["host"], "state": st, "label": label_for(s, sid)}
+            {
+                "id": sid,
+                "host": s["host"],
+                "state": st,
+                "label": label_for(s, sid),
+                # False for a session started outside tmux - the page shows it
+                # as unreachable rather than offering a jump that can't work.
+                "reachable": bool(s.get("tmux_pane")),
+            }
             for (sid, s), st in zip(items, states)
         ],
     }
+
+
+def request_focus(session_id: str) -> tuple[bool, str]:
+    """Queue a jump-to-console request for whichever host owns this session.
+
+    Returns (ok, reason). The work itself happens on that host's focus agent -
+    see the FOCUS_REQUEST_TTL_SECONDS comment for why this doesn't block on it.
+    """
+    with lock:
+        prune_locked()
+        entry = sessions.get(session_id)
+        if entry is None:
+            return False, "no such session"
+        if not entry.get("tmux_pane"):
+            return False, "session is not running under tmux"
+        if not focus_listeners.get(entry["host"]):
+            return False, f"no focus agent running on {entry['host']}"
+        pending_focus[entry["host"]] = {
+            "tmux_socket": entry["tmux_socket"],
+            "tmux_pane": entry["tmux_pane"],
+            "ts": time.time(),
+        }
+    return True, "queued"
+
+
+def take_focus(host: str) -> dict | None:
+    """Pop this host's pending focus request, if there is a fresh one."""
+    with lock:
+        req = pending_focus.pop(host, None)
+    if req is None or time.time() - req["ts"] > FOCUS_REQUEST_TTL_SECONDS:
+        return None
+    return {"tmux_socket": req["tmux_socket"], "tmux_pane": req["tmux_pane"]}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -211,11 +308,20 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(snapshot())
         elif path == "/api/events":
             self._stream_events()
+        elif path == "/api/focus-stream":
+            host = parse_qs(urlparse(self.path).query).get("host", [""])[0]
+            if not host:
+                self.send_error(400)
+                return
+            self._stream_focus(host)
         else:
             self._send_static(path)
 
     def do_POST(self):
         path = self.path.split("?", 1)[0]
+        if path == f"{PREFIX}/api/focus":
+            self._handle_focus()
+            return
         if path != f"{PREFIX}/api/report":
             self.send_error(404)
             return
@@ -227,6 +333,8 @@ class Handler(BaseHTTPRequestHandler):
             host = str(data.get("host", "unknown"))
             state = str(data["state"])
             cwd = str(data.get("cwd", ""))
+            tmux_socket = str(data.get("tmux_socket", ""))
+            tmux_pane = str(data.get("tmux_pane", ""))
         except (KeyError, ValueError, json.JSONDecodeError):
             self.send_error(400)
             return
@@ -235,8 +343,19 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(400)
             return
 
-        report(session_id, host, state, cwd)
+        report(session_id, host, state, cwd, tmux_socket, tmux_pane)
         self._send_json({"ok": True})
+
+    def _handle_focus(self):
+        length = int(self.headers.get("Content-Length", 0))
+        try:
+            data = json.loads(self.rfile.read(length) or b"{}")
+            session_id = str(data["session_id"])
+        except (KeyError, ValueError, json.JSONDecodeError):
+            self.send_error(400)
+            return
+        ok, reason = request_focus(session_id)
+        self._send_json({"ok": ok, "reason": reason})
 
     def _send_json(self, data: dict):
         body = json.dumps(data).encode()
@@ -285,6 +404,52 @@ class Handler(BaseHTTPRequestHandler):
                 time.sleep(1)
         except (BrokenPipeError, ConnectionResetError):
             pass
+
+
+    def _stream_focus(self, host: str):
+        """SSE of focus requests for one host, consumed by its focus-agent.sh.
+
+        Polled rather than event-driven: one small loop is easier to reason
+        about than waking condition variables from request threads, and the
+        cost is a quarter-second of latency on a human keypress.
+        """
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+
+        with lock:
+            focus_listeners[host] = focus_listeners.get(host, 0) + 1
+
+        last_keepalive = time.time()
+        try:
+            while True:
+                req = take_focus(host)
+                if req is not None:
+                    self.wfile.write(f"data: {json.dumps(req)}\n\n".encode())
+                    self.wfile.flush()
+                    last_keepalive = time.time()
+                elif time.time() - last_keepalive > 10:
+                    # Also how the agent notices a dead connection: this is a
+                    # steady ~1.3 bytes/sec, and the agent's curl aborts below
+                    # 1 byte/sec, so a silently dropped link reconnects instead
+                    # of sitting there looking connected forever.
+                    self.wfile.write(b": keepalive\n\n")
+                    self.wfile.flush()
+                    last_keepalive = time.time()
+                time.sleep(0.25)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        finally:
+            with lock:
+                focus_listeners[host] = max(0, focus_listeners.get(host, 0) - 1)
+                if not focus_listeners[host]:
+                    del focus_listeners[host]
+                    # Whatever was queued for this host can no longer be
+                    # delivered, and holding it would mean the next agent to
+                    # connect gets yanked somewhere the user asked for long ago.
+                    pending_focus.pop(host, None)
 
 
 if __name__ == "__main__":

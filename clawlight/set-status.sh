@@ -24,6 +24,9 @@
 # without dropping the hooks for every other session on the same host. Delete
 # the marker to unhide.
 #
+# Also reports this session's tmux pane, if it has one, so the light can jump
+# you straight to the console that needs input (see focus-agent.sh).
+#
 # Never fails the hook on a network error - a status report is best-effort and
 # must not block or break the actual Claude Code turn.
 set -u
@@ -36,6 +39,14 @@ hook_input="$(cat)"
 session_id="$(printf '%s' "$hook_input" | jq -r '.session_id // "unknown"' 2>/dev/null)"
 cwd="$(printf '%s' "$hook_input" | jq -r '.cwd // empty' 2>/dev/null)"
 host="${CLAWLIGHT_HOST_NAME:-$(hostname)}"
+
+# tmux coordinates, so the light can jump you to the console that needs you
+# (see focus-agent.sh). $TMUX is "socketpath,serverpid,sessionid" - only the
+# socket matters, because a pane id (%N) is already unique across the whole
+# tmux server. Both are empty outside tmux, which just makes this session
+# non-focusable rather than breaking anything.
+tmux_socket="${TMUX%%,*}"
+tmux_pane="${TMUX_PANE:-}"
 
 # A hidden session reports `end` rather than simply going quiet: going quiet
 # would leave whatever state it last reported sitting on the light until the
@@ -51,7 +62,9 @@ case "$session_id" in
 esac
 
 payload="$(jq -n --arg session_id "$session_id" --arg host "$host" --arg state "$state" --arg cwd "$cwd" \
-  '{session_id: $session_id, host: $host, state: $state, cwd: $cwd}' 2>/dev/null)"
+  --arg tmux_socket "$tmux_socket" --arg tmux_pane "$tmux_pane" \
+  '{session_id: $session_id, host: $host, state: $state, cwd: $cwd,
+    tmux_socket: $tmux_socket, tmux_pane: $tmux_pane}' 2>/dev/null)"
 
 [ -n "$payload" ] && curl -fsS -m 3 -X POST "$server_url/clawlight/api/report" \
   -H 'Content-Type: application/json' \

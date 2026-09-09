@@ -48,6 +48,7 @@ floating on top of everything else via the browser's native Picture-in-Picture.
 ```bash
 systemctl --user daemon-reload
 systemctl --user enable --now clawlight-server.service
+systemctl --user enable --now clawlight-focus-agent.service
 ```
 
 Then reload Caddy so `/clawlight` is proxied:
@@ -101,8 +102,65 @@ proof it works.)
    CLAWLIGHT_SERVER_URL=https://xero.<your-tailnet-suffix> CLAWLIGHT_HOST_NAME=mac /path/to/set-status.sh active
    ```
 
+4. Install the focus agent, so the light can jump you to a console on this
+   machine (see "Jumping to the console that needs you"):
+   ```bash
+   cp clawlight/launchd/dev.clawlight.focus-agent.plist ~/Library/LaunchAgents/
+   # edit the paths and the three env vars in it first
+   launchctl load ~/Library/LaunchAgents/dev.clawlight.focus-agent.plist
+   ```
+
 Both accounts on the MacBook share the same hook config (since only one is
 logged in at a time), so no extra setup is needed per account.
+
+## Jumping to the console that needs you
+
+Clicking a session on the page switches that machine's terminal to the tmux
+pane it's running in - the light stops being only an indicator and becomes the
+way you get there. (Borrowed from `clawlight-cli`'s jump-to-terminal; see
+`PROJECTS.md` for why the rest of that tool still isn't a fit.)
+
+**Sessions are addressed by tmux pane.** `set-status.sh` reports `$TMUX`'s
+socket and `$TMUX_PANE` along with the state. A session started outside tmux
+has neither, and the page shows it as **unreachable** rather than offering a
+jump that would quietly do nothing.
+
+**The server never runs tmux itself.** Each host runs `focus-agent.sh`, which
+holds an SSE connection to `/clawlight/api/focus-stream?host=<its host>` and
+runs the tmux commands locally. This is the whole reason the feature works on
+both machines: xero's server can reach xero's tmux but never the MacBook's, so
+executing server-side would have meant two implementations of the same thing -
+one of them the one that actually matters, since most sessions are on the Mac.
+Routing instead means one code path, tested once.
+
+A few consequences worth knowing:
+
+- **A click at a host whose agent isn't running is refused, not accepted.**
+  The server counts live `/api/focus-stream` subscribers per host, so the page
+  can say "no focus agent running on mac" instead of flashing success at a
+  jump that could never happen. A control that lies about having worked is
+  worse than one that says it didn't.
+- **An accepted request still expires after 15s** if the agent disconnects
+  before collecting it, and is dropped outright when that host's last agent
+  goes away. Either way you never get yanked somewhere you asked for minutes
+  ago - the "never act on stale state" rule again.
+- **Only the newest request per host is kept.** Clicking twice takes you to
+  the second one, not through the first.
+- **`CLAWLIGHT_HOST_NAME` must match what `set-status.sh` reports** on that
+  machine. If they disagree, requests route to a host nobody is listening for
+  and clicks silently do nothing.
+- **On macOS, set `CLAWLIGHT_FOCUS_APP`** to the terminal app you run tmux in.
+  Switching the tmux window is useless if the terminal is still behind the
+  browser; the agent runs `osascript ... activate` to raise it.
+- **You can't click the PiP window** - it's a video frame, not a page. Jumping
+  happens from the actual page, which is also where an ntfy notification's
+  click-through lands you, so "phone buzzes → tap → jump" is one path.
+
+Tested by `scripts/test_clawlight_focus.py` (routing, staleness, and rejection
+of tmux coordinates that arrive malformed over the wire) and
+`scripts/test_clawlight_focus_e2e.sh`, which runs a throwaway tmux server with
+a real attached client against the live server and checks the client actually
+moves.
 
 ## Hiding a single session
 
@@ -139,9 +197,11 @@ windows (desktop) or floats over other apps (iOS Safari).
 
 ## Known limitations
 
-- One global aggregate light, not per-session - it does show *which* session
-  is driving the current color (see above), but there's no way to jump
-  straight to that terminal/window from the light itself.
+- One global aggregate light, not per-session - though it does show *which*
+  session is driving the current color, and clicking it jumps you there (see
+  "Jumping to the console that needs you").
+- A session started outside tmux can't be jumped to. It still shows on the
+  light, marked unreachable.
 - No auth beyond Tailscale/LAN reachability - matches the trust model already
   used by `projects-ui` and other services in this repo.
 - If the server itself restarts, the light briefly reads as idle until each

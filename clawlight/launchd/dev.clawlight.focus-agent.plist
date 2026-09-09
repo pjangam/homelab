@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Clawlight focus agent on the MacBook. Install with:
+
+    cp clawlight/launchd/dev.clawlight.focus-agent.plist ~/Library/LaunchAgents/
+    # edit the paths + the three env vars below first
+    launchctl load ~/Library/LaunchAgents/dev.clawlight.focus-agent.plist
+
+  CLAWLIGHT_HOST_NAME must be byte-identical to what set-status.sh reports on
+  this machine, or the server routes the click to a host nobody is listening
+  for and the jump silently does nothing.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.clawlight.focus-agent</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/pramod/code/homelab/clawlight/focus-agent.sh</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>CLAWLIGHT_SERVER_URL</key>
+    <string>https://xero.YOUR-TAILNET-SUFFIX</string>
+    <key>CLAWLIGHT_HOST_NAME</key>
+    <string>mac</string>
+    <!-- Whichever terminal app you actually run tmux in. Without this the
+         tmux window switches behind the browser and the jump feels broken. -->
+    <key>CLAWLIGHT_FOCUS_APP</key>
+    <string>iTerm2</string>
+    <!-- launchd agents get a minimal PATH; tmux/jq from Homebrew are not on it. -->
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardErrorPath</key>
+  <string>/tmp/clawlight-focus-agent.log</string>
+</dict>
+</plist>

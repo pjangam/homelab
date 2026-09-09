@@ -1,0 +1,19 @@
+[Unit]
+Description=Clawlight Focus Agent (jump to the console that needs you)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# No CLAWLIGHT_SERVER_URL or CLAWLIGHT_HOST_NAME here on purpose: on xero the
+# server is local and `hostname` is already what set-status.sh reports, so the
+# script's own defaults are correct and can't drift out of sync with the
+# hooks. The MacBook needs both set - see clawlight/launchd/.
+#
+# A user service, not system: the tmux server it drives belongs to this user,
+# and /tmp/tmux-1000/default is only reachable as them.
+ExecStart=/home/pramod/code/homelab/clawlight/focus-agent.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

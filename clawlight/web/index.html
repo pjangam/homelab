@@ -35,7 +35,28 @@
   #sublabel {
     font-size: 0.85rem;
     color: #999;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
   }
+  /* A reachable session is a button: clicking it jumps the terminal on that
+     host to the pane. Styled as a row rather than a button so the light stays
+     a light - the affordance is the hover, not a chrome-heavy control. */
+  .session {
+    font: inherit;
+    color: #999;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 3px 10px;
+  }
+  button.session { cursor: pointer; }
+  button.session:hover { color: #eee; border-color: #444; background: #16161a; }
+  .session.unreachable { color: #6b7280; cursor: default; }
+  .session .note { font-size: 0.75rem; opacity: 0.75; margin-left: 6px; }
+  .session.flash { border-color: #22c55e; color: #eee; }
+  .session.failed { border-color: #ef4444; color: #eee; }
   button {
     font-size: 1rem;
     padding: 10px 20px;
@@ -102,16 +123,74 @@ function applyState(data) {
 
   sublabelEl.innerHTML = '';
   if (currentSessions.length) {
-    currentSessions.forEach((s) => {
-      const row = document.createElement('div');
-      row.textContent = `${s.host}/${s.label}: ${COLORS[s.state] ? COLORS[s.state].label : s.state}`;
-      sublabelEl.appendChild(row);
-    });
+    currentSessions.forEach((s) => sublabelEl.appendChild(sessionRow(s)));
   } else {
     sublabelEl.textContent = 'no active sessions';
   }
 
   drawCanvas();
+}
+
+function sessionRow(s) {
+  const stateLabel = COLORS[s.state] ? COLORS[s.state].label : s.state;
+  const text = `${s.host}/${s.label}: ${stateLabel}`;
+
+  // A session started outside tmux has no pane to jump to, so say so plainly
+  // rather than rendering a control that would quietly do nothing.
+  if (!s.reachable) {
+    const row = document.createElement('div');
+    row.className = 'session unreachable';
+    row.title = 'not running under tmux - nothing to jump to';
+    row.textContent = text;
+    const note = document.createElement('span');
+    note.className = 'note';
+    note.textContent = 'unreachable';
+    row.appendChild(note);
+    return row;
+  }
+
+  const row = document.createElement('button');
+  row.className = 'session';
+  row.title = `jump to this console on ${s.host}`;
+  row.textContent = text;
+  row.addEventListener('click', () => jumpTo(s.id, row));
+  return row;
+}
+
+function flashRow(row, cls, note) {
+  // Say what happened on the row itself rather than only in a tooltip - a
+  // click that quietly did nothing is the failure mode this whole feature
+  // exists to avoid, so it must never look the same as one that worked.
+  row.classList.add(cls);
+  const badge = document.createElement('span');
+  badge.className = 'note';
+  badge.textContent = note;
+  row.appendChild(badge);
+  setTimeout(() => {
+    row.classList.remove(cls);
+    badge.remove();
+  }, 2500);
+}
+
+async function jumpTo(sessionId, row) {
+  // The focus agent on that host does the actual work, so success here means
+  // "handed to an agent that is definitely listening" - the server refuses
+  // outright when none is, so there is no silent third outcome.
+  try {
+    const res = await fetch('/clawlight/api/focus', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      flashRow(row, 'failed', data.reason || 'could not jump');
+      return;
+    }
+    flashRow(row, 'flash', 'jumped');
+  } catch (e) {
+    flashRow(row, 'failed', 'server unreachable');
+  }
 }
 
 function drawCanvas() {
