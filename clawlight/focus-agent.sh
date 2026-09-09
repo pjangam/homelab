@@ -33,6 +33,14 @@ focus_app="${CLAWLIGHT_FOCUS_APP:-}"
 
 log() { printf '%s clawlight-focus-agent: %s\n' "$(date '+%H:%M:%S')" "$*" >&2; }
 
+# tmux against a named socket, or the default one when the socket is empty.
+# The default matters for the raise path: that runs against THIS machine's own
+# tmux server, and under launchd there is no $TMUX to read a socket out of.
+tmuxc() {
+  local sock="$1"; shift
+  if [ -n "$sock" ]; then tmux -S "$sock" "$@"; else tmux "$@"; fi
+}
+
 # The server validates these before queueing, but this script turns them into
 # command arguments, so it checks them again rather than trusting the stream.
 valid_target() {
@@ -109,10 +117,10 @@ tmux_focus_pane() {
   # current within its session, and only then move a client to that session.
   # Doing it the other way round lands you on the session's previously-current
   # window instead of the one that wants you.
-  tmux -S "$sock" select-pane -t "$pane" 2>/dev/null || { log "no pane $pane"; return; }
-  tmux -S "$sock" select-window -t "$pane" 2>/dev/null || return
+  tmuxc "$sock" select-pane -t "$pane" 2>/dev/null || { log "no pane $pane"; return; }
+  tmuxc "$sock" select-window -t "$pane" 2>/dev/null || return
 
-  session="$(tmux -S "$sock" display-message -p -t "$pane" '#{session_name}' 2>/dev/null)"
+  session="$(tmuxc "$sock" display-message -p -t "$pane" '#{session_name}' 2>/dev/null)"
   [ -n "$session" ] || return
 
   # Prefer a client already attached to this session, and switch nothing. The
@@ -123,15 +131,15 @@ tmux_focus_pane() {
   while read -r ctty csess; do
     [ "$csess" = "$session" ] && { target_tty="$ctty"; break; }
   done <<CLIENTS
-$(tmux -S "$sock" list-clients -F '#{client_tty} #{client_session}' 2>/dev/null)
+$(tmuxc "$sock" list-clients -F '#{client_tty} #{client_session}' 2>/dev/null)
 CLIENTS
 
   # Nobody is showing it, so move the most recently used client - the one you
   # were last looking at, which is the least surprising to repurpose.
   if [ -z "$target_tty" ]; then
-    target_tty="$(tmux -S "$sock" list-clients -F '#{client_activity} #{client_tty}' 2>/dev/null \
+    target_tty="$(tmuxc "$sock" list-clients -F '#{client_activity} #{client_tty}' 2>/dev/null \
                   | sort -rn | head -1 | cut -d' ' -f2)"
-    [ -n "$target_tty" ] && tmux -S "$sock" switch-client -c "$target_tty" -t "$session" 2>/dev/null
+    [ -n "$target_tty" ] && tmuxc "$sock" switch-client -c "$target_tty" -t "$session" 2>/dev/null
   fi
 
   FOCUS_TTY="$target_tty"
@@ -150,7 +158,7 @@ announce_ssh_client() {
   [ -n "$tty" ] || return 0
   [ -r /proc/self/environ ] || return 0
 
-  cpid="$(tmux -S "$sock" list-clients -F '#{client_tty} #{client_pid}' 2>/dev/null \
+  cpid="$(tmuxc "$sock" list-clients -F '#{client_tty} #{client_pid}' 2>/dev/null \
           | awk -v t="$tty" '$1 == t { print $2; exit }')"
   [ -n "$cpid" ] || return 0
 
@@ -182,20 +190,29 @@ raise_ssh_tab() {
   # Match on "<local port>-><peer>" so a coincidental remote port can't hit.
   pid="$(lsof -nP -iTCP -sTCP:ESTABLISHED 2>/dev/null \
          | awk -v m=":$port->$peer" 'index($0, m) { print $2; exit }')"
-  [ -n "$pid" ] || return 0
+  if [ -z "$pid" ]; then
+    # Expected on every machine that isn't the one holding the connection -
+    # that is how the broadcast self-selects. Logged anyway: when the jump
+    # doesn't land, "not owned here" on every host is the thing that says so.
+    log "ssh :$port -> $peer not owned here"
+    return 0
+  fi
 
   tty="$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')"
-  [ -n "$tty" ] && [ "$tty" != "??" ] || return 0
+  if [ -z "$tty" ] || [ "$tty" = "??" ]; then
+    log "ssh :$port is pid $pid but has no controlling tty - cannot place it"
+    return 0
+  fi
   tty="/dev/$tty"
 
   # That tty may itself be a local tmux pane (ssh running inside tmux here, not
   # just in a bare tab). If so, jump to that pane first and then aim the tab
   # selection at the local client's tty rather than the pane's.
-  pane_line="$(tmux list-panes -a -F '#{pane_tty} #{pane_id}' 2>/dev/null \
+  pane_line="$(tmuxc "" list-panes -a -F '#{pane_tty} #{pane_id}' 2>/dev/null \
                | awk -v t="$tty" '$1 == t { print $2; exit }')"
   if [ -n "$pane_line" ]; then
     log "ssh runs inside local tmux pane $pane_line - jumping there first"
-    tmux_focus_pane "$(printf '%s' "${TMUX:-/dev/null}" | cut -d, -f1)" "$pane_line"
+    tmux_focus_pane "" "$pane_line"
     [ -n "$FOCUS_TTY" ] && tty="$FOCUS_TTY"
   fi
 
