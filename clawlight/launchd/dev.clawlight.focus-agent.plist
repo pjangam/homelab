@@ -16,6 +16,9 @@
   <key>Label</key>
   <string>dev.clawlight.focus-agent</string>
 
+  <!-- Wherever focus-agent.sh actually lives on this Mac. If set-status.sh was
+       copied here rather than cloned, put focus-agent.sh alongside it and
+       point this at that path. -->
   <key>ProgramArguments</key>
   <array>
     <string>/Users/pramod/code/homelab/clawlight/focus-agent.sh</string>
@@ -28,9 +31,13 @@
     <key>CLAWLIGHT_HOST_NAME</key>
     <string>mac</string>
     <!-- Whichever terminal app you actually run tmux in. Without this the
-         tmux window switches behind the browser and the jump feels broken. -->
+         tmux window switches behind the browser and the jump feels broken.
+         This is the AppleScript name, which is not always the name you see:
+         iTerm2 is "iTerm". Check yours before relying on it -
+             osascript -e 'tell application "iTerm" to activate'
+         should raise the app; if it errors, the name is wrong. -->
     <key>CLAWLIGHT_FOCUS_APP</key>
-    <string>iTerm2</string>
+    <string>REPLACE-ME-see-comment-above</string>
     <!-- launchd agents get a minimal PATH; tmux/jq from Homebrew are not on it. -->
     <key>PATH</key>
     <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>

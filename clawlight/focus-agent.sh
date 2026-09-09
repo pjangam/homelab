@@ -16,10 +16,12 @@
 #   CLAWLIGHT_HOST_NAME   - this host's label as reported by set-status.sh.
 #                           MUST match, or requests route to a host that isn't
 #                           listening and the click does nothing.
-#   CLAWLIGHT_FOCUS_APP   - optional macOS terminal app to bring to the front
-#                           (e.g. iTerm2, Ghostty, Terminal). Switching the
-#                           tmux window is useless if the terminal is behind
-#                           your browser.
+#   CLAWLIGHT_FOCUS_APP   - optional macOS terminal app to bring to the front.
+#                           Switching the tmux window is useless if the
+#                           terminal is behind your browser. This is the
+#                           AppleScript name, which is not always the name on
+#                           the app icon - iTerm2 is "iTerm". Verify with
+#                           `osascript -e 'tell application "X" to activate'`.
 #
 # Needs `curl`, `jq` and `tmux`. Sessions started outside tmux are reported as
 # unreachable by the server and never reach this script.
@@ -62,7 +64,12 @@ focus() {
   # Raising the terminal app is the other half of the jump on macOS - without
   # it tmux switches a window you still can't see behind the browser.
   if [ -n "$focus_app" ] && command -v osascript >/dev/null 2>&1; then
-    osascript -e "tell application \"$focus_app\" to activate" >/dev/null 2>&1
+    # Loud on failure: a wrong app name here (iTerm2's AppleScript name is
+    # "iTerm", not "iTerm2") otherwise fails invisibly, and the jump looks
+    # broken for a reason nothing reports.
+    if ! osascript -e "tell application \"$focus_app\" to activate" >/dev/null 2>&1; then
+      log "could not activate \"$focus_app\" - check CLAWLIGHT_FOCUS_APP"
+    fi
   fi
 
   log "focused $session ($pane)"
