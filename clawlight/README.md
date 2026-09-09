@@ -103,12 +103,20 @@ proof it works.)
    ```
 
 4. Install the focus agent, so the light can jump you to a console on this
-   machine (see "Jumping to the console that needs you"):
+   machine (see "Jumping to the console that needs you"). Run this **on the
+   Mac** - it resolves the two values that can't be known from xero (where
+   `set-status.sh` was copied to, and the terminal's AppleScript name), then
+   writes and loads the launchd plist:
    ```bash
-   cp clawlight/launchd/dev.clawlight.focus-agent.plist ~/Library/LaunchAgents/
-   # edit the paths and the three env vars in it first
-   launchctl load ~/Library/LaunchAgents/dev.clawlight.focus-agent.plist
+   scp pramod@xero.<tailnet>:/path/to/homelab/clawlight/setup-mac-focus-agent.sh /tmp/
+   bash /tmp/setup-mac-focus-agent.sh --dry-run   # show what it would do
+   bash /tmp/setup-mac-focus-agent.sh
    ```
+   It reads `CLAWLIGHT_SERVER_URL`/`CLAWLIGHT_HOST_NAME` back out of the hook
+   commands rather than taking them again, so the agent can't end up
+   disagreeing with what the hooks report - the failure mode where clicks
+   route to a host nobody is listening for. `clawlight/launchd/` holds the
+   plist template if you'd rather do it by hand.
 
 Both accounts on the MacBook share the same hook config (since only one is
 logged in at a time), so no extra setup is needed per account.
