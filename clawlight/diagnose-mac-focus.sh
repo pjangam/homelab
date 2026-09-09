@@ -12,12 +12,39 @@
 #   2. does lsof see the ssh connection the other host announced?
 #   3. does that process resolve to a tty (via a local tmux pane, if nested)?
 #   4. does the terminal own a tab for that tty?
+#
+# The agent's recent log prints at the end whatever happens, including when an
+# earlier step aborts - it is the only record of what the agent itself decided.
 set -u
 
 SETTINGS="$HOME/.claude/settings.json"
 PLIST="$HOME/Library/LaunchAgents/dev.clawlight.focus-agent.plist"
 LOG="/tmp/clawlight-focus-agent.log"
 fail=0
+conns=""
+
+# The agent's own log and the verdict print on EVERY exit, including the early
+# ones. An earlier version stopped at the first broken step and skipped the log
+# - which is the most useful thing here, since it is the only record of what
+# the agent actually decided.
+finish() {
+  [ -n "$conns" ] && rm -f "$conns"
+  printf '\nagent log (%s)\n' "$LOG"
+  if [ -f "$LOG" ]; then
+    tail -12 "$LOG" | sed 's/^/        /'
+  else
+    printf '  FAIL  no log yet - the agent has never run\n'
+    fail=1
+  fi
+  printf '\nverdict\n'
+  if [ "$fail" = 0 ]; then
+    echo "  no broken step found. Click a session on the other host now, then"
+    echo "  re-run this - the log above will show what the agent decided."
+  else
+    echo "  fix the FAIL above and retry."
+  fi
+}
+trap finish EXIT
 
 ok()   { printf '  ok    %s\n' "$*"; }
 bad()  { printf '  FAIL  %s\n' "$*"; fail=1; }
@@ -61,21 +88,26 @@ case "$app" in
 esac
 
 # --- 2. the ssh connection --------------------------------------------------
-hdr "2. ssh connections to port 22 this Mac holds"
-conns="$(lsof -nP -iTCP -sTCP:ESTABLISHED 2>/dev/null | awk '$NF ~ /->.*:22$/ { print $2, $NF }')"
-if [ -z "$conns" ]; then
+# Filter by process rather than by port: lsof's address is not a fixed column
+# (macOS appends "(ESTABLISHED)"), and an ssh on a non-standard port would be
+# missed by a :22 test. -a ANDs the filters instead of ORing them.
+hdr "2. ssh connections this Mac holds"
+conns="$(mktemp)"
+lsof -nP -a -c ssh -iTCP -sTCP:ESTABLISHED 2>/dev/null \
+  | awk 'NR > 1 { for (i = 1; i <= NF; i++) if (index($i, "->")) { print $2, $i; break } }' > "$conns"
+if [ ! -s "$conns" ]; then
   bad "none - is the ssh session to the other host still open?"
   note "the announced connection must be live when you click, not a stale one"
+  note "raw lsof, for comparison:"
+  lsof -nP -a -c ssh -iTCP 2>/dev/null | head -5 | sed 's/^/          /'
   exit 1
 fi
-printf '%s\n' "$conns" | while read -r pid name; do
-  note "pid $pid  $name"
-done
-note "the agent matches the substring \":<port>-><peer ip>:22\" against these"
+while read -r pid name; do note "pid $pid  $name"; done < "$conns"
+note "the agent looks for the substring \":<local port>-><peer>\" in these"
 
 # --- 3. tty resolution ------------------------------------------------------
 hdr "3. tty each ssh process resolves to"
-printf '%s\n' "$conns" | while read -r pid name; do
+while read -r pid name; do
   tty="$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')"
   if [ -z "$tty" ] || [ "$tty" = "??" ]; then
     bad "pid $pid ($name) has no controlling tty - it cannot be placed in a tab"
@@ -94,7 +126,7 @@ printf '%s\n' "$conns" | while read -r pid name; do
   else
     ok "pid $pid -> $tty (a bare terminal tab, not inside local tmux)"
   fi
-done
+done < "$conns"
 
 # --- 4. does the terminal own a tab for it ----------------------------------
 hdr "4. terminal tabs and their ttys"
@@ -127,20 +159,4 @@ APPLESCRIPT
       ;;
     *) note "no tab enumeration implemented for $app - only the app is raised" ;;
   esac
-fi
-
-# --- recent log -------------------------------------------------------------
-hdr "5. last agent log lines"
-if [ -f "$LOG" ]; then
-  tail -12 "$LOG" | sed 's/^/        /'
-else
-  bad "no $LOG yet - the agent has never run"
-fi
-
-hdr "verdict"
-if [ "$fail" = 0 ]; then
-  echo "  no broken step found. Click a session on the other host now, then"
-  echo "  re-run this - step 5 will show what the agent decided."
-else
-  echo "  fix the FAIL above and retry."
 fi
