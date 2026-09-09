@@ -13,6 +13,7 @@ re-Googling every time a new button/sensor gets wired in.
 | 13 + 14 | GPIO27 + GND | Sleep button (`scripts/scene-buttons-mqtt.py`) - **claimed, nothing wired** |
 | 15 + 14 | GPIO22 + GND | Awake button (`scripts/scene-buttons-mqtt.py`) - **claimed, nothing wired** |
 | 2 or 4 (5V) + a GND | - | Cooling fan (always-on load, exact pin not recorded) |
+| 33 + 35 + 37, GND 39 | GPIO13 + GPIO19 + GPIO26 | Clawlight status LED (`scripts/clawlight-led.py`) - common-cathode RGB LED, 220R per leg |
 
 The two scene-button pins have no buttons attached at the moment (noted
 2026-09-04). They still count as in use: `scene-buttons-mqtt.service` runs at
@@ -65,3 +66,10 @@ GPIO23 (pin 16), GPIO24 (pin 18), GPIO5 (pin 29), GPIO6 (pin 31) are all
 free, adjacent to an existing GND pin, and not reserved for SPI/I2C/UART -
 good candidates for the next physical button without reshuffling anything
 already wired.
+
+The clawlight LED took GPIO13/19/26 (pins 33/35/37) rather than any of those:
+they form a tidy block at the corner of the header with GND on pin 39, and
+leave every one of the free-for-a-button pins above untouched. Note it is a
+third GPIO process on this Pi - see
+`incidents/2026-09-04-lgpio-notify-fifo-collision.md` for why each one needs
+its own lgpio notify directory.

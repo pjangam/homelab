@@ -248,6 +248,27 @@ Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP
 
 **Next step:** (1) flash the audioreactive WLED build onto the ESP32 already owned - today, before anything is ordered; (2) order parts, checking the strip listing is WS2812B and 5V (not WS2811/SK6812, not 12V) and checking the strip itself on arrival rather than on build day.
 
+### ✅ Clawlight physical LED (Pi GPIO)
+**Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
+
+**State:** built and verified 2026-09-07, **not yet wired** - the software is deployed and tested with `--no-gpio`; it needs an LED soldered up and `scripts/deploy_clawlight_led_pi.sh` run for real.
+
+**Design decisions:**
+- **State reaches the Pi over retained MQTT, not the SSE endpoint the web page uses.** A hardware light must be correct the moment it powers on, and clawlight only emits on hook events - a subscriber starting cold during a quiet stretch would sit wrong for as long as the quiet lasted. `server.py` now publishes the aggregate to `clawlight/state` retained, so the broker replays it on connect. Verified correct within a second of process start. Reuses the house MQTT pattern, and makes the state available to HA for free.
+- **An MQTT last-will means the light never lies.** If `server.py` dies the broker publishes `offline` on `clawlight/availability` and the LED goes to an amber pulse rather than holding a stale colour. Directly informed by the same-day MirAIe outage, where something that looked healthy while reporting nothing went unnoticed for 29 hours. Both directions tested.
+- **Idle is dim white, not off** - so "nothing running" is distinguishable from "unplugged".
+- **GPIO13/19/26 (pins 33/35/37, GND on 39)** - a tidy corner block that leaves every pin `gpio_pinout.md` lists as free-for-a-button untouched. Third GPIO process on this Pi, so it gets its own lgpio notify directory (see `incidents/2026-09-04-lgpio-notify-fifo-collision.md`).
+
+```parts
+qty | item | est | note
+1 | Common-cathode RGB LED 5mm | 10 | common-anode works too, flip COMMON_ANODE in the script
+3 | 220R resistor | 5 | one per colour leg
+1 | Dupont jumpers + perfboard | 150 | shared with the aarti lights build
+1 | Ping-pong ball or diffuser | 20 | optional - turns a point of light into a beacon
+```
+
+**Next step:** wire the LED, run `scripts/deploy_clawlight_led_pi.sh`, and check the colour polarity is right way round (if it reads inverted, set `COMMON_ANODE = True`).
+
 ### In-house smart switch to replace Tinxy
 **Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
 **State:** not started - brainstormed 2026-09-02. Two directions considered:

@@ -113,6 +113,42 @@ proof it works.)
 Both accounts on the MacBook share the same hook config (since only one is
 logged in at a time), so no extra setup is needed per account.
 
+## Physical LED (wol-sender Pi)
+
+An RGB LED on the Pi's GPIO shows the same aggregate state as the web page,
+without needing a browser tab open. It works here only because that Pi happens
+to sit next to the desk - anywhere else this would need the ESP32 version
+parked in `PROJECTS.md`.
+
+```sh
+scripts/deploy_clawlight_led_pi.sh --dry-run   # --no-gpio, foreground, no LED needed
+scripts/deploy_clawlight_led_pi.sh             # install + enable clawlight-led.service
+```
+
+**State reaches the Pi over MQTT, not the SSE endpoint the web page uses.** A
+hardware light has the opposite requirement to a web page: it has to be right
+the moment it powers on, and clawlight only emits on hook events - so a
+subscriber starting cold during a quiet stretch would sit wrong for as long as
+the quiet lasted. `server.py` publishes the aggregate to `clawlight/state`
+**retained**, so the broker replays it to the Pi the instant it connects.
+Verified: the LED is correct within a second of process start.
+
+Colours: green active, red waiting, dim white idle (dim rather than off, so
+"nothing running" is distinguishable from "unplugged"), **amber pulse when the
+state is unknown**.
+
+That last one is the design's whole point. `server.py` sets an MQTT last-will
+on `clawlight/availability`, so if it dies the broker announces `offline` on
+its behalf and the light stops claiming to know anything. A light that keeps
+showing a stale colour is worse than no light - see the 2026-09-07 MirAIe
+outage, where something that looked healthy while reporting nothing went
+unnoticed for 29 hours. Both paths are tested: killing `clawlight-server`
+turns the LED amber within a second, and restarting it restores the real
+colour.
+
+Wiring and pin choice are in `gpio_pinout.md`. Set `COMMON_ANODE = True` in
+`scripts/clawlight-led.py` if the LED reads inverted (bright when idle).
+
 ## Jumping to the console that needs you
 
 Clicking a session on the page switches that machine's terminal to the tmux

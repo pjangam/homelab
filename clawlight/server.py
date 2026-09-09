@@ -1,6 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
+# dependencies = ["paho-mqtt"]
 # ///
 """Serves the clawlight status page and status API under /clawlight/*.
 
@@ -46,6 +47,35 @@ NTFY_CLICK_URL = os.environ.get("CLAWLIGHT_PUBLIC_URL", "")
 # waiting->active->waiting (e.g. several permission prompts in a row) is one
 # interruption, not several - you are already looking at the screen by then.
 NOTIFY_COOLDOWN_SECONDS = 60
+
+# --- MQTT state publishing (for the physical GPIO light on the Pi) ---------
+# The web page reads state over SSE, but a hardware light wants the opposite
+# contract: it must be correct the moment it powers on, not once something
+# next happens. clawlight only emits on hook events, so a subscriber starting
+# cold during an idle stretch would know nothing for as long as the idle lasts.
+# A retained MQTT topic solves exactly that - the broker replays the current
+# state to any subscriber the instant it connects.
+#
+# An LWT on the availability topic covers the other half: if this server dies,
+# the broker publishes `offline` for us, so the light can show "I don't know"
+# instead of confidently displaying a colour that stopped being true.
+#
+# Credentials come from .env.mqtt via the systemd unit's EnvironmentFile.
+# Unset password = publishing silently disabled, matching the ntfy contract
+# above (correct on any machine that isn't xero).
+MQTT_HOST = os.environ.get("MQTT_HOST", "127.0.0.1")
+MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
+MQTT_USERNAME = os.environ.get("MQTT_USERNAME", "")
+MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
+MQTT_STATE_TOPIC = os.environ.get("MQTT_STATE_TOPIC", "clawlight/state")
+MQTT_AVAILABILITY_TOPIC = os.environ.get("MQTT_AVAILABILITY_TOPIC", "clawlight/availability")
+
+mqtt_client = None
+# Set to None to force a republish - used on (re)connect so a broker that lost
+# its retained store gets repopulated rather than staying blank until the next
+# state change, which during a quiet stretch could be hours away.
+last_published: str | None = None
+
 
 # --- jump-to-console (focus) -----------------------------------------------
 # Clicking a session on the light should take you to the terminal that needs
@@ -293,6 +323,51 @@ def take_focus(host: str) -> dict | None:
     return {"tmux_socket": req["tmux_socket"], "tmux_pane": req["tmux_pane"]}
 
 
+def start_mqtt():
+    """Connect to Mosquitto in the background. Never fatal - the web UI is the
+    primary interface and must keep working with the broker down."""
+    global mqtt_client
+    if not MQTT_PASSWORD:
+        print("MQTT publishing disabled (no MQTT_PASSWORD set)")
+        return
+
+    import paho.mqtt.client as mqtt
+
+    def on_connect(client, userdata, flags, reason_code, properties):
+        global last_published
+        print(f"mqtt connected: {reason_code}")
+        client.publish(MQTT_AVAILABILITY_TOPIC, "online", retain=True)
+        last_published = None  # force a republish of the current state
+
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="clawlight-server")
+    client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+    client.will_set(MQTT_AVAILABILITY_TOPIC, "offline", retain=True)
+    client.on_connect = on_connect
+    client.connect_async(MQTT_HOST, MQTT_PORT, keepalive=30)
+    client.loop_start()  # background thread - a hook POST must never wait on the broker
+    mqtt_client = client
+
+
+def publish_state_loop():
+    """Publish the aggregate whenever it changes.
+
+    Polls snapshot() rather than hooking report(), because the aggregate can
+    also change with no report at all - a force-closed terminal's session only
+    disappears when prune_locked() ages it out. Polling catches both causes
+    through one code path, and keeps MQTT work off the request threads.
+    """
+    global last_published
+    while True:
+        try:
+            state = snapshot()["state"]
+            if state != last_published and mqtt_client is not None:
+                mqtt_client.publish(MQTT_STATE_TOPIC, state, retain=True)
+                last_published = state
+        except OSError as exc:
+            print(f"mqtt publish failed: {exc}")  # transient; the loop retries
+        time.sleep(1)
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass  # keep the systemd journal quiet; status is low-value log noise
@@ -454,5 +529,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     server = ThreadingHTTPServer((HOST, PORT), Handler)
+    start_mqtt()
+    threading.Thread(target=publish_state_loop, daemon=True).start()
     print(f"clawlight server on {HOST}:{PORT}{PREFIX}")
     server.serve_forever()

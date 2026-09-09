@@ -1,0 +1,16 @@
+[Unit]
+Description=Clawlight physical status LED (RGB LED on Pi GPIO)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pramod
+WorkingDirectory=/home/pramod
+EnvironmentFile=/home/pramod/clawlight-led.env
+Environment=GPIOZERO_PIN_FACTORY=lgpio
+ExecStart=/home/pramod/.local/bin/uv run /home/pramod/clawlight-led.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

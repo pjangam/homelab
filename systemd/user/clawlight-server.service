@@ -8,6 +8,9 @@ Wants=network-online.target
 # The dash prefix keeps the service starting on a machine that has no
 # .env.ntfy - clawlight then simply runs without push notifications.
 EnvironmentFile=-/home/pramod/code/homelab/.env.ntfy
+# Mosquitto credentials, for the retained state topic the Pi's GPIO light
+# subscribes to. Dash prefix again: no .env.mqtt just means no MQTT publishing.
+EnvironmentFile=-/home/pramod/code/homelab/.env.mqtt
 ExecStart=%h/.local/bin/uv run --script /home/pramod/code/homelab/clawlight/server.py
 Restart=on-failure
 RestartSec=3
