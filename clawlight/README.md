@@ -313,3 +313,9 @@ windows (desktop) or floats over other apps (iOS Safari).
   used by `projects-ui` and other services in this repo.
 - If the server itself restarts, the light briefly reads as idle until each
   session's next hook event re-reports it.
+- **Listed doesn't mean alive.** `SessionEnd` only fires on a clean exit, so a
+  session whose terminal is closed or whose pane is killed (`tmux
+  kill-session`, SIGHUP) never reports `end` and stays listed until the 30
+  minute staleness prune. It shows in whatever state it last reported -
+  usually `waiting` - so the light can sit red for a session that no longer
+  exists. Observed 2026-09-10 while testing on the Mac.
