@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run this ON the household MacBook (192.168.1.9). Needs sudo.
+# Run this ON the household MacBook (192.168.1.102). Needs sudo.
 #
 # Undoes the DNS overrides left behind by the 2026-08-28 outage:
 #   - Wi-Fi had a manual "8.8.8.8 1.1.1.1", which bypassed Pi-hole entirely.

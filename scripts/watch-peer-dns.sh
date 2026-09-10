@@ -8,7 +8,7 @@
 # Per the usual gotcha: the FTL database and the admin UI lag, so only a marker
 # in the live pihole.log proves a query path actually works.
 #
-# Usage: scripts/watch-peer-dns.sh 100.74.192.33 [192.168.1.9 ...]
+# Usage: scripts/watch-peer-dns.sh 100.74.192.33 [192.168.1.102 ...]
 
 set -uo pipefail
 [ $# -ge 1 ] || { echo "usage: $0 <client-ip> [more-ips...]" >&2; exit 1; }

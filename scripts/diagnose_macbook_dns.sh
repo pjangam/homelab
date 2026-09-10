@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run this ON the household MacBook (192.168.1.9).
+# Run this ON the household MacBook (192.168.1.102).
 #
 # Pi-hole's logs show this machine stopped sending DNS from its LAN address on
 # 2026-08-28 (the day of the xero shutdown incident) and has only trickled
