@@ -27,7 +27,12 @@ PORT = 8126
 PREFIX = "/clawlight"
 WEB_DIR = Path(__file__).parent / "web"
 STALE_AFTER_SECONDS = 30 * 60
-FOREGROUND_STATES = {"active", "waiting"}
+# `input_needed` is `waiting` as far as the light is concerned; what sets it
+# apart is that it comes only from the hooks that mean Claude is actually
+# blocked on a human (a permission prompt, the idle nudge) rather than merely
+# done talking, and it is the only state that sends a push. See
+# maybe_notify_locked().
+FOREGROUND_STATES = {"active", "waiting", "input_needed"}
 BACKGROUND_STATES = {"task_start", "task_end"}
 
 # --- push notifications (self-hosted ntfy) -----------------------------------
@@ -43,10 +48,15 @@ NTFY_URL = os.environ.get("NTFY_URL", "http://127.0.0.1:8127/clawlight")
 NTFY_TOKEN = os.environ.get("NTFY_CLAWLIGHT_TOKEN", "")
 # Where the notification should take you when tapped. Optional.
 NTFY_CLICK_URL = os.environ.get("CLAWLIGHT_PUBLIC_URL", "")
-# Don't re-alert for this long after alerting. A session that flaps
-# waiting->active->waiting (e.g. several permission prompts in a row) is one
-# interruption, not several - you are already looking at the screen by then.
+# Don't re-alert for this long after alerting. A session that asks again right
+# away (e.g. several permission prompts in a row) is one interruption, not
+# several - you are already looking at the screen by then.
 NOTIFY_COOLDOWN_SECONDS = 60
+# Wait this long before pushing, then check the session is *still* asking. The
+# light flickers red for a moment more often than you'd think - a background
+# shell finishing, a permission you answer as it appears - and none of those
+# are worth a phone buzz. Anything you clear within the delay never sends.
+NOTIFY_DELAY_SECONDS = 20
 
 # --- MQTT state publishing (for the physical GPIO light on the Pi) ---------
 # The web page reads state over SSE, but a hardware light wants the opposite
@@ -127,9 +137,14 @@ MIME_TYPES = {
 }
 
 lock = threading.Lock()
-# session_id -> {foreground: active|waiting, background: int, host, ts}
+# session_id -> {foreground: active|waiting, needs_input: bool,
+#                background: int, host, ts}
 #
 # `foreground` tracks the main turn (UserPromptSubmit/Stop/Notification).
+# `needs_input` answers the narrower question a push cares about: is this
+# session blocked on a human right now? `Stop` fires at the end of every
+# message, so it cannot mean that; only `Notification`/`PermissionRequest` do.
+# The light reads `foreground` (both look red), the push reads `needs_input`.
 # `background` counts running subagents/forked tasks (SubagentStart+TaskCreated
 # increment, SubagentStop+TaskCompleted decrement) - these run independently of
 # the main turn (e.g. a forked background agent), so Stop firing while one is
@@ -137,10 +152,12 @@ lock = threading.Lock()
 # your input when Claude is still actually working.
 sessions: dict[str, dict] = {}
 
-# Aggregate state as of the last report, so notifications are EDGE-triggered on
-# the transition into `waiting` rather than fired on every hook event while a
-# session sits at a prompt. Guarded by `lock` along with `sessions`.
-last_aggregate = "idle"
+# Sessions that were asking for input as of the last report, so notifications
+# are EDGE-triggered on a session newly asking rather than fired on every hook
+# event while it sits at a prompt. Per-session rather than one aggregate flag,
+# so a second console asking while the first is still unanswered still alerts.
+# Guarded by `lock` along with `sessions`.
+last_needing: set[str] = set()
 last_notify_ts = 0.0
 
 
@@ -172,37 +189,54 @@ def push_notification(labels: list[str]):
         pass  # same contract as set-status.sh: a push must never break a turn
 
 
-def aggregate_locked() -> tuple[str, list[str]]:
-    """Aggregate state, plus labels of the sessions driving `waiting`.
+def needing_input_locked() -> dict[str, str]:
+    """session id -> label, for every session the light is red for and blocked on you.
 
-    Caller must hold `lock`. Mirrors snapshot()'s precedence rules.
+    Caller must hold `lock`. Both halves matter: `needs_input` rules out `Stop`
+    (which fires at the end of every message, hence a push per message), and
+    effective_state() rules out a session whose light is green because
+    background work is still running.
     """
-    agg = "idle"
-    waiting = []
-    for sid, entry in sessions.items():
-        st = effective_state(entry)
-        if st == "waiting":
-            waiting.append(f"{entry['host']}/{label_for(entry, sid)}")
-            agg = "waiting"
-        elif st == "active" and agg != "waiting":
-            agg = "active"
-    return agg, waiting
+    return {
+        sid: f"{entry['host']}/{label_for(entry, sid)}"
+        for sid, entry in sessions.items()
+        if entry["needs_input"] and effective_state(entry) == "waiting"
+    }
+
+
+def schedule(delay: float, fn):
+    """Run fn after `delay` seconds. Seam for the tests, which run it inline."""
+    threading.Timer(delay, fn).start()
 
 
 def maybe_notify_locked():
-    """Fire a push if the aggregate just entered `waiting`. Caller holds `lock`."""
-    global last_aggregate, last_notify_ts
+    """Arm a delayed push for any session that just started asking. Holds `lock`."""
+    global last_needing
 
-    agg, waiting = aggregate_locked()
-    previous, last_aggregate = last_aggregate, agg
+    needing = needing_input_locked()
+    new = set(needing) - last_needing
+    last_needing = set(needing)
 
-    if not NTFY_TOKEN or agg != "waiting" or previous == "waiting":
+    if not NTFY_TOKEN or not new:
         return
-    now = time.time()
-    if now - last_notify_ts < NOTIFY_COOLDOWN_SECONDS:
-        return
-    last_notify_ts = now
-    threading.Thread(target=push_notification, args=(waiting,), daemon=True).start()
+    schedule(NOTIFY_DELAY_SECONDS, lambda: confirm_and_push(new))
+
+
+def confirm_and_push(session_ids: set[str]):
+    """Push those sessions, if they are still waiting on you once the delay is up."""
+    global last_notify_ts
+
+    with lock:
+        prune_locked()
+        needing = needing_input_locked()
+        labels = [needing[sid] for sid in session_ids if sid in needing]
+        if not labels:
+            return  # answered, or the light went green again - stay quiet
+        now = time.time()
+        if now - last_notify_ts < NOTIFY_COOLDOWN_SECONDS:
+            return
+        last_notify_ts = now
+    push_notification(labels)  # network call: never under the lock
 
 
 def valid_tmux(tmux_socket: str, tmux_pane: str) -> bool:
@@ -231,8 +265,9 @@ def report(session_id: str, host: str, state: str, cwd: str = "",
 
         entry = sessions.get(session_id)
         if entry is None:
-            entry = {"foreground": "active", "background": 0, "host": host, "cwd": "",
-                     "tmux_socket": "", "tmux_pane": "", "ts": 0.0}
+            entry = {"foreground": "active", "needs_input": False, "background": 0,
+                     "host": host, "cwd": "", "tmux_socket": "", "tmux_pane": "",
+                     "ts": 0.0}
             sessions[session_id] = entry
 
         entry["host"] = host
@@ -246,7 +281,14 @@ def report(session_id: str, host: str, state: str, cwd: str = "",
             entry["tmux_pane"] = tmux_pane
 
         if state in FOREGROUND_STATES:
-            entry["foreground"] = state
+            # `input_needed` is a red light exactly like `waiting`; what it adds
+            # is the push. Anything meaning work resumed - a prompt sent, a
+            # permission answered, both of which report `active` - clears it.
+            entry["foreground"] = "waiting" if state == "input_needed" else state
+            if state == "input_needed":
+                entry["needs_input"] = True
+            elif state == "active":
+                entry["needs_input"] = False
         elif state == "task_start":
             entry["background"] += 1
         elif state == "task_end":

@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Reports this session's clawlight state to the server. Called from Claude Code
 # hooks (see ~/.claude/settings.json) with the new state as $1:
-#   active | waiting | end
+#   active | waiting | input_needed | end
+#
+# `waiting` (Stop) and `input_needed` (Notification/PermissionRequest) both turn
+# the light red. Only `input_needed` can send a push: Stop fires at the end of
+# every message, and a phone buzz per message is noise rather than a signal.
 #
 # Reads the hook event JSON Claude Code pipes to stdin to get session_id.
 #
@@ -31,7 +35,7 @@
 # must not block or break the actual Claude Code turn.
 set -u
 
-state="${1:?usage: set-status.sh <active|waiting|end>}"
+state="${1:?usage: set-status.sh <active|waiting|input_needed|end>}"
 server_url="${CLAWLIGHT_SERVER_URL:-http://localhost:8126}"
 ignore_dir="${CLAWLIGHT_IGNORE_DIR:-$HOME/.claude/clawlight-ignore}"
 

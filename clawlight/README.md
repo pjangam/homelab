@@ -17,9 +17,11 @@ floating on top of everything else via the browser's native Picture-in-Picture.
   POSTs the new state to the server. Failures are swallowed so a network
   hiccup never blocks an actual Claude Code turn. It also honours a
   per-session ignore marker - see "Hiding a single session" below.
-- Each session tracks two things: a **foreground** state (`active`/`waiting`,
-  from `UserPromptSubmit`/`Stop`/`Notification`/`PermissionRequest`) and a
-  **background** task counter (from `SubagentStart`/`SubagentStop`/
+- Each session tracks three things: a **foreground** state (`active`/`waiting`,
+  from `UserPromptSubmit`/`Stop`/`Notification`/`PermissionRequest`), a
+  **needs-input** flag (set by `Notification`/`PermissionRequest` only, cleared
+  by `active`, and the sole trigger for a push - see "Push notifications"), and
+  a **background** task counter (from `SubagentStart`/`SubagentStop`/
   `TaskCreated`/`TaskCompleted`). A session reads as `active` if either the
   foreground turn is active OR any background task is still running - so a
   forked/background agent still working doesn't make the light lie about
@@ -63,8 +65,8 @@ running, in whichever repo:
 
 - `UserPromptSubmit` → `clawlight/set-status.sh active`
 - `Stop` → `clawlight/set-status.sh waiting`
-- `Notification` → `clawlight/set-status.sh waiting`
-- `PermissionRequest` → `clawlight/set-status.sh waiting`
+- `Notification` → `clawlight/set-status.sh input_needed`
+- `PermissionRequest` → `clawlight/set-status.sh input_needed`
 - `PostToolUse` → `clawlight/set-status.sh active`
 - `SessionEnd` → `clawlight/set-status.sh end`
 - `SubagentStart` → `clawlight/set-status.sh task_start`
@@ -72,8 +74,11 @@ running, in whichever repo:
 - `TaskCreated` → `clawlight/set-status.sh task_start`
 - `TaskCompleted` → `clawlight/set-status.sh task_end`
 
+`input_needed` is `waiting` plus "and it's a human it's waiting for" - same red
+light, but the only state that can send a push.
+
 `PostToolUse` exists specifically to close a gap: approving a permission
-prompt (which set `waiting` via `PermissionRequest`) has no dedicated
+prompt (which set `input_needed` via `PermissionRequest`) has no dedicated
 "resolved" hook, so nothing flipped the state back once Claude resumed - the
 next tool call succeeding is the natural "I'm working again" signal instead.
 
@@ -227,6 +232,37 @@ of tmux coordinates that arrive malformed over the wire) and
 `scripts/test_clawlight_focus_e2e.sh`, which runs a throwaway tmux server with
 a real attached client against the live server and checks the client actually
 moves.
+
+## Push notifications
+
+The server pushes to a self-hosted ntfy topic ("Claude needs you") when a
+session is stuck on you. Two rules keep it a signal rather than a buzz per
+message:
+
+- **Only `input_needed` counts, never `Stop`.** `Stop` fires at the end of
+  every message, so notifying on it means a notification per message. A push
+  needs the session to be red *and* to have said it's waiting on a human -
+  i.e. a permission prompt, or Claude Code's own "waiting for your input"
+  notification after you leave a prompt unanswered.
+- **It waits `NOTIFY_DELAY_SECONDS` (20s), then re-checks.** The light
+  flickers red more often than you'd expect - a background shell finishing, a
+  permission you answer as it appears - and anything that resolves inside the
+  delay never sends. `NOTIFY_COOLDOWN_SECONDS` (60s) then keeps a run of
+  prompts from becoming a run of notifications: by the second one you're
+  already looking at the screen.
+
+Notifications are edge-triggered per session, so a second console asking while
+the first is still unanswered gets its own push (subject to the cooldown), and
+a session sitting at a prompt never re-fires. A session whose light is green
+because background work is still running doesn't push until that work ends and
+the light actually goes red.
+
+No `NTFY_CLAWLIGHT_TOKEN` in the environment = pushes silently disabled, which
+is the right behaviour anywhere but xero.
+
+Tested by `scripts/test_clawlight_notify.py`, and end to end against the live
+server and topic by `scripts/verify_clawlight_notify.sh` (which does buzz the
+phone once).
 
 ## Hiding a single session
 
