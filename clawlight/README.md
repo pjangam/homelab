@@ -106,6 +106,11 @@ proof it works.)
    ```
    CLAWLIGHT_SERVER_URL=https://xero.<your-tailnet-suffix> CLAWLIGHT_HOST_NAME=mac /path/to/set-status.sh active
    ```
+   The state argument for each event must match the list above - in
+   particular `Notification`/`PermissionRequest` → `input_needed`, not
+   `waiting`. That one is worth checking after any change here, because
+   getting it wrong fails silently: the light still works, the machine just
+   never sends a push (done on the MacBook 2026-09-10).
 
 4. Install the focus agent, so the light can jump you to a console on this
    machine (see "Jumping to the console that needs you"). Run this **on the
