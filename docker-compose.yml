@@ -252,6 +252,13 @@ services:
       context: ./projects-ui
     container_name: projects-ui
     restart: unless-stopped
+    labels:
+      # Built locally from ./projects-ui, so there is no registry to check.
+      # Without this Watchtower tries to pull homelab-projects-ui:latest from
+      # Docker Hub every run and logs a 401 / "pull access denied" it can
+      # never succeed at - noise that would sit alongside real failures in
+      # the update report.
+      - com.centurylinklabs.watchtower.enable=false
     ports:
       - "8125:80"  # access at http://<LAN-IP>:8125
     volumes:
