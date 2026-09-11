@@ -39,13 +39,17 @@ KEY="$CERT_DIR/$HOSTNAME_FQDN.key"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG"; }
 
+# Uses the shared publisher rather than its own curl, so cert alerts land on
+# the same `homelab-health` topic as every other infrastructure alert. This
+# had its own inline copy pointing at `clawlight`, which is why it kept
+# publishing to the agent-status topic after the 2026-09-11 topic split - a
+# duplicate of push_ntfy.sh is a duplicate that doesn't get updated.
+# shellcheck disable=SC1091
+. "$(dirname "$0")/../scripts/push_ntfy.sh"
+
 alert() {
   log "ALERT: $*"
-  [ -n "${NTFY_CLAWLIGHT_TOKEN:-}" ] || return 0
-  curl -sS -m 10 -o /dev/null \
-    -H "Authorization: Bearer $NTFY_CLAWLIGHT_TOKEN" \
-    -H "Title: TLS cert problem on xero" -H "Priority: 5" -H "Tags: warning" \
-    -d "$*" "http://127.0.0.1:8127/clawlight" || true
+  push_ntfy "TLS cert problem on xero" "$*" 5 warning
 }
 
 days_left() {  # $1 = cert path; echoes whole days until expiry, or -1 if unreadable
