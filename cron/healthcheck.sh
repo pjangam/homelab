@@ -263,6 +263,39 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
     }' | "$SCRIPT_DIR/scripts/publish_healthcheck_mqtt.py"
 } || true
 
+# Verify the dashboard actually received all of the above. Runs after the
+# publish, so a problem found here is intentionally NOT in the `problems`
+# list that was just published - if the board is broken, publishing a problem
+# about the board to that same board is not a plan. It reaches email/ntfy,
+# which don't depend on MQTT or HA at all.
+#
+# Two consecutive failures (~30min) before alerting. HA marks every MQTT
+# entity unavailable for a second or two whenever discovery re-registers -
+# that happened at 19:35 on 2026-09-11 and self-healed in 2s. Paging for a
+# blip that's over before you can read the alert is how alerts get ignored.
+DASHBOARD_STATE_DIR="$HOME/.cache/healthcheck"
+DASHBOARD_FAIL_FILE="$DASHBOARD_STATE_DIR/dashboard-failing-since"
+mkdir -p "$DASHBOARD_STATE_DIR"
+
+dashboard_faults=$("$SCRIPT_DIR/scripts/verify_healthcheck_entities.sh" 2>/dev/null)
+dashboard_rc=$?
+
+if [ "$dashboard_rc" -eq 1 ] && [ -n "$dashboard_faults" ]; then
+  if [ -f "$DASHBOARD_FAIL_FILE" ]; then
+    dash_since=$(cat "$DASHBOARD_FAIL_FILE")
+    dash_mins=$(( ($(date +%s) - dash_since) / 60 ))
+    while IFS= read -r fault; do
+      [ -n "$fault" ] && problems+=("$fault (ongoing ${dash_mins}m)")
+    done <<< "$dashboard_faults"
+  else
+    date +%s > "$DASHBOARD_FAIL_FILE"
+  fi
+else
+  # Clear on recovery, and on rc=2 (can't verify) so a missing token doesn't
+  # leave a countdown primed to fire the moment it comes back.
+  rm -f "$DASHBOARD_FAIL_FILE"
+fi
+
 source "$SCRIPT_DIR/scripts/send_email.sh"
 
 source "$SCRIPT_DIR/scripts/push_ntfy.sh"
