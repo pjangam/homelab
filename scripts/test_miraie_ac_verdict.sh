@@ -43,10 +43,31 @@ EOF
 #!/usr/bin/env bash
 case "\$*" in
   *mosquitto_sub*) cat "$WORK/seed" ;;
+  # Stands in for HA reacting to the re-delivered availability. Only flips the
+  # entity when the test asked for it, so the "nudge does not help" case stays
+  # reachable.
+  *mosquitto_pub*) [ -f "$WORK/pub_fixes_ha" ] && "$WORK/set_entity" cool; exit 0 ;;
   "ps "*|ps)       echo "fakemosquitto" ;;
   *)               exit 0 ;;
 esac
 EOF
+  # A recorder DB shaped like HA's, so the entity check reads real sqlite
+  # rather than a stub - the query in fix_miraie_ac.sh is what is under test.
+  cat > "$WORK/set_entity" <<EOF
+#!/usr/bin/env python3
+import sqlite3, sys, time
+c = sqlite3.connect("$WORK/ha.db")
+c.executescript("""
+create table if not exists states_meta(metadata_id integer primary key, entity_id text);
+create table if not exists states(state_id integer primary key autoincrement,
+                                  metadata_id integer, state text, last_updated_ts real);
+""")
+c.execute("insert or ignore into states_meta values (1,'climate.panasonic_ac_panasonic_ac')")
+c.execute("insert into states(metadata_id,state,last_updated_ts) values (1,?,?)",
+          (sys.argv[1], time.time()))
+c.commit()
+EOF
+  chmod +x "$WORK/set_entity"
   chmod +x "$WORK/bin/ssh" "$WORK/bin/docker"
   printf 'MQTT_USERNAME=test\nMQTT_PASSWORD=test\n' > "$WORK/env.mqtt"
 }
@@ -55,7 +76,7 @@ run_case() {
   local name="$1" want_code="$2" want_text="$3"
   local out code
   out="$(PATH="$WORK/bin:$PATH" ENV_MQTT="$WORK/env.mqtt" STATE_WAIT=6 \
-         "$FIX" --force 2>&1)"
+         HA_DB="${HA_DB_OVERRIDE:-$WORK/none.db}" "$FIX" --force 2>&1)"
   code=$?
   if [ "$code" -eq "$want_code" ] && printf '%s' "$out" | grep -qi -- "$want_text"; then
     echo "  PASS  $name (exit $code)"
@@ -116,6 +137,27 @@ echo "== power-consumption topics never mistaken for a state reading =="
   echo "miraie-ac/panasonic-ac/monthly-power-consumption/state 0.79695"
 } > "$WORK/seed"
 run_case "deeper topics yield no ts" 0 "is online"
+
+echo "== HA entity already healthy: reported, nothing republished =="
+rm -f "$WORK/ha.db" "$WORK/pub_fixes_ha"
+"$WORK/set_entity" cool
+{
+  echo "miraie-ac/panasonic-ac/availability online"
+  echo "miraie-ac/panasonic-ac/state {\"ts\":\"$now\",\"ps\":\"on\"}"
+} > "$WORK/seed"
+HA_DB_OVERRIDE="$WORK/ha.db" run_case "a healthy entity is just reported" 0 "= cool"
+
+echo "== HA entity unavailable, re-delivering availability fixes it =="
+# The 2026-09-11 21:05 case: unit online, HA stuck unavailable because the
+# retain=false `online` went out while HA was not listening.
+rm -f "$WORK/ha.db"; touch "$WORK/pub_fixes_ha"
+"$WORK/set_entity" unavailable
+HA_DB_OVERRIDE="$WORK/ha.db" run_case "stuck entity is recovered by the nudge" 0 "HA entity recovered"
+
+echo "== HA entity unavailable and the nudge does not help =="
+rm -f "$WORK/ha.db" "$WORK/pub_fixes_ha"
+"$WORK/set_entity" unavailable
+HA_DB_OVERRIDE="$WORK/ha.db" run_case "an HA-side problem is named as HA-side" 3 "this one is HA-side"
 
 echo
 echo "$pass passed, $fail failed"

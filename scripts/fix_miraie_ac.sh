@@ -57,6 +57,8 @@
 #   1  bridge did not come back (DNS, credentials, SSH, cloud-side)
 #   2  bridge is fine but the AC unit is not there - a human has to go switch
 #      it on; re-running this script cannot help
+#   3  bridge and unit are both fine but HA still will not show the entity -
+#      an HA-side problem; restart the MQTT integration
 #
 # See scripts/diagnose_miraie_ac.sh for a read-only look at the same path.
 set -u
@@ -71,6 +73,8 @@ STATE_WAIT="${STATE_WAIT:-30}" # how long after reconnect to wait for the unit's
 TOPIC_PREFIX="${TOPIC_PREFIX:-miraie-ac}"
 MOSQ_CONTAINER="${MOSQ_CONTAINER:-mosquitto}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+HA_DB="${HA_DB:-$REPO_ROOT/HOMEASSISTANT_CONFIG/home-assistant_v2.db}"
+HA_ENTITY="${HA_ENTITY:-climate.panasonic_ac_panasonic_ac}"
 ENV_MQTT="${ENV_MQTT:-$REPO_ROOT/.env.mqtt}"
 force=0
 [ "${1:-}" = "--force" ] && force=1
@@ -139,6 +143,32 @@ ac_availability() {
 ac_device() {
   [ -n "$CAPTURE" ] || return 0
   sed -n "s|^${TOPIC_PREFIX}/\([^/]*\)/state .*|\1|p" "$CAPTURE" | head -1
+}
+
+ha_entity_state() {
+  [ -r "$HA_DB" ] || return 0
+  python3 - "$HA_DB" "$HA_ENTITY" <<'HAQ' 2>/dev/null
+import sqlite3, sys
+try:
+    c = sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True)
+    r = c.execute("""select s.state from states s
+                     join states_meta m on s.metadata_id = m.metadata_id
+                     where m.entity_id = ?
+                     order by s.last_updated_ts desc limit 1""", (sys.argv[2],)).fetchone()
+    print(r[0] if r else "")
+except sqlite3.Error:
+    print("")
+HAQ
+}
+
+# Re-deliver an `online` the node already published. NOT a fabricated status:
+# only ever called after this run has seen `online` on the wire with its own
+# subscriber, so this replays a message HA missed rather than inventing one.
+republish_online() {
+  [ -n "${MQTT_PASSWORD:-}" ] || return 1
+  docker exec "$MOSQ_CONTAINER" mosquitto_pub -h localhost \
+      -u "${MQTT_USERNAME:-homelab}" -P "$MQTT_PASSWORD" \
+      -t "${TOPIC_PREFIX}/${device}/availability" -m online 2>/dev/null
 }
 
 if ! ssh_pi true 2>/dev/null; then
@@ -282,9 +312,50 @@ case "$avail" in
     ;;
 esac
 
-echo
-echo "Node-RED republishes homeassistant/climate/${device}/config on connect,"
-echo "so the HA entity should return within a few seconds."
+# Step 6: the bridge and the unit are both fine - but the only thing anyone
+# actually cares about is whether HA shows the entity, and those are not the
+# same question. On 2026-09-11 they came apart: the unit was provably online
+# (it answered a mode/set and published fresh state) while HA held the entity
+# `unavailable` for 37 minutes, and an earlier version of this script
+# reported success throughout.
+#
+# Why: the node publishes the unit's `availability` with retain=false, like
+# everything else under its prefix. HA gates the entity on that topic (it is
+# the avty_t in the discovery payload), so once HA restarts it holds no
+# availability value and keeps the entity unavailable no matter how much
+# state arrives. It recovers only if HA happens to be subscribed when the
+# node republishes `online` - and since the config and the availability go
+# out back-to-back on reconnect, that is a race HA can lose. HA had restarted
+# at 21:05 that evening, which is what set it up.
+#
+# So: check the entity, and if it is still unavailable, re-deliver the
+# `online` this run already witnessed. That is what fixed it by hand.
+if [ -r "$HA_DB" ]; then
+  ha_state="$(ha_entity_state)"
+  if [ "$ha_state" = "unavailable" ]; then
+    echo "HA still shows $HA_ENTITY unavailable - re-delivering the availability HA missed..."
+    if republish_online; then
+      waited=0
+      while [ "$waited" -lt 20 ]; do
+        sleep 4
+        waited=$((waited + 4))
+        ha_state="$(ha_entity_state)"
+        [ "$ha_state" != "unavailable" ] && break
+      done
+    fi
+    if [ "$ha_state" = "unavailable" ]; then
+      echo
+      echo "PROBLEM: bridge connected and $device reports online, but HA still shows"
+      echo "$HA_ENTITY unavailable. The AC itself is fine - this one is HA-side."
+      echo "Restart the MQTT integration (or HA) and it should pick the entity back up."
+      exit 3
+    fi
+    echo "  HA entity recovered: $ha_state"
+  elif [ -n "$ha_state" ]; then
+    echo "HA shows $HA_ENTITY = $ha_state."
+  fi
+fi
+
 if ! ssh_pi "grep -q '^WATCHDOG_ENABLED=true' /home/pramod/nodered-watchdog.env" 2>/dev/null; then
   echo
   echo "NOTE: the Node-RED watchdog is disabled, which is why this needed fixing"
