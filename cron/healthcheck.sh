@@ -177,6 +177,49 @@ else
   rm -f "$SPOTIFYD_ADVERT_FAIL_FILE"
 fi
 
+# MirAIe AC: is the climate entity actually usable in HA? Nothing watched
+# this until 2026-09-11, when it broke twice in one evening from two
+# unrelated causes (the indoor unit going silent to the MirAIe cloud, then an
+# HA restart losing the retain=false availability) for nearly two hours
+# combined. Every signal this script already had stayed green throughout -
+# node-red is on the Pi so it is not even in the docker check above, and the
+# container was `Up (healthy)` either way.
+#
+# Alerting needs the fault to persist 30 minutes, which is ~2 missed runs of
+# this */15 cron. A brief unavailable is normal and self-healing: HA marks
+# MQTT entities unavailable for a second or two whenever discovery
+# re-registers, and every node-red restart drops the entity for ~20s. Both
+# real outages ran far past 30min and would have fired. As with the spotifyd
+# tile, the dashboard flag below reflects the latest observation immediately -
+# a tile is for looking at, an alert is for interrupting you.
+MIRAIE_AC_STATE_DIR="$HOME/.cache/healthcheck"
+MIRAIE_AC_FAIL_FILE="$MIRAIE_AC_STATE_DIR/miraie-ac-unavailable-since"
+MIRAIE_AC_ALERT_AFTER_MIN=30
+mkdir -p "$MIRAIE_AC_STATE_DIR"
+
+miraie_ac_ok=true
+miraie_ac_unavailable_minutes=""
+miraie_ac_detail="$("$SCRIPT_DIR/scripts/check_miraie_ac_available.sh" 2>/dev/null)"
+miraie_ac_rc=$?
+
+if [ "$miraie_ac_rc" -eq 1 ]; then
+  miraie_ac_ok=false
+  if [ -f "$MIRAIE_AC_FAIL_FILE" ]; then
+    miraie_ac_since=$(cat "$MIRAIE_AC_FAIL_FILE")
+    miraie_ac_unavailable_minutes=$(( ($(date +%s) - miraie_ac_since) / 60 ))
+    if [ "$miraie_ac_unavailable_minutes" -ge "$MIRAIE_AC_ALERT_AFTER_MIN" ]; then
+      problems+=("MirAIe AC has been unavailable in Home Assistant for ${miraie_ac_unavailable_minutes}m (${miraie_ac_detail:-unavailable}) - it cannot be controlled from HA or automations. Run scripts/fix_miraie_ac.sh --force: exit 2 means the indoor unit is off and needs switching on by hand, exit 3 means HA needs its MQTT integration restarted.")
+    fi
+  else
+    date +%s > "$MIRAIE_AC_FAIL_FILE"
+    miraie_ac_unavailable_minutes=0
+  fi
+else
+  # Clear on recovery, and on rc=2 (can't tell) so a missing token or an HA
+  # that was briefly down does not leave a countdown primed to fire later.
+  rm -f "$MIRAIE_AC_FAIL_FILE"
+fi
+
 # Power watchdog (watchdog_power.sh): surfaces whether enp1s0 is currently
 # down (proxy for "on UPS battery") on the dashboard, not just in
 # power-watchdog.log/journalctl. Dashboard-only signal, not added to
@@ -239,6 +282,8 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
     --argjson spotifyd_stuck_now "$spotifyd_stuck_now" \
     --arg spotifyd_restarts_24h "$spotifyd_restarts_24h" \
     --argjson spotifyd_advertising "$spotifyd_advertising" \
+    --argjson miraie_ac_ok "$miraie_ac_ok" \
+    --arg miraie_ac_unavailable_minutes "${miraie_ac_unavailable_minutes:-}" \
     --argjson power_on_battery "$power_on_battery" \
     --arg power_down_minutes "${power_down_minutes:-}" \
     '{
@@ -258,6 +303,8 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
       spotifyd_stuck_now: $spotifyd_stuck_now,
       spotifyd_restarts_24h: ($spotifyd_restarts_24h|tonumber),
       spotifyd_advertising: $spotifyd_advertising,
+      miraie_ac_ok: $miraie_ac_ok,
+      miraie_ac_unavailable_minutes: (if $miraie_ac_unavailable_minutes == "" then null else ($miraie_ac_unavailable_minutes|tonumber) end),
       power_on_battery: $power_on_battery,
       power_down_minutes: (if $power_down_minutes == "" then null else ($power_down_minutes|tonumber) end)
     }' | "$SCRIPT_DIR/scripts/publish_healthcheck_mqtt.py"

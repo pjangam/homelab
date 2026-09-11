@@ -101,6 +101,30 @@ MQTT, which is the only way to see this path's traffic - `ha-miraie-ac`
 publishes state and availability with `retain=false`, so subscribing while the
 AC sits idle shows nothing whether the bridge is healthy or dead.
 
+### Is the AC actually usable? (healthcheck alert + dashboard tile)
+
+`scripts/check_miraie_ac_available.sh` asks the only question that matters -
+what does HA hold for `climate.panasonic_ac_panasonic_ac`? - and
+`cron/healthcheck.sh` alerts by email + ntfy when the answer has been
+`unavailable` for **30 minutes**, with a tile on the Stats dashboard
+(`binary_sensor.homelab_healthcheck_homelab_miraie_ac`) reflecting the latest
+observation immediately.
+
+Added 2026-09-11, after the AC broke twice that evening from two unrelated
+causes and *nothing* noticed either time — both were found by looking. Every
+signal that existed stayed green throughout: node-red runs on the Pi so it is
+not in healthcheck's docker check at all, and the container reported
+`Up (healthy)` through both outages anyway. Watching the entity catches both
+root causes, and whatever breaks it next, because it watches the symptom you
+actually depend on rather than any one mechanism.
+
+Why 30 minutes: a brief `unavailable` is normal and self-healing — HA blips
+every MQTT entity for a second or two when discovery re-registers, and every
+`docker restart node-red` drops the entity for ~20s. Both real outages (79min
+and 37min) run well past the threshold. The check exits 2 for "can't tell"
+(no token, HA not answering) and the healthcheck deliberately does not alert
+on that: HA being down is already covered by the container check.
+
 ### Node-RED Watchdog (MQTT bridge health)
 
 **Why:** the `ha-miraie-ac` node can end up in a stale connection loop - confirmed once (2026-08-23), where credentials were correctly stored but the live MQTT connection to Mosquitto kept silently failing until a full container restart, not just a flow redeploy. `watchdog_nodered.sh` (on the Pi) checks the container's actual TCP state and restarts it if the bridge isn't connected.
@@ -342,7 +366,7 @@ the tailnet the notification arrives generic.
 | source | notifies via |
 |---|---|
 | `clawlight/server.py` | ntfy (edge-triggered on `waiting`) |
-| `cron/healthcheck.sh` | email + ntfy — containers, units, ZFS, disk, backups, **cert expiry** |
+| `cron/healthcheck.sh` | email + ntfy — containers, units, ZFS, disk, backups, **cert expiry**, **MirAIe AC** |
 | `cron/watchdog_power.sh` | email + ntfy — carrier lost/restored |
 | `cron/renew_certs.sh` | ntfy on failure |
 

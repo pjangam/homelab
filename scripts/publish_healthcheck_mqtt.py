@@ -69,6 +69,10 @@ BINARY_SENSORS = {
     "spotifyd_advertising": binary_sensor(
         "spotifyd_advertising", "Homelab Spotifyd Connect Advertising", "mdi:cast-audio"
     ),
+    # The AC entity being unusable in HA, whatever the cause. Deliberately
+    # not a node-red/bridge tile: the bridge was green through both
+    # 2026-09-11 outages while the entity was unusable for ~2h total.
+    "miraie_ac": binary_sensor("miraie_ac", "Homelab MirAIe AC", "mdi:air-conditioner"),
     "power_watchdog": binary_sensor("power_watchdog", "Homelab Power Watchdog", "mdi:power-plug-off"),
     "overall": binary_sensor("overall", "Homelab Overall Status", "mdi:server"),
 }
@@ -129,6 +133,12 @@ def main():
         "spotifyd_advertising",
         not data["spotifyd_advertising"],
         {"advertising": data["spotifyd_advertising"]},
+    )
+    # device_class "problem": ON = problem, so invert - ok is healthy.
+    pub_binary(
+        "miraie_ac",
+        not data["miraie_ac_ok"],
+        {"unavailable_minutes": data["miraie_ac_unavailable_minutes"]},
     )
     pub_binary(
         "power_watchdog",
