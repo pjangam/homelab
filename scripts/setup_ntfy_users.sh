@@ -9,8 +9,12 @@
 # alerts don't share one stream - they want different attention and different
 # mute settings. clawlight can be noisy and is safe to silence while you work;
 # a health alert is the opposite:
-#   clawlight      - agent needs input (clawlight/server.py)
-#   homelab-health - healthcheck.sh / watchdog alerts (scripts/push_ntfy.sh)
+#   clawlight       - agent needs input (clawlight/server.py)
+#   homelab-health  - healthcheck.sh / watchdog alerts (scripts/push_ntfy.sh)
+#   homelab-updates - Watchtower container updates. Its own topic because it
+#                     is informational, not a fault: you want to be able to
+#                     mute "a container was updated" without muting "ZFS is
+#                     degraded". Published at low priority for the same reason.
 #
 # Three principals, split so a leaked publisher token cannot read your
 # notification history, and so neither publisher can write to the other's
@@ -19,6 +23,9 @@
 #                 in as, so one login sees everything.
 #   clawlight   - write-only on clawlight, used via a token not a password.
 #   healthcheck - write-only on homelab-health, likewise.
+#   watchtower  - write-only on homelab-updates, likewise. Unlike the other
+#                 two this token is consumed by a CONTAINER, so it also has
+#                 to reach docker-compose.yml - see the .env upsert below.
 #
 # NOTE on the -e flags below: `docker exec` does NOT forward the host's
 # environment into the container, so NTFY_PASSWORD has to be handed over
@@ -34,6 +41,7 @@ cd "$(dirname "$0")/.."
 ENVFILE=".env.ntfy"
 TOPIC="clawlight"
 HEALTH_TOPIC="homelab-health"
+UPDATES_TOPIC="homelab-updates"
 
 nt() { docker exec -i ntfy ntfy "$@" </dev/null; }
 
@@ -62,6 +70,10 @@ docker exec -i -e NTFY_PASSWORD="$(head -c 32 /dev/urandom | base64)" ntfy \
 docker exec -i -e NTFY_PASSWORD="$(head -c 32 /dev/urandom | base64)" ntfy \
   ntfy user add --ignore-exists healthcheck </dev/null
 
+# And for Watchtower's container-update notices.
+docker exec -i -e NTFY_PASSWORD="$(head -c 32 /dev/urandom | base64)" ntfy \
+  ntfy user add --ignore-exists watchtower </dev/null
+
 # If we generated a password this run but the user already existed (e.g. a
 # previous run created the account and then failed before writing .env.ntfy),
 # the stored password and the one we are about to record would disagree. There
@@ -76,6 +88,8 @@ nt access pramod    "$TOPIC"        rw
 nt access clawlight "$TOPIC"        write-only
 nt access pramod    "$HEALTH_TOPIC" rw
 nt access healthcheck "$HEALTH_TOPIC" write-only
+nt access pramod     "$UPDATES_TOPIC" rw
+nt access watchtower "$UPDATES_TOPIC" write-only
 # Neither publisher gets any access to the other's topic - no rule is denial
 # under `auth-default-access: deny-all`, so there is nothing to revoke.
 
@@ -97,6 +111,13 @@ if [ -z "${NTFY_HEALTH_TOKEN:-}" ]; then
   echo "created publish token for user 'healthcheck'"
 fi
 
+if [ -z "${NTFY_UPDATES_TOKEN:-}" ]; then
+  NTFY_UPDATES_TOKEN="$(nt token add --label='watchtower publisher' watchtower \
+                        | grep -oE 'tk_[A-Za-z0-9]+' | head -1)"
+  [ -n "$NTFY_UPDATES_TOKEN" ] || { echo "failed to create updates publish token" >&2; exit 1; }
+  echo "created publish token for user 'watchtower'"
+fi
+
 # Tapping the notification should open the clawlight page. Kept here rather
 # than in the committed systemd unit so the tailnet name stays out of git,
 # same reasoning as the Caddyfile's {$TAILNET_SUFFIX}.
@@ -114,16 +135,36 @@ cat > "$ENVFILE" <<ENVEOF
 # NTFY_CLAWLIGHT_TOKEN : write-only publish token used by clawlight/server.py.
 # NTFY_HEALTH_TOKEN    : write-only publish token used by scripts/push_ntfy.sh
 #                        for the separate homelab-health topic.
+# NTFY_UPDATES_TOKEN   : write-only publish token used by watchtower (via
+#                        docker-compose.yml) for the homelab-updates topic.
+#                        Also mirrored into .env, which is where compose
+#                        reads it from.
 # CLAWLIGHT_PUBLIC_URL : where tapping the notification takes you.
 #
-# Subscribe the phone app to BOTH topics (clawlight, homelab-health) - logging
-# in as 'pramod' grants access but does not subscribe you.
+# Subscribe the phone app to ALL THREE topics (clawlight, homelab-health,
+# homelab-updates) - logging in as 'pramod' grants access but does not
+# subscribe you.
 NTFY_ADMIN_PASSWORD=$NTFY_ADMIN_PASSWORD
 NTFY_CLAWLIGHT_TOKEN=$NTFY_CLAWLIGHT_TOKEN
 NTFY_HEALTH_TOKEN=$NTFY_HEALTH_TOKEN
+NTFY_UPDATES_TOKEN=$NTFY_UPDATES_TOKEN
 CLAWLIGHT_PUBLIC_URL=$CLAWLIGHT_PUBLIC_URL
 ENVEOF
 chmod 600 "$ENVFILE"
+
+# Watchtower publishes from inside a container, so its token has to be
+# available to docker-compose.yml, which only auto-loads `.env` - not this
+# file. Mirror it there rather than hardcoding a secret into the committed
+# compose file, the same way PIHOLE_PASSWORD and TS_AUTHKEY_HA already work.
+# Upsert in place so the rest of .env is untouched.
+if [ -f .env ] && grep -q '^NTFY_UPDATES_TOKEN=' .env; then
+  sed -i "s|^NTFY_UPDATES_TOKEN=.*|NTFY_UPDATES_TOKEN=$NTFY_UPDATES_TOKEN|" .env
+  echo "updated NTFY_UPDATES_TOKEN in .env"
+else
+  printf '\n# Read by docker-compose.yml for watchtower ntfy alerts (see .env.ntfy).\nNTFY_UPDATES_TOKEN=%s\n' \
+    "$NTFY_UPDATES_TOKEN" >> .env
+  echo "added NTFY_UPDATES_TOKEN to .env"
+fi
 
 echo
 echo "--- users and ACLs ---"

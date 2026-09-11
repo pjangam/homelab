@@ -369,9 +369,35 @@ the tailnet the notification arrives generic.
 | `cron/healthcheck.sh` | email + ntfy — containers, units, ZFS, disk, backups, **cert expiry**, **MirAIe AC** |
 | `cron/watchdog_power.sh` | email + ntfy — carrier lost/restored |
 | `cron/renew_certs.sh` | ntfy on failure |
+| `watchtower` | ntfy (`homelab-updates`, low priority) + an HA notification |
 
 The tinxy and spotifyd watchdogs, and the backup scripts, do not alert directly
 — they surface through `healthcheck.sh`, which checks their state and freshness.
+
+**Watchtower publishes to its own topic, `homelab-updates`, at priority 2 (low).**
+A container updating is informational, not a fault, so it must be mutable
+without muting `homelab-health`. It posts to ntfy and HA in one shot, and
+because Watchtower renders its template **once** and sends that same body to
+every destination, the body is shaped to satisfy both: ntfy parses
+`{topic,title,priority,tags,message}` as a native JSON publish and shows the
+readable `message`, while HA ignores those and reads the structured
+`updated`/`failed` arrays. See `WATCHTOWER_NOTIFICATION_TEMPLATE` in
+`docker-compose.yml`. On the phone it reads:
+
+```
+Homelab: 1 container(s) updated
+wt-test (alpine:latest): 6baf43584bcb -> 28bd5fe8b56d
+```
+
+Those are image IDs, not versions — Docker has no notion of a version, and
+moving tags like `:stable` are unchanged across an update, so the short image
+ID is the only thing that actually identifies what changed.
+
+ntfy is reached at `ntfy-server` on the compose network (not `ntfy` — that
+name resolves to the tailscale sidecar), so nothing extra is published on the
+host. The write-only token comes from `scripts/setup_ntfy_users.sh`, which
+also mirrors it into `.env` because that is the only env file docker compose
+auto-loads.
 
 ### Adding another alert source
 

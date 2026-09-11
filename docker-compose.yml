@@ -211,7 +211,20 @@ services:
       - WATCHTOWER_INCLUDE_STOPPED=false
       - DOCKER_API_VERSION=1.40
       - WATCHTOWER_NOTIFICATIONS=shoutrrr
-      - WATCHTOWER_NOTIFICATION_URL=generic+http://192.168.1.123:8123/api/webhook/watchtower_update
+      # Two destinations, space separated. Watchtower renders the template
+      # ONCE and posts that same body to both, which is why the body is shaped
+      # to satisfy each: ntfy parses {topic,title,priority,tags,message} as a
+      # native JSON publish and shows the human-readable `message`, while HA
+      # ignores those and reads the structured `updated`/`failed` arrays. One
+      # body, neither destination getting the other's format.
+      #
+      # ntfy is reachable as ntfy-server (not "ntfy" - that name resolves to
+      # the tailscale sidecar, see the ntfy service below) on the compose
+      # network, so this needs nothing published on the host. Token auth via a
+      # custom header; + decodes to a space. Priority 2 = low, deliberately:
+      # a container updating is informational, and it has its own topic so it
+      # can be muted without muting homelab-health.
+      - WATCHTOWER_NOTIFICATION_URL=generic+http://192.168.1.123:8123/api/webhook/watchtower_update generic+http://ntfy-server/?@Authorization=Bearer+${NTFY_UPDATES_TOKEN}
       # Watchtower fires a "Watchtower 1.7.1, checking all containers" banner the
       # moment it boots. On a stack restart that lands while HA is still coming
       # up on 8123, so it failed every single time (connection refused, or
@@ -236,7 +249,7 @@ services:
       # "{{range , := .Updated}}" - a broken template that only shows up when
       # an update actually fires.
       - WATCHTOWER_NOTIFICATION_REPORT=true
-      - 'WATCHTOWER_NOTIFICATION_TEMPLATE={{- if .Report -}}{{- with .Report -}}{{- if or .Updated .Failed -}}{"scanned":{{len .Scanned}},"updated":[{{range $$i,$$e := .Updated}}{{if $$i}},{{end}}{"name":{{printf "%q" $$e.Name}},"image":{{printf "%q" $$e.ImageName}},"from":{{printf "%q" $$e.CurrentImageID.ShortID}},"to":{{printf "%q" $$e.LatestImageID.ShortID}}}{{end}}],"failed":[{{range $$i,$$e := .Failed}}{{if $$i}},{{end}}{"name":{{printf "%q" $$e.Name}},"image":{{printf "%q" $$e.ImageName}},"error":{{printf "%q" $$e.Error}}}{{end}}]}{{- end -}}{{- end -}}{{- end -}}'
+      - 'WATCHTOWER_NOTIFICATION_TEMPLATE={{- if .Report -}}{{- with .Report -}}{{- if or .Updated .Failed -}}{"topic":"homelab-updates","priority":2,"tags":["package"],"title":"Homelab: {{len .Updated}} container(s) updated{{if .Failed}}, {{len .Failed}} failed{{end}}","message":"{{range $$i,$$e := .Updated}}{{if $$i}}\n{{end}}{{slice $$e.Name 1}} ({{$$e.ImageName}}): {{$$e.CurrentImageID.ShortID}} -> {{$$e.LatestImageID.ShortID}}{{end}}{{if and .Updated .Failed}}\n{{end}}{{range $$i,$$e := .Failed}}{{if $$i}}\n{{end}}FAILED {{slice $$e.Name 1}} ({{$$e.ImageName}}){{end}}","scanned":{{len .Scanned}},"updated":[{{range $$i,$$e := .Updated}}{{if $$i}},{{end}}{"name":{{printf "%q" $$e.Name}},"image":{{printf "%q" $$e.ImageName}},"from":{{printf "%q" $$e.CurrentImageID.ShortID}},"to":{{printf "%q" $$e.LatestImageID.ShortID}}}{{end}}],"failed":[{{range $$i,$$e := .Failed}}{{if $$i}},{{end}}{"name":{{printf "%q" $$e.Name}},"image":{{printf "%q" $$e.ImageName}},"error":{{printf "%q" $$e.Error}}}{{end}}]}{{- end -}}{{- end -}}{{- end -}}'
     logging:
       driver: json-file
       options:
