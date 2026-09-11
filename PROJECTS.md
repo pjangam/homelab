@@ -286,6 +286,33 @@ qty | item | est | note
 
 **Next step:** wire the LED, run `scripts/deploy_clawlight_led_pi.sh`, and check the colour polarity is right way round (if it reads inverted, set `COMMON_ANODE = True`).
 
+### 💡 Homelab health LED (Pi GPIO) - the whole healthcheck as one light
+**Why:** `cron/healthcheck.sh` already knows whether the homelab is healthy, but the only way to find that out is to go looking - open the Stats dashboard, or wait for an email/ntfy push on a failure. The clawlight LED above proved the other shape works: a light on the desk that is simply *right*, with nothing to open. Same idea, different source of truth - green means every check passed, red means at least one did not, and the answer is visible from across the room.
+
+**State:** idea only, noted 2026-09-11. Nothing built - but most of the pieces are already in place, which is the reason to write it down now.
+
+**The consolidator largely exists already.** `scripts/publish_healthcheck_mqtt.py` publishes `homelab/healthcheck/overall` **retained** every 15 minutes (cron), ON = at least one check is unhappy, alongside per-check tiles (docker, systemd, zfs, spotifyd, spotifyd_advertising, miraie_ac, power_watchdog) and a `last_check` timestamp. So the LED can subscribe to one retained topic and be correct the moment it powers on, exactly like `clawlight-led.py` does with `clawlight/state`. An HA template sensor is only needed if the light should also cover things `healthcheck.sh` does not compute - Tinxy entity health, HA's own liveness, the Pi itself - in which case the consolidation happens in HA and gets published back to its own MQTT topic for the LED to read.
+
+**The hard part is staleness, not colour.** `publish_healthcheck_mqtt.py` is a one-shot cron publisher, not a daemon, so it cannot hold an MQTT last-will the way `server.py` does for clawlight. If `xero` dies, or cron stops, or the script starts erroring, the retained `overall` sits at its last value forever and the LED keeps confidently showing green - the precise failure the clawlight design was built to avoid ("anything other than a steady colour means don't believe me"). The fix is to read `last_check` as well and go to an amber pulse if it is older than ~2 intervals (35-40min), so a dead healthcheck looks different from a healthy one. That is the single decision this project stands or falls on.
+
+**Colours (proposed):** green = all checks pass · red = at least one problem · amber pulse = healthcheck is stale or the broker connection dropped · dim white = never seen a result yet. Deliberately not off for any state, same as clawlight - "unplugged" must stay distinguishable.
+
+**One RGB LED, not a bar.** The ask is "overall", and a single worst-of light is what gets read from across the room; *which* check failed is what the Stats dashboard and the ntfy push already answer well. A per-subsystem LED bar is the obvious escalation if the single light turns out to send you to the dashboard every time anyway.
+
+**Wiring:** GPIO13/19/26 are taken by the clawlight LED, so this needs its own block - GPIO16 + GPIO20 + GPIO21 (pins 36/38/40) with GND on pin 34 is free and leaves every button-reserved pin alone. Update `gpio_pinout.md` when it gets wired.
+
+**Known trap:** this would be the **fourth** GPIO process on that Pi - it needs its own lgpio notify directory or it will silently break one of the existing ones, see `incidents/2026-09-04-lgpio-notify-fifo-collision.md`. That incident is exactly how the white-noise buttons died last time.
+
+```parts
+qty | item | est | note
+1 | Common-cathode RGB LED 5mm | 10 | common-anode works too, flip COMMON_ANODE
+3 | 220R resistor | 5 | one per colour leg
+1 | Dupont jumpers + perfboard | 150 | shared with the clawlight LED / aarti builds
+1 | Ping-pong ball or diffuser | 20 | optional
+```
+
+**Next step:** decide whether the LED reads `homelab/healthcheck/overall` directly (nothing new to build server-side, covers what `healthcheck.sh` covers) or an HA-consolidated topic (more coverage, one more moving part). Then `scripts/clawlight-led.py` + `scripts/deploy_clawlight_led_pi.sh` are the templates to copy - the MQTT-retained-state, stale-means-amber, systemd-unit shape is already worked out there.
+
 ### In-house smart switch to replace Tinxy
 **Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
 **State:** not started - brainstormed 2026-09-02. Two directions considered:
