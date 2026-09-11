@@ -278,8 +278,14 @@ Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compos
 
 ## Push Notifications (self-hosted ntfy)
 
-Native push to the phone for clawlight's "needs your input" state, self-hosted
-so message content and credentials stay on `xero`.
+Native push to the phone for clawlight's "needs your input" state and for
+infrastructure health alerts, self-hosted so message content and credentials
+stay on `xero`.
+
+**Two topics, deliberately separate.** `clawlight` carries agent-status pings;
+`homelab-health` carries `healthcheck.sh` and watchdog alerts. They were one
+topic until 2026-09-11, which meant muting "an agent needs input" while
+working also muted "ZFS is degraded" - the two want opposite attention.
 
 **Reachable at** `https://ntfy.<tailnet>` (tailnet only). It is **not** behind
 Caddy: ntfy cannot run under a sub-path (upstream declined it,
@@ -297,12 +303,19 @@ basic-auth credentials are not sent in plaintext anywhere. Local publishers
 `auth-default-access` is `deny-all`; nothing is readable or writable without an
 explicit grant.
 
-| user | access to `clawlight` | used by |
-|---|---|---|
-| `pramod` | read-write | the phone app / web UI |
-| `clawlight` | **write-only**, via a non-expiring token | `clawlight/server.py` |
+| user | `clawlight` | `homelab-health` | used by |
+|---|---|---|---|
+| `pramod` | read-write | read-write | the phone app / web UI |
+| `clawlight` | **write-only**, token | *none* | `clawlight/server.py` |
+| `healthcheck` | *none* | **write-only**, token | `scripts/push_ntfy.sh` |
 
-The split is deliberate: a leaked publish token cannot read notification history.
+The split is deliberate twice over: a leaked publish token cannot read
+notification history, and neither publisher can post to the other's topic. No
+rule is denial under `deny-all`, so there is nothing to revoke. Verify with:
+
+```bash
+./scripts/verify_ntfy_topics.sh   # proves both directions are refused
+```
 Credentials live in gitignored `.env.ntfy` (mode 600), created by:
 
 ```bash
@@ -312,8 +325,10 @@ Credentials live in gitignored `.env.ntfy` (mode 600), created by:
 ### Phone setup
 
 Install the ntfy app, then **Add server** → `https://ntfy.<tailnet>`, log in as
-`pramod` with `NTFY_ADMIN_PASSWORD` from `.env.ntfy`, and subscribe to
-`clawlight`. Tailscale must be up on the phone to *fetch* message content: the
+`pramod` with `NTFY_ADMIN_PASSWORD` from `.env.ntfy`, and subscribe to **both
+`clawlight` and `homelab-health`**. Logging in grants access but does not
+subscribe you - an unsubscribed topic means those pushes silently land
+nowhere, which for `homelab-health` means no alerts at all. Tailscale must be up on the phone to *fetch* message content: the
 APNs wake-up relayed via `ntfy.sh` is contentless by design (it carries only a
 message ID and a SHA256 of the topic URL - never the message body), so without
 the tailnet the notification arrives generic.

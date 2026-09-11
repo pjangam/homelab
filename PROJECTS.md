@@ -341,7 +341,8 @@ qty | item | est | note
 - `ntfy token add --expires=never` is not valid ("unable to parse duration"); omitting `--expires` is the never-expiring form.
 - `config.js` reporting `"base_url": ""` is **normal** (the web app uses relative URLs), not a lost setting - confirmed via absolute attachment URLs, and by ntfy refusing to start at all when `upstream-base-url` is set without `base-url`.
 
-**State:** server, auth and clawlight wiring all done and verified end-to-end on xero. Remaining: install the iOS app and confirm a real push lands on the phone (needs Tailscale up on the phone to fetch message content - the APNs wake-up itself is contentless by design).
+**Split into two topics (2026-09-11):** health alerts and clawlight pings shared `/clawlight`, so muting agent notifications while working also muted infrastructure alerts. `healthcheck.sh`/watchdogs now publish to `homelab-health` via a separate write-only `healthcheck` principal; `scripts/verify_ntfy_topics.sh` proves each token is refused the other's topic in both directions rather than trusting the printed ACLs.
+**State:** server, auth and clawlight wiring all done and verified end-to-end on xero. Remaining: install the iOS app and confirm a real push lands on the phone (needs Tailscale up on the phone to fetch message content - the APNs wake-up itself is contentless by design), **and subscribe to `homelab-health` as well as `clawlight`** - logging in grants access but doesn't subscribe, so health pushes land nowhere until that's done.
 
 ### Claw Light (clawlight.dev) - agent status indicator, software-only version
 **Why:** a desk light that shows at-a-glance status for coding agent sessions (Claude Code, Opencode, Codex CLI, GitHub Copilot CLI) via color-coded signal - green for active work, red when input is needed - so a running session doesn't need active alt-tabbing to check on.
