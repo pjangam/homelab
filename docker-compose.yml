@@ -212,6 +212,15 @@ services:
       - DOCKER_API_VERSION=1.40
       - WATCHTOWER_NOTIFICATIONS=shoutrrr
       - WATCHTOWER_NOTIFICATION_URL=generic+http://192.168.1.123:8123/api/webhook/watchtower_update
+      # Watchtower fires a "Watchtower 1.7.1, checking all containers" banner the
+      # moment it boots. On a stack restart that lands while HA is still coming
+      # up on 8123, so it failed every single time (connection refused, or
+      # network is unreachable when host networking was not ready yet) - the only
+      # notification error in the logs, and pure noise since the banner says
+      # nothing. The update reports that matter go out Sundays 04:00 UTC with HA
+      # long since up, and those work: POSTing the webhook by hand returns 200
+      # and fires automations.yaml's watchtower_update_notification.
+      - WATCHTOWER_NO_STARTUP_MESSAGE=true
     logging:
       driver: json-file
       options:
