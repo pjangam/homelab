@@ -63,6 +63,12 @@ BINARY_SENSORS = {
     "systemd": binary_sensor("systemd", "Homelab Systemd Units", "mdi:cog-outline"),
     "zfs": binary_sensor("zfs", "Homelab ZFS Pool", "mdi:harddisk"),
     "spotifyd": binary_sensor("spotifyd", "Homelab Spotifyd", "mdi:spotify"),
+    # Its own tile rather than folding into "spotifyd" above: that one means
+    # "the watchdog is unhappy", this one means "it is not discoverable right
+    # now" - the state that stayed invisible for five days in Sept 2026.
+    "spotifyd_advertising": binary_sensor(
+        "spotifyd_advertising", "Homelab Spotifyd Connect Advertising", "mdi:cast-audio"
+    ),
     "power_watchdog": binary_sensor("power_watchdog", "Homelab Power Watchdog", "mdi:power-plug-off"),
     "overall": binary_sensor("overall", "Homelab Overall Status", "mdi:server"),
 }
@@ -117,6 +123,12 @@ def main():
         "spotifyd",
         data["spotifyd_problem"],
         {"stuck_now": data["spotifyd_stuck_now"], "restarts_24h": data["spotifyd_restarts_24h"]},
+    )
+    # device_class "problem": ON = problem, so invert - advertising is healthy.
+    pub_binary(
+        "spotifyd_advertising",
+        not data["spotifyd_advertising"],
+        {"advertising": data["spotifyd_advertising"]},
     )
     pub_binary(
         "power_watchdog",

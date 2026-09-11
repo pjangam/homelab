@@ -143,6 +143,40 @@ if [ "$spotifyd_restarts_24h" -ge "$SPOTIFYD_RESTART_THRESHOLD" ]; then
   problems+=("spotifyd watchdog restarted it $spotifyd_restarts_24h times in the last 24h (threshold $SPOTIFYD_RESTART_THRESHOLD) - investigate")
 fi
 
+# spotifyd Connect advertisement. The checks above are all watchdog-derived,
+# so they only see failures the watchdog already noticed - which is exactly
+# how spotifyd sat for five days in Sept 2026 advertising nothing while every
+# signal here stayed green (stuck_now false, restarts_24h 0, unit active).
+# This asks the end-state question instead: is it actually discoverable?
+#
+# Alerting needs the fault to persist across two consecutive runs (~15min).
+# A single miss is expected and harmless - the watchdog restarts spotifyd on
+# its own, and there's a ~10s window mid-restart where it genuinely isn't
+# advertising yet. Alerting on that would page for something already fixed.
+# The dashboard flag, by contrast, reflects the latest observation
+# immediately: a tile is for looking at, an email is for interrupting you.
+SPOTIFYD_ADVERT_FAIL_FILE="$SPOTIFYD_STATE_DIR/advert-failing-since"
+mkdir -p "$SPOTIFYD_STATE_DIR"
+
+spotifyd_advertising=true
+"$SCRIPT_DIR/scripts/check_spotifyd_advertising.sh" >/dev/null 2>&1
+advert_rc=$?
+
+if [ "$advert_rc" -eq 1 ]; then
+  spotifyd_advertising=false
+  if [ -f "$SPOTIFYD_ADVERT_FAIL_FILE" ]; then
+    advert_since=$(cat "$SPOTIFYD_ADVERT_FAIL_FILE")
+    advert_mins=$(( ($(date +%s) - advert_since) / 60 ))
+    problems+=("spotifyd is running but has not advertised itself as a Spotify Connect device for ${advert_mins}m - it will not appear in the Spotify app and spotcast/HA scripts targeting it will fail. Check: journalctl --user -u spotifyd -b | grep dns-sd")
+  else
+    date +%s > "$SPOTIFYD_ADVERT_FAIL_FILE"
+  fi
+else
+  # Clear on recovery, and also on rc=2 (not running / can't verify) so a
+  # deliberate stop doesn't leave a stale countdown to alert on at restart.
+  rm -f "$SPOTIFYD_ADVERT_FAIL_FILE"
+fi
+
 # Power watchdog (watchdog_power.sh): surfaces whether enp1s0 is currently
 # down (proxy for "on UPS battery") on the dashboard, not just in
 # power-watchdog.log/journalctl. Dashboard-only signal, not added to
@@ -183,6 +217,7 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
 
   spotifyd_problem_bool=$spotifyd_stuck_now
   [ "$spotifyd_restarts_24h" -ge "$SPOTIFYD_RESTART_THRESHOLD" ] && spotifyd_problem_bool=true
+  [ "$spotifyd_advertising" = false ] && spotifyd_problem_bool=true
 
   docker_bad_json=$(jq -n --args '$ARGS.positional' "${docker_bad_containers[@]}")
   problems_json=$(jq -n --args '$ARGS.positional' "${problems[@]}")
@@ -203,6 +238,7 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
     --argjson spotifyd_problem "$spotifyd_problem_bool" \
     --argjson spotifyd_stuck_now "$spotifyd_stuck_now" \
     --arg spotifyd_restarts_24h "$spotifyd_restarts_24h" \
+    --argjson spotifyd_advertising "$spotifyd_advertising" \
     --argjson power_on_battery "$power_on_battery" \
     --arg power_down_minutes "${power_down_minutes:-}" \
     '{
@@ -221,6 +257,7 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
       spotifyd_problem: $spotifyd_problem,
       spotifyd_stuck_now: $spotifyd_stuck_now,
       spotifyd_restarts_24h: ($spotifyd_restarts_24h|tonumber),
+      spotifyd_advertising: $spotifyd_advertising,
       power_on_battery: $power_on_battery,
       power_down_minutes: (if $power_down_minutes == "" then null else ($power_down_minutes|tonumber) end)
     }' | "$SCRIPT_DIR/scripts/publish_healthcheck_mqtt.py"
