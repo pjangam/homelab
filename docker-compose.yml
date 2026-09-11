@@ -221,6 +221,22 @@ services:
       # long since up, and those work: POSTing the webhook by hand returns 200
       # and fires automations.yaml's watchtower_update_notification.
       - WATCHTOWER_NO_STARTUP_MESSAGE=true
+      # Report mode turns the terse default into a per-container summary, and
+      # the template below renders it as JSON so HA can actually read it.
+      # shoutrrr's generic service posts the message as the raw body while
+      # declaring Content-Type: application/json - so a plain-text message
+      # reaches HA as an unparseable body, trigger.json is never set, and the
+      # automation falls through to its "updated one or more containers"
+      # default. That is exactly what the notifications said. Making the
+      # message itself valid JSON is what fixes it; `template=json` on the URL
+      # does not (shoutrrr forwards it as a query param and still sends text).
+      # Emits nothing at all when there is nothing to report, so a quiet
+      # Sunday stays quiet. The $$ are escapes: compose interpolates a single
+      # $ as an env var, which silently blanked $i/$e and produced
+      # "{{range , := .Updated}}" - a broken template that only shows up when
+      # an update actually fires.
+      - WATCHTOWER_NOTIFICATION_REPORT=true
+      - 'WATCHTOWER_NOTIFICATION_TEMPLATE={{- if .Report -}}{{- with .Report -}}{{- if or .Updated .Failed -}}{"scanned":{{len .Scanned}},"updated":[{{range $$i,$$e := .Updated}}{{if $$i}},{{end}}{"name":{{printf "%q" $$e.Name}},"image":{{printf "%q" $$e.ImageName}},"from":{{printf "%q" $$e.CurrentImageID.ShortID}},"to":{{printf "%q" $$e.LatestImageID.ShortID}}}{{end}}],"failed":[{{range $$i,$$e := .Failed}}{{if $$i}},{{end}}{"name":{{printf "%q" $$e.Name}},"image":{{printf "%q" $$e.ImageName}},"error":{{printf "%q" $$e.Error}}}{{end}}]}{{- end -}}{{- end -}}{{- end -}}'
     logging:
       driver: json-file
       options:
