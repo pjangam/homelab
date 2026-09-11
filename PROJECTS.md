@@ -167,8 +167,11 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 ### Miraie AC self-healing
 **Why:** Readme documents a known paper cut - "if entity shows Unavailable, turn the AC on/off physically to trigger a state update." Same shape of problem as the Tinxy watchdog (auto-recover after a sustained bad state) but for the Miraie AC MQTT integration.
-**State:** not started - the healthcheck/notification project was picked over this one when choosing what to build.
-**Next step:** none, purely a backlog idea.
+**State:** not started as automation, but 2026-09-11 sharpened what it would have to do. That evening the entity sat `unavailable` while the bridge was provably fine - both brokers connected, DNS clean, no errors - because the indoor unit had stopped talking to the MirAIe cloud. Three restarts reported success and fixed nothing. So "self-healing" here cannot mean "restart Node-RED harder"; the only recovery for that failure is physical, and the useful automation is to *tell the difference* and say which one it is.
+- `scripts/fix_miraie_ac.sh` now does the telling: it subscribes to `miraie-ac/#` before restarting (everything there is retain=false and published only on reconnect, so a subscriber started afterwards sees nothing), then reads the unit's `availability` off the reconnect. Exit 2 means the bridge is fine and the unit is not there.
+- The verdict deliberately does **not** key off the `ts` in the state payload. That is the unit's last state *change*, not a heartbeat - measured the same evening, an AC that was actively cooling published nothing at all for 5 minutes and reported a `ts` 8.6min old right after a reconnect. A staleness threshold would have sent someone to power-cycle a working AC. `scripts/test_miraie_ac_verdict.sh` pins that down.
+- The Node-RED watchdog (every 10min on the Pi) is back on for the season as of 2026-09-11, but it only covers the bridge - it is correctly silent for this failure.
+**Next step:** if this recurs often enough to be worth automating, the hook is a notification on exit 2 ("the AC is off the cloud, go switch it on") rather than any restart loop.
 
 ### Tinxy: remove stale/decommissioned devices from account
 **Why:** some Tinxy devices are old/decommissioned and will always show offline, which is just noise (they made up ~60% of registered entities being unavailable even in the healthy baseline, discovered while tuning the watchdog's detection threshold below).

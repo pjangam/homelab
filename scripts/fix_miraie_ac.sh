@@ -5,7 +5,7 @@
 #
 # The fix is a single `docker restart node-red` on the Pi - nothing on xero
 # needs touching, Mosquitto and HA are fine throughout. This script exists
-# because the two things around that restart are what actually matter:
+# because the three things around that restart are what actually matter:
 #
 #   1. DON'T restart into broken DNS. The 2026-09-07 outage was one failed
 #      lookup at startup (`getaddrinfo EAI_AGAIN auth.miraie.in`) which the
@@ -15,12 +15,48 @@
 #   2. VERIFY it came back. `docker restart` returning 0 says nothing about
 #      whether the MQTT bridge reconnected, and neither does the container's
 #      healthcheck (it only proves Node-RED's web UI answers on 1880).
+#   3. SAY WHICH FAILURE IT WAS. A reconnected bridge is necessary but not
+#      sufficient. On 2026-09-11 both brokers reconnected cleanly on three
+#      restarts in a row while HA still showed `unavailable`, because the AC
+#      unit itself had been silent to the MirAIe cloud since 79 minutes
+#      earlier. No number of restarts fixes that - only switching the unit
+#      back on does. So after reconnecting, this script reads the unit's own
+#      availability and tells you which of the two problems you have:
+#
+#        bridge down  -> the restart fixes it, entity returns in seconds
+#        AC silent    -> go power-cycle the indoor unit, restarts are wasted
+#
+#      The signal is the `availability` topic the node publishes for the unit
+#      (`online`/`offline` - it is what the discovery payload points HA's own
+#      avty_t at, so it is exactly what decides `unavailable` in HA).
+#
+#      Reading it is the awkward part. Everything under miraie-ac/# is
+#      published retain=false and ONLY on reconnect or on a state change - it
+#      is not a heartbeat. Measured 2026-09-11: an AC actively cooling
+#      published nothing at all on miraie-ac/# across a 5-minute window, and
+#      the broker holds no retained message on that prefix either. So there
+#      is nothing to read after the fact and nothing to wait for on an idle
+#      system; the only way to see the unit's availability is to already be
+#      subscribed when the bridge reconnects. Hence: subscriber first, THEN
+#      the restart, which is what forces the republish.
+#
+#      Note what is deliberately NOT used as the verdict: the `ts` inside the
+#      state payload. It is the time of the unit's last state CHANGE, not a
+#      liveness ping - a healthy AC nobody has touched since morning reports a
+#      `ts` hours old. Judging staleness off it would send you to power-cycle
+#      a working AC. It is printed as context only.
 #
 # Safe to run any time: if the bridge is already healthy it changes nothing
 # and exits 0. Use --force to restart anyway.
 #
 #   scripts/fix_miraie_ac.sh
 #   scripts/fix_miraie_ac.sh --force
+#
+# Exit codes:
+#   0  healthy - bridge connected and the unit reports online
+#   1  bridge did not come back (DNS, credentials, SSH, cloud-side)
+#   2  bridge is fine but the AC unit is not there - a human has to go switch
+#      it on; re-running this script cannot help
 #
 # See scripts/diagnose_miraie_ac.sh for a read-only look at the same path.
 set -u
@@ -31,8 +67,22 @@ CLOUD_PORT_HEX="22B3"          # 8883, MirAIe cloud MQTT broker (TLS)
 LOCAL_PORT_HEX="075B"          # 1883, Mosquitto on xero
 DNS_ATTEMPTS=6                 # ~30s of retries before giving up on DNS
 CONNECT_TIMEOUT=90             # how long to wait for the bridge to come back
+STATE_WAIT="${STATE_WAIT:-30}" # how long after reconnect to wait for the unit's availability
+TOPIC_PREFIX="${TOPIC_PREFIX:-miraie-ac}"
+MOSQ_CONTAINER="${MOSQ_CONTAINER:-mosquitto}"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ENV_MQTT="${ENV_MQTT:-$REPO_ROOT/.env.mqtt}"
 force=0
 [ "${1:-}" = "--force" ] && force=1
+
+CAPTURE=""
+CAPTURE_PID=""
+cleanup() {
+  [ -n "$CAPTURE_PID" ] && kill "$CAPTURE_PID" 2>/dev/null
+  [ -n "$CAPTURE" ] && rm -f "$CAPTURE"
+  return 0
+}
+trap cleanup EXIT
 
 ssh_pi() { ssh -o BatchMode=yes -o ConnectTimeout=5 "$PI_HOST" "$@"; }
 
@@ -48,6 +98,49 @@ bridge_up() {
   return 1
 }
 
+# Subscribe to the AC's topics before anything restarts. Must be running
+# across the reconnect or there is nothing to see (retain=false, see header).
+# Every failure here is non-fatal: the restart is still worth doing, we just
+# lose the ability to say which failure mode it was.
+start_capture() {
+  [ -r "$ENV_MQTT" ] || { echo "  (no readable $ENV_MQTT)"; return 1; }
+  # shellcheck disable=SC1090
+  set -a; . "$ENV_MQTT"; set +a
+  [ -n "${MQTT_PASSWORD:-}" ] || { echo "  (MQTT_PASSWORD not set in $ENV_MQTT)"; return 1; }
+  docker ps --filter "name=^${MOSQ_CONTAINER}$" --filter status=running -q 2>/dev/null | grep -q . \
+    || { echo "  (mosquitto container not running locally)"; return 1; }
+  CAPTURE="$(mktemp)"
+  # -W bounds the subscriber inside the container, so it cannot outlive this
+  # run even if the kill in cleanup() only reaps the local `docker exec`.
+  docker exec "$MOSQ_CONTAINER" mosquitto_sub -h localhost \
+      -u "${MQTT_USERNAME:-homelab}" -P "$MQTT_PASSWORD" \
+      -v -W "$((CONNECT_TIMEOUT + STATE_WAIT + 15))" -t "${TOPIC_PREFIX}/#" \
+      > "$CAPTURE" 2>/dev/null &
+  CAPTURE_PID=$!
+  sleep 2   # let the subscription land before the restart can publish anything
+  return 0
+}
+
+# The AC's own last-seen unix time, from the `ts` in its most recent state
+# payload. Only matches <prefix>/<device>/state - the power-consumption
+# topics sit a level deeper and carry no ts.
+ac_last_seen() {
+  [ -n "$CAPTURE" ] || return 0
+  sed -n "s|^${TOPIC_PREFIX}/[^/]*/state .*\"ts\":\"\([0-9][0-9]*\)\".*|\1|p" "$CAPTURE" | tail -1
+}
+
+# The node's own verdict on the unit, published alongside the state. When it
+# says `offline` that settles it with no reference to any timing threshold.
+ac_availability() {
+  [ -n "$CAPTURE" ] || return 0
+  sed -n "s|^${TOPIC_PREFIX}/[^/]*/availability \\(.*\\)|\\1|p" "$CAPTURE" | tail -1 | tr -d '\\r'
+}
+
+ac_device() {
+  [ -n "$CAPTURE" ] || return 0
+  sed -n "s|^${TOPIC_PREFIX}/\([^/]*\)/state .*|\1|p" "$CAPTURE" | head -1
+}
+
 if ! ssh_pi true 2>/dev/null; then
   echo "FAIL: cannot SSH to $PI_HOST - fix that first, nothing else here will work."
   exit 1
@@ -61,8 +154,10 @@ fi
 
 if [ "$force" -eq 0 ] && bridge_up; then
   echo "Bridge is already healthy (both brokers connected) - nothing to do."
-  echo "If HA still shows the AC unavailable, the AC unit itself may be powered"
-  echo "off, or run with --force to republish MQTT discovery."
+  echo "If HA still shows the AC unavailable, the bridge is not your problem:"
+  echo "the AC unit itself is probably not reporting to the MirAIe cloud."
+  echo "Re-run with --force and this script will restart the bridge and tell"
+  echo "you when the AC last reported, which settles it either way."
   exit 0
 fi
 
@@ -89,35 +184,111 @@ if [ "$dns_ok" -ne 1 ]; then
 fi
 echo "  DNS ok."
 
-# Step 2: the actual fix.
+# Step 2: start watching, THEN restart. Order matters - see the header.
+echo "Watching ${TOPIC_PREFIX}/# so we can see what the reconnect publishes..."
+capture_ok=0
+start_capture && capture_ok=1
+[ "$capture_ok" -eq 1 ] && echo "  watching." || echo "  continuing without it - the restart still happens."
+
+# Step 3: the actual fix.
 echo "Restarting $CONTAINER..."
 ssh_pi "docker restart $CONTAINER" >/dev/null 2>&1 || { echo "FAIL: docker restart failed."; exit 1; }
 
-# Step 3: verify, rather than trusting the restart's exit code.
+# Step 4: verify, rather than trusting the restart's exit code.
 echo "Waiting for both brokers to reconnect (up to ${CONNECT_TIMEOUT}s)..."
 elapsed=0
+connected=0
 while [ "$elapsed" -lt "$CONNECT_TIMEOUT" ]; do
   sleep 5
   elapsed=$((elapsed + 5))
   if bridge_up; then
+    connected=1
     echo "  connected after ${elapsed}s."
-    echo
-    echo "OK: MirAIe cloud (8883) and Mosquitto (1883) both connected."
-    echo "Node-RED republishes homeassistant/climate/panasonic-ac/config on connect,"
-    echo "so the HA entity should return within a few seconds."
-    if ! ssh_pi "grep -q '^WATCHDOG_ENABLED=true' /home/pramod/nodered-watchdog.env" 2>/dev/null; then
-      echo
-      echo "NOTE: the Node-RED watchdog is disabled, which is why this needed fixing"
-      echo "by hand. In AC season set WATCHDOG_ENABLED=true in"
-      echo "/home/pramod/nodered-watchdog.env on the Pi and it self-heals in <10min."
-    fi
-    exit 0
+    break
   fi
   echo "  ${elapsed}s: not yet..."
 done
 
+if [ "$connected" -ne 1 ]; then
+  echo
+  echo "FAIL: bridge did not come back within ${CONNECT_TIMEOUT}s."
+  echo "Check the node's own error, which is usually a credentials or cloud-side problem:"
+  echo "  ssh $PI_HOST 'docker logs --tail 30 $CONTAINER'"
+  exit 1
+fi
+
+echo "OK: MirAIe cloud (8883) and Mosquitto (1883) both connected."
+
+if [ "$capture_ok" -ne 1 ]; then
+  echo
+  echo "Could not watch MQTT, so this script cannot tell you whether the AC itself"
+  echo "is reporting. If HA still shows the entity unavailable in a minute, assume"
+  echo "the unit is off the cloud and go switch it on at the wall."
+  exit 0
+fi
+
+# Step 5: the part a reconnected bridge does not answer - is the AC there?
+echo "Waiting up to ${STATE_WAIT}s for the unit's availability..."
+waited=0
+avail=""
+while :; do
+  avail="$(ac_availability)"
+  [ -n "$avail" ] && break
+  [ "$waited" -ge "$STATE_WAIT" ] && break
+  sleep 3
+  waited=$((waited + 3))
+done
+
+device="$(ac_device)"
+device="${device:-the AC}"
+ts="$(ac_last_seen)"
+
+# `ts` is context for the human, never the verdict - see the header.
+last_change=""
+if [ -n "$ts" ]; then
+  age=$(( $(date +%s) - ts ))
+  [ "$age" -lt 0 ] && age=0   # clock skew between the AC and xero
+  last_change="last state change $(date -d "@$ts" '+%F %T') ($((age / 60))m ago)"
+fi
+
+case "$avail" in
+  online)
+    echo "$device is online${last_change:+ - $last_change}."
+    ;;
+  offline)
+    echo
+    echo "PROBLEM: the bridge is up, but it reports $device as offline."
+    [ -n "$last_change" ] && echo "Reported $last_change."
+    echo "The bridge is NOT your problem and restarting again will not help."
+    echo "Switch the indoor unit on (or power-cycle it at the wall); HA picks the"
+    echo "entity back up within seconds of it reporting."
+    exit 2
+    ;;
+  "")
+    echo
+    echo "PROBLEM: the bridge reconnected but published nothing for the AC in ${STATE_WAIT}s."
+    echo "A reconnect always republishes the unit's availability, so silence here"
+    echo "means the node never got the device from the MirAIe cloud - the unit is"
+    echo "not there. Restarting again will not help; switch it on at the wall."
+    echo "If it IS switched on, check the node's own error:"
+    echo "  ssh $PI_HOST 'docker logs --tail 30 $CONTAINER'"
+    exit 2
+    ;;
+  *)
+    echo
+    echo "Unrecognised availability for $device: '$avail'"
+    echo "Treating as inconclusive - check HA directly."
+    exit 2
+    ;;
+esac
+
 echo
-echo "FAIL: bridge did not come back within ${CONNECT_TIMEOUT}s."
-echo "Check the node's own error, which is usually a credentials or cloud-side problem:"
-echo "  ssh $PI_HOST 'docker logs --tail 30 $CONTAINER'"
-exit 1
+echo "Node-RED republishes homeassistant/climate/${device}/config on connect,"
+echo "so the HA entity should return within a few seconds."
+if ! ssh_pi "grep -q '^WATCHDOG_ENABLED=true' /home/pramod/nodered-watchdog.env" 2>/dev/null; then
+  echo
+  echo "NOTE: the Node-RED watchdog is disabled, which is why this needed fixing"
+  echo "by hand. In AC season set WATCHDOG_ENABLED=true in"
+  echo "/home/pramod/nodered-watchdog.env on the Pi and it self-heals in <10min."
+fi
+exit 0

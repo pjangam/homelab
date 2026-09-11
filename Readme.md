@@ -111,7 +111,9 @@ AC sits idle shows nothing whether the bridge is healthy or dead.
 3. Deliberately does **not** wait for AC state/availability MQTT messages (the original design) - Node-RED only publishes those once per reconnect (not retained by the node's own code), so nothing arrives while the AC is powered off, which is most of the year outside summer. That caused a false restart on every single run regardless of actual bridge health.
 4. All actions logged via `logger -t nodered-watchdog` (`journalctl -t nodered-watchdog`) and to `nodered-watchdog.log` on the Pi.
 
-**Currently disabled** (2026-08-23) - the AC is off for the season, so there's nothing for this watchdog to protect against; it's fully skipped rather than left running against a bridge nobody needs connected right now.
+**Currently enabled** (re-enabled 2026-09-11 for AC season, expected to stay on through at least mid-November 2026). It had been disabled since 2026-08-23 for the off-season. Verified on re-enable by stopping `node-red` and running the script by hand: it logged `MQTT bridge down (cloud_connected=0 local_connected=0)`, restarted the container, and the bridge was back in ~5s.
+
+**What it does not cover.** This watchdog only sees the *bridge*. On 2026-09-11 the AC entity went `unavailable` in HA while both broker connections stayed healthy the whole time - the indoor unit itself had gone silent to the MirAIe cloud, and three `docker restart node-red` in a row reported success and changed nothing. The watchdog correctly stays quiet in that case, because restarting cannot fix a unit that is switched off. That failure is what `scripts/fix_miraie_ac.sh` diagnoses (exit 2 = the unit, not the bridge).
 
 **Disable / re-enable** (no need to touch cron; edit on the Pi): the toggle lives in `WATCHDOG_ENABLED` inside `/home/pramod/nodered-watchdog.env`, next to the script itself - a plain env file rather than a hidden dotfile, so it's easier to stumble on again next summer.
 ```bash
