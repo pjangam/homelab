@@ -1,0 +1,22 @@
+[Unit]
+Description=Spotifyd - Spotify Connect daemon
+# NOTE: deliberately no `After=network-online.target`. This is a --user unit,
+# and that target exists only in the system manager, so the user manager
+# resolves it to not-found and drops the ordering silently. It looked like
+# this service waited for the network for months; it never did. The real
+# wait is the ExecStartPre below - spotifyd's zeroconf advertisement is set
+# up once at startup and never retried, so starting before enp1s0 has an
+# address costs you Spotify Connect discovery until the next restart.
+# See incidents/2026-09-11-spotifyd-zeroconf-lost-to-boot-race.md
+After=sound.target
+
+[Service]
+# `-` prefix: if the network genuinely never arrives, still start spotifyd
+# (degraded, no Connect discovery) rather than leaving it down entirely.
+ExecStartPre=-/home/pramod/code/homelab/scripts/wait_for_network.sh 45
+ExecStart=/home/pramod/.local/bin/spotifyd --no-daemon
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

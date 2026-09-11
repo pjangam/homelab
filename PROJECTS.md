@@ -297,6 +297,18 @@ qty | item | est | note
 
 ## ✅ Done
 
+### spotifyd stopped advertising as a Connect device - boot race, not the old Docker-network bug
+**Why:** `script.play_bedroom_track` failed with `Could not find media_player.xero_..._spotcast in the managed integrations`, while `spotifyd.service` showed `active (running)` with 5 days uptime and a clean authenticated session. Same visible symptom as the 2026-09-02 zeroconf bug, different cause.
+**What happened (2026-09-11):**
+- **Root cause:** spotifyd's `libmdns` zeroconf server enumerates interfaces once at startup and never retries. At the 2026-09-06 boot it started at 11:56:02, two seconds before `enp1s0` got carrier at 11:56:04, logged one non-fatal `Setting up dns-sd failed: No such device (os error 19)` and ran happily for five days without ever advertising. No advertisement → `xero` absent from Spotify's device list → spotcast's entity never became available → the HA script errored. Four layers between cause and symptom.
+- **The unit's `After=network-online.target` was a no-op the whole time.** It's a `systemd --user` unit, and that target only exists in the system manager - the user manager reports it `not-found` and silently drops the ordering. It had looked like it waited for the network for months and never did.
+- **Not a regression of the 2026-09-02 fix** - `docker network ls` is clean. That fix was applied by restarting spotifyd by hand long after boot, which is exactly why it worked and exactly why this race stayed hidden until the next reboot.
+- **The watchdog was blind to it:** `cron/watchdog_spotifyd.sh` only looked for the 2026-08-04 hang signature (`CLOSE-WAIT` with `Recv-Q > 0`). Here the sockets were perfectly healthy; only the mDNS advertisement was missing.
+- **Fixed three ways:** new `scripts/wait_for_network.sh` waits for a global-scope IPv4 address, wired in as `ExecStartPre=-` (dash so a dead network degrades to "start anyway"); `spotifyd.service` is now tracked in `systemd/user/` (it lived only in `~/.config` and was version-controlled nowhere) with the misleading `After=` replaced by a comment explaining why it can't work; the watchdog now greps the current MainPID's journal for the libmdns error and restarts on sight, scoped by `_PID=` so a stale error can't retrigger forever, with no threshold wait because this state never self-heals.
+- **Also cleared:** 36 × `429 Too Many Requests` and a websocket dead since Sep 10 00:54 - the known 2026-08-17 staleness pattern, independent of the above, fixed by the same restart.
+- **Verified:** `avahi-browse -rt _spotify-connect._tcp` shows `xero` advertising; spotcast device sensor 2 → 3; the entity went `unavailable` → `off`. Full writeup: `incidents/2026-09-11-spotifyd-zeroconf-lost-to-boot-race.md`.
+**Next step:** none for the fix itself. Worth watching whether the ESP32/remote-control projects hit the same user-unit-network trap.
+
 ### iOS push notifications via self-hosted ntfy (clawlight, and reusable for other alerts)
 **Why:** clawlight (see ✅ Done) only shows status while the PiP light is actually visible - there's no alert if you're not glancing at it, so a session sitting at a permission prompt can go unnoticed. Explored what it'd take to add a real push alert on the `waiting` transition. **Evaluation only (2026-09-02) - nothing built, deliberately parked.**
 
@@ -405,7 +417,7 @@ qty | item | est | note
 - **Confirmed working end-to-end:** `sensor.spotcast_..._spotify_devices/playlists/liked_songs/product` all show real live account data (26 playlists, 587 liked songs, "premium") - previously came back empty/erroring.
 - **Separate, deeper bug found: spotifyd's local Spotify Connect discovery was silently broken since at least 2026-07-22** - `xero` never appeared as a Connect device in the Spotify app, on any device, despite spotifyd itself looking perfectly healthy. Root cause: an orphaned Docker network (`homelab_node-red-net`, leftover from the Node-RED -> Pi migration, 0 containers attached) broke spotifyd's `libmdns` interface enumeration entirely, silently aborting zeroconf setup on every single startup with no crash and no obvious symptom. Fixed by removing the orphaned network and restarting spotifyd - confirmed via `avahi-browse` that `xero` now genuinely advertises `_spotify-connect._tcp`. Full writeup: `incidents/2026-09-02-spotifyd-zeroconf-broken-by-orphaned-docker-network.md`.
 - **New HA script/button:** `script.play_bedroom_track`, assigned to the Bedroom area (so it shows up automatically on the auto-generated Overview dashboard with no manual dashboard editing needed) - plays a specific track via `spotcast.play_media` targeting `media_player.xero_..._spotcast`. Confirmed working after the zeroconf fix.
-**Next step:** none - fully working. Worth keeping an eye on: spotcast v6 is still alpha, so future updates could introduce new breakage.
+**Next step:** none - fully working. Worth keeping an eye on: spotcast v6 is still alpha, so future updates could introduce new breakage. **Update 2026-09-11:** the zeroconf half regressed after the 2026-09-06 reboot - same error line, different cause (a boot race, not the Docker network). See the entry at the top of Done.
 
 ### Power-outage watchdog - real UPS runtime measured, threshold updated, armed
 **Why:** this server runs on its own RouterUPS battery, separate from the router's UPS. An uncontrolled crash when the battery dies is the likely cause of the ZFS corruption found in `datapool` (see below) - a clean shutdown before that happens avoids torn writes entirely.

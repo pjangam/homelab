@@ -7,6 +7,16 @@
 # showing up as a Connect device. Restart=always doesn't help here because
 # the process never exits, so systemd has no failure event to react to.
 #
+# Second failure mode (2026-09-11): spotifyd's libmdns zeroconf server sets
+# itself up exactly once at startup. If no interface is usable at that moment
+# - e.g. the user manager started before NetworkManager finished at boot - it
+# logs "Setting up dns-sd failed" and then runs forever looking completely
+# healthy: authenticated, connected to the AP, no stuck sockets, nothing for
+# the CLOSE-WAIT check below to see. It just never advertises itself as a
+# Connect device, so it vanishes from the Spotify app and any spotcast
+# media_player entity targeting it goes unavailable. This never self-heals,
+# so it's restarted on sight rather than after a threshold.
+#
 # Every restart is appended to restarts.log so healthcheck.sh can flag
 # repeated flapping (a one-off hang is fine to silently self-heal; restarting
 # every few minutes means something's actually wrong and needs a look).
@@ -33,6 +43,18 @@ pid=$(systemctl --user show -p MainPID --value spotifyd.service 2>/dev/null)
 if [ -z "$pid" ] || [ "$pid" = "0" ]; then
   # Not running at all - systemd's Restart=always owns getting it back up.
   rm -f "$DOWN_SINCE_FILE"
+  exit 0
+fi
+
+# Zeroconf check. Scoped to the current MainPID so a failure logged by a
+# previous, already-replaced invocation can't retrigger this forever.
+if journalctl --user -u spotifyd.service _PID="$pid" --no-pager 2>/dev/null \
+     | grep -q "Setting up dns-sd failed"; then
+  logger -t "$LOG_TAG" "spotifyd zeroconf setup failed at startup (pid $pid) - not advertising as a Connect device, restarting"
+  systemctl --user restart spotifyd
+  rm -f "$DOWN_SINCE_FILE"
+  date -Iseconds >> "$RESTART_LOG"
+  logger -t "$LOG_TAG" "spotifyd restarted"
   exit 0
 fi
 
