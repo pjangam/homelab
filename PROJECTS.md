@@ -249,7 +249,8 @@ qty | item | est | note
 1 | 1000uF capacitor + 470R resistor | 25 | across strip power in, inline on data
 2m | 18AWG wire | 150 | power injection at both ends of a 5m run
 1 | Barrel jack to screw terminal | 40 |
-1 | Dupont jumpers + perfboard | 150 |
+1 | Female-female dupont jumpers (40-pin strip) | 120 | also covers the two Pi LED builds
+1 | Perfboard 5x7cm | 30 |
 1 | Soldering iron kit | 500-800 | only if not already owned - needed for cut-points and injection
 ```
 
@@ -280,7 +281,8 @@ Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP
 qty | item | est | note
 1 | Common-cathode RGB LED 5mm | 10 | common-anode works too, flip COMMON_ANODE in the script
 3 | 220R resistor | 5 | one per colour leg
-1 | Dupont jumpers + perfboard | 150 | shared with the aarti lights build
+1 | Female-female dupont jumpers (40-pin strip) | 120 | shared with the aarti lights build
+1 | Perfboard 5x7cm | 30 | shared with the health LED build
 1 | Ping-pong ball or diffuser | 20 | optional - turns a point of light into a beacon
 ```
 
@@ -307,9 +309,22 @@ qty | item | est | note
 qty | item | est | note
 1 | Common-cathode RGB LED 5mm | 10 | common-anode works too, flip COMMON_ANODE
 3 | 220R resistor | 5 | one per colour leg
-1 | Dupont jumpers + perfboard | 150 | shared with the clawlight LED / aarti builds
-1 | Ping-pong ball or diffuser | 20 | optional
+1 | Female-female dupont jumpers (40-pin strip) | 120 | 4 wires needed: 3 colour legs + GND
+1 | Perfboard 5x7cm | 30 | shared with the clawlight LED build - one board holds both
+1 | Ping-pong ball or diffuser | 20 | optional - turns a point of light into a beacon
 ```
+
+**Buy it as one order with the clawlight LED, not as this list.** The LED and resistor quantities above are what this build *consumes*, which is what the dashboard's shopping list wants - but nothing here is sold singly, so the actual order is pack-sized and covers both LED projects (and leaves spares, which matters for the colour-polarity gamble: a common-anode LED arriving instead of common-cathode is a script flag, not a re-order). Realistic single order, ballpark Indian street prices - same vendors as the aarti build (Robu / Robocraze / Robokits), not quotes:
+
+| Buy | Est. | Covers |
+|---|---|---|
+| 5mm RGB LED, common cathode, pack of 10 | ₹60-150 | both LED builds + spares of both polarities if a mixed pack |
+| 1/4W resistor assortment (or 100x 220R) | ₹80-250 | 6 legs needed across the two builds; assortment is worth it for everything after |
+| Female-female dupont jumpers, 40-pin strip | ₹60-120 | 8 wires needed across both; also feeds the aarti build |
+| Perfboard / zero PCB 5x7cm (2-pack) | ₹40-80 | both LEDs fit on one, second is spare |
+| **Total** | **₹240-600** | everything needed to wire both the clawlight LED and this one |
+
+A soldering iron is assumed - it is already on the aarti lights list (₹500-800) and is the one real cost if not owned. Ping-pong ball for diffusion is household, not a purchase.
 
 **Next step:** decide whether the LED reads `homelab/healthcheck/overall` directly (nothing new to build server-side, covers what `healthcheck.sh` covers) or an HA-consolidated topic (more coverage, one more moving part). Then `scripts/clawlight-led.py` + `scripts/deploy_clawlight_led_pi.sh` are the templates to copy - the MQTT-retained-state, stale-means-amber, systemd-unit shape is already worked out there.
 
