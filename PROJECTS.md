@@ -11,7 +11,7 @@ qty | item | est | note
 1 | INMP441 I2S mic | 150-300 | digital I2S, NOT analog MAX4466
 ```
 
-`est` is rupees for the whole quantity, `400` or `150-300`; leave it blank if unknown. The projects dashboard (`projects-ui`, at `https://xero.<tailnet>/projects`) renders these as a parts table with an **Add to shopping list** checkbox, and merges the selected projects into one list for a single shop trip - deduping anything more than one project wants, and totalling as you tick items off. The selection survives a reload, since it gets used standing in a shop rather than at the machine.
+`est` is rupees for the whole quantity, `400` or `150-300`; leave it blank if unknown. **Prices assume a local electronics shop** - loose, by value, in the quantity wanted. Online vendors (Robu / Robocraze / Robokits / Amazon) are for what a shop will not stock; an item that genuinely has to be ordered says so in its note, so the list stays honest about what needs ordering ahead of a deadline. The projects dashboard (`projects-ui`, at `https://xero.<tailnet>/projects`) renders these as a parts table with an **Add to shopping list** checkbox, and merges the selected projects into one list for a single shop trip - deduping anything more than one project wants, and totalling as you tick items off. The selection survives a reload, since it gets used standing in a shop rather than at the machine.
 
 ---
 
@@ -242,16 +242,17 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 ```parts
 qty | item | est | note
-5m | WS2812B strip 60 LED/m IP30 | 1300-2000 | must be WS2812B and 5V - not WS2811/SK6812, not 12V
-1 | 5V 10A power supply | 600-900 | 5A/Rs 350-500 is enough for the 2m compact build
-1 | INMP441 I2S mic | 150-300 | digital I2S, NOT analog MAX4466/MAX9814
-1 | 74AHCT125 level shifter | 30-60 | 3.3V->5V data; skippable at 2m, not at 5m
-1 | 1000uF capacitor + 470R resistor | 25 | across strip power in, inline on data
-2m | 18AWG wire | 150 | power injection at both ends of a 5m run
-1 | Barrel jack to screw terminal | 40 |
-1 | Female-female dupont jumpers (40-pin strip) | 120 | also covers the two Pi LED builds
-1 | Perfboard 5x7cm | 30 |
-1 | Soldering iron kit | 500-800 | only if not already owned - needed for cut-points and injection
+5m | WS2812B strip 60 LED/m IP30 | 1300-2000 | ORDER - must be WS2812B and 5V, not WS2811/SK6812, not 12V
+1 | 5V 10A power supply | 600-900 | ORDER - 5A/Rs 350-500 is enough for the 2m compact build
+1 | INMP441 I2S mic | 150-300 | ORDER - digital I2S, NOT analog MAX4466/MAX9814
+1 | 74AHCT125 level shifter | 30-60 | ORDER - 3.3V->5V data; skippable at 2m, not at 5m
+2 | 1000uF 25V capacitor | 30 | local - across strip power in; 25V not 16V, and polarised (stripe = negative)
+1 | 470R resistor | 5 | local - inline on the data line
+2m | 18AWG wire | 150 | local - power injection at both ends of a 5m run
+1 | Barrel jack to screw terminal | 40 | local
+1 | Female-female dupont jumpers (40-pin strip) | 120 | local - also covers the two Pi LED builds
+1 | Perfboard 5x7cm | 30 | local
+1 | Soldering iron kit | 500-800 | local - only if not already owned; needed for cut-points and injection
 ```
 
 A **compact ~2m / 120 LED** version works out at roughly ₹1,400-1,900 instead: smaller strip, a 5A supply, and the level shifter becomes optional.
@@ -279,11 +280,11 @@ Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP
 
 ```parts
 qty | item | est | note
-1 | Common-cathode RGB LED 5mm | 10 | common-anode works too, flip COMMON_ANODE in the script
-3 | 220R resistor | 5 | one per colour leg
-1 | Female-female dupont jumpers (40-pin strip) | 120 | shared with the aarti lights build
-1 | Perfboard 5x7cm | 30 | shared with the health LED build
-1 | Ping-pong ball or diffuser | 20 | optional - turns a point of light into a beacon
+2 | Common-cathode RGB LED 5mm | 20 | local - buy 2 of each polarity, COMMON_ANODE in the script covers the other
+3 | 220R resistor | 5 | local - one per colour leg; buy 330R/100R too, see the health LED entry
+1 | Female-female dupont jumpers (40-pin strip) | 120 | local - shared with the aarti lights build
+1 | Perfboard 5x7cm | 30 | local - shared with the health LED build
+1 | Ping-pong ball or diffuser | 20 | household - optional, turns a point of light into a beacon
 ```
 
 **Next step:** wire the LED, run `scripts/deploy_clawlight_led_pi.sh`, and check the colour polarity is right way round (if it reads inverted, set `COMMON_ANODE = True`).
@@ -307,22 +308,19 @@ qty | item | est | note
 
 ```parts
 qty | item | est | note
-1 | Common-cathode RGB LED 5mm | 10 | common-anode works too, flip COMMON_ANODE
-3 | 220R resistor | 5 | one per colour leg
-1 | Female-female dupont jumpers (40-pin strip) | 120 | 4 wires needed: 3 colour legs + GND
-1 | Perfboard 5x7cm | 30 | shared with the clawlight LED build - one board holds both
-1 | Ping-pong ball or diffuser | 20 | optional - turns a point of light into a beacon
+1 | Common-cathode RGB LED 5mm | 10 | local - ask for common CATHODE, shops keep both loose in one drawer
+3 | 220R resistor | 5 | local - one per colour leg
+10 | 330R + 100R resistors | 20 | local - to balance red against green/blue, see below
+1 | Female-female dupont jumpers (40-pin strip) | 120 | local - 4 wires needed: 3 colour legs + GND
+1 | Perfboard 5x7cm | 30 | local - shared with the clawlight LED build, one board holds both
+1 | Ping-pong ball or diffuser | 20 | household - optional, turns a point of light into a beacon
 ```
 
-**Buy it as one order with the clawlight LED, not as this list.** The LED and resistor quantities above are what this build *consumes*, which is what the dashboard's shopping list wants - but nothing here is sold singly, so the actual order is pack-sized and covers both LED projects (and leaves spares, which matters for the colour-polarity gamble: a common-anode LED arriving instead of common-cathode is a script flag, not a re-order). Realistic single order, ballpark Indian street prices - same vendors as the aarti build (Robu / Robocraze / Robokits), not quotes:
+**Buy it at the shop with the clawlight LED's parts - everything here is loose stock.** Both LED builds together are one counter purchase of roughly **₹150-250**: a couple of RGB LEDs, ~30 resistors across a few values, a jumper strip and a perfboard. Nothing in this project needs ordering, so it is not gated on any delivery - it can be built the same day the shop is visited.
 
-| Buy | Est. | Covers |
-|---|---|---|
-| 5mm RGB LED, common cathode, pack of 10 | ₹60-150 | both LED builds + spares of both polarities if a mixed pack |
-| 1/4W resistor assortment (or 100x 220R) | ₹80-250 | 6 legs needed across the two builds; assortment is worth it for everything after |
-| Female-female dupont jumpers, 40-pin strip | ₹60-120 | 8 wires needed across both; also feeds the aarti build |
-| Perfboard / zero PCB 5x7cm (2-pack) | ₹40-80 | both LEDs fit on one, second is spare |
-| **Total** | **₹240-600** | everything needed to wire both the clawlight LED and this one |
+Two things to ask for specifically, because they are the only ways this trip goes wrong:
+- **Common *cathode* RGB LED.** Shops keep both polarities loose in the same drawer and will not distinguish unless asked. Buying 2 of each retires the question entirely - `clawlight-led.py` has a `COMMON_ANODE` flag, so whichever turns up is a one-line change rather than a second trip.
+- **Resistors in three values, not one.** 220R is the textbook number but it is sized for 5V logic; on the Pi's 3.3V pins the red die gets ~6mA while green and blue get ~1.5mA, so the LED ends up dimmer and redder than it needs to be. Ask for ~10 each of **100R, 220R and 330R** (₹20-ish for the lot) and the colour balance becomes something to tune on the bench rather than re-order for. If it turns out to glare on a desk at night, 1k in the same handful fixes that too.
 
 A soldering iron is assumed - it is already on the aarti lights list (₹500-800) and is the one real cost if not owned. Ping-pong ball for diffusion is household, not a purchase.
 
