@@ -110,6 +110,13 @@ what does HA hold for `climate.panasonic_ac_panasonic_ac`? - and
 (`binary_sensor.homelab_healthcheck_homelab_miraie_ac`) reflecting the latest
 observation immediately.
 
+That tile was added with `scripts/add_stats_dashboard_tile.py`, which edits the
+dashboard over HA's websocket API. Use it rather than hand-editing
+`.storage/lovelace.dashboard_stats`: storage-mode dashboards live in HA's
+memory, so a file edit does nothing until HA restarts - and restarting HA is
+itself what knocked the AC entity out for 37 minutes on 2026-09-11. The script
+is idempotent and snapshots the dashboard into `backups/lovelace/` first.
+
 Added 2026-09-11, after the AC broke twice that evening from two unrelated
 causes and *nothing* noticed either time — both were found by looking. Every
 signal that existed stayed green throughout: node-red runs on the Pi so it is
@@ -441,7 +448,12 @@ when the loss is upstream of the LAN rather than a whole-house outage.
 - [x] Home Assistant
 - [x] Tailscale
 - [x] Caddy: reverse proxy with TLS
-- [x] Watchtower: auto-update containers
+- [x] Watchtower: auto-update containers (weekly, Sundays 04:00 UTC). Notes:
+  `WATCHTOWER_NO_STARTUP_MESSAGE=true` because its boot banner fires while HA
+  is still starting and always failed; and `projects-ui` carries
+  `com.centurylinklabs.watchtower.enable=false` because it is built locally,
+  so checking it against Docker Hub only ever produced a 401 it could never
+  succeed at.
 - [x] Tinxy watchdog: auto-restarts HA after sustained ISP-outage disconnects (temporary, see below)
 - [ ] ftp server to dump files
 - [ ] ftp backups — compress and encrypt
