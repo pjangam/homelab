@@ -309,7 +309,9 @@ Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP
 
 **Estimate:** 6-12h total, which is one day *after* the parts land, not a day from now. Roughly: flash 0.5-1h, bench test 0.5-1h, mic wiring 1-2h, mounting + diffusion 2-4h (the phase that always overruns), HA presets 1-2h, tuning gain/squelch in the actual room at real volume 1-2h. Tune last and in the evening - the room's acoustics and real aarti volume are the only settings that matter and cannot be faked at midday.
 
-**Next step:** (1) flash the audioreactive WLED build onto the ESP32 already owned and bench-test it on the 2A supply - today, and still the single step that de-risks the estimate most, since the usermod is not in the stock binary; (2) one order for the mic plus the level shifter, plus the supply if the shop cannot produce one.
+**Parts are in hand as of 2026-09-12** - strip local, mic sourced, 2A supply already owned. Build is no longer gated on anything.
+
+**Next step:** follow `aarti_lights_setup.md`, which sequences the whole build breadboard-first - nothing cut or soldered until the ESP32 drives pixels and the mic reports levels. Phase 0 (flash the audioreactive build, no hardware attached) is still the step that de-risks the estimate most, since the usermod is not in the stock binary.
 
 ### ✅ Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
