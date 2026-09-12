@@ -136,12 +136,29 @@ Note that `dialout` permissions are a **later** problem than any of this: a
 permission error means the device node exists. No device node at all is never
 a permissions issue.
 
-**Gate:** WLED's web UI loads over the LAN and the effect list shows entries
-marked with a **♪** or **♫** symbol (single note = volume-reactive, double =
-frequency-reactive). Those markers exist only when the AudioReactive usermod
-is actually in the firmware, so they are the proof - not the version number,
-and not that the flash reported success. No markers means the wrong image got
-flashed; fix it here, not three phases later.
+**Gate:** the AudioReactive usermod is really in the firmware. Two ways to
+check, and the second is the one to trust:
+
+- **In the browser**, the effect list shows entries marked **♪** (volume-
+  reactive) or **♫** (frequency-reactive).
+- **Over the API**, which is checkable from `xero`:
+  ```
+  curl -s http://<board>/json/info | python3 -m json.tool | grep -A3 '"u"'
+  curl -s http://<board>/json/eff | grep -o -i 'gravimeter\|GEQ\|waterfall'
+  ```
+  `/json/info` lists `AudioReactive` under `u` when the usermod is compiled
+  in, and the effect count jumps from ~118 on stock 0.14.4 to **187**.
+
+Do **not** look for the music symbols in the API output - they are rendered
+client-side by the web UI from effect metadata and are not in the JSON effect
+names, so grepping for them returns zero even on a correct build. That
+mistake cost a confused minute on 2026-09-12.
+
+Note the usermod ships **disabled** - `/json/info` shows its toggle with an
+`icons off` class. Enabling it is Phase 2's job, alongside the I2S pins.
+
+**Done 2026-09-12:** WLED 0.14.4 running at `192.168.1.125`
+(`wled-sound.local`), 187 effects, all 15 spot-checked audio effects present.
 
 ## Phase 1 - strip on a breadboard (~1h)
 

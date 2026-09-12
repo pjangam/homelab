@@ -315,7 +315,11 @@ Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP
 
 Getting there burned about an hour on a **dead USB port on `xero`** rather than anything to do with WLED. Board and cables were all fine; it enumerated immediately once moved to a port that had a working device in it. Worth knowing before the door-sensor project flashes two more ESP32s.
 
-**Next step:** finish Phase 0 - join `WLED-AP` (password `wled1234`), put the board on the house WiFi, then confirm the effect list shows the audio-reactive markers. Then `aarti_lights_setup.md` Phase 1: 30 LEDs on a breadboard off the 2A supply.
+**Phase 0 is complete (2026-09-12).** The board runs WLED 0.14.4 with AudioReactive at a static **192.168.1.125** / `wled-sound.local`, 187 effects against stock's ~118, and all 15 spot-checked audio effects present. The usermod ships disabled; Phase 2 enables it with the I2S pins.
+
+Two traps found the hard way, both now in the runbook. WLED's ESP32 release `.bin` is the **application image only** - it belongs at `0x10000` behind a bootloader at `0x1000` and a partition table at `0x8000`, and flashing it to `0x0` after an erase bootloops the board while esptool still reports "hash verified" (that only checks the flash matches the bytes given, never that they are bootable). And `xero` has a **dead USB port** that cost an hour before the board was moved to one with a working device in it.
+
+**Next step:** `aarti_lights_setup.md` Phase 1 - 30 LEDs on a breadboard off the 2A supply, 470R on data, common ground, 800mA cap, reel uncut.
 
 ### ✅ Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
