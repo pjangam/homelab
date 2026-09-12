@@ -82,6 +82,53 @@ older version; nothing this project needs arrived after it.
    add a DHCP reservation, so the Home Assistant integration in Phase 5 does
    not lose it on a lease change.
 
+### If the board does not show up at all
+
+Run `./scripts/watch-usb-serial.sh` only if you are about to **replug**
+something - it is a change detector and reports nothing for a board that is
+already sitting in the port. For a board that is plugged in right now, check
+the steady state instead:
+
+```
+ls /dev/ttyUSB* /dev/ttyACM*
+lsusb -d 1a86:7523; lsusb -d 1a86:55d4   # CH340, CH9102
+lsusb -d 10c4:ea60; lsusb -d 0403:6001   # CP2102, FTDI
+```
+
+Diagnosing this on 2026-09-12 cost far longer than it should have, so the
+tree, in the order that actually splits the possibilities:
+
+1. **Is a power LED lit on the board?** This is the fastest question and it
+   splits the problem in half.
+   - **Lit, but nothing on the USB bus** -> the cable carries VBUS and GND but
+     not the D+/D- pair. A **charge-only cable**, and by a wide margin the most
+     common cause. Cables bundled with power banks and wall chargers are
+     frequently power-only. Swap for one that has demonstrably moved data - an
+     old Android phone or Kindle cable.
+   - **No LED at all** -> no power is reaching the board: dead cable, or dead
+     port.
+2. **Does the board even have a USB socket?** A bare ESP32-WROOM module on a
+   pin-header breakout has **no USB-serial bridge at all**, so it can never
+   appear on the bus no matter what cable is used. It needs an external
+   USB-to-TTL adapter (CH340/CP2102, ~Rs 100-150 local) wired to TX/RX/EN/GND.
+   Establish this before swapping cables, not after.
+3. **Is the software side actually implicated?** Almost never - check it once
+   and stop wondering. `lsmod | grep -E 'ch341|cp210x|ftdi_sio'` shows what is
+   loaded, and `modinfo -n ch341 cp210x ftdi_sio` shows they are available to
+   auto-load on attach. If the modules exist, a missing device is physical.
+4. **Isolate the port from the cable** using a device known to work. Anything
+   already enumerating (a phone, a receiver) proves its port carries both power
+   and data - move the board to that port to test the port, or change only the
+   cable to test the cable. One variable at a time.
+5. **Still nothing? Try the MacBook** - `ls /dev/cu.*` there. The board's
+   bridge either enumerates on another machine or it does not, and that single
+   command separates "this machine's cable/port" from "this board is faulty"
+   better than any further testing on one host.
+
+Note that `dialout` permissions are a **later** problem than any of this: a
+permission error means the device node exists. No device node at all is never
+a permissions issue.
+
 **Gate:** WLED's web UI loads over the LAN and the effect list shows entries
 marked with a **♪** or **♫** symbol (single note = volume-reactive, double =
 frequency-reactive). Those markers exist only when the AudioReactive usermod
