@@ -386,6 +386,21 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 
 ## ✅ Done
 
+### Claude Code and new iTerm tabs always land inside tmux
+**Why:** A long Claude Code run in a bare terminal tab dies with the tab (and with any ssh carrying it), and there was no way back to a session you'd lost track of. Built by hand over 2026-09-10/11 in a `~/code/personal/scripts` session; packaged into this repo on 2026-09-12 so a second machine (or a reinstalled one) gets the same shell without reconstructing it from memory.
+**What shipped (2026-09-12):** `scripts/setup-tmux-shell.sh`, installing three things from `dotfiles/`:
+- **A session picker** (`dotfiles/zsh/tmux-session-picker.zsh`) on every interactive iTerm shell that starts outside tmux. It deliberately **never auto-attaches** - an earlier version did, and silently dropping a new tab into whatever session happened to be first was worse than no tmux at all. It lists the running sessions (window count, attached/detached, last activity) and waits: a number attaches, `n` creates one you name, Enter gives a plain shell. Picking a session that's already open in another tab attaches an *independent view* of it (a tmux session group) rather than mirroring the other tab's window.
+- **Tab-completing start directories.** Typing an exact project path by hand was the friction that nearly sank the whole thing. The new-session prompt pre-fills a guess (found by name under `$TMUX_PROJECT_ROOT`, default `~/code`) and completes with Tab, via a private `tmuxdir` keymap and a `_tmuxdir_complete` widget so the global Tab binding is untouched. Completion is only initialised on the create-a-session path, so the common attach/plain-shell paths pay nothing.
+- **`claude` / `claude-local` wrappers** (`dotfiles/zsh/claude-tmux.zsh`) that prompt before running outside tmux: Enter relaunches in a tmux window named after the current directory, `n` runs it here anyway, `q` aborts. `claude-local` (Claude Code against a local ollama) passes its env through `tmux -e` on the relaunch path, since the new session doesn't inherit the caller's exports.
+- Plus `~/.tmux.conf` binds so new panes and windows open in the current pane's directory, which tmux hasn't done by default since 1.9.
+**Notes worth keeping:**
+- The picker's source line **has to sit above powerlevel10k's instant-prompt block** - anything that reads from the console does - so the installer maintains two separate managed blocks in `~/.zshrc` rather than appending one.
+- Re-running is the update path: managed blocks are replaced, anything outside them is left alone, and the hand-edited original is migrated out of `~/.zshrc` so the two copies can't drift. It refuses to write a `~/.zshrc` that fails `zsh -n`, restoring the backup instead - a broken one is a broken login shell.
+- **Two installers briefly existed for this.** A resumed session wrote a self-contained `~/code/personal/scripts/install-tmux-claude.sh` and applied it to the live dotfiles while this repo-tracked version was being built. This one now strips that one's managed blocks and its `claude-tmux-guard.zsh` on every run, so the machine converges on the repo copy no matter which ran last. The untracked script is superseded; delete it.
+- Escape hatches: `NO_TMUX=1` skips the picker entirely, and answering `n` runs Claude outside tmux anyway.
+**Verified:** `scripts/test_setup_tmux_shell.sh` - 50 checks against throwaway `$HOME` files (fresh machine, migration, foreign-installer takeover, idempotent re-run, `--dry-run`, zsh syntax of the shipped functions). Applied to the MacBook and confirmed stable across repeated runs.
+**Next step:** none. Run it on any new machine after `new_machine_setup.sh`.
+
 ### spotifyd stopped advertising as a Connect device - boot race, not the old Docker-network bug
 **Why:** `script.play_bedroom_track` failed with `Could not find media_player.xero_..._spotcast in the managed integrations`, while `spotifyd.service` showed `active (running)` with 5 days uptime and a clean authenticated session. Same visible symptom as the 2026-09-02 zeroconf bug, different cause.
 **What happened (2026-09-11):**
