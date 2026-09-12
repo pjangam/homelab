@@ -5,6 +5,12 @@
 #   scripts/setup-tmux-shell.sh --dry-run
 #   scripts/setup-tmux-shell.sh
 #
+# On a Mac that has no clone of this repo, make a standalone copy with the
+# dotfiles baked into it and carry that one file over instead:
+#
+#   scripts/setup-tmux-shell.sh --bundle /tmp/install-tmux-shell.sh
+#   scp /tmp/install-tmux-shell.sh othermac:  &&  ssh othermac ./install-tmux-shell.sh
+#
 # What it installs, all from dotfiles/ in this repo:
 #
 #   1. ~/.zsh/functions/tmux-session-picker.zsh - on a new iTerm tab outside
@@ -27,6 +33,7 @@
 # Overrides: ZSHRC, TMUX_CONF, FUNC_DIR.
 set -euo pipefail
 
+SELF="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/$(basename -- "${BASH_SOURCE[0]}")"
 REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC="$REPO/dotfiles"
 ZSHRC="${ZSHRC:-$HOME/.zshrc}"
@@ -42,12 +49,30 @@ TMUX_BEGIN='# >>> homelab tmux-shell >>>'
 TMUX_END='# <<< homelab tmux-shell <<<'
 
 dry_run=0
+bundle_to=
 case "${1:-}" in
   --dry-run) dry_run=1 ;;
-  -h|--help) sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  --bundle)  bundle_to="${2:-./install-tmux-shell.sh}" ;;
+  -h|--help) sed -n '2,36p' "$SELF" | sed 's/^# \{0,1\}//'; exit 0 ;;
   '') ;;
   *) printf 'error: unknown argument: %s (try --help)\n' "$1" >&2; exit 2 ;;
 esac
+
+# The three files this installs normally live in dotfiles/ next to the script.
+# A bundle (--bundle) has them appended to itself instead, one payload section
+# per file, so a single copied file is enough.
+DOTFILES="zsh/tmux-session-picker.zsh zsh/claude-tmux.zsh tmux/tmux.conf"
+bundled() { grep -q '^#__PAYLOAD__$' "$SELF"; }
+dotfile() {  # $1 = path under dotfiles/
+  if [ -f "$SRC/$1" ]; then
+    cat "$SRC/$1"
+  else
+    awk -v want="$1" '
+      /^#__FILE__ / { cur = $2; next }
+      cur == want   { print }
+    ' "$SELF"
+  fi
+}
 
 say()  { printf '%s\n' "$*"; }
 warn() { printf 'warning: %s\n' "$*" >&2; }
@@ -57,6 +82,11 @@ die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
 # changes nothing says so out loud.
 write_file() {
   local dest=$1 content=$2 check=${3:-}
+  # $(...) strips trailing newlines from everything it captures, so normalise
+  # here rather than at each call site: exactly one newline ends the file.
+  while [ "${content: -1}" = $'\n' ]; do content="${content%$'\n'}"; done
+  content="$content
+"
   if [ -f "$dest" ] && printf '%s' "$content" | cmp -s - "$dest"; then
     say "  unchanged: $dest"
     return
@@ -150,7 +180,22 @@ legacy_is_removable() {
   awk '/^claude-local\(\) \{/ { f = 1; next } f && /^\}[[:space:]]*$/ { found = 1; exit } END { exit !found }' "$1"
 }
 
-[ -d "$SRC" ] || die "dotfiles/ not found next to this script (looked in $REPO)"
+if [ -n "$bundle_to" ]; then
+  bundled && die "this is already a bundle - make one from the copy in the repo"
+  [ -d "$SRC" ] || die "dotfiles/ not found next to this script (looked in $REPO)"
+  {
+    cat "$SELF"
+    printf '#__PAYLOAD__\n'
+    for f in $DOTFILES; do printf '#__FILE__ %s\n' "$f"; cat "$SRC/$f"; done
+  } > "$bundle_to"
+  chmod +x "$bundle_to"
+  say "wrote $bundle_to - one self-contained file, copy it anywhere and run it."
+  exit 0
+fi
+
+if [ ! -d "$SRC" ] && ! bundled; then
+  die "no dotfiles/ next to this script and no bundled payload in it (looked in $REPO)"
+fi
 command -v tmux >/dev/null 2>&1 || warn "tmux is not installed - install it (brew install tmux) or none of this fires"
 [ "${SHELL##*/}" = zsh ] || warn "your login shell is ${SHELL##*/}, not zsh - this only takes effect under zsh"
 
@@ -162,8 +207,8 @@ say "functions: $FUNC_DIR"
 say
 
 say "1. shell functions"
-write_file "$FUNC_DIR/tmux-session-picker.zsh" "$(cat "$SRC/zsh/tmux-session-picker.zsh"; printf '\n')" zsh
-write_file "$FUNC_DIR/claude-tmux.zsh"         "$(cat "$SRC/zsh/claude-tmux.zsh"; printf '\n')" zsh
+write_file "$FUNC_DIR/tmux-session-picker.zsh" "$(dotfile zsh/tmux-session-picker.zsh)" zsh
+write_file "$FUNC_DIR/claude-tmux.zsh"         "$(dotfile zsh/claude-tmux.zsh)" zsh
 
 # Its guard file is now dead weight - claude-tmux.zsh replaces it, and its
 # source line was just stripped above.
@@ -226,7 +271,7 @@ tmux_body="$(printf '%s\n' "$tmux_body" | awk '
 ')"
 tmux_new="$(printf '%s\n' "$tmux_body" | sed '/./,$!d')
 $TMUX_BEGIN
-$(cat "$SRC/tmux/tmux.conf")
+$(dotfile tmux/tmux.conf)
 $TMUX_END
 "
 write_file "$TMUX_CONF" "$tmux_new"
@@ -249,3 +294,7 @@ say
 say "done. Open a new iTerm tab to get the session picker."
 say "Escape hatches: NO_TMUX=1 skips the picker; answering n to the claude"
 say "prompt runs it outside tmux anyway."
+
+# Nothing below this line is bash: a bundle appends its payload here, and this
+# exit is what keeps the shell from ever reading it.
+exit 0

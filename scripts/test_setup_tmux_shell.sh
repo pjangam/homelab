@@ -166,6 +166,26 @@ check "said it refused"   $(grep -q 'refusing to write' "$F/out"; echo $?)
 check "zshrc untouched"   $([ "$before" = "$(cat "$F/zshrc")" ]; echo $?)
 check "no rollback needed" $([ -z "$(ls "$F"/zshrc.bak.* 2>/dev/null)" ]; echo $?)
 
+echo "== --bundle makes a single file that installs with no repo around =="
+G="$SANDBOX/standalone"; mkdir -p "$G/bin"
+"$INSTALL" --bundle "$G/bin/install.sh" > "$G/bundle-out" 2>&1
+check "bundle written"        $([ -x "$G/bin/install.sh" ]; echo $?)
+check "no dotfiles/ near it"  $([ ! -d "$G/dotfiles" ]; echo $?)
+ZSHRC="$G/zshrc" TMUX_CONF="$G/tmux.conf" FUNC_DIR="$G/functions" \
+  "$G/bin/install.sh" > "$G/out" 2>&1
+check "standalone install exits 0" $?
+check "picker matches the repo copy" \
+  $(diff <(tail -n +1 "$G/functions/tmux-session-picker.zsh") \
+         <(cat "$REPO/dotfiles/zsh/tmux-session-picker.zsh") >/dev/null; echo $?)
+check "wrappers match the repo copy" \
+  $(diff "$G/functions/claude-tmux.zsh" "$REPO/dotfiles/zsh/claude-tmux.zsh" >/dev/null; echo $?)
+check_count "tmux binds installed" "$G/tmux.conf" 'pane_current_path' 3
+check "zshrc is valid zsh" $(zsh -n "$G/zshrc"; echo $?)
+again=$(cat "$G/zshrc"); ZSHRC="$G/zshrc" TMUX_CONF="$G/tmux.conf" FUNC_DIR="$G/functions" "$G/bin/install.sh" >/dev/null 2>&1
+check "re-run is a no-op" $([ "$again" = "$(cat "$G/zshrc")" ]; echo $?)
+check "refuses to bundle a bundle" \
+  $("$G/bin/install.sh" --bundle "$G/again.sh" >/dev/null 2>&1; [ $? -ne 0 ]; echo $?)
+
 echo "== shipped function files are valid zsh =="
 check "tmux-session-picker.zsh" $(zsh -n "$REPO/dotfiles/zsh/tmux-session-picker.zsh"; echo $?)
 check "claude-tmux.zsh"         $(zsh -n "$REPO/dotfiles/zsh/claude-tmux.zsh"; echo $?)
