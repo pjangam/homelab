@@ -219,8 +219,48 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **State:** not started. Inverted difficulty from most projects here - the software is the easy part (ESPHome has a native `cover` component, HA support is a solved problem), and the blocker is entirely physical hardware and cost.
 - **The curtains are fabric on a rod with rings** - the awkward middle case. A roller blind would be nearly trivial (a tube motor drops straight in) and a sliding track needs a belt-drive carriage; a rod with rings usually means either a friction drive against the rod, or swapping the rod out for a track first.
 - **Readymade motorised hardware is expensive** - the main reason this stalled, consistent with the earlier finding that Shelly-class gear runs ~2x its bare-device price once mounting and wiring are counted.
-- **Possible synergy:** the "In-house smart switch to replace Tinxy" project below is leaning toward Zigbee for structurally avoiding the ISP-outage problem. If a Zigbee coordinator gets bought for that, off-the-shelf Zigbee curtain motors become a much better deal - one coordinator, two projects - than a DIY stepper/belt build.
+- **Possible synergy:** the "In-house smart switch to replace Tinxy" project below is leaning toward Zigbee for structurally avoiding the ISP-outage problem. If a Zigbee coordinator gets bought for that, off-the-shelf Zigbee curtain motors become a much better deal - one coordinator, two projects (three counting the door sensors below) - than a DIY stepper/belt build.
 **Next step:** none - parked on hardware cost. Revisit if a Zigbee coordinator gets bought for the switch project, or if a cheap enough motor/track option turns up.
+
+
+### Door open/close status (main, safety, balcony)
+**Why:** nothing in HA currently knows whether any door in the house is shut. The everyday want is "was the balcony door left open with the AC running" and "is the main door still standing open"; the later want is an alert if the front door opens while nobody is home. Noted 2026-09-12. Everything downstream already exists - Mosquitto, HA, and the self-hosted ntfy push path built for clawlight - so this project is only about getting three binary states into MQTT honestly.
+
+**State:** idea only, nothing bought or built. Three doors, and they are deliberately listed separately because they are not the same problem:
+- **Main door** - hinged, with a latch. Leaf and frame meet flush, so a plain surface-mount reed contact on the hinge-opposite side is the textbook case. Easiest of the three.
+- **Safety door** - hinged grill door outside it, with its own latch. **The metal is the complication.** A reed contact screwed straight onto a steel frame has its magnet's flux shunted by the surrounding metal and the effective operating gap collapses - a pair that works fine on the wooden door can sit there reading "open" while the grill is actually shut. Fix is either a wide-gap contact sold for metal doors (18-25mm rated) or packing both halves out on a few mm of non-ferrous spacer (plastic or wood shim). Grill doors also often close with a sloppier, less repeatable gap than a solid door, which is the second reason to buy gap headroom here rather than the cheapest pair.
+- **Balcony door** - sliding. Reed on the fixed frame, magnet on the moving panel where it lands when fully closed. Mechanically the easiest fit of the three (the closed position is repeatable and the gap is fixed by the track), and it answers exactly the question worth asking, since this is the door most likely to be left a few cm ajar.
+
+**A reed says closed, not latched.** Both hinged doors have latches, and the genuinely interesting security state - shut but not latched - is invisible to any frame-to-leaf contact. Sensing the latch means a microswitch or reed inside the strike plate cavity: drilling the frame, and a second sensor per door. Decide up front which project this is. "Is a door standing open" is three contacts and an afternoon; "is the house locked" is a different, much more invasive build. Start with the first and only escalate if it turns out to be the wrong question.
+
+**The blocker is power and wiring, not the sensing** - same shape as most projects here. Three ways to do it:
+- **(A) One wired ESP32/ESPHome node per location.** The main and safety doors share a doorway, so a single ESP32 at the entrance covers both with ~1m runs. The balcony door then needs either its own node or a long wire run across the flat. A reed is a dry contact, so cable length costs nothing electrically - it is purely about where wire can be run without it looking terrible. Cheapest per door, no batteries ever, and it matches the existing preference for WiFi-native devices that join the current infra directly.
+- **(B) Battery Zigbee door sensors** (Aqara/Tuya class, ~₹700-1200 each). Zero wiring, coin-cell life measured in a year or more, and the only option that can go on a door with no power anywhere near it. Cost is a Zigbee coordinator (~₹1500-2500) that does not exist yet - but note the standing synergy: both "Remote controlled curtains" and "In-house smart switch to replace Tinxy" are already parked partly on the same missing coordinator. Three projects sharing one purchase changes that maths.
+- **(C) Battery WiFi door sensor / deep-sleeping ESP32** - the tempting middle ground, and the one to avoid. Waking, associating to WiFi and publishing takes a second or more per event and costs far more energy than a Zigbee radio's burst, so a door that gets used all day eats cells in weeks. ESP-NOW fixes the energy side but then needs its own always-on gateway, which is a whole extra moving part for three binary sensors.
+
+**If it goes the ESP32/ESPHome route (A), the traps are known ones:**
+- **Avoid the strapping pins.** A reed holding GPIO0/2/12/15 low at power-up can stop the board booting at all - and it would do it only when that door happens to be shut, which is a miserable thing to debug. Use GPIO32/33/25/26.
+- Wire reed to GND against `INPUT_PULLUP`, no external resistor needed, and put `delayed_on`/`delayed_off` filters (~100ms) on every input - reeds bounce, and a long run to a door frame is a decent antenna.
+- Keep both halves of each sensor on non-moving surfaces (frame and leaf). Nothing should cross a hinge; that is the failure that shows up months later as an intermittent.
+- **Publish with an MQTT last-will.** This is the same staleness lesson as the health LED project, and it bites harder here: a dead sensor node that leaves a retained "closed" behind is worse than no sensor, because it actively asserts the safe answer. ESPHome's MQTT availability topic handles this for free - HA shows *unavailable* instead of a confident lie.
+
+**Automations worth having once the three states exist:** ntfy push if the main door stays open past a few minutes; balcony door open while the AC is on (the Miraie integration is already there); front door opening while everyone is out; and the open/closed tiles on the consolidated status dashboard.
+
+**Unknowns to settle before buying anything:** whether there is a power socket near the entrance at all (decides A vs B on its own), how far the balcony door is from that entrance node, and what the actual closed gap is on the grill door - measured with the door shut, since that number is what picks the contact.
+
+```parts
+qty | item | est | note
+3 | Surface-mount magnetic reed door contact (pair) | 150-250 | local - alarm/security shop; get a wide-gap/metal-door type for the grill door
+1 | ESP32 dev board with USB | 400-600 | local - one at the entrance covers both hinged doors
+1 | ESP32 dev board with USB (balcony) | 400-600 | only if a wire run from the entrance node is not acceptable
+10 | 2-core alarm/bell wire, per metre | 150-250 | local - frame to board; dry contact, so length costs nothing electrically
+2 | 5V USB charger + cable | 200-300 | household - likely already on hand, do not buy blind
+1 | Small ABS project box | 60-100 | local - keeps the board off the floor by the door
+```
+
+Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of it loose local stock with nothing to order ahead. The Zigbee path (B) is cheaper in effort and dearer in rupees, and only makes sense bought together with the curtain/switch projects.
+
+**Next step:** check whether there is a usable socket near the entrance and measure the grill door's closed gap. Those two numbers decide (A) vs (B) before anything gets bought.
 
 
 ## 🔌 ESP32 Projects
