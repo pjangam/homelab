@@ -323,7 +323,13 @@ Two traps found the hard way, both now in the runbook. WLED's ESP32 release `.bi
 
 The fault that cost the time was a **missing common ground**, and its signature is worth remembering: all 30 lit but cycling colours continuously while WLED commanded solid red. Power and data present, no voltage reference, so every refresh latched noise - it looks like an effect, not like a wiring fault. Breadboard rails being split down the middle is the usual reason.
 
-**Next step:** Phase 2, the mic - INMP441 on GPIO32/25/33 with `L/R` to GND, then enable the AudioReactive usermod (compiled in, currently off). `WS` and `SCK` must stay off GPIO34-39, which are input-only and would give a silent mic with no error.
+**Phase 2 is complete (2026-09-13).** The INMP441 is wired on SD=32, WS=25, SCK=33 with `L/R` to GND, the usermod is enabled, and the mic measurably works - levels 0-254 with a live 16-bin FFT, verified numerically via `scripts/wled-audio-monitor.py` rather than by watching an effect. Settled at squelch 10, gain 40, AGC on; Phase 6 retunes that in the room at real volume.
+
+Everything electronic is now proven end to end: strip, pixels, mic. **Nothing is cut or soldered yet** beyond the mic's own header, so the reel is still whole.
+
+The time went on WLED not exposing audio levels over `/json/info` in 0.14.4, and its sound-sync stream being **multicast to 239.0.0.1** rather than broadcast - binding the port alone receives nothing, which is indistinguishable from a dead mic. Also: changing the mic pins needs a reboot, since I2S initialises at boot.
+
+**Next step:** Phase 3 - real length and a real supply. That is the first phase that commits solder, and the decision it waits on is which strip length was actually bought (2m/120 wants a 5A supply, 5m/300 wants 10A).
 
 ### ✅ Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.

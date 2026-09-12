@@ -249,6 +249,36 @@ rainbow effect does.
 **Gate:** an audio-reactive effect visibly responds to sound. Everything
 electronic is now proven, and only from here is it worth committing solder.
 
+**Done 2026-09-13.** Mic working on SD=32, WS=25, SCK=33, `L/R` to GND. Verify
+it numerically rather than by eye - `./scripts/wled-audio-monitor.py` reads
+WLED's own analysis and prints levels plus a 16-bin FFT bar.
+
+Four things that cost time, all avoidable next run:
+
+- **WLED 0.14.4 does not expose the audio level over `/json/info`** - the web
+  UI reads it over a websocket. The usermod *can* broadcast its analysis
+  though, so enable Sync -> send and read it off the network:
+  ```
+  curl -X POST http://<board>/json/cfg -H 'Content-Type: application/json' \
+    -d '{"um":{"AudioReactive":{"sync":{"mode":1,"port":11988}}}}'
+  ```
+- **That stream is multicast to 239.0.0.1, not broadcast.** Binding the port
+  alone receives nothing at all, which looks exactly like a dead mic. The
+  monitor script joins the group explicitly, and names the LAN interface
+  because this host also has docker bridges and tailscale to choose from.
+- **Changing the mic pins needs a reboot.** WLED initialises I2S at boot, so
+  setting `digitalmic.pin` on a running board leaves the driver on the old
+  pins. `POST /json/state {"rb":true}` or `GET /reset`, and note the uptime
+  read straight afterwards can still be the pre-reboot value.
+- **Squelch and gain can hide a working mic.** Diagnose with `squelch: 0`,
+  `gain: 100`, `AGC: 0` so nothing is masked, then restore sane values. Left
+  at gain 100 with AGC off it pegs flat at 255, which reads as broken in the
+  other direction.
+
+Settled at **squelch 10, gain 40, AGC on**, which gives 0-254 with real
+dynamics on speech. That is a starting point, not the answer - Phase 6 tunes
+it in the room at aarti volume, which is the only setting that matters.
+
 ## Phase 3 - real power, real length (~30min)
 
 13. **Swap to the proper supply and set WLED's max current to its actual
