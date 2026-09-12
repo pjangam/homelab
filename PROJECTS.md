@@ -319,7 +319,11 @@ Getting there burned about an hour on a **dead USB port on `xero`** rather than 
 
 Two traps found the hard way, both now in the runbook. WLED's ESP32 release `.bin` is the **application image only** - it belongs at `0x10000` behind a bootloader at `0x1000` and a partition table at `0x8000`, and flashing it to `0x0` after an erase bootloops the board while esptool still reports "hash verified" (that only checks the flash matches the bytes given, never that they are bootable). And `xero` has a **dead USB port** that cost an hour before the board was moved to one with a working device in it.
 
-**Next step:** `aarti_lights_setup.md` Phase 1 - 30 LEDs on a breadboard off the 2A supply, 470R on data, common ground, 800mA cap, reel uncut.
+**Phase 1 is complete (2026-09-12).** 30 pixels steady red on a breadboard, GPIO4 through a 470R, 367mA of an 800mA cap, colour order GRB. The strip is confirmed genuinely addressable - setting the count to 5 lit exactly five and left 25 dark, which a dumb strip cannot do. `scripts/wled.sh` now drives the board from the command line, which beats a web UI while holding wires.
+
+The fault that cost the time was a **missing common ground**, and its signature is worth remembering: all 30 lit but cycling colours continuously while WLED commanded solid red. Power and data present, no voltage reference, so every refresh latched noise - it looks like an effect, not like a wiring fault. Breadboard rails being split down the middle is the usual reason.
+
+**Next step:** Phase 2, the mic - INMP441 on GPIO32/25/33 with `L/R` to GND, then enable the AudioReactive usermod (compiled in, currently off). `WS` and `SCK` must stay off GPIO34-39, which are input-only and would give a silent mic with no error.
 
 ### ✅ Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.

@@ -200,6 +200,36 @@ for the real build never goes through a breadboard.
 
 **Gate:** 30 pixels, individually addressable, correct colours.
 
+**Done 2026-09-12.** 30 pixels steady red at brightness 110, drawing 367mA of
+the 800mA cap on GPIO4, colour order GRB confirmed (red renders red). Driving
+it from the command line rather than the web UI: `./scripts/wled.sh`.
+
+Three things cost time, all worth knowing before Phase 3 solders anything:
+
+- **The fault was a missing common ground**, and its signature is specific:
+  all 30 LEDs lit, but cycling colours continuously while WLED commanded a
+  solid colour. Pixels with power and a data line but no shared voltage
+  reference latch noise on every refresh, which looks exactly like a colour
+  animation rather than like a wiring fault. **Solder the ground joint first
+  on the perfboard and check continuity before anything else goes on.**
+- **Breadboard power rails are usually split down the middle.** The two halves
+  of one rail are not connected, so a ground jumper in the left half and a
+  strip ground in the right half are electrically separate while looking like
+  one rail. Suspect this before suspecting the strip.
+- **An open WLED web UI holds a websocket and silently overwrites anything set
+  over the API.** A leftover amber from the UI was briefly mistaken for a
+  colour-order bug. `./scripts/wled.sh info` prints the client count - get it
+  to 0 before trusting what the strip shows.
+
+Also: WLED defaulted the data pin to **GPIO16**, not the GPIO4 this doc
+specifies, so the pin has to be set explicitly - it is not enough to wire to
+the documented pin.
+
+**Proof of addressability, for the record:** setting the count to 5 lit exactly
+five pixels and left the other 25 dark. A non-addressable strip cannot do
+that, so this settles the dumb-vs-addressable question more cleanly than any
+rainbow effect does.
+
 ## Phase 2 - mic on the same breadboard (~1h)
 
 9. **Wire the INMP441** per the pin table above: `VDD`->3V3, `GND`->GND,
