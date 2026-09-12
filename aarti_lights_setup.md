@@ -36,29 +36,58 @@ This is the phase that de-risks the whole project, because AudioReactive is a
 *usermod* and is not in the stock WLED binary. If it flashes, the rest is
 assembly. Do it before touching the strip.
 
-1. **Confirm the board is an ESP32, not an ESP8266.** AudioReactive needs the
-   ESP32's I2S peripheral and will not exist on an 8266. Read the module can
-   (`ESP32-WROOM-32` / `ESP-WROVER`), or plug it in and run
-   `esptool.py --port /dev/ttyUSB0 chip_id`.
-2. **Flash the audioreactive build** from <https://install.wled.me> in Chrome
-   or Edge (it needs WebSerial; Firefox will not work). Pick the **ESP32
-   audioreactive** variant, not plain ESP32.
-   - If the installer does not offer an audioreactive ESP32 build, this
-     becomes a build-from-source job with the usermod enabled in PlatformIO
-     (+1-2h, and the toolchain is not set up on either machine). That is the
-     single biggest source of variance in the estimate - which is exactly why
-     it is step 2 and not step 12.
-3. **Get it on the LAN.** It comes up as the AP `WLED-AP` (password
-   `wled1234`); connect, open `4.3.2.1`, enter the house WiFi credentials.
-4. **Give it a stable address.** Set an mDNS name in WLED's WiFi settings and
+**Flash WLED 0.14.4, not the latest.** Checked against the GitHub release
+assets on 2026-09-12: WLED stopped shipping a prebuilt
+`_ESP32_audioreactive.bin` after **0.14.4**, and every release from 0.15.0
+through the current 16.0.1 has no audioreactive asset at all. Since
+install.wled.me builds its variant list from those assets, the "audio" option
+does not appear for current versions - so following the installer's default
+lands you on a binary with no AudioReactive in it. 0.14.4 is the newest
+release where the usermod is a download rather than a PlatformIO build, which
+is the difference between ten minutes and a toolchain afternoon. Take the
+older version; nothing this project needs arrived after it.
+
+1. **Plug the ESP32 into `xero`** (rather than the MacBook) if there is a
+   choice - the flash is then scriptable and its output reviewable, instead of
+   a browser dialog whose result gets relayed by hand.
+2. **Add the user to `dialout` once, before plugging in.** On Linux the serial
+   device is `root:dialout`, and this user is not in that group by default, so
+   the first flash attempt dies on permissions:
+   ```
+   sudo usermod -aG dialout $USER
+   ```
+   Then **log out and back in** (or `newgrp dialout` in the shell you will use).
+   Group membership is only picked up at login, so skipping that makes the fix
+   look like it did not work.
+3. **Verify the board, writing nothing:**
+   ```
+   ./scripts/flash-wled-audioreactive.sh
+   ```
+   Read-only. It finds the port, reads the chip back, and refuses to go on if
+   it is an ESP8266 or an S2/C3 variant - AudioReactive needs the original
+   ESP32's I2S peripheral, and there is no audioreactive build for the others.
+   It also flags a flash smaller than the 4MB WLED needs.
+4. **Flash it:**
+   ```
+   ./scripts/flash-wled-audioreactive.sh --flash
+   ```
+   Downloads the 0.14.4 audioreactive image, erases the flash and writes it at
+   `0x0`. Erasing wipes any existing WiFi credentials, which is the standard
+   path for a first install. The script refuses an implausibly small download,
+   because a truncated image flashes "successfully" and then bootloops.
+5. **Get it on the LAN.** It comes up as the AP `WLED-AP` (password
+   `wled1234`); connect and open the setup page, then enter the house WiFi
+   credentials.
+6. **Give it a stable address.** Set an mDNS name in WLED's WiFi settings and
    add a DHCP reservation, so the Home Assistant integration in Phase 5 does
    not lose it on a lease change.
 
 **Gate:** WLED's web UI loads over the LAN and the effect list shows entries
-marked with a **♪** or **♫** symbol. Those markers are the audio-reactive
-effects, and their presence is the proof the usermod is actually in the
-firmware. No markers means the wrong build got flashed - fix that here, not
-three phases later.
+marked with a **♪** or **♫** symbol (single note = volume-reactive, double =
+frequency-reactive). Those markers exist only when the AudioReactive usermod
+is actually in the firmware, so they are the proof - not the version number,
+and not that the flash reported success. No markers means the wrong image got
+flashed; fix it here, not three phases later.
 
 ## Phase 1 - strip on a breadboard (~1h)
 
