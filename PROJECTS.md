@@ -268,9 +268,11 @@ Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of i
 ### 🟢 Sound-reactive aarti lights (Ganapati decoration)
 **Why:** festival decoration for Ganesh Chaturthi - a WS2812 backdrop behind the makhar that pulses to the aarti in real time. Chosen over the other decoration ideas brainstormed 2026-09-07 (fountain + mist bowl, ghanta/bell striker, fiber-optic star canopy, infinity mirror halo, water curtain) on wow-per-rupee and on being the only one whose long-lead part could still arrive in time. Incidentally the first fully local light in the house - no cloud, unlike the Tinxy gear the project below is trying to replace.
 
-**Hard deadline:** Ganesh Chaturthi, mid-September 2026. Vendor shipping (Robu / Robocraze / Robokits) is 2-4 days, so parts must be ordered by ~2026-09-09 to leave any slack.
+**Hard deadline:** Ganesh Chaturthi, mid-September 2026. Vendor shipping (Robu / Robocraze / Robokits) is 2-4 days, and the ~2026-09-09 order-by has already passed - so anything still to be ordered is now a race, and the build has to stand up without it.
 
-**State:** decided 2026-09-07, nothing ordered or flashed yet.
+**State:** decided 2026-09-07. **Strip sourced locally 2026-09-12** - the shop had 5V addressable 5050 60/m in stock, so the part the whole plan was gated on is no longer an order at all. Still missing: the INMP441 mic (not stocked locally, must be ordered) and a supply bigger than the 5V 2A already on hand. Nothing flashed yet.
+
+**The mic is not on the critical path - build without it.** WLED with no mic is still the full addressable strip: 100+ effects, chases, palettes, the phone app and the HA integration. Only the audio-reactive effects need the INMP441, so the backdrop is deliverable for Chaturthi whether or not the mic lands in time, and the mic turns it from *programmed* to *reacting to the actual aarti* whenever it arrives. Two things keep that upgrade from costing a rebuild: **flash the audioreactive build now anyway** (it runs fine with no mic attached - the audio effects just sit still - so the mic becomes three wires to spare GPIOs and a settings toggle rather than a re-flash), and **put everything still missing in one order** rather than discovering the second gap after the first parcel lands. Do not accept an analog mic (MAX4466/MAX9814) as the available-now substitute: noisy, and AudioReactive's tuning assumes I2S, so it is a worse result for the same wait.
 
 **Design decisions already made:**
 - **WLED, not ESPHome.** WLED gives 100+ effects, a phone app, 2D matrix support and a native HA integration for free; ESPHome would mean hand-writing effects. If the ghanta/fountain get built later they go on a *second* ESP32 running ESPHome - WLED's firmware isn't meant to co-host control logic.
@@ -282,10 +284,10 @@ Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of i
 
 ```parts
 qty | item | est | note
-5m | WS2812B strip 60 LED/m IP30 | 1300-2000 | ORDER - must be WS2812B and 5V, not WS2811/SK6812, not 12V
-1 | 5V 10A power supply | 600-900 | ORDER - 5A/Rs 350-500 is enough for the 2m compact build
-1 | INMP441 I2S mic | 150-300 | ORDER - digital I2S, NOT analog MAX4466/MAX9814
-1 | 74AHCT125 level shifter | 30-60 | ORDER - 3.3V->5V data; skippable at 2m, not at 5m
+5m | WS2812B strip 60 LED/m IP30 | 1300-2000 | local - FOUND 2026-09-12, no longer an order; verify 5V + 3 pads at the cut line, not WS2811/SK6812, not 12V
+1 | 5V 10A power supply | 600-900 | ask the strip shop first - metal-cased SMPS is common where strips are sold; 5A/Rs 350-500 is enough for the 2m compact build
+1 | INMP441 I2S mic | 150-300 | ORDER - not stocked locally (2026-09-12); digital I2S, NOT analog MAX4466/MAX9814
+1 | 74AHCT125 level shifter | 30-60 | ORDER - 3.3V->5V data; skippable at 2m, not at 5m; order with the mic, one parcel not two
 2 | 1000uF 25V capacitor | 30 | local - across strip power in; 25V not 16V, and polarised (stripe = negative)
 1 | 470R resistor | 5 | local - inline on the data line
 2m | 18AWG wire | 150 | local - power injection at both ends of a 5m run
@@ -301,11 +303,13 @@ Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP
 
 **Main risk - resolve before the parts arrive:** WLED's AudioReactive is a *usermod*, not in the default binary. The WLED web installer offers an audioreactive ESP32 build; if it flashes cleanly this is a 10-minute step, and if it doesn't it means compiling WLED in PlatformIO (+1-2h and a toolchain that isn't set up on either machine). Flashing the board already owned costs 30 minutes and collapses the single biggest source of variance in the estimate.
 
-**Power gotcha:** 300 LEDs at full white is ~18A, far beyond a 10A supply. Set WLED's max-current limit to the supply's rating - it auto-caps brightness, so it is safe by construction. Never power the strip from the ESP32's 5V pin.
+**Power gotcha:** each WS2812B is three dies at ~20mA, so ~60mA per LED at full white - 300 LEDs is ~18A, far beyond even a 10A supply. Set WLED's max-current limit to the supply's rating and it auto-caps brightness, so it is safe by construction. Never power the strip from the ESP32's 5V pin (that pin is fed through the board's regulator, good for a few hundred mA); the strip goes to the supply directly, sharing GND with the ESP32.
+
+**The 5V 2A already on hand is a bench supply, not a build supply.** Budget ~300mA for the ESP32 and mic and ~1.7A is left for LEDs: ~28 at full white, ~80-90 on typical colour effects, or a full 300-LED strip capped around 10-12% brightness. That is plenty to flash and bench-test on today and nowhere near enough to read as a decoration in a lit room. The trap is that it does not fail loudly - with the limiter set correctly it simply looks dim, so the moment that would tell you to upgrade never arrives; raising brightness instead is what turns it into voltage sag, white drifting pink toward the far end, and the ESP32 browning out mid-aarti. Set the limit to 1500mA while bench-testing on it, and size the real supply to the strip that was actually bought.
 
 **Estimate:** 6-12h total, which is one day *after* the parts land, not a day from now. Roughly: flash 0.5-1h, bench test 0.5-1h, mic wiring 1-2h, mounting + diffusion 2-4h (the phase that always overruns), HA presets 1-2h, tuning gain/squelch in the actual room at real volume 1-2h. Tune last and in the evening - the room's acoustics and real aarti volume are the only settings that matter and cannot be faked at midday.
 
-**Next step:** (1) flash the audioreactive WLED build onto the ESP32 already owned - today, before anything is ordered; (2) order parts, checking the strip listing is WS2812B and 5V (not WS2811/SK6812, not 12V) and checking the strip itself on arrival rather than on build day.
+**Next step:** (1) flash the audioreactive WLED build onto the ESP32 already owned and bench-test it on the 2A supply - today, and still the single step that de-risks the estimate most, since the usermod is not in the stock binary; (2) one order for the mic plus the level shifter, plus the supply if the shop cannot produce one.
 
 ### ✅ Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
