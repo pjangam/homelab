@@ -82,6 +82,13 @@ older version; nothing this project needs arrived after it.
    add a DHCP reservation, so the Home Assistant integration in Phase 5 does
    not lose it on a lease change.
 
+**Resolved on 2026-09-12: it was a dead USB port on `xero`.** Three cables and
+two hosts were tried before the port was; the board turned out fine
+(ESP32-D0WD-V3 rev 3.1, 4MB flash) the moment it went into a port with a
+proven working device in it. The lesson is step 4 below - swap into a port
+something else is already using, early, because a machine with working USB
+devices hands you a free control and this cost an hour without it.
+
 ### If the board does not show up at all
 
 Run `./scripts/watch-usb-serial.sh` only if you are about to **replug**

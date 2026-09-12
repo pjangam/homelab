@@ -80,7 +80,7 @@ say "port: $PORT"
 # Kept in its own venv rather than installed globally: this is a once-a-project
 # tool, and on macOS a pip install into the system python is a fight.
 ESPTOOL=""
-for c in esptool.py esptool; do
+for c in esptool esptool.py; do
   if command -v "$c" >/dev/null 2>&1; then ESPTOOL="$c"; break; fi
 done
 if [ -z "$ESPTOOL" ]; then
@@ -91,18 +91,29 @@ if [ -z "$ESPTOOL" ]; then
     "$VENV/bin/pip" install -q --upgrade pip
     "$VENV/bin/pip" install -q esptool || die "esptool install failed"
   fi
-  for c in "$VENV/bin/esptool.py" "$VENV/bin/esptool"; do
+  for c in "$VENV/bin/esptool" "$VENV/bin/esptool.py"; do
     [ -x "$c" ] && ESPTOOL="$c" && break
   done
   [ -n "$ESPTOOL" ] || die "esptool installed but no runnable entry point found in $VENV/bin"
 fi
 say "esptool: $ESPTOOL"
 
+# esptool 5 renamed every subcommand from snake_case to kebab-case and warns
+# loudly on the old spellings; pick by major version so this works on both.
+ESPTOOL_MAJOR="$("$ESPTOOL" version 2>/dev/null | grep -oE '[0-9]+' | head -1)"
+ESPTOOL_MAJOR="${ESPTOOL_MAJOR:-4}"
+if [ "$ESPTOOL_MAJOR" -ge 5 ]; then
+  CMD_FLASH_ID="flash-id"; CMD_ERASE="erase-flash"; CMD_WRITE="write-flash"
+else
+  CMD_FLASH_ID="flash_id"; CMD_ERASE="erase_flash"; CMD_WRITE="write_flash"
+fi
+say "esptool major $ESPTOOL_MAJOR, using subcommand '$CMD_FLASH_ID'"
+
 # ----------------------------------------------------------------- read the chip
 # flash_id reports chip type, revision, MAC and flash size in one go - which
 # covers both "is it an ESP32 and not an ESP8266" and "is there room for WLED".
 say "reading chip (read-only)"
-chip_info="$("$ESPTOOL" --port "$PORT" --baud 115200 flash_id 2>&1)" || {
+chip_info="$("$ESPTOOL" --port "$PORT" --baud 115200 "$CMD_FLASH_ID" 2>&1)" || {
   printf '%s\n' "$chip_info"
   die "could not talk to the board.
   Most common cause is that it did not enter bootloader mode. Hold the BOOT
@@ -111,7 +122,8 @@ chip_info="$("$ESPTOOL" --port "$PORT" --baud 115200 flash_id 2>&1)" || {
 }
 printf '%s\n' "$chip_info"
 
-chip_line="$(printf '%s' "$chip_info" | grep -i -m1 '^Chip is' || true)"
+chip_line="$(printf '%s' "$chip_info" | grep -i -m1 -E '^(Chip is|Chip type:)' || true)"
+[ -n "$chip_line" ] || chip_line="$(printf '%s' "$chip_info" | grep -i -m1 'Detecting chip type' || true)"
 [ -n "$chip_line" ] || die "esptool did not report a chip type; see output above"
 case "$chip_line" in
   *ESP8266*) die "this is an ESP8266, not an ESP32.
@@ -174,10 +186,10 @@ say "image: $DEST ($size bytes)"
 
 # ------------------------------------------------------------------------ flash
 say "erasing flash"
-"$ESPTOOL" --port "$PORT" --baud "$BAUD" erase_flash
+"$ESPTOOL" --port "$PORT" --baud "$BAUD" "$CMD_ERASE"
 
 say "writing $BIN at 0x0"
-"$ESPTOOL" --port "$PORT" --baud "$BAUD" write_flash 0x0 "$DEST"
+"$ESPTOOL" --port "$PORT" --baud "$BAUD" "$CMD_WRITE" 0x0 "$DEST"
 
 cat <<MSG
 

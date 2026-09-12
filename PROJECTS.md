@@ -311,7 +311,11 @@ Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP
 
 **Parts are in hand as of 2026-09-12** - strip local, mic sourced, 2A supply already owned. Build is no longer gated on anything.
 
-**Next step:** follow `aarti_lights_setup.md`, which sequences the whole build breadboard-first - nothing cut or soldered until the ESP32 drives pixels and the mic reports levels. Phase 0 (flash the audioreactive build, no hardware attached) is still the step that de-risks the estimate most, since the usermod is not in the stock binary.
+**Phase 0 firmware is done (2026-09-12).** WLED 0.14.4 audioreactive is flashed and hash-verified onto the ESP32 (ESP32-D0WD-V3 rev 3.1, 4MB, MAC 28:05:a5:32:18:10), via `scripts/flash-wled-audioreactive.sh`. The big risk in the estimate - AudioReactive not being in the stock binary - is retired, but not the way the note assumed: the usermod is no longer in *any* current release. See the runbook for why 0.14.4 is pinned.
+
+Getting there burned about an hour on a **dead USB port on `xero`** rather than anything to do with WLED. Board and cables were all fine; it enumerated immediately once moved to a port that had a working device in it. Worth knowing before the door-sensor project flashes two more ESP32s.
+
+**Next step:** finish Phase 0 - join `WLED-AP` (password `wled1234`), put the board on the house WiFi, then confirm the effect list shows the audio-reactive markers. Then `aarti_lights_setup.md` Phase 1: 30 LEDs on a breadboard off the 2A supply.
 
 ### ✅ Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
