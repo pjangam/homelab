@@ -21,13 +21,39 @@ echo "Watching the USB bus for ${secs}s."
 echo "UNPLUG the board and PLUG IT BACK IN now - the replug is what this sees."
 echo
 
-# udevadm monitor works unprivileged and reports kernel-level events, so a
-# device that appears and fails still shows up here even though it never
-# becomes a /dev node.
+# Two independent detectors, because each covers the other's blind spot.
+#
+# udevadm monitor catches a device that attaches and FAILS to enumerate - it
+# never becomes a /dev node, so nothing else would ever see it. But it can only
+# be trusted so far here: `udevadm trigger` needs root, so there is no way to
+# self-test unprivileged that the filter below passes real events.
+#
+# So poll lsusb alongside it. That reads the bus directly, needs no root, and
+# is completely independent of udev - if a device attaches at all, this sees
+# it. A silent udev path can therefore no longer be mistaken for an absent
+# device, which is exactly the confusion that cost time on 2026-09-12.
 timeout "$secs" udevadm monitor --udev --kernel --subsystem-match=usb --subsystem-match=tty 2>/dev/null \
   | grep --line-buffered -E "add|remove|bind|unbind" \
   | grep --line-buffered -v -E "usb_device|/devices/virtual" \
-  || true
+  & udev_pid=$!
+
+# Poll once a second and report the moment anything changes, so a bad contact
+# that appears and drops away again still leaves a trace.
+polls=$(( secs ))
+seen_change=0
+while [ "$polls" -gt 0 ]; do
+  now_usb="$(lsusb | sort)"
+  if [ "$now_usb" != "$before_usb" ]; then
+    echo "LSUSB CHANGE DETECTED:"
+    diff <(printf '%s\n' "$before_usb") <(printf '%s\n' "$now_usb") | sed 's/^/  /'
+    seen_change=1
+    before_usb="$now_usb"
+  fi
+  polls=$(( polls - 1 ))
+  sleep 1
+done
+wait "$udev_pid" 2>/dev/null || true
+[ "$seen_change" -eq 1 ] || echo "(lsusb polled once a second for ${secs}s: never changed)"
 
 echo
 echo "=== what changed ==="
