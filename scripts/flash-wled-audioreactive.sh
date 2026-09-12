@@ -163,42 +163,93 @@ MSG
 fi
 
 # --------------------------------------------------------------------- download
+# WLED's ESP32 release .bin is the APPLICATION image only - it belongs at
+# 0x10000, NOT at 0x0. A full flash needs three parts:
+#
+#   0x1000   2nd-stage bootloader
+#   0x8000   partition table
+#   0x10000  WLED application
+#
+# Getting this wrong is silent: esptool happily writes the app to 0x0 and
+# reports "hash verified", then the ROM finds no bootloader and the board
+# bootloops with "invalid header: 0x...". That is exactly what happened on
+# 2026-09-12 before this was fixed.
+#
+# The boot parts are not in the GitHub release - they come from the installer
+# site, which is where install.wled.me itself fetches them. WLED ships ONE
+# canonical bootloader per chip (flagged 8MB) and re-flags it for other flash
+# sizes; esptool does that re-flagging for us (header nibble + SHA-256 digest)
+# whenever --flash-size is passed, so no client-side patching is needed here.
+#
+# The 4MB partition table really is called partitions_c3_4m.bin even for a
+# plain ESP32 - that 4MB layout is byte-identical across chip families, so
+# WLED shares one file. partitions_esp32_4m.bin does not exist (404).
+BOOT_BASE="https://install.wled.me/bin/boot"
 BIN="WLED_${VERSION}_ESP32_audioreactive.bin"
 URL="https://github.com/wled/WLED/releases/download/v${VERSION}/${BIN}"
-DEST="${TMPDIR:-/tmp}/$BIN"
+WORK="${TMPDIR:-/tmp}/wled-flash-$VERSION"
+mkdir -p "$WORK"
 
-if [ ! -s "$DEST" ]; then
-  say "downloading $BIN"
-  curl -fL --progress-bar -o "$DEST.part" "$URL" || die "download failed: $URL
-  If this 404s, the release may not ship an audioreactive asset. Check:
-    curl -fsS https://api.github.com/repos/wled/WLED/releases/tags/v$VERSION \\
-      | grep -i audioreactive"
-  mv "$DEST.part" "$DEST"
-else
-  say "reusing already-downloaded $DEST"
-fi
+# Flash size drives which partition table to use, so read it from the chip
+# rather than assuming.
+case "$flash_line" in
+  *16MB*) FLASH_SIZE="16MB"; PARTS="partitions/partitions_esp32_16m.bin" ;;
+  *8MB*)  FLASH_SIZE="8MB";  PARTS="partitions/partitions_esp32_8m.bin" ;;
+  *4MB*)  FLASH_SIZE="4MB";  PARTS="partitions/partitions_c3_4m.bin" ;;
+  *) die "could not determine flash size from: $flash_line
+  WLED needs a known size to pick a partition table. Re-run the verify and
+  check what the chip reports." ;;
+esac
+BOOTLOADER="bootloaders/esp32/bootloader_esp32_8m.bin"
+say "flash size $FLASH_SIZE -> partition table $(basename "$PARTS")"
 
-size="$(wc -c <"$DEST" | tr -d ' ')"
-say "image: $DEST ($size bytes)"
-# A truncated download flashes "successfully" and then bootloops, which is a
-# miserable thing to debug - so refuse anything implausibly small.
-[ "$size" -gt 1000000 ] || die "image is only $size bytes, which is too small to be a WLED ESP32 build. Delete $DEST and retry."
+fetch() { # fetch <url> <dest> <min-bytes> <what>
+  local url="$1" dest="$2" min="$3" what="$4"
+  if [ ! -s "$dest" ]; then
+    curl -fL --progress-bar -o "$dest.part" "$url" || die "download failed ($what): $url"
+    mv "$dest.part" "$dest"
+  fi
+  local sz; sz="$(wc -c <"$dest" | tr -d ' ')"
+  # A truncated or error-page download flashes "successfully" and then
+  # bootloops, so refuse anything implausibly small rather than write it.
+  [ "$sz" -ge "$min" ] || die "$what is only $sz bytes (expected >= $min). Delete $dest and retry."
+  printf '  %-28s %8s bytes\n' "$(basename "$dest")" "$sz"
+}
+
+say "downloading firmware + boot parts"
+fetch "$URL"                    "$WORK/$BIN"            1000000 "WLED application"
+fetch "$BOOT_BASE/$BOOTLOADER"  "$WORK/bootloader.bin"  4096    "bootloader"
+fetch "$BOOT_BASE/$PARTS"       "$WORK/partitions.bin"  1024    "partition table"
+
+# An ESP32 application/bootloader image must begin with magic byte 0xE9. This
+# catches an HTML error page saved under a .bin name, which is otherwise
+# indistinguishable until the board refuses to boot.
+for f in "$WORK/$BIN" "$WORK/bootloader.bin"; do
+  magic="$(head -c1 "$f" | od -An -tx1 | tr -d ' \n')"
+  [ "$magic" = "e9" ] || die "$(basename "$f") does not start with ESP32 magic 0xE9 (got 0x$magic) - not a firmware image."
+done
+say "all three parts present, magic bytes OK"
 
 # ------------------------------------------------------------------------ flash
+if [ "$ESPTOOL_MAJOR" -ge 5 ]; then FS_FLAG="--flash-size"; else FS_FLAG="--flash_size"; fi
+
 say "erasing flash"
 "$ESPTOOL" --port "$PORT" --baud "$BAUD" "$CMD_ERASE"
 
-say "writing $BIN at 0x0"
-"$ESPTOOL" --port "$PORT" --baud "$BAUD" "$CMD_WRITE" 0x0 "$DEST"
+say "writing bootloader 0x1000, partitions 0x8000, WLED 0x10000"
+"$ESPTOOL" --port "$PORT" --baud "$BAUD" "$CMD_WRITE" "$FS_FLAG" "$FLASH_SIZE" \
+  0x1000  "$WORK/bootloader.bin" \
+  0x8000  "$WORK/partitions.bin" \
+  0x10000 "$WORK/$BIN"
 
 cat <<MSG
 
 --------------------------------------------------------------------
 FLASHED. Next, still Phase 0 - no strip, no mic attached yet:
 
-1. Power-cycle the board (unplug/replug the USB).
-2. Join the WiFi network 'WLED-AP' (password: wled1234) from a phone
-   or laptop, and open the setup page it offers.
+1. Power-cycle the board (unplug/replug the USB), then give it ~20s.
+2. Join the WiFi network 'WLED-AP' (password: wled1234) and open the
+   setup page it offers.
 3. Enter the house WiFi credentials, then let it reboot onto the LAN.
 4. Set an mDNS name and add a DHCP reservation, so the Home Assistant
    integration in Phase 5 does not lose it on a lease change.
