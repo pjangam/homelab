@@ -284,20 +284,35 @@ Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of i
 
 ```parts
 qty | item | est | note
-5m | WS2812B strip 60 LED/m IP30 | 1300-2000 | local - FOUND 2026-09-12, no longer an order; verify 5V + 3 pads at the cut line, not WS2811/SK6812, not 12V
-1 | 5V 10A power supply | 600-900 | ask the strip shop first - metal-cased SMPS is common where strips are sold; 5A/Rs 350-500 is enough for the 2m compact build
-1 | INMP441 I2S mic | 150-300 | ORDER - not stocked locally (2026-09-12); digital I2S, NOT analog MAX4466/MAX9814
-1 | 74AHCT125 level shifter | 30-60 | ORDER - 3.3V->5V data; skippable at 2m, not at 5m; order with the mic, one parcel not two
+3m | 18AWG wire (or 18-20AWG speaker wire) | 150-250 | BUY FIRST - nearer shop. The real brightness limiter, ahead of any adapter: jumper wires cap the strip at ~1A whatever supply is attached. Also what power injection at both ends needs, bypassing the strip's own 20-22AWG pigtail (a 3-5A bottleneck on its own)
+1 | 5V 5A or 10A power supply | 350-900 | ONLY IF the owned 5V 4A proves short - see the note below the list; metal-cased SMPS, common where LED strips are sold, and nearer than the ESP32 shop
+5m | WS2812B strip 60 LED/m IP30 | 1300-2000 | HAVE IT - bought local 2026-09-12, verified working 2026-09-13
+1 | INMP441 I2S mic | 150-300 | HAVE IT - wired and verified working 2026-09-13
+1 | 74AHCT125 level shifter | 30-60 | only if 3.3V data proves marginal at the final length; not needed at the 30-LED bench length, untested beyond it
 2 | 1000uF 25V capacitor | 30 | local - across strip power in; 25V not 16V, and polarised (stripe = negative)
-1 | 470R resistor | 5 | local - inline on the data line
-2m | 18AWG wire | 150 | local - power injection at both ends of a 5m run
-1 | Barrel jack to screw terminal | 40 | local
-1 | Female-female dupont jumpers (40-pin strip) | 120 | local - also covers the two Pi LED builds
-1 | Perfboard 5x7cm | 30 | local
-1 | Soldering iron kit | 500-800 | local - only if not already owned; needed for cut-points and injection
+1 | 470R resistor | 5 | HAVE IT - inline on the data line, working
+1 | Barrel jack to screw terminal | 40 | local - or any screw terminal, to get the power pair off twisted joints
+1 | Female-female dupont jumpers (40-pin strip) | 120 | HAVE IT - fine for data and the mic, NOT for strip power
+1 | Perfboard 5x7cm | 30 | local - for the control side, soldered after the strip is positioned
+1 | Soldering iron kit | 500-800 | HAVE IT - pencil iron plus rosin-core solder, confirmed adequate 2026-09-13
 ```
 
 A **compact ~2m / 120 LED** version works out at roughly ₹1,400-1,900 instead: smaller strip, a 5A supply, and the level shifter becomes optional.
+
+**The supply question, as far as it can be settled before the length is known (2026-09-13).** Three adapters were compared on the bench and all looked equally dim - because WLED's current cap was still 800mA, so every one was throttled to the same 800mA and the comparison meant nothing. That cap was set to protect the **jumper wires**, which carry about 1A. The binding constraint was never the adapter.
+
+What the owned supplies could deliver on 300 LEDs, uncapped:
+
+| Supply | Full red | Full white |
+|---|---|---|
+| 1.2A | 20% | 7% |
+| GaN 18W (5V/3A) | 50% | 17% |
+| **5V 4A (owned)** | **67%** | 22% |
+| 5V 10A | 100% | 56% |
+
+At **2.5m / 150 LEDs the owned 4A gives full-brightness colour**, so if the decoration uses half the reel or less there is nothing to buy. Full white never matters here - effects light one or two channels, and the strip bounces off a wall rather than pointing at the room.
+
+So the order is: **buy the 18AWG first**, rewire strip power out of the breadboard, raise the cap to match the 4A, and only then decide whether a bigger supply is needed. Buying a 10A before that test risks spending on the wrong bottleneck.
 
 Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP8266**, AudioReactive needs the ESP32's I2S peripheral. A soldering iron (~₹500-800) is needed for strip cut-points and power injection; buy it in the same order rather than discovering the gap on build day.
 
