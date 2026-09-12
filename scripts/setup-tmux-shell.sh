@@ -56,7 +56,7 @@ die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
 # Write $2 to $1, or just report it under --dry-run. Diffs so a re-run that
 # changes nothing says so out loud.
 write_file() {
-  local dest=$1 content=$2
+  local dest=$1 content=$2 check=${3:-}
   if [ -f "$dest" ] && printf '%s' "$content" | cmp -s - "$dest"; then
     say "  unchanged: $dest"
     return
@@ -64,6 +64,17 @@ write_file() {
   if [ "$dry_run" = 1 ]; then
     say "  would write: $dest"
     return
+  fi
+  # Check before writing, not after: a rollback needs a backup to roll back
+  # to, and the file being written may be one we just created.
+  if [ "$check" = zsh ] && command -v zsh >/dev/null 2>&1; then
+    local tmp; tmp="$(mktemp -t setup-tmux-shell)"
+    printf '%s' "$content" > "$tmp"
+    if ! zsh -n "$tmp" 2>&1; then
+      rm -f "$tmp"
+      die "refusing to write $dest - it would not parse as zsh (nothing was changed)"
+    fi
+    rm -f "$tmp"
   fi
   # An empty file we just created has nothing worth keeping a copy of.
   [ -s "$dest" ] && cp "$dest" "$dest.bak.$STAMP" && say "  backed up:  $dest.bak.$STAMP"
@@ -151,8 +162,8 @@ say "functions: $FUNC_DIR"
 say
 
 say "1. shell functions"
-write_file "$FUNC_DIR/tmux-session-picker.zsh" "$(cat "$SRC/zsh/tmux-session-picker.zsh"; printf '\n')"
-write_file "$FUNC_DIR/claude-tmux.zsh"         "$(cat "$SRC/zsh/claude-tmux.zsh"; printf '\n')"
+write_file "$FUNC_DIR/tmux-session-picker.zsh" "$(cat "$SRC/zsh/tmux-session-picker.zsh"; printf '\n')" zsh
+write_file "$FUNC_DIR/claude-tmux.zsh"         "$(cat "$SRC/zsh/claude-tmux.zsh"; printf '\n')" zsh
 
 # Its guard file is now dead weight - claude-tmux.zsh replaces it, and its
 # source line was just stripped above.
@@ -199,7 +210,7 @@ $CLAUDE_BEGIN
 [[ -r ~/.zsh/functions/claude-tmux.zsh ]] && source ~/.zsh/functions/claude-tmux.zsh
 $CLAUDE_END
 "
-write_file "$ZSHRC" "$zshrc_new"
+write_file "$ZSHRC" "$zshrc_new" zsh
 
 say
 say "3. $TMUX_CONF"
@@ -226,17 +237,10 @@ if [ "$dry_run" = 1 ]; then
   exit 0
 fi
 
-# A broken ~/.zshrc is a broken login shell, so never leave one behind.
+# Belt and braces: write_file already refused anything that failed this, but a
+# broken ~/.zshrc is a broken login shell, so say it out loud.
 if command -v zsh >/dev/null 2>&1; then
-  if zsh -n "$ZSHRC"; then
-    say "zsh -n $ZSHRC: OK"
-  else
-    if [ -f "$ZSHRC.bak.$STAMP" ]; then
-      cp "$ZSHRC.bak.$STAMP" "$ZSHRC"
-      die "$ZSHRC failed its syntax check - restored $ZSHRC.bak.$STAMP"
-    fi
-    die "$ZSHRC failed its syntax check"
-  fi
+  zsh -n "$ZSHRC" && say "zsh -n $ZSHRC: OK"
 fi
 
 command -v tmux >/dev/null 2>&1 && tmux source-file "$TMUX_CONF" 2>/dev/null && say "reloaded $TMUX_CONF into the running tmux server"

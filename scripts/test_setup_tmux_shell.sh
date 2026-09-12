@@ -157,6 +157,15 @@ check "no functions installed" $([ ! -d "$D/functions" ]; echo $?)
 check "no tmux.conf created"   $([ ! -f "$D/tmux.conf" ]; echo $?)
 check "says what it would do"  $(grep -q 'would write' "$D/out"; echo $?)
 
+echo "== refuses to write a zshrc that would not parse =="
+F="$SANDBOX/broken-zsh"; mkdir -p "$F"
+printf 'if [ -z "$FOO" ]; then\n  echo unterminated\n' > "$F/zshrc"
+before=$(cat "$F/zshrc")
+run "$F"; check "exits nonzero" $([ $? -ne 0 ]; echo $?)
+check "said it refused"   $(grep -q 'refusing to write' "$F/out"; echo $?)
+check "zshrc untouched"   $([ "$before" = "$(cat "$F/zshrc")" ]; echo $?)
+check "no rollback needed" $([ -z "$(ls "$F"/zshrc.bak.* 2>/dev/null)" ]; echo $?)
+
 echo "== shipped function files are valid zsh =="
 check "tmux-session-picker.zsh" $(zsh -n "$REPO/dotfiles/zsh/tmux-session-picker.zsh"; echo $?)
 check "claude-tmux.zsh"         $(zsh -n "$REPO/dotfiles/zsh/claude-tmux.zsh"; echo $?)
