@@ -89,6 +89,22 @@ while time.time() < deadline:
               f"{major:8.1f}  {bars}   [{header}]")
 
 print()
+if seen_raw:
+    v = sorted(seen_raw)
+    def pct(q):
+        return v[min(len(v) - 1, int(len(v) * q))]
+    print("level distribution over the window:")
+    print(f"  min {v[0]:6.1f}   median {pct(0.50):6.1f}   p90 {pct(0.90):6.1f}"
+          f"   p95 {pct(0.95):6.1f}   p99 {pct(0.99):6.1f}   max {v[-1]:6.1f}")
+    # Squelch has to sit above the ambient floor or the room holds the lights
+    # on; p95 plus a margin ignores the steady background while leaving real
+    # sounds well clear of the threshold.
+    sq = int(min(200, pct(0.95) + 10))
+    print(f"  -> suggested squelch for THIS ambient: {sq}")
+    print("     (measure with the room at its normal quiet state, then verify")
+    print("      that resting level reads 0 and a clap still reaches a few hundred)")
+    print()
+
 if count == 0:
     print("NO PACKETS RECEIVED.")
     print("Either sync transmit is not enabled, the port differs, or the")
@@ -98,9 +114,21 @@ else:
     lo, hi = min(seen_raw), max(seen_raw)
     print(f"{count} packets. sampleRaw ranged {lo:.1f} .. {hi:.1f}")
     if hi - lo < 1.0:
-        print("LEVEL NEVER MOVED - the mic is not producing audio.")
-        print("In order of likelihood: WS or SCK on an input-only pin")
-        print("(GPIO34-39 cannot drive), mic fed 5V instead of 3.3V, L/R left")
-        print("floating, or a cold joint on the header you just soldered.")
+        # A flat zero has two completely different causes, and saying only the
+        # scary one is wrong: a high squelch in a quiet room produces exactly
+        # this and is correct behaviour, not a fault.
+        print("LEVEL NEVER MOVED.")
+        print()
+        print("If squelch is set high and the room is quiet, this is CORRECT -")
+        print("everything below the threshold is reported as silence. Check it")
+        print("before suspecting hardware:")
+        print("  curl -s http://<board>/json/cfg | python3 -c \"import sys,json;"
+              "print(json.load(sys.stdin)['um']['AudioReactive']['config'])\"")
+        print("Then make a loud noise and re-run; if it responds, nothing is wrong.")
+        print()
+        print("If squelch is low and it still never moves, then suspect the")
+        print("hardware, in order: WS or SCK on an input-only pin (GPIO34-39")
+        print("cannot drive), mic fed 5V instead of 3.3V, L/R left floating, or")
+        print("a cold joint on the header.")
     else:
         print("LEVEL MOVES - the mic works.")

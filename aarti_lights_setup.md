@@ -350,6 +350,25 @@ the lights on. Tune it against the actual aarti, and use
 want `sampleRaw` resting at 0 between sounds and reaching a few hundred on
 the loud moments.
 
+**Calibrate at the noisiest time of day, not the quietest.** The monitor
+prints a level distribution and a suggested squelch from the ambient it just
+measured, so the number it gives is only as good as the moment it was taken.
+A threshold measured on a quiet night is far too low for daytime, and the
+lights sit on all afternoon. Measure when the room is at its normal worst -
+which for this project is the evening, when the aarti actually happens.
+
+A useful reading from a quiet night (2026-09-14, only the white-noise machine
+running): median and p90 both 0.0 at squelch 40, with p95 55, p99 199 and a
+max of 215. So the floor was already suppressed 90% of the time and it was
+occasional spikes punching through that lit the strip. Squelch 70 silenced
+those completely - correct for that room at that hour, and certainly too deaf
+for a room with people in it.
+
+**A flat zero is not necessarily a fault.** High squelch plus a quiet room
+produces exactly the same reading as a dead mic. Check the squelch value
+before suspecting hardware - the monitor now says so rather than listing
+hardware faults first, which it did until this was hit.
+
 **Effects that are 2D-only fail silently on a strip**, showing a flat colour
 rather than an error - GEQ, Funky Plank, Waverly, Swirl and Akemi are all
 matrix-only. Of the 29 audio-reactive effects in this build, **24 work on a
