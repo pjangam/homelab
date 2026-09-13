@@ -275,9 +275,25 @@ Four things that cost time, all avoidable next run:
   at gain 100 with AGC off it pegs flat at 255, which reads as broken in the
   other direction.
 
-Settled at **squelch 10, gain 40, AGC on**, which gives 0-254 with real
-dynamics on speech. That is a starting point, not the answer - Phase 6 tunes
-it in the room at aarti volume, which is the only setting that matters.
+Settled at **squelch 10, gain 40, AGC off**. That gives sampleRaw spanning the
+full 0-255 with real dynamics between, which is what a decoration wants:
+silence reads dark, the crescendo fills the strip.
+
+**AGC off is deliberate.** Automatic gain control pushes quiet passages up and
+pulls loud ones down, so the lights stay equally busy through a lull and a
+crescendo alike. Good for a level meter, wrong for an aarti backdrop, where
+the dynamics *are* the effect.
+
+**Do not tune against the `Audio Source ... peak NN%` field in `/json/info`.**
+It is a slow-decaying peak *hold*, not a level: it ratchets upward, resets low
+after a config change, and then climbs, so consecutive identical readings mean
+nothing and a lower gain can appear to read higher purely because the hold had
+already climbed. That cost a confusing round of gain comparisons on
+2026-09-13, every one of them invalid. Use `./scripts/wled-audio-monitor.py`,
+which reads instantaneous samples about 20x a second off the UDP stream.
+
+And tune in the actual room, in the evening, with the actual aarti playing -
+street noise alone is enough to make a bench measurement meaningless.
 
 ## Phase 3 - real power, real length (~30min)
 
