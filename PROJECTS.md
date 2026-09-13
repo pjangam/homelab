@@ -284,11 +284,11 @@ Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of i
 
 ```parts
 qty | item | est | note
-3m | 18AWG wire (or 18-20AWG speaker wire) | 150-250 | BUY FIRST - nearer shop. The real brightness limiter, ahead of any adapter: jumper wires cap the strip at ~1A whatever supply is attached. Also what power injection at both ends needs, bypassing the strip's own 20-22AWG pigtail (a 3-5A bottleneck on its own)
-1 | 5V 5A or 10A power supply | 350-900 | ONLY IF the owned 5V 4A proves short - see the note below the list; metal-cased SMPS, common where LED strips are sold, and nearer than the ESP32 shop
-5m | WS2812B strip 60 LED/m IP30 | 1300-2000 | HAVE IT - bought local 2026-09-12, verified working 2026-09-13
+3m | 18AWG wire (or 18-20AWG speaker wire) | 0 | HAVE IT - mains offcuts from home, 2026-09-14. Rewiring strip power off the breadboard is what actually unlocked brightness; jumper wires had capped it at ~1A regardless of adapter
+1 | 5V 5A or 10A power supply | 0 | NOT NEEDED - the owned 5V 4A covers 180 LEDs at full brightness, confirmed 2026-09-14
+5m | WS2812B strip 60 LED/m IP30 | 1300-2000 | HAVE IT - bought local 2026-09-12, verified 2026-09-13; ~3m used, ~2m spare
 1 | INMP441 I2S mic | 150-300 | HAVE IT - wired and verified working 2026-09-13
-1 | 74AHCT125 level shifter | 30-60 | only if 3.3V data proves marginal at the final length; not needed at the 30-LED bench length, untested beyond it
+1 | 74AHCT125 level shifter | 30-60 | NOT NEEDED at 3m - data is stable, no drop or colour shift seen at 94% brightness
 2 | 1000uF 25V capacitor | 30 | local - across strip power in; 25V not 16V, and polarised (stripe = negative)
 1 | 470R resistor | 5 | HAVE IT - inline on the data line, working
 1 | Barrel jack to screw terminal | 40 | local - or any screw terminal, to get the power pair off twisted joints
@@ -312,7 +312,13 @@ What the owned supplies could deliver on 300 LEDs, uncapped:
 
 At **2.5m / 150 LEDs the owned 4A gives full-brightness colour**, so if the decoration uses half the reel or less there is nothing to buy. Full white never matters here - effects light one or two channels, and the strip bounces off a wall rather than pointing at the room.
 
-So the order is: **buy the 18AWG first**, rewire strip power out of the breadboard, raise the cap to match the 4A, and only then decide whether a bigger supply is needed. Buying a 10A before that test risks spending on the wrong bottleneck.
+**Settled 2026-09-14: 3m used (~180 LEDs), and the owned 5V 4A is enough. The shopping list is closed at zero.**
+
+Strip power moved onto mains-wire offcuts from home, off the breadboard, and the cap went 800mA -> 2500mA -> 3400mA. All 180 red at full draws **3411mA, 94% of this strip's maximum**, with nothing running hot - not the pigtail, not the adapter, not the wire. Full red at 3m needs 3600mA and the adapter gives 4000mA, so colour content runs at full brightness with headroom. Full white would want 10.8A and is irrelevant: effects light one or two channels, and the strip bounces off a wall rather than facing the room.
+
+The 18AWG never had to be bought, and the 10A supply never had to be bought. **The bottleneck was the jumper wires all along** - about 1A regardless of which adapter was attached, which is why three different supplies produced identical brightness and why the comparison looked so confusing.
+
+The level shifter is also off the list: at 3m the 3.3V data line is stable, with no voltage drop or colour shift visible at 94% brightness. Power injection at the far end is unnecessary at this length too.
 
 Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP8266**, AudioReactive needs the ESP32's I2S peripheral. A soldering iron (~₹500-800) is needed for strip cut-points and power injection; buy it in the same order rather than discovering the gap on build day.
 
@@ -344,7 +350,9 @@ Everything electronic is now proven end to end: strip, pixels, mic. **Nothing is
 
 The time went on WLED not exposing audio levels over `/json/info` in 0.14.4, and its sound-sync stream being **multicast to 239.0.0.1** rather than broadcast - binding the port alone receives nothing, which is indistinguishable from a dead mic. Also: changing the mic pins needs a reboot, since I2S initialises at boot.
 
-**Next step:** Phase 3 - real length and a real supply. That is the first phase that commits solder, and the decision it waits on is which strip length was actually bought (2m/120 wants a 5A supply, 5m/300 wants 10A).
+**Phase 3 is effectively done (2026-09-14).** Strip cut to ~3m / 180 LEDs, power on mains-wire offcuts direct to the strip, WLED's cap at 3400mA, running at 94% of maximum brightness with nothing warm. The owned 5V 4A is sufficient and the shopping list is closed at zero - no supply, no wire, no level shifter.
+
+**Next step:** Phase 4, mounting and diffusion - aim the strip at the wall behind the makhar rather than at the room, and judge it in the dark at the real position. Then Phase 5 (Home Assistant presets) and Phase 6 (tuning gain and squelch in the room at real aarti volume, which is the only calibration that counts).
 
 ### ✅ Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
