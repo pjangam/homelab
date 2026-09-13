@@ -265,7 +265,7 @@ Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of i
 
 ## 🔌 ESP32 Projects
 
-### 🟢 Sound-reactive aarti lights (Ganapati decoration)
+### 🟢 Sound-reactive aarti lights (Ganapati decoration) - built and mounted
 **Why:** festival decoration for Ganesh Chaturthi - a WS2812 backdrop behind the makhar that pulses to the aarti in real time. Chosen over the other decoration ideas brainstormed 2026-09-07 (fountain + mist bowl, ghanta/bell striker, fiber-optic star canopy, infinity mirror halo, water curtain) on wow-per-rupee and on being the only one whose long-lead part could still arrive in time. Incidentally the first fully local light in the house - no cloud, unlike the Tinxy gear the project below is trying to replace.
 
 **Hard deadline:** Ganesh Chaturthi, mid-September 2026. Vendor shipping (Robu / Robocraze / Robokits) is 2-4 days, and the ~2026-09-09 order-by has already passed - so anything still to be ordered is now a race, and the build has to stand up without it.
@@ -360,7 +360,11 @@ Two things done on the board itself to support it: **preset 1 "Gravimeter" is th
 
 **Tier 2 of the sound work is in place**: three segments, each locked to its own FFT bin range via Freqmatrix's Low/High bin sliders - pixels 0-59 on bins 0-5 (43-861Hz, vocals) in orange, 60-119 on bins 6-10 (861-3015Hz, voice presence and claps) in green, 120-179 on bins 11-15 (3-15.6kHz, ghanta and cymbals) in blue. Palette `* Color 1` is what lets each segment hold a fixed colour instead of the effect choosing one.
 
-**Next step:** Phase 4, mounting and diffusion - aim the strip at the wall behind the makhar rather than at the room, and judge it in the dark at the real position. Then Phase 6: recalibrate squelch at the room's noisy hour, not at night.
+**Phase 4 (mounting) is done (2026-09-14).** The strip is up behind the makhar.
+
+**That leaves only Phase 6: recalibrate squelch at the room's noisy hour, not at night.** `./scripts/wled-audio-monitor.py --seconds 20` measures the ambient floor in place and suggests a threshold; the value has to be taken with the room as it will actually be during the aarti, since a number measured on a quiet night is far too low once there are people in the room. Verify both directions afterwards - resting level reads 0, and a clap still reaches a few hundred.
+
+Two guesses in the HA config are still unverified, and both surface as a failed script run rather than silently: `select.wled_preset` in the bands script, and that `effect: Gravimeter` matches WLED's spelling exactly.
 
 ### ✅ Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
