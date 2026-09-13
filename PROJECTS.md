@@ -352,7 +352,15 @@ The time went on WLED not exposing audio levels over `/json/info` in 0.14.4, and
 
 **Phase 3 is effectively done (2026-09-14).** Strip cut to ~3m / 180 LEDs, power on mains-wire offcuts direct to the strip, WLED's cap at 3400mA, running at 94% of maximum brightness with nothing warm. The owned 5V 4A is sufficient and the shopping list is closed at zero - no supply, no wire, no level shifter.
 
-**Next step:** Phase 4, mounting and diffusion - aim the strip at the wall behind the makhar rather than at the room, and judge it in the dark at the real position. Then Phase 5 (Home Assistant presets) and Phase 6 (tuning gain and squelch in the room at real aarti volume, which is the only calibration that counts).
+**Phase 5 (Home Assistant) is largely done (2026-09-14).** The WLED integration is added and the light is `light.wled`. Four time-triggered automations - on 08:00, off 09:30, on 17:45, off 23:00 - plus three scripts for the living-room dashboard: `aarti_lights_on` (forces Gravimeter), `aarti_lights_bands` (the three-band split), `aarti_lights_off`. The on-automations force the effect rather than restoring the last state, so a week of manual testing does not leave a solid colour showing up at the next scheduled slot.
+
+These live in `HOMEASSISTANT_CONFIG/automations.yaml` and `scripts.yaml`, which are **gitignored** (secrets, DB, logs) - so they are not in this repo and this note is the only tracked record of them.
+
+Two things done on the board itself to support it: **preset 1 "Gravimeter" is the boot preset**, verified across a reboot, so the strip comes up sound-reactive rather than on a leftover colour even if HA is down; and preset 2 "Bands" holds the three-band split.
+
+**Tier 2 of the sound work is in place**: three segments, each locked to its own FFT bin range via Freqmatrix's Low/High bin sliders - pixels 0-59 on bins 0-5 (43-861Hz, vocals) in orange, 60-119 on bins 6-10 (861-3015Hz, voice presence and claps) in green, 120-179 on bins 11-15 (3-15.6kHz, ghanta and cymbals) in blue. Palette `* Color 1` is what lets each segment hold a fixed colour instead of the effect choosing one.
+
+**Next step:** Phase 4, mounting and diffusion - aim the strip at the wall behind the makhar rather than at the room, and judge it in the dark at the real position. Then Phase 6: recalibrate squelch at the room's noisy hour, not at night.
 
 ### ✅ Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
