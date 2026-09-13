@@ -336,6 +336,29 @@ street noise alone is enough to make a bench measurement meaningless.
     the only settings that matter and cannot be faked earlier. Squelch sets
     the noise floor the effects ignore; gain sets how hard they swing.
 
+**Squelch is the control that decides whether it looks reactive at all**, more
+than gain. If ambient noise sits above the squelch threshold, every effect
+pins at maximum and reads as *not responding* - all LEDs lit, steady, with
+rare dips. That is the same appearance as a broken mic, and it is the trap to
+know about: on 2026-09-13 a noisy street kept levels at 93% and made three
+different effects look dead. Raising squelch from 10 to 40 dropped the
+baseline to 0 between sounds, which is what the effects need.
+
+Too high and quiet passages of the aarti vanish; too low and the room holds
+the lights on. Tune it against the actual aarti, and use
+`./scripts/wled-audio-monitor.py` rather than the web UI's peak field - you
+want `sampleRaw` resting at 0 between sounds and reaching a few hundred on
+the loud moments.
+
+**Effects that are 2D-only fail silently on a strip**, showing a flat colour
+rather than an error - GEQ, Funky Plank, Waverly, Swirl and Akemi are all
+matrix-only. Of the 29 audio-reactive effects in this build, **24 work on a
+1D strip**. Check before blaming the mic:
+```
+curl -s http://<board>/json/fxdata | python3 -c "import sys,json;print(json.load(sys.stdin)[139])"
+```
+A `2` in the fourth semicolon-separated field means it needs a matrix.
+
 ## If the deadline arrives mid-build
 
 WLED with no working mic is still the full addressable strip - 100+ effects,
