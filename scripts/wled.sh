@@ -12,6 +12,7 @@
 #   ./scripts/wled.sh cap 800              # set max current, mA
 #   ./scripts/wled.sh solid red [bri]      # red|green|blue|white|off
 #   ./scripts/wled.sh rainbow [bri]        # spatial rainbow
+#   ./scripts/wled.sh bands [bri]          # 3 frequency bands, 3 colours
 #   ./scripts/wled.sh groups               # 3 separated colour groups
 #   ./scripts/wled.sh order grb|rgb        # colour order
 #
@@ -113,6 +114,22 @@ else:
 ")"
     api state "{\"on\":true,\"bri\":$bri,\"transition\":0,\"seg\":[{\"id\":0,\"start\":0,\"stop\":$n,\"fx\":$idx,\"sx\":90,\"ix\":128,\"pal\":0,\"on\":true},{\"id\":1,\"stop\":0},{\"id\":2,\"stop\":0}]}"
     echo "rainbow (effect $idx) across $n pixels at brightness $bri" ;;
+  bands)
+    # Three segments, each locked to its own FFT bin range via Freqmatrix's
+    # Low bin / High bin sliders (c1/c2), with palette 2 "* Color 1" so each
+    # segment holds a fixed colour instead of the effect choosing one.
+    #
+    # This cannot be stored as a WLED preset: preset save only captures
+    # segment 0, so "Bands" as a preset restores only the low band. Re-run
+    # this after any firmware update, which also drops multi-segment config.
+    n="$(getj info | python3 -c "import sys,json; print(json.load(sys.stdin)['leds']['count'])")"
+    a=$(( n / 3 )); b=$(( (n * 2) / 3 ))
+    api state "{\"on\":true,\"bri\":${2:-200},\"transition\":0,\"seg\":[
+      {\"id\":0,\"start\":0,\"stop\":$a,\"fx\":138,\"pal\":2,\"sx\":128,\"ix\":128,\"c1\":0,\"c2\":5,\"c3\":16,\"col\":[[255,40,0],[0,0,0],[0,0,0]],\"on\":true},
+      {\"id\":1,\"start\":$a,\"stop\":$b,\"fx\":138,\"pal\":2,\"sx\":128,\"ix\":128,\"c1\":6,\"c2\":10,\"c3\":16,\"col\":[[0,255,60],[0,0,0],[0,0,0]],\"on\":true},
+      {\"id\":2,\"start\":$b,\"stop\":$n,\"fx\":138,\"pal\":2,\"sx\":128,\"ix\":128,\"c1\":11,\"c2\":15,\"c3\":16,\"col\":[[0,120,255],[0,0,0],[0,0,0]],\"on\":true}
+    ]}"
+    echo "bands: 0-$((a-1)) low/vocals orange | $a-$((b-1)) mid/claps green | $b-$((n-1)) high/ghanta blue" ;;
   groups)
     # Three separated colour groups with dark gaps. The unambiguous proof of
     # per-pixel addressing: a dumb strip physically cannot show this.

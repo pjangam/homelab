@@ -36,16 +36,23 @@ This is the phase that de-risks the whole project, because AudioReactive is a
 *usermod* and is not in the stock WLED binary. If it flashes, the rest is
 assembly. Do it before touching the strip.
 
-**Flash WLED 0.14.4, not the latest.** Checked against the GitHub release
-assets on 2026-09-12: WLED stopped shipping a prebuilt
-`_ESP32_audioreactive.bin` after **0.14.4**, and every release from 0.15.0
-through the current 16.0.1 has no audioreactive asset at all. Since
-install.wled.me builds its variant list from those assets, the "audio" option
-does not appear for current versions - so following the installer's default
-lands you on a binary with no AudioReactive in it. 0.14.4 is the newest
-release where the usermod is a download rather than a PlatformIO build, which
-is the difference between ten minutes and a toolchain afternoon. Take the
-older version; nothing this project needs arrived after it.
+**On which version to flash.** Checked against the GitHub release assets on
+2026-09-12: no release after **0.14.4** publishes a prebuilt
+`_ESP32_audioreactive.bin`, and install.wled.me builds its variant list from
+those assets, so the "audio" option does not appear there for current
+versions. That is why this runbook pinned 0.14.4 and why
+`scripts/flash-wled-audioreactive.sh` defaults to it.
+
+**That is a statement about the GitHub release assets, not about WLED.**
+Corrected 2026-09-14: the board is now running **16.0.1 with AudioReactive** -
+220 effects, and `AudioReactive`, `Audio Input Level`, `Audio Source`, `Sound
+Processing`, `Manual Gain` and `UDP Sound Sync` all present. So audioreactive
+builds of current WLED do exist somewhere other than the release page. The
+0.14.4 pin remains the reliable path because its binary is a known URL; treat
+it as a floor, not a ceiling.
+
+Effect indices did not move between 0.14.4 and 16.0.1 - Gravimeter is 132 in
+both - so presets survived the jump.
 
 1. **Plug the ESP32 into `xero`** (rather than the MacBook) if there is a
    choice - the flash is then scriptable and its output reviewable, instead of
@@ -157,8 +164,19 @@ mistake cost a confused minute on 2026-09-12.
 Note the usermod ships **disabled** - `/json/info` shows its toggle with an
 `icons off` class. Enabling it is Phase 2's job, alongside the I2S pins.
 
-**Done 2026-09-12:** WLED 0.14.4 running at `192.168.1.125`
-(`wled-sound.local`), 187 effects, all 15 spot-checked audio effects present.
+**Done 2026-09-12:** WLED 0.14.4 at `192.168.1.125` (`wled-sound.local`), 187
+effects. **Updated 2026-09-14 to 16.0.1 audioreactive**, 220 effects.
+
+**What an update keeps and what it drops.** Everything in `cfg` survived: mic
+pins, squelch/gain/AGC, LED pin, count, current cap, colour order, boot
+preset. What did *not* survive was the **multi-segment arrangement** - the
+three-band split collapsed back to one segment. Re-apply it with
+`./scripts/wled.sh bands`.
+
+It cannot be stored as a preset either: **WLED's preset save only captures
+segment 0**, so saving the band split as a preset and recalling it restores
+only the low band. The script is the way to restore it, which is why the
+`bands` subcommand exists.
 
 ## Phase 1 - strip on a breadboard (~1h)
 

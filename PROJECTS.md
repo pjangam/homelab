@@ -358,7 +358,9 @@ These live in `HOMEASSISTANT_CONFIG/automations.yaml` and `scripts.yaml`, which 
 
 Two things done on the board itself to support it: **preset 1 "Gravimeter" is the boot preset**, verified across a reboot, so the strip comes up sound-reactive rather than on a leftover colour even if HA is down; and preset 2 "Bands" holds the three-band split.
 
-**Tier 2 of the sound work is in place**: three segments, each locked to its own FFT bin range via Freqmatrix's Low/High bin sliders - pixels 0-59 on bins 0-5 (43-861Hz, vocals) in orange, 60-119 on bins 6-10 (861-3015Hz, voice presence and claps) in green, 120-179 on bins 11-15 (3-15.6kHz, ghanta and cymbals) in blue. Palette `* Color 1` is what lets each segment hold a fixed colour instead of the effect choosing one.
+**Tier 2 of the sound work is in place**: three segments, each locked to its own FFT bin range via Freqmatrix's Low/High bin sliders - pixels 0-59 on bins 0-5 (43-861Hz, vocals) in orange, 60-119 on bins 6-10 (861-3015Hz, voice presence and claps) in green, 120-179 on bins 11-15 (3-15.6kHz, ghanta and cymbals) in blue. Palette `* Color 1` is what lets each segment hold a fixed colour instead of the effect choosing one. Restore it with `./scripts/wled.sh bands` - it **cannot** live in a preset, because WLED's preset save only captures segment 0.
+
+**The board was updated to 16.0.1 audioreactive on 2026-09-14** (220 effects, up from 187). Everything in config survived - mic pins, gain/squelch, LED pin, count, cap, colour order, boot preset - and effect indices did not move, so presets still point at the right effects. The only casualty was the multi-segment band split, re-applied via the script. Worth knowing that audioreactive builds of current WLED exist, since the 0.14.4 pin in the runbook was based on the GitHub release assets, where they are absent.
 
 **Phase 4 (mounting) is done (2026-09-14).** The strip is up behind the makhar.
 
