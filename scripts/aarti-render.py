@@ -35,8 +35,11 @@ a flicker rather than a mistake.
     ./scripts/aarti-render.py --quiet         # no per-event logging
 """
 import argparse
+import json
 import math
 import socket
+import threading
+import urllib.request
 import sys
 import time
 
@@ -160,6 +163,40 @@ def render(levels, phase):
     return bytes(buf)
 
 
+class PowerWatch:
+    """Track WLED's own on/off so this renderer does not override it.
+
+    Realtime UDP data wins over everything in WLED, so a renderer that always
+    sends makes the light impossible to switch off - the Home Assistant
+    schedule would fire at 09:30 and nothing would happen. Polling the state
+    and simply not sending while it is off hands control back: WLED stops
+    receiving, drops out of realtime mode after its timeout, and honours its
+    own off state.
+
+    Polled on a thread because an HTTP round-trip inside the 40fps render loop
+    would stutter it.
+    """
+
+    def __init__(self, host, period=2.0):
+        self.url = f"http://{host}/json/state"
+        self.period = period
+        self.on = True          # assume on until told otherwise
+        self.reachable = True
+        threading.Thread(target=self._loop, daemon=True).start()
+
+    def _loop(self):
+        while True:
+            try:
+                with urllib.request.urlopen(self.url, timeout=1.5) as r:
+                    self.on = bool(json.load(r).get("on", True))
+                self.reachable = True
+            except Exception:
+                # Unreachable is not the same as off. Keep rendering: a brief
+                # network blip should not blank the decoration mid-aarti.
+                self.reachable = False
+            time.sleep(self.period)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--iface", default="192.168.1.123")
@@ -167,10 +204,13 @@ def main():
     ap.add_argument("--seconds", type=float, default=0.0)
     ap.add_argument("--quiet", action="store_true")
     ap.add_argument("--mode", choices=("zones", "layers"), default="layers")
+    ap.add_argument("--ignore-power", action="store_true",
+                    help="render even when WLED is switched off")
     a = ap.parse_args()
 
     rx = open_socket(a.iface)
     tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    power = None if a.ignore_power else PowerWatch(a.wled)
     clf = Classifier()
     levels = [0.0, 0.0, 0.0]        # voice, clap, ghanta  (zones mode)
     layers = Layers(N_LEDS)         # (layers mode)
@@ -231,7 +271,8 @@ def main():
                     payload = render(levels, now - t0)
                 else:
                     payload = pack(layers.frame(now, dt))
-                tx.sendto(payload, (a.wled, WLED_UDP_PORT))
+                if power is None or power.on:
+                    tx.sendto(payload, (a.wled, WLED_UDP_PORT))
                 next_frame = now + dt
             else:
                 time.sleep(0.002)

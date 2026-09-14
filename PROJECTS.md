@@ -372,6 +372,10 @@ Two render modes. `--mode zones` gives a third of the strip to each class. `--mo
 
 Thresholds live in `scripts/aarti_audio.py`, measured from labelled recordings of this bell, this mic and this room (`data/aarti-sound/`). If any of those change, re-record with `scripts/aarti-sound-lab.py` rather than re-guessing.
 
+**Running as a service since 2026-09-14**: `systemd/user/aarti-lights.service`, enabled and started, so it survives reboot (linger is already on for this user). Copy it to `~/.config/systemd/user/` and `systemctl --user enable --now aarti-lights`.
+
+Two design points in that unit worth keeping. It deliberately omits `After=network-online.target`, which is a **silent no-op in a user unit** and reads as a guarantee while providing none - the wait for the board to answer is an `ExecStartPre` loop instead. And the renderer polls WLED's own on/off state and stops sending while it is off: realtime UDP overrides everything in WLED, so a renderer that always sent would make the light impossible to switch off and the Home Assistant schedule would fire at 09:30 with no effect. Verified both directions - off gives `live=False` and 120mA quiescent, on gives `live=True` with `lip=192.168.1.123`.
+
 **Still to do on Tier 3:** validate against a real aarti rather than isolated test sounds. The boundary is visibly soft - test runs produced 1.08s "claps" against a 1.2s ghanta threshold, and one ghanta identified by duration with a clap-like flatness of 0.842. A bell rung during singing with a speaker playing is the real operating condition and nothing has tested it.
 
 **That leaves only Phase 6: recalibrate squelch at the room's noisy hour, not at night.** `./scripts/wled-audio-monitor.py --seconds 20` measures the ambient floor in place and suggests a threshold; the value has to be taken with the room as it will actually be during the aarti, since a number measured on a quiet night is far too low once there are people in the room. Verify both directions afterwards - resting level reads 0, and a clap still reaches a few hundred.

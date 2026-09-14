@@ -1,0 +1,39 @@
+[Unit]
+Description=Aarti Lights - sound classification driving the WS2812B backdrop
+# After=network-online.target is deliberately absent: in a *user* unit it is a
+# silent no-op (the target belongs to the system manager), so it reads as a
+# guarantee while providing none. The wait belongs in ExecStartPre instead -
+# see incidents/ and the note in white-noise.service.
+
+[Service]
+Type=simple
+
+# Wait for the board to actually answer before starting. Without this the
+# renderer comes up during boot, finds nothing, and sends frames into the void
+# until WLED appears - harmless but it muddies the logs and delays the first
+# real frame. 60 x 2s covers a slow DHCP or a board still booting.
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do \
+    curl -fsS -m 2 http://192.168.1.125/json/info >/dev/null 2>&1 && exit 0; \
+    sleep 2; \
+  done; \
+  echo "WLED at 192.168.1.125 did not answer in 120s" >&2; exit 1'
+
+ExecStart=/usr/bin/python3 /home/pramod/code/homelab/scripts/aarti-render.py --mode layers --quiet
+
+# The renderer is the decoration's brain but not its life support: WLED falls
+# back to its own effects a couple of seconds after frames stop arriving, so a
+# crash degrades to "pretty but not reactive" rather than to darkness. Restart
+# anyway, and back off enough that a genuinely broken board does not spin.
+Restart=always
+RestartSec=5
+
+# It renders whatever WLED's own power state allows - see PowerWatch in the
+# script. That is what keeps the Home Assistant schedule in charge: realtime
+# UDP overrides everything in WLED, so a renderer that always sent would make
+# the light impossible to switch off.
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
