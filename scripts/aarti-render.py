@@ -4,13 +4,13 @@
 Tier 3 (see PROJECTS.md). Two ways to draw the same classification:
 
   --mode zones   one third of the strip per class. Legible and literal:
-                   0- 59 VOICE amber | 60-119 CLAP white | 120-179 GHANTA green
+                   0- 59 VOICE amber | 60-119 CLAP white | 120-179 GHANTA blue
                  Two thirds sit at idle most of the time.
 
   --mode layers  all three share the whole strip, composited additively:
                    VOICE  a warm base glow along the full length
                    CLAP   a white burst sweeping outward from the centre
-                   GHANTA a green shimmer laid over the top, decaying with the ring
+                   GHANTA a blue shimmer laid over the top, decaying with the ring
                  Nothing is wasted on dark thirds, and two sounds at once read
                  as two things happening rather than one winning.
 
@@ -52,12 +52,14 @@ N_LEDS = 180
 
 # Zone colours at full. Amber for voice because it sits behind a makhar and
 # warm light suits it; white for a clap because a transient should read as a
-# flash; green for the ghanta - chosen on 2026-09-14; it keeps all three hues
-# far apart, which matters more than any individual choice.
+# flash; blue for the ghanta. Tried green on 2026-09-14 and went back: green sits
+# too near the amber voice glow, so a bell during singing blended into it
+# instead of standing out. Blue is the furthest hue from amber, and hue
+# separation is what makes the three layers readable from across a room.
 ZONES = [
     ("VOICE",  0,   60,  (255, 120, 20)),
     ("CLAP",   60,  120, (255, 255, 255)),
-    ("GHANTA", 120, 180, (0, 255, 90)),
+    ("GHANTA", 120, 180, (30, 90, 255)),
 ]
 
 IDLE = 0.05         # never fully dark: an unlit third reads as broken, not idle
@@ -110,9 +112,9 @@ class Layers:
             for i in range(n):
                 sh = 0.62 + 0.38 * math.sin(i * 0.55 + now * 7.5)
                 k = self.ghanta * sh
-                buf[i][0] += 0 * k
-                buf[i][1] += 255 * k
-                buf[i][2] += 90 * k
+                buf[i][0] += 25 * k
+                buf[i][1] += 90 * k
+                buf[i][2] += 255 * k
 
         # Clap bursts travelling out from the centre, both directions.
         alive = []
@@ -236,9 +238,9 @@ def main():
 
     print(f"rendering to {a.wled}:{WLED_UDP_PORT}, {N_LEDS} LEDs, {FPS}fps, mode={a.mode}")
     if a.mode == "zones":
-        print("zones:  0-59 VOICE amber | 60-119 CLAP white | 120-179 GHANTA green")
+        print("zones:  0-59 VOICE amber | 60-119 CLAP white | 120-179 GHANTA blue")
     else:
-        print("layers: amber glow = voice | white burst = clap | green shimmer = ghanta")
+        print("layers: amber glow = voice | white burst = clap | blue shimmer = ghanta")
     print("Ctrl-C to stop - WLED returns to its own effects a moment later.\n", flush=True)
 
     try:
