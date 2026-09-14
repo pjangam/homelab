@@ -364,6 +364,16 @@ Two things done on the board itself to support it: **preset 1 "Gravimeter" is th
 
 **Phase 4 (mounting) is done (2026-09-14).** The strip is up behind the makhar.
 
+**Tier 3 is working (2026-09-14)** - the strip is driven by *what the sound is*, not by its pitch. `scripts/aarti-render.py` classifies ghanta / clap / voice and renders every pixel itself, pushing frames to WLED over realtime UDP (DRGB, port 21324) at 40fps. WLED's own effects are bypassed while it runs, and the protocol's timeout means the decoration returns to them by itself if the program stops - so nothing depends on `xero` staying up.
+
+Two render modes. `--mode zones` gives a third of the strip to each class. `--mode layers` (the default) composites all three across the whole length: an amber glow for voice, a white burst sweeping out from the centre for a clap, a green shimmer over the top for the ghanta. Layers is the better one - a clap during a ringing bell shows as both, which is what an aarti actually sounds like, where zones has to pick a winner.
+
+**Why classification rather than more frequency bands:** clap and ghanta have the same spectral centroid, 8.72 against 8.75 measured. No frequency split can separate them, so Tier 2 lights the same LEDs for both. What differs is *time* - the ghanta rang continuously for 13 seconds where claps were bursts under half a second. Voice separates on centroid alone (p90 of 2.64).
+
+Thresholds live in `scripts/aarti_audio.py`, measured from labelled recordings of this bell, this mic and this room (`data/aarti-sound/`). If any of those change, re-record with `scripts/aarti-sound-lab.py` rather than re-guessing.
+
+**Still to do on Tier 3:** validate against a real aarti rather than isolated test sounds. The boundary is visibly soft - test runs produced 1.08s "claps" against a 1.2s ghanta threshold, and one ghanta identified by duration with a clap-like flatness of 0.842. A bell rung during singing with a speaker playing is the real operating condition and nothing has tested it.
+
 **That leaves only Phase 6: recalibrate squelch at the room's noisy hour, not at night.** `./scripts/wled-audio-monitor.py --seconds 20` measures the ambient floor in place and suggests a threshold; the value has to be taken with the room as it will actually be during the aarti, since a number measured on a quiet night is far too low once there are people in the room. Verify both directions afterwards - resting level reads 0, and a clap still reaches a few hundred.
 
 Two guesses in the HA config are still unverified, and both surface as a failed script run rather than silently: `select.wled_preset` in the bands script, and that `effect: Gravimeter` matches WLED's spelling exactly.
