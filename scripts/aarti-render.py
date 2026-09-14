@@ -60,7 +60,9 @@ ZONES = [
     ("GHANTA", 120, 180, (0, 255, 90)),
 ]
 
-IDLE = 0.06         # never fully dark: an unlit third reads as broken, not idle
+IDLE = 0.05         # never fully dark: an unlit third reads as broken, not idle
+MASTER = 0.55       # composite headroom - see soft_clip
+
 DECAY_PER_S = 2.2   # how fast a zone falls back once its sound stops
 FPS = 40
 
@@ -136,10 +138,25 @@ class Layers:
         return buf
 
 
+def soft_clip(v):
+    """Compress toward 255 instead of clamping at it.
+
+    Three additive layers reach 255 on every channel easily, and a hard clamp
+    turns that into flat white: the hues stop being distinguishable exactly
+    when the most is happening, and the strip sits pinned at the current cap.
+    A knee above 180 keeps bright moments bright while leaving colour in them.
+    """
+    if v <= 180.0:
+        return v
+    return 180.0 + (v - 180.0) / (1.0 + (v - 180.0) / 90.0)
+
+
 def pack(buf):
     out = bytearray([2, 2])
     for r, g, b in buf:
-        out += bytes((min(255, int(r)), min(255, int(g)), min(255, int(b))))
+        out += bytes((int(min(255, soft_clip(r * MASTER))),
+                      int(min(255, soft_clip(g * MASTER))),
+                      int(min(255, soft_clip(b * MASTER)))))
     return bytes(out)
 
 
