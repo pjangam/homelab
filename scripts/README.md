@@ -4,6 +4,11 @@ One folder per project. There are no loose files at the top level - a new
 script goes into the folder of the project it belongs to, or a new folder if
 it starts a new project. Split out of a flat 73-file directory on 2026-09-15.
 
+**Being folded away (started 2026-09-15).** Each folder here moves to
+`projects/<name>/scripts/` with the rest of its project, or to `tools/` if
+several projects use it - see the layout rules in the root `CLAUDE.md`. Until a
+folder has moved, a new script for that project still goes here.
+
 | Folder | What lives there |
 |---|---|
 | `aarti-lights/` | WLED control, the Tier 3 sound renderer (runs as `aarti-lights.service`), audio tooling |

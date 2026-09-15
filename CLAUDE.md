@@ -2,4 +2,11 @@
 
 - Write shell/diagnostic scripts into this repo (e.g. `scripts/`), not `/tmp` or a scratchpad - even for one-off or throwaway-feeling scripts. Unnecessary files in the repo can always be cleaned up later; anything left only in `/tmp` is gone once the session/machine cycles, and the work it did goes untracked. Delete it from the repo afterward if it turns out not to be needed, rather than never having committed it.
 - **Work on `main`. Do not create branches.** Commit straight to `main` and push when the work is done. This is a single-maintainer homelab repo where everything lands on `main` anyway, and more than one Claude session often has this same working tree checked out at once - a branch created in one session silently swaps the checkout under the other. That is not hypothetical: on 2026-09-11 a session branched by habit, a second session's commit landed on that branch instead of `main`, and untangling it needed a rebase to drop the duplicates once the other session had recreated its work on `main`.
+- **Put a new file where its purpose says, not its file type.** The root is being split into four homes (started 2026-09-15, not finished - `clawlight/`, `cron/`, `systemd/`, `scripts/`, `esp32/`, `dotfiles/` and the root `*_setup.md` files still await their move):
+  - `projects/<name>/` - code this repo builds, with everything that belongs to it: its scripts, tests, cron job, systemd units and setup doc. One folder per `PROJECTS.md` entry.
+  - `services/<name>/` - config for off-the-shelf software we only run (Caddy, Mosquitto, ntfy, Tailscale sidecars).
+  - `tools/` - helpers used by more than one project (notify, network diagnosis, ESP32 flashing, repo tooling).
+  - `docs/` - reference and incident write-ups not owned by one project.
+
+  Docker's live data directories (`vw-data/`, `HOMEASSISTANT_CONFIG/`, `etc-pihole/`, `certs/`, `backups/`) stay at the root on purpose. Before moving anything, check who calls it by path from outside git - the crontab, installed systemd unit copies, compose bind mounts, the Pi's and Mac's deployed copies - and recreate or re-deploy what the move touches.
 - `PROJECTS.md` is the working list of active/parked/backlog projects and their state - check it for context before starting work, and update it when a project's status changes.
