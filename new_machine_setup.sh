@@ -13,6 +13,11 @@ git config core.hooksPath .githooks
 
 sudo apt install -y net-tools copyq gnupg rclone fzf zsh thefuck gh
 
+# What projects/white-noise/white-noise.service runs: `play` (sox) for the
+# noise, `amixer` (alsa-utils) for the volume ramp, and `playerctl` to pause
+# spotifyd before it starts.
+sudo apt install -y sox alsa-utils playerctl
+
 # Extend unattended-upgrades (already running twice daily via
 # apt-daily.timer/apt-daily-upgrade.timer) to also cover the Docker and
 # Tailscale apt repos, which aren't in Ubuntu's own archive and so aren't

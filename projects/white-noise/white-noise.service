@@ -4,6 +4,11 @@ After=sound.target
 
 [Service]
 ExecStartPre=/usr/bin/amixer -c 1 sset Speaker 59%
+# Pause Spotify, so starting white noise never plays over music. The `-` keeps
+# a start from failing when there is nothing to pause: spotifyd only publishes
+# its MPRIS player while a Connect session is active, and otherwise playerctl
+# logs "No players found" - expected, not a fault.
+ExecStartPre=-/usr/bin/playerctl -p spotifyd pause
 ExecStart=/usr/bin/play -n -q synth brownnoise fade t 60
 ExecStop=/bin/bash -c 'for v in 45 32 18 5; do amixer -c 1 sset Speaker "$v%" >/dev/null; sleep 0.3; done; kill $MAINPID 2>/dev/null; sleep 0.3; amixer -c 1 sset Speaker 59% >/dev/null'
 Restart=on-failure
