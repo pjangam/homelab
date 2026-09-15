@@ -262,11 +262,11 @@ services:
   # without rebuilding the image. LAN-only, same pattern as pihole/vaultwarden.
   projects-ui:
     build:
-      context: ./projects-ui
+      context: ./projects/projects-ui
     container_name: projects-ui
     restart: unless-stopped
     labels:
-      # Built locally from ./projects-ui, so there is no registry to check.
+      # Built locally from ./projects/projects-ui, so there is no registry to check.
       # Without this Watchtower tries to pull homelab-projects-ui:latest from
       # Docker Hub every run and logs a 401 / "pull access denied" it can
       # never succeed at - noise that would sit alongside real failures in
@@ -276,7 +276,7 @@ services:
       - "8125:80"  # access at http://<LAN-IP>:8125
     volumes:
       # Whole repo root, read-only - nginx.conf only actually serves
-      # /PROJECTS.md from it (see projects-ui/nginx.conf for why this is a
+      # /PROJECTS.md from it (see projects/projects-ui/nginx.conf for why this is a
       # directory mount rather than a single-file one).
       - .:/data:ro
 

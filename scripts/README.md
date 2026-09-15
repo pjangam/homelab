@@ -15,7 +15,6 @@ it starts a new project. Split out of a flat 73-file directory on 2026-09-15.
 | `miraie-ac/` | MirAIe AC availability check, diagnosis and self-heal |
 | `network/` | DNS diagnosis and the Mac DNS recorder, Tailscale fixes and serve config |
 | `notify/` | `push_ntfy.sh` and `send_email.sh` (sourced by several cron jobs), ntfy setup |
-| `projects-ui/` | real-browser screenshots of the projects dashboard (the app itself is in top-level `projects-ui/`) |
 | `pi-buttons/` | GPIO button bridges on the wol-sender Pi, their deploy and HA automations |
 | `repo-tools/` | scripts about this repo itself |
 | `spotifyd/` | Connect advertising check, the boot-time network wait |
