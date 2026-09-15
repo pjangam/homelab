@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verifies the restart guard added to cron/backup_vaultwarden.sh on 2026-09-06.
+# Verifies the restart guard added to projects/certs-backup/backup_vaultwarden.sh on 2026-09-06.
 #
 # The guard exists because a stop/start pair around a backup is only safe if the
 # start is guaranteed. Under `set -euo pipefail` an unguarded script exits on the
@@ -14,7 +14,7 @@
 # hold is the part that's easy to get wrong: the trap must fire on the failure
 # path, and it must leave the manually-stopped flag clear.
 #
-# Run: ./scripts/certs-backup/test_backup_restart_guard.sh
+# Run: ./projects/certs-backup/test_backup_restart_guard.sh
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 

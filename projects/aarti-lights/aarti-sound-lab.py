@@ -16,9 +16,9 @@ Set WLED's squelch to 0 while collecting: at a higher threshold the board
 zeroes quiet frames and throws away the decay tail, which is the single most
 useful feature for separating a ringing bell from a clap.
 
-    ./scripts/aarti-lights/aarti-sound-lab.py live
-    ./scripts/aarti-lights/aarti-sound-lab.py record --label ghanta --seconds 20
-    ./scripts/aarti-lights/aarti-sound-lab.py events  --label ghanta
+    ./projects/aarti-lights/aarti-sound-lab.py live
+    ./projects/aarti-lights/aarti-sound-lab.py record --label ghanta --seconds 20
+    ./projects/aarti-lights/aarti-sound-lab.py events  --label ghanta
 """
 import argparse
 import json
@@ -34,7 +34,7 @@ PORT = 11988
 # WLED 0.14/16.x audioSyncPacket, 44 bytes little-endian.
 FMT = "<6s2Bff2B16BHff"
 SIZE = struct.calcsize(FMT)
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "aarti-sound")
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aarti-sound")
 
 # Approximate centre of each of WLED's 16 bins, Hz. Used only for describing
 # features in human terms; the classifier works on bin indices.
@@ -232,7 +232,7 @@ p_live = sub.add_parser("live", help="print features as they arrive")
 p_live.add_argument("--floor", type=float, default=1.0)
 p_live.set_defaults(func=cmd_live)
 
-p_rec = sub.add_parser("record", help="capture a labelled sample to data/aarti-sound/")
+p_rec = sub.add_parser("record", help="capture a labelled sample to projects/aarti-lights/aarti-sound/")
 p_rec.add_argument("--label", required=True)
 p_rec.add_argument("--seconds", type=float, default=20.0)
 p_rec.set_defaults(func=cmd_record)

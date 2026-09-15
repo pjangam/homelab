@@ -25,8 +25,8 @@ onset is reported as STRIKE, and resolves to GHANTA or CLAP once its duration
 is known. Visually that is what you want anyway - a flash that settles into
 the bell's colour.
 
-    ./scripts/aarti-lights/aarti-classify.py            # live, prints classifications
-    ./scripts/aarti-lights/aarti-classify.py --verbose  # also prints every frame
+    ./projects/aarti-lights/aarti-classify.py            # live, prints classifications
+    ./projects/aarti-lights/aarti-classify.py --verbose  # also prints every frame
 """
 import argparse
 import functools

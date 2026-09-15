@@ -1,7 +1,7 @@
 vw-data/
 certs/
 # HA runtime — fully covered by the automatic HA backup synced to Dropbox
-# (cron/backup_homeassistant.sh), so no need to track any of it in git.
+# (projects/certs-backup/backup_homeassistant.sh), so no need to track any of it in git.
 HOMEASSISTANT_CONFIG/
 etc-pihole/
 backups/

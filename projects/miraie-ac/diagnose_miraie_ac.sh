@@ -12,8 +12,8 @@
 # the same signal scripts/wol-sender/watchdog_nodered_pi.sh acts on.
 #
 # Run from xero (needs SSH to the Pi and the mosquitto container locally):
-#   scripts/miraie-ac/diagnose_miraie_ac.sh            # checks only, changes nothing
-#   scripts/miraie-ac/diagnose_miraie_ac.sh --capture  # also RESTARTS Node-RED and
+#   projects/miraie-ac/diagnose_miraie_ac.sh            # checks only, changes nothing
+#   projects/miraie-ac/diagnose_miraie_ac.sh --capture  # also RESTARTS Node-RED and
 #                                            # sniffs what it republishes
 #
 # --capture exists because ha-miraie-ac publishes state/availability with

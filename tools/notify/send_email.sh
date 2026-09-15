@@ -2,7 +2,7 @@
 # Shared Gmail SMTP alert sender. Source this, then call:
 #   send_email "subject" "body"
 # Requires GMAIL_USER and GMAIL_APP_PASSWORD in the environment (from
-# .env.healthcheck). Used by cron/healthcheck.sh and cron/watchdog_power.sh.
+# .env.healthcheck). Used by projects/healthcheck/healthcheck.sh and projects/power-watchdog/watchdog_power.sh.
 send_email() {
   python3 - "$1" "$2" <<'EOF'
 import os, smtplib, sys

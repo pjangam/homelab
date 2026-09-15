@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Writes a self-signed cert expiring a given number of days from now.
 
-Used only by scripts/certs-backup/test_cert_expiry_check.sh. `openssl req -x509` cannot do
+Used only by projects/certs-backup/test_cert_expiry_check.sh. `openssl req -x509` cannot do
 this: it has only -days (positive integers), and the -not_after flag that would
 allow a backdated cert does not exist in OpenSSL 3.0.x, which is what xero has.
 

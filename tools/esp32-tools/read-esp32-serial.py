@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reset an ESP32 and capture its serial boot log.
 
-Written for the aarti lights build (aarti_lights_setup.md Phase 0): when the
+Written for the aarti lights build (projects/aarti-lights/aarti_lights_setup.md Phase 0): when the
 board is flashed but WLED-AP does not appear, the serial log is the only thing
 that distinguishes "never booted", "booted and crashed", and "booted fine and
 the AP is up but the client cannot see it".
@@ -10,7 +10,7 @@ Reset is done the way esptool does it: EN is wired to RTS and IO0 to DTR on
 these boards, so pulsing RTS with DTR held inactive reboots into the normal
 firmware rather than the bootloader.
 
-    ./scripts/esp32-tools/read-esp32-serial.py [--port /dev/ttyUSB0] [--seconds 15]
+    ./tools/esp32-tools/read-esp32-serial.py [--port /dev/ttyUSB0] [--seconds 15]
 """
 import argparse
 import sys

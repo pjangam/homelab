@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests scripts/spotifyd/wait_for_network.sh without touching the real network.
+# Tests projects/spotifyd/wait_for_network.sh without touching the real network.
 #
 # The no-network path is exercised by shadowing `ip` with a stub earlier in
 # PATH. A network namespace would be more faithful, but unprivileged userns

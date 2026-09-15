@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Watch the USB bus for a serial adapter appearing, for as long as given
 # (default 45s). Written for the aarti lights ESP32 flash (see
-# aarti_lights_setup.md Phase 0), but it is the right tool any time a board
+# projects/aarti-lights/aarti_lights_setup.md Phase 0), but it is the right tool any time a board
 # "is plugged in" and /dev has nothing new in it.
 #
 # The point is to separate three cases that look identical from `ls /dev`:
@@ -9,8 +9,8 @@
 #   2. kernel sees it, enumeration fails -> flaky cable/port, or dying bridge
 #   3. it enumerates fine              -> then it was only ever permissions
 #
-#   ./scripts/esp32-tools/watch-usb-serial.sh          # watch 45s
-#   ./scripts/esp32-tools/watch-usb-serial.sh 90       # watch 90s
+#   ./tools/esp32-tools/watch-usb-serial.sh          # watch 45s
+#   ./tools/esp32-tools/watch-usb-serial.sh 90       # watch 90s
 set -u
 secs="${1:-45}"
 

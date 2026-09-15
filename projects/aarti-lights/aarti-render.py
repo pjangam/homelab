@@ -30,9 +30,9 @@ light dimly together the moment a bright sound starts, and the one that wins
 goes to full while the other falls away. That ambiguity is honest and reads as
 a flicker rather than a mistake.
 
-    ./scripts/aarti-lights/aarti-render.py                 # run until Ctrl-C
-    ./scripts/aarti-lights/aarti-render.py --seconds 60    # timed
-    ./scripts/aarti-lights/aarti-render.py --quiet         # no per-event logging
+    ./projects/aarti-lights/aarti-render.py                 # run until Ctrl-C
+    ./projects/aarti-lights/aarti-render.py --seconds 60    # timed
+    ./projects/aarti-lights/aarti-render.py --quiet         # no per-event logging
 """
 import argparse
 import json

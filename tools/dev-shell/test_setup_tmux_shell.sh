@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Tests for scripts/dev-shell/setup-tmux-shell.sh. Runs the installer against throwaway
+# Tests for tools/dev-shell/setup-tmux-shell.sh. Runs the installer against throwaway
 # copies of ~/.zshrc etc. under a temp dir (ZSHRC/TMUX_CONF/FUNC_DIR
 # overrides), so it never touches the real ones.
 #
-#   scripts/dev-shell/test_setup_tmux_shell.sh
+#   tools/dev-shell/test_setup_tmux_shell.sh
 set -uo pipefail
 
 REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-INSTALL="$REPO/scripts/dev-shell/setup-tmux-shell.sh"
+INSTALL="$REPO/tools/dev-shell/setup-tmux-shell.sh"
 pass=0; fail=0
 
 ok()   { pass=$((pass+1)); printf '  ok   %s\n' "$1"; }
@@ -176,9 +176,9 @@ ZSHRC="$G/zshrc" TMUX_CONF="$G/tmux.conf" FUNC_DIR="$G/functions" \
 check "standalone install exits 0" $?
 check "picker matches the repo copy" \
   $(diff <(tail -n +1 "$G/functions/tmux-session-picker.zsh") \
-         <(cat "$REPO/dotfiles/zsh/tmux-session-picker.zsh") >/dev/null; echo $?)
+         <(cat "$REPO/tools/dev-shell/dotfiles/zsh/tmux-session-picker.zsh") >/dev/null; echo $?)
 check "wrappers match the repo copy" \
-  $(diff "$G/functions/claude-tmux.zsh" "$REPO/dotfiles/zsh/claude-tmux.zsh" >/dev/null; echo $?)
+  $(diff "$G/functions/claude-tmux.zsh" "$REPO/tools/dev-shell/dotfiles/zsh/claude-tmux.zsh" >/dev/null; echo $?)
 check_count "tmux binds installed" "$G/tmux.conf" 'pane_current_path' 3
 check "zshrc is valid zsh" $(zsh -n "$G/zshrc"; echo $?)
 again=$(cat "$G/zshrc"); ZSHRC="$G/zshrc" TMUX_CONF="$G/tmux.conf" FUNC_DIR="$G/functions" "$G/bin/install.sh" >/dev/null 2>&1
@@ -187,8 +187,8 @@ check "refuses to bundle a bundle" \
   $("$G/bin/install.sh" --bundle "$G/again.sh" >/dev/null 2>&1; [ $? -ne 0 ]; echo $?)
 
 echo "== shipped function files are valid zsh =="
-check "tmux-session-picker.zsh" $(zsh -n "$REPO/dotfiles/zsh/tmux-session-picker.zsh"; echo $?)
-check "claude-tmux.zsh"         $(zsh -n "$REPO/dotfiles/zsh/claude-tmux.zsh"; echo $?)
+check "tmux-session-picker.zsh" $(zsh -n "$REPO/tools/dev-shell/dotfiles/zsh/tmux-session-picker.zsh"; echo $?)
+check "claude-tmux.zsh"         $(zsh -n "$REPO/tools/dev-shell/dotfiles/zsh/claude-tmux.zsh"; echo $?)
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" = 0 ]

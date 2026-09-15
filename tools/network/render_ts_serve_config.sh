@@ -13,7 +13,7 @@
 #                       with the node's own cert domain. Do not expand it here.
 #
 # Usage:
-#   scripts/network/render_ts_serve_config.sh http://ntfy:80 services/tailscale/ntfy/serve-config.json
+#   tools/network/render_ts_serve_config.sh http://ntfy:80 services/tailscale/ntfy/serve-config.json
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

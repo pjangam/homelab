@@ -14,7 +14,7 @@ Setup on the target machine:
   1. Install Ollama: https://ollama.com/download
   2. Pull a small model:  ollama pull qwen2.5:1.5b
   3. export ANTHROPIC_API_KEY=...  (or `ant auth login` if you have the CLI)
-  4. uv run scripts/dev-shell/qwen_delegate_repl.py
+  4. uv run tools/dev-shell/qwen_delegate_repl.py
 
 Type 'exit' or Ctrl-C to quit.
 """

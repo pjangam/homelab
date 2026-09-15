@@ -35,7 +35,7 @@ Note `tailscale cert` printed `Access denied` and still **exited 0** — so exit
 
 **Fixes applied:**
 - `sudo tailscale set --operator=pramod` (once, manually) — grants the user cert access, so renewal runs unprivileged and needs no sudoers exception. This is Tailscale's own suggested remedy, printed in the access-denied message.
-- Replaced the inline crontab entry with `cron/renew_certs.sh`, which:
+- Replaced the inline crontab entry with `projects/certs-backup/renew_certs.sh`, which:
   - passes `--min-validity 720h` (30 days; Go duration syntax has **no `d` unit** — `30d` is a parse error),
   - writes to temp files and validates the cert parses and has the right CN before installing, so a bad issuance cannot replace a working cert,
   - does not trust `tailscale cert`'s exit status, checking the output file instead,

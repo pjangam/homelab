@@ -19,7 +19,7 @@ post() { # token topic -> http code
   curl -sS -m 10 -o /dev/null -w '%{http_code}' \
     -H "Authorization: Bearer $1" -H "Title: ntfy topic split verification" \
     -H "Priority: 1" -H "Tags: test_tube" \
-    -d "Automated check from scripts/notify/verify_ntfy_topics.sh - safe to ignore." \
+    -d "Automated check from tools/notify/verify_ntfy_topics.sh - safe to ignore." \
     "$BASE/$2"
 }
 

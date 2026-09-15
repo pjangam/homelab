@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Drives cron/check_certs.sh against synthetic certs with known expiry dates.
+# Drives projects/certs-backup/check_certs.sh against synthetic certs with known expiry dates.
 #
 # This tests the REAL script (via its cert-directory argument) rather than a
 # copy of its logic - a mirrored test would happily pass while the thing that
 # actually runs is broken, which is the same class of mistake that let cert
 # renewal fail silently for three months.
 #
-# Run: ./scripts/certs-backup/test_cert_expiry_check.sh
+# Run: ./projects/certs-backup/test_cert_expiry_check.sh
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -15,7 +15,7 @@ failures=0
 
 make_cert() {  # $1 = name, $2 = days from now until expiry (may be negative)
   local name="$1" days="$2"
-  python3 scripts/certs-backup/make_test_cert.py "$TMP/$name.crt" "$TMP/$name.key" "$days" || {
+  python3 projects/certs-backup/make_test_cert.py "$TMP/$name.crt" "$TMP/$name.key" "$days" || {
     echo "FIXTURE ERROR: could not create $name cert"; exit 2; }
   # Guard against false passes: an absent or unreadable fixture would make the
   # checker silent, and a test asserting silence would then "pass" while
@@ -26,7 +26,7 @@ make_cert() {  # $1 = name, $2 = days from now until expiry (may be negative)
 
 check() {  # $1 = description, $2 = expected substring ("" = expect no output)
   local desc="$1" want="$2" out
-  out=$(./cron/check_certs.sh "$TMP" 2>&1)
+  out=$(./projects/certs-backup/check_certs.sh "$TMP" 2>&1)
   if [ -z "$want" ]; then
     if [ -z "$out" ]; then echo "PASS  $desc"; else
       echo "FAIL  $desc"; echo "      expected silence, got: $out"; failures=$((failures+1)); fi
@@ -46,7 +46,7 @@ make_cert gone    -3   ; check "expired cert reports as EXPIRED"       "EXPIRED"
 
 # A cert directory that doesn't exist must be silent, not an error - other
 # machines running healthcheck.sh have no certs/ at all.
-out=$(./cron/check_certs.sh "$TMP/nonexistent" 2>&1)
+out=$(./projects/certs-backup/check_certs.sh "$TMP/nonexistent" 2>&1)
 if [ -z "$out" ]; then echo "PASS  missing cert dir is silent"; else
   echo "FAIL  missing cert dir should be silent, got: $out"; failures=$((failures+1)); fi
 

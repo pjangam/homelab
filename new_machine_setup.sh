@@ -90,9 +90,9 @@ if [[ -z "${SAMBA_PASSWORD:-}" ]]; then
   echo "SAMBA_PASSWORD=$SAMBA_PASSWORD" >> "$ENV_FILE"
 fi
 
-(crontab -l 2>/dev/null | grep -v "backup_vaultwarden.sh"; echo "0 2 * * * $HOMELAB_DIR/cron/backup_vaultwarden.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
-(crontab -l 2>/dev/null | grep -v "backup_homeassistant.sh"; echo "0 3 * * * $HOMELAB_DIR/cron/backup_homeassistant.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
-# Renew Tailscale certs weekly, via cron/renew_certs.sh.
+(crontab -l 2>/dev/null | grep -v "backup_vaultwarden.sh"; echo "0 2 * * * $HOMELAB_DIR/projects/certs-backup/backup_vaultwarden.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v "backup_homeassistant.sh"; echo "0 3 * * * $HOMELAB_DIR/projects/certs-backup/backup_homeassistant.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
+# Renew Tailscale certs weekly, via projects/certs-backup/renew_certs.sh.
 #
 # This used to be a long inline entry running `sudo tailscale cert ... && sudo
 # docker kill --signal=USR1 caddy`. That entry failed silently for three months
@@ -109,7 +109,7 @@ fi
 # Prerequisite: the tailscale operator must be set to $USER so renew_certs.sh
 # can run unprivileged from cron - without it, renewal fails on every run. That
 # is handled automatically further down, in the Tailscale section.
-(crontab -l 2>/dev/null | grep -vE "tailscale cert|renew_certs.sh"; echo "0 5 * * 0 $HOMELAB_DIR/cron/renew_certs.sh") | crontab -
+(crontab -l 2>/dev/null | grep -vE "tailscale cert|renew_certs.sh"; echo "0 5 * * 0 $HOMELAB_DIR/projects/certs-backup/renew_certs.sh") | crontab -
 
 # Let pramod run ONLY `shutdown` without a password, so watchdog_power.sh
 # can act unattended from cron. Scoped to that single command - no broader
@@ -146,7 +146,7 @@ until tailscale status &>/dev/null; do
 done
 if tailscale status &>/dev/null; then
   # Let $USER drive tailscale without sudo. This is what makes the weekly
-  # cron/renew_certs.sh job work: cron has no TTY, so a `sudo tailscale cert`
+  # projects/certs-backup/renew_certs.sh job work: cron has no TTY, so a `sudo tailscale cert`
   # in there fails instantly and silently - which is exactly how renewal went
   # unnoticed for three months (see docs/incidents/2026-09-04-tls-cert-renewal-
   # silently-broken.md). Idempotent, so re-running this script is harmless.
@@ -157,9 +157,9 @@ if tailscale status &>/dev/null; then
   ts_operator=$(tailscale debug prefs 2>/dev/null |
     python3 -c "import json,sys; print(json.load(sys.stdin).get('OperatorUser') or '')" 2>/dev/null || true)
   if [ "$ts_operator" = "$USER" ]; then
-    echo "OK: tailscale operator is $USER - cron/renew_certs.sh can run unprivileged"
+    echo "OK: tailscale operator is $USER - projects/certs-backup/renew_certs.sh can run unprivileged"
   else
-    echo "WARNING: tailscale operator is '${ts_operator:-unset}', expected '$USER' - cron/renew_certs.sh will fail silently every week. Fix with: sudo tailscale set --operator=$USER"
+    echo "WARNING: tailscale operator is '${ts_operator:-unset}', expected '$USER' - projects/certs-backup/renew_certs.sh will fail silently every week. Fix with: sudo tailscale set --operator=$USER"
   fi
 
   # Unprivileged now that the operator is set - no sudo, and so no chown to

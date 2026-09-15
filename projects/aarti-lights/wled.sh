@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # Drive the aarti-lights WLED board from the command line.
 #
-# Written during Phase 1 of aarti_lights_setup.md, because bench-testing a
+# Written during Phase 1 of projects/aarti-lights/aarti_lights_setup.md, because bench-testing a
 # strip while holding wires in both hands is a bad time to be clicking a web
 # UI - and because these checks need repeating in Phase 3 (real length, real
 # supply) and Phase 6 (tuning in the room).
 #
-#   ./scripts/aarti-lights/wled.sh info                 # version, count, draw, fps
-#   ./scripts/aarti-lights/wled.sh count 30             # set LED count
-#   ./scripts/aarti-lights/wled.sh pin 4                # set the data GPIO
-#   ./scripts/aarti-lights/wled.sh cap 800              # set max current, mA
-#   ./scripts/aarti-lights/wled.sh solid red [bri]      # red|green|blue|white|off
-#   ./scripts/aarti-lights/wled.sh rainbow [bri]        # spatial rainbow
-#   ./scripts/aarti-lights/wled.sh bands [bri]          # 3 frequency bands, 3 colours
-#   ./scripts/aarti-lights/wled.sh groups               # 3 separated colour groups
-#   ./scripts/aarti-lights/wled.sh order grb|rgb        # colour order
+#   ./projects/aarti-lights/wled.sh info                 # version, count, draw, fps
+#   ./projects/aarti-lights/wled.sh count 30             # set LED count
+#   ./projects/aarti-lights/wled.sh pin 4                # set the data GPIO
+#   ./projects/aarti-lights/wled.sh cap 800              # set max current, mA
+#   ./projects/aarti-lights/wled.sh solid red [bri]      # red|green|blue|white|off
+#   ./projects/aarti-lights/wled.sh rainbow [bri]        # spatial rainbow
+#   ./projects/aarti-lights/wled.sh bands [bri]          # 3 frequency bands, 3 colours
+#   ./projects/aarti-lights/wled.sh groups               # 3 separated colour groups
+#   ./projects/aarti-lights/wled.sh order grb|rgb        # colour order
 #
 # WLED_HOST overrides the address (default below).
 #

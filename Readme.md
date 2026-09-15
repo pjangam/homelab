@@ -31,7 +31,7 @@ Both print what they found and how to bypass a confirmed false positive: `git co
 
 ## Home Assistant config
 
-`HOMEASSISTANT_CONFIG/` is gitignored, not part of this repo. It's covered end-to-end by Home Assistant's own automatic backup, synced to Dropbox by `cron/backup_homeassistant.sh` — tracking it in git would just duplicate that and drift out of sync (especially for `custom_components/`, which [HACS](https://hacs.xyz/) installs and updates at runtime: currently spotcast (Apache-2.0), ssh (MIT), tinxy (AGPL-3.0) — install these through HACS, not by copying files).
+`HOMEASSISTANT_CONFIG/` is gitignored, not part of this repo. It's covered end-to-end by Home Assistant's own automatic backup, synced to Dropbox by `projects/certs-backup/backup_homeassistant.sh` — tracking it in git would just duplicate that and drift out of sync (especially for `custom_components/`, which [HACS](https://hacs.xyz/) installs and updates at runtime: currently spotcast (Apache-2.0), ssh (MIT), tinxy (AGPL-3.0) — install these through HACS, not by copying files).
 
 ---
 
@@ -66,9 +66,9 @@ Node-RED publishes `homeassistant/climate/panasonic-ac/config` on every
 connect, so if the bridge is down it never gets republished.
 
 ```bash
-scripts/miraie-ac/fix_miraie_ac.sh           # no-op if the bridge is already healthy
-scripts/miraie-ac/fix_miraie_ac.sh --force   # restart anyway (republishes discovery)
-scripts/miraie-ac/diagnose_miraie_ac.sh      # read-only: what is actually broken
+projects/miraie-ac/fix_miraie_ac.sh           # no-op if the bridge is already healthy
+projects/miraie-ac/fix_miraie_ac.sh --force   # restart anyway (republishes discovery)
+projects/miraie-ac/diagnose_miraie_ac.sh      # read-only: what is actually broken
 ```
 
 The fix is one `docker restart node-red` on the Pi - nothing on xero needs
@@ -96,21 +96,21 @@ The container then sat `Up (healthy)` for 29 hours holding **zero** broker
 connections. Note the entrypoint's `until nslookup auth.miraie.in` guard did
 not help: it passed, and DNS failed again five seconds later at login.
 
-`scripts/miraie-ac/diagnose_miraie_ac.sh --capture` restarts Node-RED while sniffing
+`projects/miraie-ac/diagnose_miraie_ac.sh --capture` restarts Node-RED while sniffing
 MQTT, which is the only way to see this path's traffic - `ha-miraie-ac`
 publishes state and availability with `retain=false`, so subscribing while the
 AC sits idle shows nothing whether the bridge is healthy or dead.
 
 ### Is the AC actually usable? (healthcheck alert + dashboard tile)
 
-`scripts/miraie-ac/check_miraie_ac_available.sh` asks the only question that matters -
+`projects/miraie-ac/check_miraie_ac_available.sh` asks the only question that matters -
 what does HA hold for `climate.panasonic_ac_panasonic_ac`? - and
-`cron/healthcheck.sh` alerts by email + ntfy when the answer has been
+`projects/healthcheck/healthcheck.sh` alerts by email + ntfy when the answer has been
 `unavailable` for **30 minutes**, with a tile on the Stats dashboard
 (`binary_sensor.homelab_healthcheck_homelab_miraie_ac`) reflecting the latest
 observation immediately.
 
-That tile was added with `scripts/healthcheck/add_stats_dashboard_tile.py`, which edits the
+That tile was added with `projects/healthcheck/add_stats_dashboard_tile.py`, which edits the
 dashboard over HA's websocket API. Use it rather than hand-editing
 `.storage/lovelace.dashboard_stats`: storage-mode dashboards live in HA's
 memory, so a file edit does nothing until HA restarts - and restarting HA is
@@ -144,9 +144,9 @@ on that: HA being down is already covered by the container check.
 
 **Currently enabled** (re-enabled 2026-09-11 for AC season, expected to stay on through at least mid-November 2026). It had been disabled since 2026-08-23 for the off-season. Verified on re-enable by stopping `node-red` and running the script by hand: it logged `MQTT bridge down (cloud_connected=0 local_connected=0)`, restarted the container, and the bridge was back in ~5s.
 
-**A second, separate way the AC entity goes unavailable.** Later the same evening (2026-09-11 21:05) it happened again with a different cause: the unit was provably online - it answered a `mode/set` and published fresh state - while HA held the entity `unavailable` for 37 minutes. The node publishes the unit's `availability` with `retain=false`, and HA gates the entity on that topic (`avty_t` in the discovery payload). So once **HA** restarts it holds no availability value and keeps the entity unavailable no matter how much state arrives; it recovers only if HA happens to be subscribed when Node-RED republishes `online`, and since the config and availability go out back-to-back on a reconnect, that is a race HA can lose. Re-publishing `online` to `miraie-ac/panasonic-ac/availability` brings it straight back. `scripts/miraie-ac/fix_miraie_ac.sh` now checks the HA entity and does exactly that re-delivery (exit 3 if the entity still will not come back, which means the problem is HA-side).
+**A second, separate way the AC entity goes unavailable.** Later the same evening (2026-09-11 21:05) it happened again with a different cause: the unit was provably online - it answered a `mode/set` and published fresh state - while HA held the entity `unavailable` for 37 minutes. The node publishes the unit's `availability` with `retain=false`, and HA gates the entity on that topic (`avty_t` in the discovery payload). So once **HA** restarts it holds no availability value and keeps the entity unavailable no matter how much state arrives; it recovers only if HA happens to be subscribed when Node-RED republishes `online`, and since the config and availability go out back-to-back on a reconnect, that is a race HA can lose. Re-publishing `online` to `miraie-ac/panasonic-ac/availability` brings it straight back. `projects/miraie-ac/fix_miraie_ac.sh` now checks the HA entity and does exactly that re-delivery (exit 3 if the entity still will not come back, which means the problem is HA-side).
 
-**What it does not cover.** This watchdog only sees the *bridge*. On 2026-09-11 the AC entity went `unavailable` in HA while both broker connections stayed healthy the whole time - the indoor unit itself had gone silent to the MirAIe cloud, and three `docker restart node-red` in a row reported success and changed nothing. The watchdog correctly stays quiet in that case, because restarting cannot fix a unit that is switched off. That failure is what `scripts/miraie-ac/fix_miraie_ac.sh` diagnoses (exit 2 = the unit, not the bridge).
+**What it does not cover.** This watchdog only sees the *bridge*. On 2026-09-11 the AC entity went `unavailable` in HA while both broker connections stayed healthy the whole time - the indoor unit itself had gone silent to the MirAIe cloud, and three `docker restart node-red` in a row reported success and changed nothing. The watchdog correctly stays quiet in that case, because restarting cannot fix a unit that is switched off. That failure is what `projects/miraie-ac/fix_miraie_ac.sh` diagnoses (exit 2 = the unit, not the bridge).
 
 **Disable / re-enable** (no need to touch cron; edit on the Pi): the toggle lives in `WATCHDOG_ENABLED` inside `/home/pramod/nodered-watchdog.env`, next to the script itself - a plain env file rather than a hidden dotfile, so it's easier to stumble on again next summer.
 ```bash
@@ -204,15 +204,15 @@ Webhook URL: `http://<ha-ip>:8123/api/webhook/alfred_motion`
 How the HA white noise switch works, end to end:
 
 1. **HA MQTT switch** — `switch.white_noise` is created via MQTT discovery (no YAML entity config needed); toggling it publishes `ON`/`OFF` to `whitenoise/set` on the local Mosquitto broker (`localhost:1883`, container name `mosquitto`)
-2. **MQTT bridge** (`scripts/white-noise/white-noise-mqtt.py`) — a `uv run --script` (deps declared inline, no venv to manage) that subscribes to `whitenoise/set`, translates it into systemctl calls, and publishes retained state/availability back to `whitenoise/state` / `whitenoise/available` so HA reflects reality instantly instead of polling (`systemd/user/white-noise-mqtt.service`)
-3. **systemctl** — starts/stops the `white-noise` user service (`systemd/user/white-noise.service`), which runs `sox` (`play -n -q synth brownnoise fade t 60`, `sudo apt install sox`) directly. SoX's own `fade` effect ramps volume in over ~60s in software — no wrapper script needed. The unit's `ExecStartPre`/`ExecStop` pin the ALSA `Speaker` control (card 1, the USB speaker pinned as default in `~/.asoundrc`) to a fixed 59% ceiling and do a quick ~1.2s ALSA ramp-down before killing the process on stop, so it doesn't cut out abruptly. This is the point to tune if you want a different fade timing or volume range.
+2. **MQTT bridge** (`projects/white-noise/white-noise-mqtt.py`) — a `uv run --script` (deps declared inline, no venv to manage) that subscribes to `whitenoise/set`, translates it into systemctl calls, and publishes retained state/availability back to `whitenoise/state` / `whitenoise/available` so HA reflects reality instantly instead of polling (`projects/white-noise/white-noise-mqtt.service`)
+3. **systemctl** — starts/stops the `white-noise` user service (`projects/white-noise/white-noise.service`), which runs `sox` (`play -n -q synth brownnoise fade t 60`, `sudo apt install sox`) directly. SoX's own `fade` effect ramps volume in over ~60s in software — no wrapper script needed. The unit's `ExecStartPre`/`ExecStop` pin the ALSA `Speaker` control (card 1, the USB speaker pinned as default in `~/.asoundrc`) to a fixed 59% ceiling and do a quick ~1.2s ALSA ramp-down before killing the process on stop, so it doesn't cut out abruptly. This is the point to tune if you want a different fade timing or volume range.
 
 Both `white-noise.service` and `white-noise-mqtt.service` are `systemd --user` units, so `loginctl enable-linger pramod` must be set — otherwise they die whenever the login session they started under ends, and the HA switch silently stops responding (this bit us once: see git history).
 
 **Install / reinstall:**
 ```bash
-cp systemd/user/white-noise.service      ~/.config/systemd/user/
-cp systemd/user/white-noise-mqtt.service ~/.config/systemd/user/
+cp projects/white-noise/white-noise.service      ~/.config/systemd/user/
+cp projects/white-noise/white-noise-mqtt.service ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now white-noise-mqtt
 sudo loginctl enable-linger pramod
@@ -245,7 +245,7 @@ The last command should show one retained `whitenoise/available online` and one 
 
 **GPIO pinout reference:** `docs/gpio_pinout.md` — the Pi's full 40-pin header layout, marked up with what's already wired and which pins are free for the next button.
 
-**Reconnect-loop bug (2026-08-25, recurred 2026-08-31):** `toggle-button-mqtt.py`'s original manual MQTT reconnect loop was racy — checking `client.is_connected()` right after `loop_start()` could read `False` before the CONNACK was processed, tearing the connection down and reconnecting on a ~5s cycle indefinitely. Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire its HA automation every 5 seconds — overriding manual scene/dashboard control of white noise regardless of the physical switch's actual position. Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). `scene-buttons-mqtt.py` was written to avoid the whole bug class by design — no retained state to republish in the first place. The same buggy pattern was independently present in `scripts/white-noise/white-noise-mqtt.py` (it predates the 2026-08-25 fix and wasn't back-ported) and caused the same `whitenoise/available` flapping, making the HA white-noise switch flicker unavailable every ~5s. Fixed the same way on 2026-08-31, with the periodic `publish_state` poll moved to a background thread since `loop_forever()` blocks the main thread.
+**Reconnect-loop bug (2026-08-25, recurred 2026-08-31):** `toggle-button-mqtt.py`'s original manual MQTT reconnect loop was racy — checking `client.is_connected()` right after `loop_start()` could read `False` before the CONNACK was processed, tearing the connection down and reconnecting on a ~5s cycle indefinitely. Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire its HA automation every 5 seconds — overriding manual scene/dashboard control of white noise regardless of the physical switch's actual position. Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). `scene-buttons-mqtt.py` was written to avoid the whole bug class by design — no retained state to republish in the first place. The same buggy pattern was independently present in `projects/white-noise/white-noise-mqtt.py` (it predates the 2026-08-25 fix and wasn't back-ported) and caused the same `whitenoise/available` flapping, making the HA white-noise switch flicker unavailable every ~5s. Fixed the same way on 2026-08-31, with the periodic `publish_state` poll moved to a background thread since `loop_forever()` blocks the main thread.
 
 Both bridge scripts need MQTT credentials for the `homelab` Mosquitto user (`~/toggle-button-mqtt.env` on the Pi, shared between both services) and `WorkingDirectory=/home/pramod` + `Environment=GPIOZERO_PIN_FACTORY=lgpio` in their systemd units — see `toggle_button_setup.md` for why those two matter on this hardware/kernel combination.
 
@@ -269,7 +269,7 @@ rm ~/.tinxy-watchdog-disabled      # re-enable
 
 **Cron entry** (`crontab -e`):
 ```
-*/5 * * * * /home/pramod/code/homelab/cron/watchdog_tinxy.sh >> /home/pramod/code/homelab/tinxy-watchdog.log 2>&1
+*/5 * * * * /home/pramod/code/homelab/projects/tinxy-watchdog/watchdog_tinxy.sh >> /home/pramod/code/homelab/tinxy-watchdog.log 2>&1
 ```
 
 ---
@@ -300,7 +300,7 @@ Arming for the first time also requires a one-time sudoers setup (installed by `
 
 **Cron entry** (`crontab -e`):
 ```
-*/5 * * * * /home/pramod/code/homelab/cron/watchdog_power.sh >> /home/pramod/code/homelab/power-watchdog.log 2>&1
+*/5 * * * * /home/pramod/code/homelab/projects/power-watchdog/watchdog_power.sh >> /home/pramod/code/homelab/power-watchdog.log 2>&1
 ```
 
 ---
@@ -342,19 +342,19 @@ explicit grant.
 |---|---|---|---|
 | `pramod` | read-write | read-write | the phone app / web UI |
 | `clawlight` | **write-only**, token | *none* | `clawlight/server.py` |
-| `healthcheck` | *none* | **write-only**, token | `scripts/notify/push_ntfy.sh` |
+| `healthcheck` | *none* | **write-only**, token | `tools/notify/push_ntfy.sh` |
 
 The split is deliberate twice over: a leaked publish token cannot read
 notification history, and neither publisher can post to the other's topic. No
 rule is denial under `deny-all`, so there is nothing to revoke. Verify with:
 
 ```bash
-./scripts/notify/verify_ntfy_topics.sh   # proves both directions are refused
+./tools/notify/verify_ntfy_topics.sh   # proves both directions are refused
 ```
 Credentials live in gitignored `.env.ntfy` (mode 600), created by:
 
 ```bash
-./scripts/notify/setup_ntfy_users.sh   # idempotent, safe to re-run
+./tools/notify/setup_ntfy_users.sh   # idempotent, safe to re-run
 ```
 
 ### Phone setup
@@ -373,9 +373,9 @@ the tailnet the notification arrives generic.
 | source | notifies via |
 |---|---|
 | `clawlight/server.py` | ntfy (edge-triggered on `waiting`) |
-| `cron/healthcheck.sh` | email + ntfy — containers, units, ZFS, disk, backups, **cert expiry**, **MirAIe AC** |
-| `cron/watchdog_power.sh` | email + ntfy — carrier lost/restored |
-| `cron/renew_certs.sh` | ntfy on failure |
+| `projects/healthcheck/healthcheck.sh` | email + ntfy — containers, units, ZFS, disk, backups, **cert expiry**, **MirAIe AC** |
+| `projects/power-watchdog/watchdog_power.sh` | email + ntfy — carrier lost/restored |
+| `projects/certs-backup/renew_certs.sh` | ntfy on failure |
 | `watchtower` | ntfy (`homelab-updates`, low priority) + an HA notification |
 
 The tinxy and spotifyd watchdogs, and the backup scripts, do not alert directly
@@ -402,17 +402,17 @@ ID is the only thing that actually identifies what changed.
 
 ntfy is reached at `ntfy-server` on the compose network (not `ntfy` — that
 name resolves to the tailscale sidecar), so nothing extra is published on the
-host. The write-only token comes from `scripts/notify/setup_ntfy_users.sh`, which
+host. The write-only token comes from `tools/notify/setup_ntfy_users.sh`, which
 also mirrors it into `.env` because that is the only env file docker compose
 auto-loads.
 
 ### Adding another alert source
 
-Source the shared helper (companion to `scripts/notify/send_email.sh`):
+Source the shared helper (companion to `tools/notify/send_email.sh`):
 
 ```bash
 [ -f "$SCRIPT_DIR/.env.ntfy" ] && { set -a; . "$SCRIPT_DIR/.env.ntfy"; set +a; }
-source "$SCRIPT_DIR/scripts/notify/push_ntfy.sh"
+source "$SCRIPT_DIR/tools/notify/push_ntfy.sh"
 
 push_ntfy "title" "body" [priority] [tags]    # priority defaults 4, tags "warning"
 ```
@@ -566,7 +566,7 @@ do-release-upgrade -c
 
 Timers `apt-daily.timer` / `apt-daily-upgrade.timer` (installed by the `unattended-upgrades` package) drive this daily — `systemctl list-timers apt-daily*` to check next run.
 
-**One-off manual full-upgrade + backup** (`cron/backup_and_apt_update.sh`) — separate from the above, for catching up a large backlog rather than day-to-day patching. Backs up `/etc`, package selections, crontabs, systemd unit state, Docker state, and the `/dev/sdb` partition table to `/datapool/system-backups/pre-update-<timestamp>.tar.gz`, then runs `apt full-upgrade` + `autoremove`. Must run as root (invoke directly, not via `sudo`, in a cron/systemd-run context — see script header for why). Written and tested standalone for the initial 53-package backlog (2026-09-01), but a one-shot `systemd-run --on-calendar` job scheduled to run it never actually fired (no journal entry, no backup produced) - that backlog ended up clearing on its own via `unattended-upgrades` instead once the `-updates` origin was enabled below. Script is real and untested-in-anger since; next large backlog is the actual first live run.
+**One-off manual full-upgrade + backup** (`projects/certs-backup/backup_and_apt_update.sh`) — separate from the above, for catching up a large backlog rather than day-to-day patching. Backs up `/etc`, package selections, crontabs, systemd unit state, Docker state, and the `/dev/sdb` partition table to `/datapool/system-backups/pre-update-<timestamp>.tar.gz`, then runs `apt full-upgrade` + `autoremove`. Must run as root (invoke directly, not via `sudo`, in a cron/systemd-run context — see script header for why). Written and tested standalone for the initial 53-package backlog (2026-09-01), but a one-shot `systemd-run --on-calendar` job scheduled to run it never actually fired (no journal entry, no backup produced) - that backlog ended up clearing on its own via `unattended-upgrades` instead once the `-updates` origin was enabled below. Script is real and untested-in-anger since; next large backlog is the actual first live run.
 
 ---
 
@@ -620,11 +620,11 @@ The TTY uses a Terminus powerline PSF font so that oh-my-zsh agnoster theme rend
 ## TLS certificates (Caddy-served names)
 
 `xero.<tailnet>` is served by Caddy from static files in `certs/`, renewed by
-`cron/renew_certs.sh` (Sundays 05:00). Caddy runs with `auto_https off`, so
+`projects/certs-backup/renew_certs.sh` (Sundays 05:00). Caddy runs with `auto_https off`, so
 nothing renews these on its own - the script is the only thing that does.
 
 ```bash
-./cron/renew_certs.sh          # safe to run any time; a no-op unless <30d left
+./projects/certs-backup/renew_certs.sh          # safe to run any time; a no-op unless <30d left
 cat cert-renew.log             # every run is logged
 ```
 
@@ -647,7 +647,7 @@ Two things that will bite you if you edit it:
 `renew_certs.sh` alerts when it *fails*, but it cannot alert if it never runs at
 all - a removed crontab line, a deleted script, or a machine that was off every
 Sunday are all indistinguishable from silence, and that is exactly the failure
-that went unnoticed for three months. So `cron/check_certs.sh` checks expiry
+that went unnoticed for three months. So `projects/certs-backup/check_certs.sh` checks expiry
 independently, called from `healthcheck.sh` every 15 minutes, sharing no
 machinery with the thing it is checking.
 
@@ -657,8 +657,8 @@ Sunday run - below 21d means renewal has missed at least one scheduled run plus
 slack. Problems go to email *and* an ntfy push.
 
 ```bash
-./cron/check_certs.sh                  # silent when healthy; exits 1 if not
-./scripts/certs-backup/test_cert_expiry_check.sh    # 8 cases against synthetic certs
+./projects/certs-backup/check_certs.sh                  # silent when healthy; exits 1 if not
+./projects/certs-backup/test_cert_expiry_check.sh    # 8 cases against synthetic certs
 ```
 
 The test drives the real script against generated certs (89d/30d/22d silent,

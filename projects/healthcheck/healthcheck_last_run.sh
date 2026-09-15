@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Print when cron/healthcheck.sh last completed, from the retained MQTT state
-# that scripts/healthcheck/publish_healthcheck_mqtt.py publishes at the end of every run.
+# Print when projects/healthcheck/healthcheck.sh last completed, from the retained MQTT state
+# that projects/healthcheck/publish_healthcheck_mqtt.py publishes at the end of every run.
 #
 # healthcheck.log has no timestamps and a healthy run writes nothing to it, so
 # the log cannot tell a run that succeeded from one that never happened. The

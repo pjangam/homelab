@@ -8,8 +8,8 @@
 # from cron or a service gets moved blind, and meant to be re-run after a move:
 # any reference still pointing at the old path shows up here.
 #
-#   ./scripts/repo-tools/find_script_references.sh            # table for every script
-#   ./scripts/repo-tools/find_script_references.sh wled.sh    # one script, full detail
+#   ./tools/repo-tools/find_script_references.sh            # table for every script
+#   ./tools/repo-tools/find_script_references.sh wled.sh    # one script, full detail
 #
 # Known blind spots, printed at the end rather than silently skipped: root's
 # crontab (needs sudo), and whatever runs on the Pi or the Mac. Those machines
@@ -51,9 +51,9 @@ scan_one() {
   local name="$1" stem="${1%.*}"
   local repo_hits ext_hits ha
   # Python modules are imported by stem, not by filename.
-  repo_hits="$(git grep -l -F -e "$name" -- ':!scripts/repo-tools/find_script_references.sh' 2>/dev/null
+  repo_hits="$(git grep -l -F -e "$name" -- ':!tools/repo-tools/find_script_references.sh' 2>/dev/null
                [ "${name##*.}" = py ] && git grep -l -E "import ${stem}\b|from ${stem} import" 2>/dev/null)"
-  repo_hits="$(printf '%s\n' "$repo_hits" | grep -v -E "^scripts/([^/]+/)?${name//./\\.}$" | sort -u | grep -v '^$')"
+  repo_hits="$(printf '%s\n' "$repo_hits" | grep -v -E "^(scripts|projects|tools)/([^/]+/)?${name//./\\.}$" | sort -u | grep -v '^$')"
   ext_hits="$(printf '%s\n' "$ext" | awk -F'\t' -v n="$name" 'index($0,n){print $1}' | sort -u)"
   ha="$(ha_hits "$name")"
   printf '%s\n%s\n%s\n' "$repo_hits" "$ext_hits" "$ha" | grep -v '^$'
@@ -64,18 +64,23 @@ if [ $# -gt 0 ]; then
   exit 0
 fi
 
-# scripts/<project>/ since 2026-09-15; top level too, for anything not yet sorted.
-for f in scripts/* scripts/*/*; do
+# Repo files the crontab runs directly. A hit from one of those, or from a
+# systemd unit file in the repo, is live one hop removed - so it counts as live.
+# (Before 2026-09-15 this was simply "the hit is under cron/ or systemd/"; both
+# directories have since been folded into projects/<name>/.)
+cron_called="$(crontab -l 2>/dev/null | grep -oE "$repo/[^ ]+" | sed "s#^$repo/##" | sort -u)"
+
+# projects/<name>/, tools/<name>/, and what is still left in scripts/<name>/.
+# projects-ui is an app, not scripts - its files are not called by path.
+for f in scripts/*/* projects/*/* tools/*/*; do
   [ -f "$f" ] || continue
-  case "$f" in */__pycache__/*) continue ;; esac
+  case "$f" in */__pycache__/*|projects/projects-ui/*|*/README.md) continue ;; esac
   n="$(basename "$f")"
   hits="$(scan_one "$n")"
-  # A hit from cron/ or systemd/ in the repo is live one hop removed: crontab
-  # calls cron/*.sh, and those call scripts/ - so they count as live too.
-  live_re='^(crontab|cron:|unit:|home:|processes|HA:|cron/|systemd/)'
-  live="$(printf '%s\n' "$hits" | grep -E "$live_re" | tr '\n' ' ')"
-  docs="$(printf '%s\n' "$hits" | grep -v -E "$live_re" | tr '\n' ' ')"
-  printf '%s\n  LIVE: %s\n  REPO: %s\n' "${f#scripts/}" "${live:--}" "${docs:--}"
+  live_re='^(crontab|cron:|unit:|home:|processes|HA:)|\.service$'
+  live="$( { printf '%s\n' "$hits" | grep -E "$live_re"; printf '%s\n' "$hits" | grep -F -x -f <(printf '%s\n' "$cron_called"); } | sort -u | tr '\n' ' ')"
+  docs="$(printf '%s\n' "$hits" | grep -v -E "$live_re" | grep -v -F -x -f <(printf '%s\n' "$cron_called") | tr '\n' ' ')"
+  printf '%s\n  LIVE: %s\n  REPO: %s\n' "$f" "${live:--}" "${docs:--}"
 done
 
 echo

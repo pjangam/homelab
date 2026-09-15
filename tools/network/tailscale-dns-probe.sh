@@ -6,7 +6,7 @@
 # tailscale0 interface for port 53, so we can tell a client-side problem
 # (no packets arrive) from a server-side one (queries arrive, no replies).
 #
-# Usage: scripts/network/tailscale-dns-probe.sh [seconds]   (default 60)
+# Usage: tools/network/tailscale-dns-probe.sh [seconds]   (default 60)
 
 set -euo pipefail
 DURATION="${1:-60}"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Flash WLED with the AudioReactive usermod onto an ESP32, for the aarti
-# lights build (see aarti_lights_setup.md, Phase 0).
+# lights build (see projects/aarti-lights/aarti_lights_setup.md, Phase 0).
 #
 # Works on both Linux (xero) and macOS (the MacBook), because the board can
 # plausibly be plugged into either.
@@ -8,9 +8,9 @@
 # Default is a READ-ONLY verify: it finds the port, reads the chip back and
 # tells you whether it is a flashable ESP32. Pass --flash to actually write.
 #
-#   ./scripts/esp32-tools/flash-wled-audioreactive.sh            # verify only
-#   ./scripts/esp32-tools/flash-wled-audioreactive.sh --flash     # erase + write
-#   ./scripts/esp32-tools/flash-wled-audioreactive.sh --port /dev/ttyUSB0 --flash
+#   ./tools/esp32-tools/flash-wled-audioreactive.sh            # verify only
+#   ./tools/esp32-tools/flash-wled-audioreactive.sh --flash     # erase + write
+#   ./tools/esp32-tools/flash-wled-audioreactive.sh --port /dev/ttyUSB0 --flash
 #
 # WHY 0.14.4 AND NOT THE LATEST: WLED stopped shipping a prebuilt
 # `_ESP32_audioreactive.bin` after 0.14.4 - checked against the GitHub release

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Listen to WLED's AudioReactive UDP sound-sync broadcast and print levels.
 
-Phase 2 of aarti_lights_setup.md needs a numeric answer to "does the mic
+Phase 2 of projects/aarti-lights/aarti_lights_setup.md needs a numeric answer to "does the mic
 work", and WLED 0.14.4 does not expose the audio level over /json/info - the
 web UI reads it over a websocket. But the AudioReactive usermod can transmit
 its analysis as a UDP broadcast (Sync -> send, default port 11988), which is
@@ -12,7 +12,7 @@ Enable transmit first:
   curl -X POST http://<board>/json/cfg -H 'Content-Type: application/json' \
     -d '{"um":{"AudioReactive":{"sync":{"mode":1,"port":11988}}}}'
 
-    ./scripts/aarti-lights/wled-audio-monitor.py [--seconds 20] [--port 11988]
+    ./projects/aarti-lights/wled-audio-monitor.py [--seconds 20] [--port 11988]
 """
 import argparse
 import socket

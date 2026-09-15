@@ -29,15 +29,15 @@
 # Run via cron every 5 minutes.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 set -a
 source "$SCRIPT_DIR/.env.healthcheck"
 # Optional: push alerts to self-hosted ntfy as well as email. Guarded because
 # this file only exists on xero, where ntfy runs.
 [ -f "$SCRIPT_DIR/.env.ntfy" ] && source "$SCRIPT_DIR/.env.ntfy"
 set +a
-source "$SCRIPT_DIR/scripts/notify/send_email.sh"
-source "$SCRIPT_DIR/scripts/notify/push_ntfy.sh"
+source "$SCRIPT_DIR/tools/notify/send_email.sh"
+source "$SCRIPT_DIR/tools/notify/push_ntfy.sh"
 
 DISABLE_FLAG="$HOME/.power-watchdog-disabled"
 ARM_FLAG="$HOME/.power-watchdog-armed"

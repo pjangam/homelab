@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests the spotifyd-advertising escalation in cron/healthcheck.sh: one miss
+# Tests the spotifyd-advertising escalation in projects/healthcheck/healthcheck.sh: one miss
 # stays quiet, two consecutive misses alert, and recovery clears the state.
 #
 # Runs the REAL healthcheck.sh, not a copy of its logic, inside a mirror repo
@@ -15,40 +15,41 @@ T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 fails=0
 
-mkdir -p "$T/repo/cron" "$T/repo/scripts" "$T/home/.cache"
-for f in "$REPO"/cron/*; do ln -sf "$f" "$T/repo/cron/$(basename "$f")"; done
-# Mirror scripts/ as REAL directories holding per-file symlinks. Linking each
-# top-level entry used to be enough when scripts/ was flat, but since it split
-# into scripts/<project>/ a top-level entry is a directory: a symlinked
-# directory would make the `rm -f` + stub writes below go straight through to
-# the real repo, deleting and replacing the live cron-called script.
-(cd "$REPO/scripts" && find . -type d -not -name __pycache__) | while read -r d; do mkdir -p "$T/repo/scripts/$d"; done
-(cd "$REPO/scripts" && find . -type f -not -path '*/__pycache__/*') | while read -r f; do ln -sf "$REPO/scripts/$f" "$T/repo/scripts/$f"; done
+mkdir -p "$T/home/.cache"
+# Mirror projects/ and tools/ as REAL directories holding per-file symlinks.
+# A symlinked directory would make the `rm -f` + stub writes below go straight
+# through to the real repo, deleting and replacing the live cron-called
+# script. node_modules is skipped - projects-ui's alone is thousands of files
+# and nothing here runs it.
+for top in projects tools; do
+  (cd "$REPO" && find "$top" -name node_modules -prune -o -name __pycache__ -prune -o -type d -print) | while read -r d; do mkdir -p "$T/repo/$d"; done
+  (cd "$REPO" && find "$top" -name node_modules -prune -o -name __pycache__ -prune -o -type f -print) | while read -r f; do ln -sf "$REPO/$f" "$T/repo/$f"; done
+done
 for f in "$REPO"/.env*; do [ -f "$f" ] && ln -sf "$f" "$T/repo/$(basename "$f")"; done
 
 # Overrides (rm the symlink first so we don't write through to the real file).
 ADVERT_RC_FILE="$T/advert_rc"
-rm -f "$T/repo/scripts/spotifyd/check_spotifyd_advertising.sh"
-cat > "$T/repo/scripts/spotifyd/check_spotifyd_advertising.sh" <<'S'
+rm -f "$T/repo/projects/spotifyd/check_spotifyd_advertising.sh"
+cat > "$T/repo/projects/spotifyd/check_spotifyd_advertising.sh" <<'S'
 #!/usr/bin/env bash
 exit "$(cat "$ADVERT_RC_FILE")"
 S
-chmod +x "$T/repo/scripts/spotifyd/check_spotifyd_advertising.sh"
+chmod +x "$T/repo/projects/spotifyd/check_spotifyd_advertising.sh"
 
-rm -f "$T/repo/scripts/notify/send_email.sh"
-cat > "$T/repo/scripts/notify/send_email.sh" <<'S'
+rm -f "$T/repo/tools/notify/send_email.sh"
+cat > "$T/repo/tools/notify/send_email.sh" <<'S'
 send_email() { printf 'EMAIL|%s|%s\n' "$1" "$(printf '%s' "$2" | tr '\n' ' ')" >> "$ALERT_LOG"; }
 S
-rm -f "$T/repo/scripts/notify/push_ntfy.sh"
-cat > "$T/repo/scripts/notify/push_ntfy.sh" <<'S'
+rm -f "$T/repo/tools/notify/push_ntfy.sh"
+cat > "$T/repo/tools/notify/push_ntfy.sh" <<'S'
 push_ntfy() { printf 'NTFY|%s|%s\n' "$1" "$(printf '%s' "$2" | tr '\n' ' ')" >> "$ALERT_LOG"; }
 S
-rm -f "$T/repo/scripts/healthcheck/publish_healthcheck_mqtt.py"
-cat > "$T/repo/scripts/healthcheck/publish_healthcheck_mqtt.py" <<'S'
+rm -f "$T/repo/projects/healthcheck/publish_healthcheck_mqtt.py"
+cat > "$T/repo/projects/healthcheck/publish_healthcheck_mqtt.py" <<'S'
 #!/usr/bin/env bash
 cat > "$MQTT_LOG"
 S
-chmod +x "$T/repo/scripts/healthcheck/publish_healthcheck_mqtt.py"
+chmod +x "$T/repo/projects/healthcheck/publish_healthcheck_mqtt.py"
 
 export ADVERT_RC_FILE
 export ALERT_LOG="$T/alerts.log"
@@ -56,7 +57,7 @@ export MQTT_LOG="$T/mqtt.json"
 : > "$ALERT_LOG"
 
 run() { HOME="$T/home" ADVERT_RC_FILE="$ADVERT_RC_FILE" ALERT_LOG="$ALERT_LOG" \
-        MQTT_LOG="$MQTT_LOG" bash "$T/repo/cron/healthcheck.sh" >/dev/null 2>&1; }
+        MQTT_LOG="$MQTT_LOG" bash "$T/repo/projects/healthcheck/healthcheck.sh" >/dev/null 2>&1; }
 
 # Count only advertising alerts, and only those raised since the last reset.
 # The sandbox's fresh HOME makes unrelated checks (e.g. backup freshness)

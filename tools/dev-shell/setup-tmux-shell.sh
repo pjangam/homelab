@@ -2,16 +2,16 @@
 # Install the tmux/Claude Code shell setup onto this machine. RUN IT ON A MAC
 # (or any box you want the same shell on).
 #
-#   scripts/dev-shell/setup-tmux-shell.sh --dry-run
-#   scripts/dev-shell/setup-tmux-shell.sh
+#   tools/dev-shell/setup-tmux-shell.sh --dry-run
+#   tools/dev-shell/setup-tmux-shell.sh
 #
 # On a Mac that has no clone of this repo, make a standalone copy with the
 # dotfiles baked into it and carry that one file over instead:
 #
-#   scripts/dev-shell/setup-tmux-shell.sh --bundle /tmp/install-tmux-shell.sh
+#   tools/dev-shell/setup-tmux-shell.sh --bundle /tmp/install-tmux-shell.sh
 #   scp /tmp/install-tmux-shell.sh othermac:  &&  ssh othermac ./install-tmux-shell.sh
 #
-# What it installs, all from dotfiles/ in this repo:
+# What it installs, all from tools/dev-shell/dotfiles/ in this repo:
 #
 #   1. ~/.zsh/functions/tmux-session-picker.zsh - on a new iTerm tab outside
 #      tmux, lists running sessions and waits for a choice (number to attach,
@@ -35,7 +35,7 @@ set -euo pipefail
 
 SELF="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/$(basename -- "${BASH_SOURCE[0]}")"
 REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-SRC="$REPO/dotfiles"
+SRC="$REPO/tools/dev-shell/dotfiles"
 ZSHRC="${ZSHRC:-$HOME/.zshrc}"
 TMUX_CONF="${TMUX_CONF:-$HOME/.tmux.conf}"
 FUNC_DIR="${FUNC_DIR:-$HOME/.zsh/functions}"
@@ -58,12 +58,12 @@ case "${1:-}" in
   *) printf 'error: unknown argument: %s (try --help)\n' "$1" >&2; exit 2 ;;
 esac
 
-# The three files this installs normally live in dotfiles/ next to the script.
+# The three files this installs normally live in tools/dev-shell/dotfiles/ next to the script.
 # A bundle (--bundle) has them appended to itself instead, one payload section
 # per file, so a single copied file is enough.
 DOTFILES="zsh/tmux-session-picker.zsh zsh/claude-tmux.zsh tmux/tmux.conf"
 bundled() { grep -q '^#__PAYLOAD__$' "$SELF"; }
-dotfile() {  # $1 = path under dotfiles/
+dotfile() {  # $1 = path under tools/dev-shell/dotfiles/
   if [ -f "$SRC/$1" ]; then
     cat "$SRC/$1"
   else
@@ -139,7 +139,7 @@ strip_foreign() {
 # Print stdin with the pre-script, hand-edited version of this setup removed:
 # the two picker comment lines and its source line, the _tmux_or_ask banner
 # through the end of claude-local(), and the mouse-clicks export. Everything
-# here is now shipped from dotfiles/ instead.
+# here is now shipped from tools/dev-shell/dotfiles/ instead.
 strip_legacy() {
   awk '
     function flush(  i) { for (i = 1; i <= n; i++) print buf[i]; if (n) dropped = 0; n = 0 }
@@ -182,7 +182,7 @@ legacy_is_removable() {
 
 if [ -n "$bundle_to" ]; then
   bundled && die "this is already a bundle - make one from the copy in the repo"
-  [ -d "$SRC" ] || die "dotfiles/ not found next to this script (looked in $REPO)"
+  [ -d "$SRC" ] || die "tools/dev-shell/dotfiles/ not found next to this script (looked in $REPO)"
   {
     cat "$SELF"
     printf '#__PAYLOAD__\n'
@@ -194,7 +194,7 @@ if [ -n "$bundle_to" ]; then
 fi
 
 if [ ! -d "$SRC" ] && ! bundled; then
-  die "no dotfiles/ next to this script and no bundled payload in it (looked in $REPO)"
+  die "no tools/dev-shell/dotfiles/ next to this script and no bundled payload in it (looked in $REPO)"
 fi
 command -v tmux >/dev/null 2>&1 || warn "tmux is not installed - install it (brew install tmux) or none of this fires"
 [ "${SHELL##*/}" = zsh ] || warn "your login shell is ${SHELL##*/}, not zsh - this only takes effect under zsh"
@@ -243,7 +243,7 @@ fi
 zshrc_new="$PICKER_BEGIN
 # Offer a tmux session menu when an interactive iTerm shell starts outside tmux.
 # Must stay ABOVE the p10k instant-prompt block -- it reads from the console.
-# Managed by scripts/dev-shell/setup-tmux-shell.sh in the homelab repo; edits here are lost.
+# Managed by tools/dev-shell/setup-tmux-shell.sh in the homelab repo; edits here are lost.
 [[ -r ~/.zsh/functions/tmux-session-picker.zsh ]] && source ~/.zsh/functions/tmux-session-picker.zsh
 $PICKER_END
 
@@ -251,7 +251,7 @@ $body
 
 $CLAUDE_BEGIN
 # \`claude\` / \`claude-local\` wrappers that ask before running outside tmux.
-# Managed by scripts/dev-shell/setup-tmux-shell.sh in the homelab repo; edits here are lost.
+# Managed by tools/dev-shell/setup-tmux-shell.sh in the homelab repo; edits here are lost.
 [[ -r ~/.zsh/functions/claude-tmux.zsh ]] && source ~/.zsh/functions/claude-tmux.zsh
 $CLAUDE_END
 "

@@ -169,7 +169,7 @@ services:
       - ha-tailscale-state:/var/lib/tailscale
       # Proxies to HA over the LAN (192.168.1.123:8123) rather than by container
       # name, because HA runs with network_mode: host and so isn't on this
-      # compose network. Rendered by scripts/network/render_ts_serve_config.sh.
+      # compose network. Rendered by tools/network/render_ts_serve_config.sh.
       - ./services/tailscale/ha:/config
 
   mosquitto:

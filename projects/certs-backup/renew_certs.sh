@@ -17,7 +17,7 @@
 # cached cert - so this is safe to run often. Run WEEKLY, not monthly: a
 # monthly job that fails has no second chance before a 90-day cert lapses.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 CERT_DIR="certs"
 LOG="cert-renew.log"
@@ -45,7 +45,7 @@ log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG"; }
 # publishing to the agent-status topic after the 2026-09-11 topic split - a
 # duplicate of push_ntfy.sh is a duplicate that doesn't get updated.
 # shellcheck disable=SC1091
-. "$(dirname "$0")/../scripts/notify/push_ntfy.sh"
+. "$(dirname "$0")/../../tools/notify/push_ntfy.sh"
 
 alert() {
   log "ALERT: $*"

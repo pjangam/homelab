@@ -5,7 +5,7 @@ One module so the thresholds live in exactly one place: `aarti-classify.py`
 mic moves, the bell changes or the room does, re-record with
 `aarti-sound-lab.py` and change the numbers here only.
 
-Measured 2026-09-14 from labelled recordings (see data/aarti-sound/README.md):
+Measured 2026-09-14 from labelled recordings (see projects/aarti-lights/aarti-sound/README.md):
 
     class    centroid p10/med/p90   flatness med   energy med
     voice    1.94 /  2.32 /  2.64      0.959           712

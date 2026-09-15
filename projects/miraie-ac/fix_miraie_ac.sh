@@ -49,8 +49,8 @@
 # Safe to run any time: if the bridge is already healthy it changes nothing
 # and exits 0. Use --force to restart anyway.
 #
-#   scripts/miraie-ac/fix_miraie_ac.sh
-#   scripts/miraie-ac/fix_miraie_ac.sh --force
+#   projects/miraie-ac/fix_miraie_ac.sh
+#   projects/miraie-ac/fix_miraie_ac.sh --force
 #
 # Exit codes:
 #   0  healthy - bridge connected and the unit reports online
@@ -60,7 +60,7 @@
 #   3  bridge and unit are both fine but HA still will not show the entity -
 #      an HA-side problem; restart the MQTT integration
 #
-# See scripts/miraie-ac/diagnose_miraie_ac.sh for a read-only look at the same path.
+# See projects/miraie-ac/diagnose_miraie_ac.sh for a read-only look at the same path.
 set -u
 
 PI_HOST="${PI_HOST:-pramod@192.168.1.124}"
@@ -209,7 +209,7 @@ if [ "$dns_ok" -ne 1 ]; then
   echo "FAIL: DNS for miraie.in is still broken after $((DNS_ATTEMPTS * 5))s - NOT restarting."
   echo "Restarting now would just recreate the original failure (the node does not"
   echo "retry a failed login). Fix DNS on the Pi first, then re-run this script."
-  echo "Start with: scripts/network/diagnose_dns_paths.sh, and check Pi-hole is up on xero."
+  echo "Start with: tools/network/diagnose_dns_paths.sh, and check Pi-hole is up on xero."
   exit 1
 fi
 echo "  DNS ok."
