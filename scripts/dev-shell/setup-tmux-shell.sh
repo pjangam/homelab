@@ -98,7 +98,7 @@ write_file() {
   # Check before writing, not after: a rollback needs a backup to roll back
   # to, and the file being written may be one we just created.
   if [ "$check" = zsh ] && command -v zsh >/dev/null 2>&1; then
-    local tmp; tmp="$(mktemp -t setup-tmux-shell)"
+    local tmp; tmp="$(mktemp "${TMPDIR:-/tmp}/setup-tmux-shell.XXXXXX")"
     printf '%s' "$content" > "$tmp"
     if ! zsh -n "$tmp" 2>&1; then
       rm -f "$tmp"
