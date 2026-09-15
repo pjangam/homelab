@@ -192,10 +192,11 @@ fi
 #
 # Then fix_miraie_ac.sh --force runs, ONCE per outage, before anyone is
 # alerted. Until 2026-09-15 this only alerted and a human ran that same
-# script: that day the watchdog on the Pi restarted node-red at 15:40, HA
-# missed the retain=false availability on the reconnect, and the entity sat
-# unavailable for 75m with the unit online the whole time - which the fix
-# script cures in a minute by re-delivering the `online` it sees. Only once,
+# script: that day HA restarted at 16:15, node-red's broker connection never
+# dropped so it republished nothing, and the entity sat unavailable until
+# 17:52 with the unit online the whole time - which the fix script cures in a
+# minute (a node-red restart republishes discovery, then it re-delivers the
+# `online` it sees). Only once,
 # because its other verdicts are not restart-shaped: exit 2 is an indoor unit
 # that is off the MirAIe cloud, and exit 3 is HA-side. Retrying those every
 # 15 minutes would just knock the bridge over for nothing.
