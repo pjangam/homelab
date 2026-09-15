@@ -36,8 +36,8 @@ async function renderApp() {
 }
 
 async function addToList(user, projectTitle) {
-  const card = screen.getByText(projectTitle).closest('details')
-  await user.click(within(card).getByLabelText(/add to shopping list/i))
+  await user.click(screen.getByRole('button', { name: new RegExp(projectTitle) }))
+  await user.click(within(screen.getByRole('main')).getByLabelText(/add to shopping list/i))
 }
 
 describe('shopping list', () => {
@@ -56,8 +56,9 @@ describe('shopping list', () => {
 
   it('offers the checkbox only for projects that have parts', async () => {
     await renderApp()
-    const bare = screen.getByText('Project with no parts').closest('details')
-    expect(within(bare).queryByLabelText(/add to shopping list/i)).not.toBeInTheDocument()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Project with no parts' }))
+    expect(within(screen.getByRole('main')).queryByLabelText(/add to shopping list/i)).not.toBeInTheDocument()
   })
 
   it('merges a shared item across two projects into one line', async () => {
@@ -70,7 +71,7 @@ describe('shopping list', () => {
     expect(within(list).getAllByText('Dupont jumpers')).toHaveLength(1)
     expect(within(list).getByText('shared')).toBeInTheDocument()
     // 150 + 150 for the jumpers, 150-300 mic, 5 resistors.
-    expect(within(list).getByText(/₹455-605/)).toBeInTheDocument()
+    expect(within(list).getByText('Estimated total:').querySelector('strong')).toHaveTextContent('₹455-605')
   })
 
   it('keeps a ticked item visible rather than removing it', async () => {
@@ -81,6 +82,33 @@ describe('shopping list', () => {
     const list = screen.getByRole('complementary', { name: /shopping list/i })
     await user.click(within(list).getByRole('checkbox', { name: /220R resistor/i }))
     expect(within(list).getByText('220R resistor')).toBeInTheDocument()
+  })
+
+  it('collapses to a summary line that still shows the count and total', async () => {
+    await renderApp()
+    const user = userEvent.setup()
+    await addToList(user, 'Clawlight LED')
+
+    const list = screen.getByRole('complementary', { name: /shopping list/i })
+    const details = list.querySelector('details')
+    expect(details).toHaveAttribute('open')
+
+    await user.click(within(list).getByRole('heading', { name: /shopping list/i }))
+    expect(details).not.toHaveAttribute('open')
+    expect(within(list).getByText(/2 items · ₹155/)).toBeInTheDocument()
+  })
+
+  it('remembers a collapsed list across a reload', async () => {
+    await renderApp()
+    const user = userEvent.setup()
+    await addToList(user, 'Clawlight LED')
+    await user.click(screen.getByRole('heading', { name: /shopping list/i }))
+
+    vi.unstubAllGlobals()
+    cleanup()
+    await renderApp()
+    const list = await screen.findByRole('complementary', { name: /shopping list/i })
+    expect(list.querySelector('details')).not.toHaveAttribute('open')
   })
 
   it('survives a reload, since the list is used away from the machine', async () => {

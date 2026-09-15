@@ -3,19 +3,15 @@ import { formatRange, parseCost } from '../lib/parts'
 // bodyHtml comes from parseProjects(), which only ever runs on this repo's
 // own PROJECTS.md - trusted content, not user input, so rendering it
 // directly is fine.
-export function ProjectCard({ project, isOpen, onToggle, inList, onToggleInList }) {
+export function ProjectDetail({ project, section, inList, onToggleInList }) {
   const hasParts = project.parts?.length > 0
 
   return (
-    <details
-      className="project-card"
-      open={isOpen}
-      onToggle={(e) => onToggle(project.id, e.target.open)}
-    >
-      <summary>
-        {project.title}
-        {hasParts && <span className="parts-badge">{project.parts.length} parts</span>}
-      </summary>
+    <article className="project-detail" data-status={section.id}>
+      <p className="detail-status">
+        <span aria-hidden="true">{section.emoji}</span> {section.label}
+      </p>
+      <h2>{project.title}</h2>
       <div
         className="project-body"
         dangerouslySetInnerHTML={{ __html: project.bodyHtml }}
@@ -24,7 +20,7 @@ export function ProjectCard({ project, isOpen, onToggle, inList, onToggleInList 
       {hasParts && (
         <div className="parts">
           <div className="parts-header">
-            <h4>Parts</h4>
+            <h3>Parts</h3>
             <label className="parts-add">
               <input
                 type="checkbox"
@@ -53,6 +49,6 @@ export function ProjectCard({ project, isOpen, onToggle, inList, onToggleInList 
           </table>
         </div>
       )}
-    </details>
+    </article>
   )
 }

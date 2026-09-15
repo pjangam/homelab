@@ -61,16 +61,58 @@ describe('App', () => {
     expect(screen.getByText('Robot vacuum firmware')).toBeInTheDocument()
   })
 
-  it('expand all opens every project body, collapse all closes them', async () => {
+  it('lists titles only, with no project body until one is picked', async () => {
+    await renderApp()
+    expect(screen.queryByText(/flaky sensor/)).not.toBeInTheDocument()
+    expect(screen.getByText(/pick a project/i)).toBeInTheDocument()
+  })
+
+  it('shows the picked project in the detail pane and marks it in the list', async () => {
     await renderApp()
     const user = userEvent.setup()
 
-    await user.click(screen.getByRole('button', { name: /expand all/i }))
-    const activeSection = screen.getByText('Robot vacuum firmware').closest('details')
-    expect(activeSection).toHaveAttribute('open')
+    await user.click(screen.getByRole('button', { name: 'Robot vacuum firmware' }))
 
-    await user.click(screen.getByRole('button', { name: /collapse all/i }))
-    expect(activeSection).not.toHaveAttribute('open')
+    const detail = screen.getByRole('main')
+    expect(within(detail).getByRole('heading', { name: 'Robot vacuum firmware' })).toBeInTheDocument()
+    expect(within(detail).getByText(/flaky sensor/)).toBeInTheDocument()
+    expect(within(detail).getByText(/active/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Robot vacuum firmware' })).toHaveAttribute('aria-current', 'true')
+  })
+
+  it('replaces the detail rather than stacking a second project under it', async () => {
+    await renderApp()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Robot vacuum firmware' }))
+    await user.click(screen.getByRole('button', { name: 'UI to visualize PROJECTS.md' }))
+
+    const detail = screen.getByRole('main')
+    expect(within(detail).getByText(/dashboard/)).toBeInTheDocument()
+    expect(within(detail).queryByText(/flaky sensor/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Robot vacuum firmware' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('back returns to the list with nothing selected', async () => {
+    await renderApp()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Robot vacuum firmware' }))
+    await user.click(screen.getByRole('button', { name: /all projects/i }))
+
+    expect(screen.queryByText(/flaky sensor/)).not.toBeInTheDocument()
+    expect(screen.getByText(/pick a project/i)).toBeInTheDocument()
+  })
+
+  it('empties the detail pane when a filter hides the selected project', async () => {
+    await renderApp()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'UI to visualize PROJECTS.md' }))
+    await user.click(screen.getByRole('button', { name: /backlog ideas/i }))
+
+    expect(screen.queryByText(/dashboard/)).not.toBeInTheDocument()
+    expect(screen.getByText(/pick a project/i)).toBeInTheDocument()
   })
 
   it('shows an error message when the fetch fails', async () => {

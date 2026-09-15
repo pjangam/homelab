@@ -262,6 +262,22 @@ Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of i
 
 **Next step:** check whether there is a usable socket near the entrance and measure the grill door's closed gap. Those two numbers decide (A) vs (B) before anything gets bought.
 
+### Clawlight jump-to-console from the iPhone (Termius -> ssh -> tmux attach)
+**Why:** clawlight's click-to-jump (see ✅ Done) only moves a terminal on a desk machine. From the phone, the red light says a session needs you, but you still have to open Termius, pick the right host, and find the right tmux session by hand. Nothing runs Claude on the iPhone itself. Every session is on xero or the MacBook inside tmux, so tapping the session on the page should open Termius, ssh to that host, and attach at that pane. Noted 2026-09-15.
+
+**State:** idea only. Most of what's needed already exists:
+- **The server already knows where to go.** `set-status.sh` reports the host, `$TMUX`'s socket and `$TMUX_PANE` for every session, and sessions outside tmux are already marked unreachable.
+- **So the phone needs no focus agent.** It is the one client that cannot run `focus-agent.sh`. Its version of a jump is just a link the page opens, not a routed request, and it takes a different path from the desk click. The page has to pick between the two, e.g. by detecting iOS or a "jump on this device" toggle, because the phone should not also move the Mac's terminal.
+
+**Things to settle, most likely to kill it first:**
+- **Can a Termius link run a command, or only open a host?** `ssh://user@host` opens a connection. Whether a link can also pass a startup command is unverified. If it can't, the fallback is one saved Termius host per machine with a startup snippet that runs a small script. The phone would then pass the target pane some other way, e.g. by writing it to a server-side "last requested pane" the script reads on connect.
+- **Attaching resizes the desk terminal.** With tmux's default `window-size latest`, the phone becomes the latest client and shrinks the window for everyone else attached. Selecting a window also changes it for every client on that session, so jumping on the phone would move the Mac's view too. A grouped session (`tmux new-session -t <target>`) gets its own current window and avoids the second problem. It is probably the right attach command anyway.
+- **Use the reported socket.** The target command is `tmux -S <socket> ...`, not a bare `tmux attach`, or a session on a non-default socket is silently missed.
+- **A non-interactive ssh command gets a thin PATH on the Mac.** Homebrew's tmux in `/opt/homebrew/bin` may not be found. It's the same trap as `lsof` under launchd (see the Done entry), so check it the way the ssh session sees it, not from an interactive shell.
+- **Mac reachability from the phone:** needs Remote Login on and the Mac awake on the tailnet. xero is always reachable. A Mac that's asleep should show the same honest "can't jump" as a missing focus agent, not a Termius connection that hangs.
+
+**Next step:** check Termius's URL scheme for a startup command. That answer decides between a pure link and the snippet-plus-lookup design.
+
 
 ## 🔌 ESP32 Projects
 
@@ -619,6 +635,7 @@ General preventive maintenance - dust buildup increases fan speed/noise and rais
 - Traced by comparing the container's served copy against the repo file directly (`docker exec projects-ui cat ... | diff`) and confirming matching/mismatched inodes with `stat`.
 - Fixed by bind-mounting the whole repo root read-only (`.:/data:ro`) and adding `projects-ui/nginx.conf` with `location = /PROJECTS.md { alias /data/PROJECTS.md; }` - directory bind mounts resolve paths fresh on every request, so a rename inside them doesn't go stale.
 - Verified the fix survives a simulated atomic-replace edit with no container restart, and confirmed no other repo file is servable over HTTP (unmatched paths fall through to the SPA's `index.html`, not the real file - `/data` itself is never used as an nginx `root`).
+**Two-pane layout (2026-09-15):** replaced the expand-in-place `<details>` cards (and expand-all/collapse-all) with a left pane of titles grouped by status and a right pane showing the selected project; each pane scrolls on its own. The shopping list stays at the top as a collapsible panel whose summary line keeps the item count and total, with the open/collapsed state remembered across reloads. Below 760px wide the panes take turns (list, then detail with a back button). `scripts/projects-ui/screenshot.sh` screenshots the live app at desktop and phone widths via the Playwright image, since xero has no browser or Node.
 **Left for later, low priority:** edit support (currently read-only - would need a real backend with filesystem write access, unlike today's static-file setup; scope depends on whether "edit" means quick status moves or full text editing, still undecided) and a Tailscale hostname for remote access (same pattern as HA's `ha.${TAILNET_SUFFIX}` above) if LAN-only ever stops being enough. Neither needed right now.
 
 ### Expose Home Assistant via Tailscale with its own clean hostname

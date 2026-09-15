@@ -96,28 +96,20 @@ input[type='search'] {
   color: var(--fg);
 }
 
-.expand-controls {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.expand-controls button {
-  border: 1px solid var(--border);
-  background: var(--card-bg);
-  color: var(--fg);
-  border-radius: 8px;
-  padding: 0.4rem 0.75rem;
-  cursor: pointer;
-}
+/* --- Two panes: titles on the left, the selected project on the right ---- */
 
 .status-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .status-section h2 {
-  font-size: 1.15rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.4rem;
+  margin: 0 0 0.4rem;
+  padding-bottom: 0.3rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border-bottom: 2px solid var(--border);
 }
 
 .status-section[data-status='active'] h2 { border-color: #22c55e; }
@@ -126,21 +118,139 @@ input[type='search'] {
 .status-section[data-status='done'] h2 { border-color: var(--border); }
 
 .project-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 2px;
 }
 
-.project-card {
+.project-link {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  text-align: left;
+  font: inherit;
+  color: var(--fg);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.6rem 0.65rem;
+  cursor: pointer;
+}
+
+.project-link:hover {
+  background: var(--card-bg);
+}
+
+.project-link[aria-current='true'] {
+  background: var(--card-bg);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.project-link .parts-badge {
+  flex-shrink: 0;
+  font-weight: normal;
+}
+
+.detail-pane {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 0.6rem 0.9rem;
+  padding: 1rem 1.25rem 1.5rem;
 }
 
-.project-card summary {
+.detail-placeholder {
+  color: var(--muted);
+  text-align: center;
+  margin: 3rem 0;
+}
+
+.back-button {
+  display: none;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  margin-bottom: 1rem;
   cursor: pointer;
-  font-weight: 600;
+}
+
+.detail-status {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.project-detail h2 {
+  margin: 0.2rem 0 1rem;
+  font-size: 1.4rem;
+}
+
+/* A phone has no room for two panes, so they take turns: the list, then the
+   project you tapped with a way back. */
+@media (max-width: 759px) {
+  .app[data-view='detail'] .controls,
+  .app[data-view='detail'] .shopping-list,
+  .app[data-view='detail'] .list-pane,
+  .app[data-view='list'] .detail-pane {
+    display: none;
+  }
+
+  .back-button {
+    display: inline-block;
+  }
+}
+
+/* Wide enough for both: the app fills the window and each pane scrolls on
+   its own, so the list stays put while you read a long entry. */
+@media (min-width: 760px) {
+  .app {
+    max-width: 1280px;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 1.25rem;
+  }
+
+  .controls {
+    margin: 1rem 0;
+  }
+
+  /* Open, it gets a share of the height rather than all of it - the panes
+     below always keep room to be used. */
+  .shopping-list-body {
+    max-height: 35vh;
+    overflow-y: auto;
+  }
+
+  .panes {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(240px, 22rem) 1fr;
+    gap: 1.25rem;
+  }
+
+  .list-pane,
+  .detail-pane {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .list-pane {
+    padding-right: 0.25rem;
+  }
+
+  .project-link {
+    padding: 0.45rem 0.6rem;
+  }
 }
 
 .project-body {
@@ -227,8 +337,9 @@ input[type='search'] {
   flex-wrap: wrap;
 }
 
-.parts-header h4 {
+.parts-header h3 {
   margin: 0;
+  font-size: 1rem;
 }
 
 .parts-add {
@@ -273,26 +384,64 @@ input[type='search'] {
 }
 
 .shopping-list {
-  border: 1px solid rgba(127, 127, 127, 0.35);
-  border-radius: 8px;
-  padding: 0.85rem 1rem;
-  margin-bottom: 1.25rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.shopping-list summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+/* The flex summary drops the browser's own disclosure triangle, so draw one. */
+.shopping-list summary::before {
+  content: '▸';
+  color: var(--muted);
+}
+
+.shopping-list details[open] summary::before {
+  content: '▾';
+}
+
+.shopping-list summary h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.shopping-list-summary {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.shopping-list-body {
+  margin-top: 0.6rem;
 }
 
 .shopping-list-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
-.shopping-list-header h2 {
-  margin: 0;
-  font-size: 1.1rem;
+.shopping-list-header button {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 0.25rem 0.65rem;
+  cursor: pointer;
 }
 
 .shopping-list-projects {
-  margin: 0.25rem 0 0.75rem;
+  margin: 0;
   font-size: 0.85rem;
   opacity: 0.75;
 }
