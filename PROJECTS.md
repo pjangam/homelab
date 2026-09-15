@@ -265,123 +265,6 @@ Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of i
 
 ## 🔌 ESP32 Projects
 
-### 🟢 Sound-reactive aarti lights (Ganapati decoration) - built and mounted
-**Why:** festival decoration for Ganesh Chaturthi - a WS2812 backdrop behind the makhar that pulses to the aarti in real time. Chosen over the other decoration ideas brainstormed 2026-09-07 (fountain + mist bowl, ghanta/bell striker, fiber-optic star canopy, infinity mirror halo, water curtain) on wow-per-rupee and on being the only one whose long-lead part could still arrive in time. Incidentally the first fully local light in the house - no cloud, unlike the Tinxy gear the project below is trying to replace.
-
-**Hard deadline:** Ganesh Chaturthi, mid-September 2026. Vendor shipping (Robu / Robocraze / Robokits) is 2-4 days, and the ~2026-09-09 order-by has already passed - so anything still to be ordered is now a race, and the build has to stand up without it.
-
-**State:** decided 2026-09-07. **Strip sourced locally 2026-09-12** - the shop had 5V addressable 5050 60/m in stock, so the part the whole plan was gated on is no longer an order at all. Still missing: the INMP441 mic (not stocked locally, must be ordered) and a supply bigger than the 5V 2A already on hand. Nothing flashed yet.
-
-**The mic is not on the critical path - build without it.** WLED with no mic is still the full addressable strip: 100+ effects, chases, palettes, the phone app and the HA integration. Only the audio-reactive effects need the INMP441, so the backdrop is deliverable for Chaturthi whether or not the mic lands in time, and the mic turns it from *programmed* to *reacting to the actual aarti* whenever it arrives. Two things keep that upgrade from costing a rebuild: **flash the audioreactive build now anyway** (it runs fine with no mic attached - the audio effects just sit still - so the mic becomes three wires to spare GPIOs and a settings toggle rather than a re-flash), and **put everything still missing in one order** rather than discovering the second gap after the first parcel lands. Do not accept an analog mic (MAX4466/MAX9814) as the available-now substitute: noisy, and AudioReactive's tuning assumes I2S, so it is a worse result for the same wait.
-
-**Design decisions already made:**
-- **WLED, not ESPHome.** WLED gives 100+ effects, a phone app, 2D matrix support and a native HA integration for free; ESPHome would mean hand-writing effects. If the ghanta/fountain get built later they go on a *second* ESP32 running ESPHome - WLED's firmware isn't meant to co-host control logic.
-- **A microphone, not beat-detection in software.** Audio reaches the room as spotcast → speaker, so there is no stream for HA to analyse. A mic sidesteps that entirely, and also picks up the live aarti, the ghanta and taalis - which looks better than clean beat-sync to a recording anyway.
-- **INMP441 I2S digital mic, not analog** (MAX4466/MAX9814) - the analog modules are noisy and WLED's AudioReactive tuning assumes I2S.
-- **Diffuse the strip, don't point it at the room.** Bare WS2812s read as a row of dots and look cheap. Bouncing the strip off the wall behind the makhar is free and looks better than any diffuser.
-
-**Shopping list** (ballpark Indian street prices, not quotes - same vendors as the ESP32-CAM pricing above):
-
-```parts
-qty | item | est | note
-3m | 18AWG wire (or 18-20AWG speaker wire) | 0 | HAVE IT - mains offcuts from home, 2026-09-14. Rewiring strip power off the breadboard is what actually unlocked brightness; jumper wires had capped it at ~1A regardless of adapter
-1 | 5V 5A or 10A power supply | 0 | NOT NEEDED - the owned 5V 4A covers 180 LEDs at full brightness, confirmed 2026-09-14
-5m | WS2812B strip 60 LED/m IP30 | 1300-2000 | HAVE IT - bought local 2026-09-12, verified 2026-09-13; ~3m used, ~2m spare
-1 | INMP441 I2S mic | 150-300 | HAVE IT - wired and verified working 2026-09-13
-1 | 74AHCT125 level shifter | 30-60 | NOT NEEDED at 3m - data is stable, no drop or colour shift seen at 94% brightness
-2 | 1000uF 25V capacitor | 30 | local - across strip power in; 25V not 16V, and polarised (stripe = negative)
-1 | 470R resistor | 5 | HAVE IT - inline on the data line, working
-1 | Barrel jack to screw terminal | 40 | local - or any screw terminal, to get the power pair off twisted joints
-1 | Female-female dupont jumpers (40-pin strip) | 120 | HAVE IT - fine for data and the mic, NOT for strip power
-1 | Perfboard 5x7cm | 30 | local - for the control side, soldered after the strip is positioned
-1 | Soldering iron kit | 500-800 | HAVE IT - pencil iron plus rosin-core solder, confirmed adequate 2026-09-13
-```
-
-A **compact ~2m / 120 LED** version works out at roughly ₹1,400-1,900 instead: smaller strip, a 5A supply, and the level shifter becomes optional.
-
-**The supply question, as far as it can be settled before the length is known (2026-09-13).** Three adapters were compared on the bench and all looked equally dim - because WLED's current cap was still 800mA, so every one was throttled to the same 800mA and the comparison meant nothing. That cap was set to protect the **jumper wires**, which carry about 1A. The binding constraint was never the adapter.
-
-What the owned supplies could deliver on 300 LEDs, uncapped:
-
-| Supply | Full red | Full white |
-|---|---|---|
-| 1.2A | 20% | 7% |
-| GaN 18W (5V/3A) | 50% | 17% |
-| **5V 4A (owned)** | **67%** | 22% |
-| 5V 10A | 100% | 56% |
-
-At **2.5m / 150 LEDs the owned 4A gives full-brightness colour**, so if the decoration uses half the reel or less there is nothing to buy. Full white never matters here - effects light one or two channels, and the strip bounces off a wall rather than pointing at the room.
-
-**Settled 2026-09-14: 3m used (~180 LEDs), and the owned 5V 4A is enough. The shopping list is closed at zero.**
-
-Strip power moved onto mains-wire offcuts from home, off the breadboard, and the cap went 800mA -> 2500mA -> 3400mA. All 180 red at full draws **3411mA, 94% of this strip's maximum**, with nothing running hot - not the pigtail, not the adapter, not the wire. Full red at 3m needs 3600mA and the adapter gives 4000mA, so colour content runs at full brightness with headroom. Full white would want 10.8A and is irrelevant: effects light one or two channels, and the strip bounces off a wall rather than facing the room.
-
-The 18AWG never had to be bought, and the 10A supply never had to be bought. **The bottleneck was the jumper wires all along** - about 1A regardless of which adapter was attached, which is why three different supplies produced identical brightness and why the comparison looked so confusing.
-
-The level shifter is also off the list: at 3m the 3.3V data line is stable, with no voltage drop or colour shift visible at 94% brightness. Power injection at the far end is unnecessary at this length too.
-
-Uses the already-owned ESP32 dev board - **confirm it is an ESP32 and not an ESP8266**, AudioReactive needs the ESP32's I2S peripheral. A soldering iron (~₹500-800) is needed for strip cut-points and power injection; buy it in the same order rather than discovering the gap on build day.
-
-**Main risk - resolve before the parts arrive:** WLED's AudioReactive is a *usermod*, not in the default binary. The WLED web installer offers an audioreactive ESP32 build; if it flashes cleanly this is a 10-minute step, and if it doesn't it means compiling WLED in PlatformIO (+1-2h and a toolchain that isn't set up on either machine). Flashing the board already owned costs 30 minutes and collapses the single biggest source of variance in the estimate.
-
-**Power gotcha:** each WS2812B is three dies at ~20mA, so ~60mA per LED at full white - 300 LEDs is ~18A, far beyond even a 10A supply. Set WLED's max-current limit to the supply's rating and it auto-caps brightness, so it is safe by construction. Never power the strip from the ESP32's 5V pin (that pin is fed through the board's regulator, good for a few hundred mA); the strip goes to the supply directly, sharing GND with the ESP32.
-
-**The 5V 2A already on hand is a bench supply, not a build supply.** Budget ~300mA for the ESP32 and mic and ~1.7A is left for LEDs: ~28 at full white, ~80-90 on typical colour effects, or a full 300-LED strip capped around 10-12% brightness. That is plenty to flash and bench-test on today and nowhere near enough to read as a decoration in a lit room. The trap is that it does not fail loudly - with the limiter set correctly it simply looks dim, so the moment that would tell you to upgrade never arrives; raising brightness instead is what turns it into voltage sag, white drifting pink toward the far end, and the ESP32 browning out mid-aarti. Set the limit to 1500mA while bench-testing on it, and size the real supply to the strip that was actually bought.
-
-**Estimate:** 6-12h total, which is one day *after* the parts land, not a day from now. Roughly: flash 0.5-1h, bench test 0.5-1h, mic wiring 1-2h, mounting + diffusion 2-4h (the phase that always overruns), HA presets 1-2h, tuning gain/squelch in the actual room at real volume 1-2h. Tune last and in the evening - the room's acoustics and real aarti volume are the only settings that matter and cannot be faked at midday.
-
-**Parts are in hand as of 2026-09-12** - strip local, mic sourced, 2A supply already owned. Build is no longer gated on anything.
-
-**Phase 0 firmware is done (2026-09-12).** WLED 0.14.4 audioreactive is flashed and hash-verified onto the ESP32 (ESP32-D0WD-V3 rev 3.1, 4MB, MAC 28:05:a5:32:18:10), via `scripts/flash-wled-audioreactive.sh`. The big risk in the estimate - AudioReactive not being in the stock binary - is retired, but not the way the note assumed: the usermod is no longer in *any* current release. See the runbook for why 0.14.4 is pinned.
-
-Getting there burned about an hour on a **dead USB port on `xero`** rather than anything to do with WLED. Board and cables were all fine; it enumerated immediately once moved to a port that had a working device in it. Worth knowing before the door-sensor project flashes two more ESP32s.
-
-**Phase 0 is complete (2026-09-12).** The board runs WLED 0.14.4 with AudioReactive at a static **192.168.1.125** / `wled-sound.local`, 187 effects against stock's ~118, and all 15 spot-checked audio effects present. The usermod ships disabled; Phase 2 enables it with the I2S pins.
-
-Two traps found the hard way, both now in the runbook. WLED's ESP32 release `.bin` is the **application image only** - it belongs at `0x10000` behind a bootloader at `0x1000` and a partition table at `0x8000`, and flashing it to `0x0` after an erase bootloops the board while esptool still reports "hash verified" (that only checks the flash matches the bytes given, never that they are bootable). And `xero` has a **dead USB port** that cost an hour before the board was moved to one with a working device in it.
-
-**Phase 1 is complete (2026-09-12).** 30 pixels steady red on a breadboard, GPIO4 through a 470R, 367mA of an 800mA cap, colour order GRB. The strip is confirmed genuinely addressable - setting the count to 5 lit exactly five and left 25 dark, which a dumb strip cannot do. `scripts/wled.sh` now drives the board from the command line, which beats a web UI while holding wires.
-
-The fault that cost the time was a **missing common ground**, and its signature is worth remembering: all 30 lit but cycling colours continuously while WLED commanded solid red. Power and data present, no voltage reference, so every refresh latched noise - it looks like an effect, not like a wiring fault. Breadboard rails being split down the middle is the usual reason.
-
-**Phase 2 is complete (2026-09-13).** The INMP441 is wired on SD=32, WS=25, SCK=33 with `L/R` to GND, the usermod is enabled, and the mic measurably works - levels 0-254 with a live 16-bin FFT, verified numerically via `scripts/wled-audio-monitor.py` rather than by watching an effect. Settled at squelch 10, gain 40, AGC on; Phase 6 retunes that in the room at real volume.
-
-Everything electronic is now proven end to end: strip, pixels, mic. **Nothing is cut or soldered yet** beyond the mic's own header, so the reel is still whole.
-
-The time went on WLED not exposing audio levels over `/json/info` in 0.14.4, and its sound-sync stream being **multicast to 239.0.0.1** rather than broadcast - binding the port alone receives nothing, which is indistinguishable from a dead mic. Also: changing the mic pins needs a reboot, since I2S initialises at boot.
-
-**Phase 3 is effectively done (2026-09-14).** Strip cut to ~3m / 180 LEDs, power on mains-wire offcuts direct to the strip, WLED's cap at 3400mA, running at 94% of maximum brightness with nothing warm. The owned 5V 4A is sufficient and the shopping list is closed at zero - no supply, no wire, no level shifter.
-
-**Phase 5 (Home Assistant) is largely done (2026-09-14).** The WLED integration is added. **The whole-board light is `light.wled_main`, not `light.wled`** - with more than one segment configured, HA's WLED integration makes `light.wled` mean *segment 0 only*, plus `light.wled_segment_1`/`_2`, and adds a separate `Main` entity for the board's global power. The schedule originally targeted `light.wled`, so on 2026-09-14 the 23:00 automation fired, reported success, and switched off segment 0 while the board stayed on - and because the Tier 3 renderer watches the *global* on/off, it carried on drawing and the strip stayed lit. Off actions now target `light.wled_main`; on actions switch `light.wled_main` on and then set the Gravimeter effect on `light.wled`, since effects are per-segment and the Main entity has none. Any dashboard toggle meant to switch the decoration off must also be `light.wled_main`. Four time-triggered automations - on 08:00, off 09:30, on 17:45, off 23:00 - plus three scripts for the living-room dashboard: `aarti_lights_on` (forces Gravimeter), `aarti_lights_bands` (the three-band split), `aarti_lights_off`. The on-automations force the effect rather than restoring the last state, so a week of manual testing does not leave a solid colour showing up at the next scheduled slot.
-
-These live in `HOMEASSISTANT_CONFIG/automations.yaml` and `scripts.yaml`, which are **gitignored** (secrets, DB, logs) - so they are not in this repo and this note is the only tracked record of them.
-
-Two things done on the board itself to support it: **preset 1 "Gravimeter" is the boot preset**, verified across a reboot, so the strip comes up sound-reactive rather than on a leftover colour even if HA is down; and preset 2 "Bands" holds the three-band split.
-
-**Tier 2 of the sound work is in place**: three segments, each locked to its own FFT bin range via Freqmatrix's Low/High bin sliders - pixels 0-59 on bins 0-5 (43-861Hz, vocals) in orange, 60-119 on bins 6-10 (861-3015Hz, voice presence and claps) in green, 120-179 on bins 11-15 (3-15.6kHz, ghanta and cymbals) in blue. Palette `* Color 1` is what lets each segment hold a fixed colour instead of the effect choosing one. Restore it with `./scripts/wled.sh bands` - it **cannot** live in a preset, because WLED's preset save only captures segment 0.
-
-**The board was updated to 16.0.1 audioreactive on 2026-09-14** (220 effects, up from 187). Everything in config survived - mic pins, gain/squelch, LED pin, count, cap, colour order, boot preset - and effect indices did not move, so presets still point at the right effects. The only casualty was the multi-segment band split, re-applied via the script. Worth knowing that audioreactive builds of current WLED exist, since the 0.14.4 pin in the runbook was based on the GitHub release assets, where they are absent.
-
-**Phase 4 (mounting) is done (2026-09-14).** The strip is up behind the makhar.
-
-**Tier 3 is working (2026-09-14)** - the strip is driven by *what the sound is*, not by its pitch. `scripts/aarti-render.py` classifies ghanta / clap / voice and renders every pixel itself, pushing frames to WLED over realtime UDP (DRGB, port 21324) at 40fps. WLED's own effects are bypassed while it runs, and the protocol's timeout means the decoration returns to them by itself if the program stops - so nothing depends on `xero` staying up.
-
-Two render modes. `--mode zones` gives a third of the strip to each class. `--mode layers` (the default) composites all three across the whole length: an amber glow for voice, a white burst sweeping out from the centre for a clap, a green shimmer over the top for the ghanta. Layers is the better one - a clap during a ringing bell shows as both, which is what an aarti actually sounds like, where zones has to pick a winner.
-
-**Why classification rather than more frequency bands:** clap and ghanta have the same spectral centroid, 8.72 against 8.75 measured. No frequency split can separate them, so Tier 2 lights the same LEDs for both. What differs is *time* - the ghanta rang continuously for 13 seconds where claps were bursts under half a second. Voice separates on centroid alone (p90 of 2.64).
-
-Thresholds live in `scripts/aarti_audio.py`, measured from labelled recordings of this bell, this mic and this room (`data/aarti-sound/`). If any of those change, re-record with `scripts/aarti-sound-lab.py` rather than re-guessing.
-
-**Running as a service since 2026-09-14**: `systemd/user/aarti-lights.service`, enabled and started, so it survives reboot (linger is already on for this user). Copy it to `~/.config/systemd/user/` and `systemctl --user enable --now aarti-lights`.
-
-Two design points in that unit worth keeping. It deliberately omits `After=network-online.target`, which is a **silent no-op in a user unit** and reads as a guarantee while providing none - the wait for the board to answer is an `ExecStartPre` loop instead. And the renderer polls WLED's own on/off state and stops sending while it is off: realtime UDP overrides everything in WLED, so a renderer that always sent would make the light impossible to switch off and the Home Assistant schedule would fire at 09:30 with no effect. Verified both directions - off gives `live=False` and 120mA quiescent, on gives `live=True` with `lip=192.168.1.123`.
-
-**Still to do on Tier 3:** validate against a real aarti rather than isolated test sounds. The boundary is visibly soft - test runs produced 1.08s "claps" against a 1.2s ghanta threshold, and one ghanta identified by duration with a clap-like flatness of 0.842. A bell rung during singing with a speaker playing is the real operating condition and nothing has tested it.
-
-**That leaves only Phase 6: recalibrate squelch at the room's noisy hour, not at night.** `./scripts/wled-audio-monitor.py --seconds 20` measures the ambient floor in place and suggests a threshold; the value has to be taken with the room as it will actually be during the aarti, since a number measured on a quiet night is far too low once there are people in the room. Verify both directions afterwards - resting level reads 0, and a clap still reaches a few hundred.
-
-Two guesses in the HA config are still unverified, and both surface as a failed script run rather than silently: `select.wled_preset` in the bands script, and that `effect: Gravimeter` matches WLED's spelling exactly.
-
 ### ✅ Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
 
@@ -456,6 +339,30 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 ---
 
 ## ✅ Done
+
+### Sound-reactive aarti lights (Ganapati decoration)
+**Why:** festival decoration for Ganesh Chaturthi - a WS2812 backdrop behind the makhar that reacts to the aarti in real time. Chosen 2026-09-07 over the other ideas (fountain + mist bowl, ghanta striker, fiber-optic canopy, infinity mirror halo, water curtain) on wow-per-rupee and on being the only one whose long-lead part could still arrive in time. The first fully local light in the house - no cloud.
+**What shipped (2026-09-12 to 2026-09-14), built breadboard-first per `aarti_lights_setup.md`:**
+- **Board:** ESP32 (D0WD-V3, 4MB) on **WLED 16.0.1 audioreactive**, static **192.168.1.125** / `wled-sound.local`. Strip data on GPIO4 through a 470R; INMP441 I2S mic on SD=32, WS=25, SCK=33 with `L/R` to GND.
+- **Strip:** ~3m / 180 LEDs cut from a locally bought 5m reel (~2m spare), bounced off the wall behind the makhar. Powered by the already-owned **5V 4A** over mains-wire offcuts, WLED cap 3400mA - all red at full draws 3411mA with nothing warm. No level shifter or far-end injection needed at 3m.
+- **Sound, three tiers:** boot preset 1 is WLED's own Gravimeter, so the strip comes up sound-reactive even if HA and `xero` are down. Tier 2 is a three-segment band split (vocals orange / presence and claps green / ghanta and cymbals blue), restored with `./scripts/wled.sh bands`. **Tier 3** (`scripts/aarti-render.py`, the default) classifies ghanta / clap / voice and renders every pixel itself over WLED realtime UDP (DRGB, port 21324, 40fps), running as `systemd/user/aarti-lights.service`. The protocol timeout hands the strip back to WLED's effects by itself if the renderer stops.
+- **Home Assistant:** four time-triggered automations (on 08:00, off 09:30, on 17:45, off 23:00) and three dashboard scripts (`aarti_lights_on`, `aarti_lights_bands`, `aarti_lights_off`). These live in the **gitignored** `HOMEASSISTANT_CONFIG/automations.yaml` and `scripts.yaml`, so this entry is their only tracked record.
+**Spend:** the strip and the mic. Everything else was owned or found at home - the 10A supply, 18AWG wire and level shifter on the original list were never needed.
+**Notes worth keeping:**
+- **With more than one segment, HA's `light.wled` is segment 0 only.** The whole board is `light.wled_main`. The 23:00 automation originally targeted `light.wled`, reported success, switched off one segment, and the strip stayed lit. Off actions and any dashboard off-toggle must use `light.wled_main`; the effect is set on `light.wled`, since effects are per-segment.
+- **Audioreactive binaries are absent from WLED's GitHub release assets after 0.14.4**, which is what the runbook's 0.14.4 pin was based on - but current audioreactive builds do exist, and the board moved to 16.0.1 on 2026-09-14 with all config and effect indices intact. Only the multi-segment band split had to be re-applied, because **WLED's preset save captures segment 0 only**.
+- **WLED's ESP32 release `.bin` is the application image alone.** It goes at `0x10000` behind a bootloader at `0x1000` and a partition table at `0x8000`. Written to `0x0` after an erase it bootloops, while esptool still says "hash verified" - that only checks the bytes match, never that they boot.
+- **`xero` has a dead USB port.** An hour went on cables before the board was moved to a port with a known working device in it. Worth remembering before the door-sensor project flashes two more ESP32s - test against a known-good port first.
+- **A missing common ground looks like an effect, not a fault:** every pixel lit but cycling colours while WLED commanded solid red. Split breadboard rails are the usual cause.
+- **Jumper wires cap strip current at about 1A.** Three different supplies looked identically dim because of that (and an 800mA cap), not because of the supplies. Strip power never goes through a breadboard or duponts.
+- **Audio debugging:** 0.14.4 exposes no levels over `/json/info`, and the sound-sync stream is **multicast on 239.0.0.1** - binding the port alone receives nothing and looks exactly like a dead mic. Mic pin changes need a reboot, since I2S initialises at boot. Squelch, not gain, is what makes it look reactive. `scripts/wled-audio-monitor.py` measures it numerically.
+- **Clap and ghanta cannot be split by frequency** - spectral centroid 8.72 against 8.75. They differ in *time* (the ghanta rang 13s, claps are under half a second), which is why Tier 3 classifies rather than adding bands. Thresholds in `scripts/aarti_audio.py` come from labelled recordings of this bell, mic and room in `data/aarti-sound/`; if any of those change, re-record with `scripts/aarti-sound-lab.py` rather than re-guessing.
+- **The service omits `After=network-online.target`,** a silent no-op in a user unit; it waits for the board in `ExecStartPre` instead. And the renderer **stops sending while WLED is off**, because realtime UDP overrides everything - a renderer that always sent would make the light impossible to switch off.
+**Verified:** Phase gates 0-5 each checked as they closed (pixels individually addressable, mic levels 0-254 with live FFT, 94% brightness stable at 3m, off gives `live=False` at 120mA quiescent). On 2026-09-15: renderer service active since 2026-09-14 21:09, board reachable on 16.0.1 with 180 LEDs, `select.wled_preset` present in HA's entity registry, and WLED's effect 132 spelled exactly `Gravimeter` - closing the two HA guesses that had been left unverified.
+**Loose ends (optional, not blocking):**
+- **Phase 6:** recalibrate squelch with the room as it is during the aarti, not on a quiet night - `./scripts/wled-audio-monitor.py --seconds 20` suggests a threshold. Check both directions: resting level reads 0, a clap still reaches a few hundred.
+- **Tier 3 against a real aarti.** Tested only on isolated sounds, and the clap/ghanta boundary is soft (a 1.08s "clap" against a 1.2s ghanta threshold). A bell rung during singing with a speaker playing is the real condition.
+**Next step:** after the festival, decide whether the strip stays up or gets packed away; the board keeps its config, presets and boot preset either way.
 
 ### Claude Code and new iTerm tabs always land inside tmux
 **Why:** A long Claude Code run in a bare terminal tab dies with the tab (and with any ssh carrying it), and there was no way back to a session you'd lost track of. Built by hand over 2026-09-10/11 in a `~/code/personal/scripts` session; packaged into this repo on 2026-09-12 so a second machine (or a reinstalled one) gets the same shell without reconstructing it from memory.
