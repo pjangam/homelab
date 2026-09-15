@@ -112,22 +112,25 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 
 **State:** built and verified 2026-09-07, **not yet wired** - the software is deployed and tested with `--no-gpio`; it needs an LED soldered up and `scripts/clawlight/deploy_clawlight_led_pi.sh` run for real.
 
+**LED bought 2026-09-15 - but it is RG (red/green bi-colour), not RGB.** Red, green and amber (red + green together) still work, so active, waiting and the "don't believe me" amber pulse all survive. The one state that needed blue is **idle = dim white**, which this LED cannot show. `clawlight-led.py` also assumes three colour pins (gpiozero `RGBLED` with blue on GPIO26), so it needs a small change before this LED will drive correctly. Two things to check on the bench first:
+- **Leg count.** 3 legs = common cathode/anode, red and green driven independently, amber by mixing - a drop-in minus the blue pin. 2 legs = the two dies are wired back to back, only one can be lit at a time, and amber would need rapid alternation between them.
+- **Polarity** (3-leg only) - which is what `COMMON_ANODE` is for.
+
 **Design decisions:**
 - **State reaches the Pi over retained MQTT, not the SSE endpoint the web page uses.** A hardware light must be correct the moment it powers on, and clawlight only emits on hook events - a subscriber starting cold during a quiet stretch would sit wrong for as long as the quiet lasted. `server.py` now publishes the aggregate to `clawlight/state` retained, so the broker replays it on connect. Verified correct within a second of process start. Reuses the house MQTT pattern, and makes the state available to HA for free.
 - **An MQTT last-will means the light never lies.** If `server.py` dies the broker publishes `offline` on `clawlight/availability` and the LED goes to an amber pulse rather than holding a stale colour. Directly informed by the same-day MirAIe outage, where something that looked healthy while reporting nothing went unnoticed for 29 hours. Both directions tested.
-- **Idle is dim white, not off** - so "nothing running" is distinguishable from "unplugged".
+- **Idle is dim white, not off** - so "nothing running" is distinguishable from "unplugged". *Not possible on the RG LED bought* - needs a replacement idle colour that is still not off and does not read as the amber pulse (e.g. dim steady amber, or dim green). Undecided.
 - **GPIO13/19/26 (pins 33/35/37, GND on 39)** - a tidy corner block that leaves every pin `gpio_pinout.md` lists as free-for-a-button untouched. Third GPIO process on this Pi, so it gets its own lgpio notify directory (see `incidents/2026-09-04-lgpio-notify-fifo-collision.md`).
 
 ```parts
 qty | item | est | note
-2 | Common-cathode RGB LED 5mm | 20 | local - buy 2 of each polarity, COMMON_ANODE in the script covers the other
-3 | 220R resistor | 5 | local - one per colour leg; buy 330R/100R too, see the health LED entry
+2 | 220R resistor | 5 | local - one per colour leg (RG LED: 2 legs); buy 330R/100R too, see the health LED entry
 1 | Female-female dupont jumpers (40-pin strip) | 120 | local - shared with the aarti lights build
 1 | Perfboard 5x7cm | 30 | local - shared with the health LED build
 1 | Ping-pong ball or diffuser | 20 | household - optional, turns a point of light into a beacon
 ```
 
-**Next step:** wire the LED, run `scripts/clawlight/deploy_clawlight_led_pi.sh`, and check the colour polarity is right way round (if it reads inverted, set `COMMON_ANODE = True`).
+**Next step:** check the RG LED's leg count and polarity, pick an idle colour that does not need blue, and adapt `clawlight-led.py` to two colour pins (GPIO13 red, GPIO19 green - GPIO26 is no longer needed). Then wire it and run `scripts/clawlight/deploy_clawlight_led_pi.sh`.
 
 ---
 
@@ -303,35 +306,33 @@ Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of i
 ### Homelab health LED (Pi GPIO) - the whole healthcheck as one light
 **Why:** `cron/healthcheck.sh` already knows whether the homelab is healthy, but the only way to find that out is to go looking - open the Stats dashboard, or wait for an email/ntfy push on a failure. The clawlight LED above proved the other shape works: a light on the desk that is simply *right*, with nothing to open. Same idea, different source of truth - green means every check passed, red means at least one did not, and the answer is visible from across the room.
 
-**State:** idea only, noted 2026-09-11. Nothing built - but most of the pieces are already in place, which is the reason to write it down now.
+**State:** idea only, noted 2026-09-11. Nothing built - but most of the pieces are already in place, which is the reason to write it down now. **LED bought 2026-09-15, and it is RG (red/green bi-colour), not RGB** - same purchase and same caveats as the clawlight LED above (check leg count and polarity before wiring).
 
 **The consolidator largely exists already.** `scripts/healthcheck/publish_healthcheck_mqtt.py` publishes `homelab/healthcheck/overall` **retained** every 15 minutes (cron), ON = at least one check is unhappy, alongside per-check tiles (docker, systemd, zfs, spotifyd, spotifyd_advertising, miraie_ac, power_watchdog) and a `last_check` timestamp. So the LED can subscribe to one retained topic and be correct the moment it powers on, exactly like `clawlight-led.py` does with `clawlight/state`. An HA template sensor is only needed if the light should also cover things `healthcheck.sh` does not compute - Tinxy entity health, HA's own liveness, the Pi itself - in which case the consolidation happens in HA and gets published back to its own MQTT topic for the LED to read.
 
 **The hard part is staleness, not colour.** `publish_healthcheck_mqtt.py` is a one-shot cron publisher, not a daemon, so it cannot hold an MQTT last-will the way `server.py` does for clawlight. If `xero` dies, or cron stops, or the script starts erroring, the retained `overall` sits at its last value forever and the LED keeps confidently showing green - the precise failure the clawlight design was built to avoid ("anything other than a steady colour means don't believe me"). The fix is to read `last_check` as well and go to an amber pulse if it is older than ~2 intervals (35-40min), so a dead healthcheck looks different from a healthy one. That is the single decision this project stands or falls on.
 
-**Colours (proposed):** green = all checks pass · red = at least one problem · amber pulse = healthcheck is stale or the broker connection dropped · dim white = never seen a result yet. Deliberately not off for any state, same as clawlight - "unplugged" must stay distinguishable.
+**Colours (proposed):** green = all checks pass · red = at least one problem · amber pulse = healthcheck is stale or the broker connection dropped · dim white = never seen a result yet. Deliberately not off for any state, same as clawlight - "unplugged" must stay distinguishable. With the RG LED, green, red and amber all still work; **dim white does not**, so "never seen a result" needs another colour - probably whatever clawlight settles on for idle, so the two lights mean the same thing.
 
-**One RGB LED, not a bar.** The ask is "overall", and a single worst-of light is what gets read from across the room; *which* check failed is what the Stats dashboard and the ntfy push already answer well. A per-subsystem LED bar is the obvious escalation if the single light turns out to send you to the dashboard every time anyway.
+**One LED, not a bar.** The ask is "overall", and a single worst-of light is what gets read from across the room; *which* check failed is what the Stats dashboard and the ntfy push already answer well. A per-subsystem LED bar is the obvious escalation if the single light turns out to send you to the dashboard every time anyway.
 
-**Wiring:** GPIO13/19/26 are taken by the clawlight LED, so this needs its own block - GPIO16 + GPIO20 + GPIO21 (pins 36/38/40) with GND on pin 34 is free and leaves every button-reserved pin alone. Update `gpio_pinout.md` when it gets wired.
+**Wiring:** GPIO13/19/26 are taken by the clawlight LED, so this needs its own block - GPIO16 + GPIO20 + GPIO21 (pins 36/38/40) with GND on pin 34 is free and leaves every button-reserved pin alone. The RG LED needs only two of those (GPIO16 red, GPIO20 green), leaving GPIO21 free. Update `gpio_pinout.md` when it gets wired.
 
 **Known trap:** this would be the **fourth** GPIO process on that Pi - it needs its own lgpio notify directory or it will silently break one of the existing ones, see `incidents/2026-09-04-lgpio-notify-fifo-collision.md`. That incident is exactly how the white-noise buttons died last time.
 
 ```parts
 qty | item | est | note
-1 | Common-cathode RGB LED 5mm | 10 | local - ask for common CATHODE, shops keep both loose in one drawer
-3 | 220R resistor | 5 | local - one per colour leg
-10 | 330R + 100R resistors | 20 | local - to balance red against green/blue, see below
-1 | Female-female dupont jumpers (40-pin strip) | 120 | local - 4 wires needed: 3 colour legs + GND
+2 | 220R resistor | 5 | local - one per colour leg (RG LED: 2 legs)
+10 | 330R + 100R resistors | 20 | local - to balance red against green, see below
+1 | Female-female dupont jumpers (40-pin strip) | 120 | local - 3 wires needed: 2 colour legs + GND
 1 | Perfboard 5x7cm | 30 | local - shared with the clawlight LED build, one board holds both
 1 | Ping-pong ball or diffuser | 20 | household - optional, turns a point of light into a beacon
 ```
 
-**Buy it at the shop with the clawlight LED's parts - everything here is loose stock.** Both LED builds together are one counter purchase of roughly **₹150-250**: a couple of RGB LEDs, ~30 resistors across a few values, a jumper strip and a perfboard. Nothing in this project needs ordering, so it is not gated on any delivery - it can be built the same day the shop is visited.
+**Buy it at the shop with the clawlight LED's parts - everything here is loose stock.** Both LED builds together are one counter purchase of roughly **₹150-250**: ~30 resistors across a few values, a jumper strip and a perfboard (the LEDs are already bought). Nothing in this project needs ordering, so it is not gated on any delivery - it can be built the same day the shop is visited.
 
-Two things to ask for specifically, because they are the only ways this trip goes wrong:
-- **Common *cathode* RGB LED.** Shops keep both polarities loose in the same drawer and will not distinguish unless asked. Buying 2 of each retires the question entirely - `clawlight-led.py` has a `COMMON_ANODE` flag, so whichever turns up is a one-line change rather than a second trip.
-- **Resistors in three values, not one.** 220R is the textbook number but it is sized for 5V logic; on the Pi's 3.3V pins the red die gets ~6mA while green and blue get ~1.5mA, so the LED ends up dimmer and redder than it needs to be. Ask for ~10 each of **100R, 220R and 330R** (₹20-ish for the lot) and the colour balance becomes something to tune on the bench rather than re-order for. If it turns out to glare on a desk at night, 1k in the same handful fixes that too.
+The LEDs themselves are bought (RG, not RGB - see State). One thing still worth asking for specifically:
+- **Resistors in three values, not one.** 220R is the textbook number but it is sized for 5V logic; on the Pi's 3.3V pins the red die gets ~6mA while green gets ~1.5mA, so the LED ends up dimmer and redder than it needs to be. Ask for ~10 each of **100R, 220R and 330R** (₹20-ish for the lot) and the colour balance becomes something to tune on the bench rather than re-order for. If it turns out to glare on a desk at night, 1k in the same handful fixes that too.
 
 A soldering iron is assumed - it is already on the aarti lights list (₹500-800) and is the one real cost if not owned. Ping-pong ball for diffusion is household, not a purchase.
 
