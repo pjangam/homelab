@@ -303,6 +303,27 @@ Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of i
 
 **Next step:** check Termius's URL scheme for a startup command. That answer decides between a pure link and the snippet-plus-lookup design.
 
+### Network device + access map
+**Why:** there is no single place that answers "what is on the network, and what can each thing reach or be reached by". Those facts are spread across `docker-compose.yml`, Readme, Pi-hole, the router, and past PROJECTS.md entries. The map is the answer to reach for when a device misbehaves, when something new joins the LAN, or when deciding whether a change widens exposure. Noted 2026-09-15.
+
+**State:** partly done, and deliberately kept out of git.
+- **`docs/hardware.md` exists (2026-08-25) but is gitignored.** It was held back from the public repo on 2026-08-26 (commit `b40a457`) pending `docs/security_findings_2026-08-25.md`, also gitignored. The file adds no new individual facts, but collecting already-public ones in one place makes them easier to use. That review never concluded, so the hold still stands.
+- **It is a hardware inventory, not an access map.** It covers the three managed devices (xero, the wol-sender Pi, the iPhone) with specs and services, and nothing about access.
+- **It is also three weeks stale.** It predates the MacBook's role in clawlight, the ntfy and HA tailnet sidecars going live, clawlight itself, and Node-RED's watchdog being re-enabled.
+- **Unmanaged devices are missing entirely.** The router, the WiFi extender, both Tinxy units, the MirAIe AC, the Tinxy valve, and anything else that got a DHCP lease are not listed.
+
+**What the map should add on top of the inventory, per device:**
+- **Address:** LAN IP, static or DHCP reservation, tailnet name if any.
+- **Inbound:** listening ports, reachable from where (localhost / LAN / tailnet / internet), and what auth guards each one.
+- **Outbound:** which cloud it depends on (Tinxy cloud, MirAIe cloud, the ntfy.sh APNs relay, Dropbox for backups). This is also the "what breaks in an ISP outage" list.
+- **Credentials:** where they live, as a *pointer* to the Vaultwarden item, never the secret.
+
+**Build it from the network, not from memory.** Seed the list from the router's DHCP table and Pi-hole's client list, and check exposure with a port scan from a LAN client and from a tailnet-only client. The documented view and the real one are what should be compared. A device nobody remembers adding is the most useful thing this could find.
+
+**Keep it gitignored.** Extend `docs/hardware.md` (or a sibling `docs/network_map.md` with a gitignore line) rather than committing it. Listing which admin panels still lack auth (finding #2 in the security review) is precisely what should not be in a public repo. Revisit only if the repo goes private or finding #2 gets fixed.
+
+**Next step:** pull the router DHCP table and Pi-hole client list, diff them against `docs/hardware.md`, and extend the file with the access columns above.
+
 ### Homelab health LED (Pi GPIO) - the whole healthcheck as one light
 **Why:** `cron/healthcheck.sh` already knows whether the homelab is healthy, but the only way to find that out is to go looking - open the Stats dashboard, or wait for an email/ntfy push on a failure. The clawlight LED above proved the other shape works: a light on the desk that is simply *right*, with nothing to open. Same idea, different source of truth - green means every check passed, red means at least one did not, and the answer is visible from across the room.
 
