@@ -138,7 +138,13 @@ def main():
     pub_binary(
         "miraie_ac",
         not data["miraie_ac_ok"],
-        {"unavailable_minutes": data["miraie_ac_unavailable_minutes"]},
+        {
+            "unavailable_minutes": data["miraie_ac_unavailable_minutes"],
+            # healthcheck.sh runs fix_miraie_ac.sh itself now, so a cured
+            # outage never alerts - these are where it still shows.
+            "autofixes_24h": data.get("miraie_ac_autofixes_24h"),
+            "last_autofix": data.get("miraie_ac_last_autofix"),
+        },
     )
     pub_binary(
         "power_watchdog",

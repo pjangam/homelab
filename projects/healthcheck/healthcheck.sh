@@ -185,39 +185,102 @@ fi
 # node-red is on the Pi so it is not even in the docker check above, and the
 # container was `Up (healthy)` either way.
 #
-# Alerting needs the fault to persist 30 minutes, which is ~2 missed runs of
-# this */15 cron. A brief unavailable is normal and self-healing: HA marks
-# MQTT entities unavailable for a second or two whenever discovery
-# re-registers, and every node-red restart drops the entity for ~20s. Both
-# real outages ran far past 30min and would have fired. As with the spotifyd
-# tile, the dashboard flag below reflects the latest observation immediately -
-# a tile is for looking at, an alert is for interrupting you.
+# Nothing happens on the first unavailable run. A brief unavailable is normal
+# and self-healing: HA marks MQTT entities unavailable for a second or two
+# whenever discovery re-registers, and every node-red restart drops the entity
+# for ~20s. Two consecutive runs of this */15 cron seeing it is a real outage.
+#
+# Then fix_miraie_ac.sh --force runs, ONCE per outage, before anyone is
+# alerted. Until 2026-09-15 this only alerted and a human ran that same
+# script: that day the watchdog on the Pi restarted node-red at 15:40, HA
+# missed the retain=false availability on the reconnect, and the entity sat
+# unavailable for 75m with the unit online the whole time - which the fix
+# script cures in a minute by re-delivering the `online` it sees. Only once,
+# because its other verdicts are not restart-shaped: exit 2 is an indoor unit
+# that is off the MirAIe cloud, and exit 3 is HA-side. Retrying those every
+# 15 minutes would just knock the bridge over for nothing.
+#
+# The alert, when the fix does not cure it, says which of those it is, and
+# says "since HH:MM" rather than a running minute count so the text is stable
+# and the dedup at the bottom mails it once instead of every run. As with the
+# spotifyd tile, the dashboard flag reflects the latest observation
+# immediately - a tile is for looking at, an alert is for interrupting you.
 MIRAIE_AC_STATE_DIR="$HOME/.cache/healthcheck"
 MIRAIE_AC_FAIL_FILE="$MIRAIE_AC_STATE_DIR/miraie-ac-unavailable-since"
-MIRAIE_AC_ALERT_AFTER_MIN=30
+# Present = this outage already had its one fix attempt; holds its exit code.
+MIRAIE_AC_FIX_RC_FILE="$MIRAIE_AC_STATE_DIR/miraie-ac-autofix-rc"
+# One line per attempt ("<epoch> <rc>"), for the tile and the flapping alert.
+MIRAIE_AC_FIX_LOG="$MIRAIE_AC_STATE_DIR/miraie-ac-autofixes.log"
+MIRAIE_AC_FIX_AFTER_MIN=10
+MIRAIE_AC_FIX_TIMEOUT_S=300
+MIRAIE_AC_FIXES_THRESHOLD=3
 mkdir -p "$MIRAIE_AC_STATE_DIR"
+
+miraie_ac_check() {
+  miraie_ac_detail="$("$SCRIPT_DIR/projects/miraie-ac/check_miraie_ac_available.sh" 2>/dev/null)"
+  miraie_ac_rc=$?
+}
 
 miraie_ac_ok=true
 miraie_ac_unavailable_minutes=""
-miraie_ac_detail="$("$SCRIPT_DIR/projects/miraie-ac/check_miraie_ac_available.sh" 2>/dev/null)"
-miraie_ac_rc=$?
+miraie_ac_check
 
-if [ "$miraie_ac_rc" -eq 1 ]; then
+if [ "$miraie_ac_rc" -eq 1 ] && [ ! -f "$MIRAIE_AC_FAIL_FILE" ]; then
+  date +%s > "$MIRAIE_AC_FAIL_FILE"
   miraie_ac_ok=false
-  if [ -f "$MIRAIE_AC_FAIL_FILE" ]; then
-    miraie_ac_since=$(cat "$MIRAIE_AC_FAIL_FILE")
-    miraie_ac_unavailable_minutes=$(( ($(date +%s) - miraie_ac_since) / 60 ))
-    if [ "$miraie_ac_unavailable_minutes" -ge "$MIRAIE_AC_ALERT_AFTER_MIN" ]; then
-      problems+=("MirAIe AC has been unavailable in Home Assistant for ${miraie_ac_unavailable_minutes}m (${miraie_ac_detail:-unavailable}) - it cannot be controlled from HA or automations. Run projects/miraie-ac/fix_miraie_ac.sh --force: exit 2 means the indoor unit is off and needs switching on by hand, exit 3 means HA needs its MQTT integration restarted.")
-    fi
-  else
-    date +%s > "$MIRAIE_AC_FAIL_FILE"
-    miraie_ac_unavailable_minutes=0
+  miraie_ac_unavailable_minutes=0
+elif [ "$miraie_ac_rc" -eq 1 ]; then
+  miraie_ac_ok=false
+  miraie_ac_since=$(cat "$MIRAIE_AC_FAIL_FILE")
+  miraie_ac_unavailable_minutes=$(( ($(date +%s) - miraie_ac_since) / 60 ))
+
+  if [ "$miraie_ac_unavailable_minutes" -ge "$MIRAIE_AC_FIX_AFTER_MIN" ] && [ ! -f "$MIRAIE_AC_FIX_RC_FILE" ]; then
+    echo "[$(date '+%F %T')] MirAIe AC unavailable ${miraie_ac_unavailable_minutes}m - running fix_miraie_ac.sh --force"
+    timeout "$MIRAIE_AC_FIX_TIMEOUT_S" "$SCRIPT_DIR/projects/miraie-ac/fix_miraie_ac.sh" --force 2>&1 | sed 's/^/  /'
+    miraie_ac_fix_rc=${PIPESTATUS[0]}
+    echo "[$(date '+%F %T')] fix_miraie_ac.sh exited $miraie_ac_fix_rc"
+    echo "$miraie_ac_fix_rc" > "$MIRAIE_AC_FIX_RC_FILE"
+    echo "$(date +%s) $miraie_ac_fix_rc" >> "$MIRAIE_AC_FIX_LOG"
+    miraie_ac_check
+  fi
+
+  if [ "$miraie_ac_rc" -ne 1 ]; then
+    echo "[$(date '+%F %T')] MirAIe AC recovered after the fix"
+    miraie_ac_ok=true
+    miraie_ac_unavailable_minutes=""
+    rm -f "$MIRAIE_AC_FAIL_FILE" "$MIRAIE_AC_FIX_RC_FILE"
+  elif [ -f "$MIRAIE_AC_FIX_RC_FILE" ]; then
+    miraie_ac_since_hm=$(date -d "@$miraie_ac_since" '+%H:%M')
+    case "$(cat "$MIRAIE_AC_FIX_RC_FILE")" in
+      2) miraie_ac_why="the Node-RED bridge is fine but the indoor unit is not reporting to the MirAIe cloud. Switch the AC on (or power-cycle it at the wall) - restarting cannot fix this." ;;
+      3) miraie_ac_why="the bridge and the unit are both fine but HA will not take the entity back. Restart HA's MQTT integration (or HA)." ;;
+      1) miraie_ac_why="the Node-RED bridge on the Pi did not reconnect (DNS, credentials or the MirAIe cloud). Check: ssh pramod@192.168.1.124 'docker logs --tail 30 node-red'" ;;
+      124) miraie_ac_why="the fix script timed out after ${MIRAIE_AC_FIX_TIMEOUT_S}s. Run projects/miraie-ac/fix_miraie_ac.sh --force by hand." ;;
+      *) miraie_ac_why="fix_miraie_ac.sh --force reported success but HA still shows it unavailable. Check HA directly." ;;
+    esac
+    problems+=("MirAIe AC has been unavailable in Home Assistant since $miraie_ac_since_hm (${miraie_ac_detail:-unavailable}) and the automatic fix did not bring it back: $miraie_ac_why Fix output is in healthcheck.log.")
   fi
 else
   # Clear on recovery, and on rc=2 (can't tell) so a missing token or an HA
   # that was briefly down does not leave a countdown primed to fire later.
-  rm -f "$MIRAIE_AC_FAIL_FILE"
+  rm -f "$MIRAIE_AC_FAIL_FILE" "$MIRAIE_AC_FIX_RC_FILE"
+fi
+
+# A fix that works every time can still hide an AC that keeps dropping - the
+# same reason spotifyd's silent watchdog restarts are counted.
+miraie_ac_autofixes_24h=0
+miraie_ac_last_autofix=""
+if [ -f "$MIRAIE_AC_FIX_LOG" ]; then
+  miraie_ac_cutoff=$(( $(date +%s) - 86400 ))
+  while read -r ts rc; do
+    [ -n "$ts" ] || continue
+    miraie_ac_last_autofix="$(date -d "@$ts" '+%F %T') exit $rc"
+    [ "$ts" -ge "$miraie_ac_cutoff" ] && miraie_ac_autofixes_24h=$((miraie_ac_autofixes_24h + 1))
+  done < "$MIRAIE_AC_FIX_LOG"
+  tail -n 50 "$MIRAIE_AC_FIX_LOG" > "$MIRAIE_AC_FIX_LOG.tmp" && mv "$MIRAIE_AC_FIX_LOG.tmp" "$MIRAIE_AC_FIX_LOG"
+fi
+if [ "$miraie_ac_autofixes_24h" -ge "$MIRAIE_AC_FIXES_THRESHOLD" ]; then
+  problems+=("MirAIe AC needed the automatic fix $miraie_ac_autofixes_24h times in the last 24h (threshold $MIRAIE_AC_FIXES_THRESHOLD) - something keeps knocking it out, investigate. Attempts are in healthcheck.log.")
 fi
 
 # Power watchdog (watchdog_power.sh): surfaces whether enp1s0 is currently
@@ -284,6 +347,8 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
     --argjson spotifyd_advertising "$spotifyd_advertising" \
     --argjson miraie_ac_ok "$miraie_ac_ok" \
     --arg miraie_ac_unavailable_minutes "${miraie_ac_unavailable_minutes:-}" \
+    --arg miraie_ac_autofixes_24h "$miraie_ac_autofixes_24h" \
+    --arg miraie_ac_last_autofix "$miraie_ac_last_autofix" \
     --argjson power_on_battery "$power_on_battery" \
     --arg power_down_minutes "${power_down_minutes:-}" \
     '{
@@ -305,6 +370,8 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
       spotifyd_advertising: $spotifyd_advertising,
       miraie_ac_ok: $miraie_ac_ok,
       miraie_ac_unavailable_minutes: (if $miraie_ac_unavailable_minutes == "" then null else ($miraie_ac_unavailable_minutes|tonumber) end),
+      miraie_ac_autofixes_24h: ($miraie_ac_autofixes_24h|tonumber),
+      miraie_ac_last_autofix: (if $miraie_ac_last_autofix == "" then null else $miraie_ac_last_autofix end),
       power_on_battery: $power_on_battery,
       power_down_minutes: (if $power_down_minutes == "" then null else ($power_down_minutes|tonumber) end)
     }' | "$SCRIPT_DIR/projects/healthcheck/publish_healthcheck_mqtt.py"
