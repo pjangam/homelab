@@ -88,7 +88,7 @@ ssh pramod@192.168.1.124 'journalctl -u white-noise-buttons-mqtt -f'
   `scripts/pi-buttons/capture_white_noise_button_presses.sh`, which logs `pinctrl poll`
   edges on the Pi next to the MQTT messages. Edges but no MQTT means the
   bridge process isn't seeing its own edge notifications - see
-  `incidents/2026-09-04-lgpio-notify-fifo-collision.md` (two lgpio processes
+  `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md` (two lgpio processes
   sharing a working directory fight over one `.lgd-nfy0` FIFO; each script
   now `chdir`s into its own `~/.lgpio/<script>/` to prevent it).
 

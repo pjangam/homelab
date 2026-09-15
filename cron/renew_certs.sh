@@ -98,7 +98,7 @@ log "installed cert with ${after}d remaining"
 # that leaves it running. With `restart: unless-stopped`, Docker then treats it
 # as deliberately stopped and refuses to start it after the next reboot - so a
 # successful renewal silently guaranteed caddy would not come back. That's
-# exactly what happened on 2026-09-06 (see incidents/).
+# exactly what happened on 2026-09-06 (see docs/incidents/).
 #
 # `caddy reload` goes through Caddy's own admin API instead and never touches
 # Docker's container state. --address is explicit because `localhost` resolves

@@ -3,7 +3,7 @@ Description=Aarti Lights - sound classification driving the WS2812B backdrop
 # After=network-online.target is deliberately absent: in a *user* unit it is a
 # silent no-op (the target belongs to the system manager), so it reads as a
 # guarantee while providing none. The wait belongs in ExecStartPre instead -
-# see incidents/ and the note in white-noise.service.
+# see docs/incidents/ and the note in white-noise.service.
 
 [Service]
 Type=simple

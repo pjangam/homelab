@@ -21,7 +21,7 @@ boot and claims both pins the moment it starts, so nothing else can have them
 while it does. If those buttons are not going to be wired, disabling the
 service (`sudo systemctl disable --now scene-buttons-mqtt` on the Pi) frees
 GPIO27 and GPIO22 - and removes a GPIO process, which is worth doing on its
-own merits: see `incidents/2026-09-04-lgpio-notify-fifo-collision.md`, where
+own merits: see `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`, where
 this idle service silently broke the white-noise buttons.
 
 GPIO17 originally carried a latching toggle switch (see git history /
@@ -71,5 +71,5 @@ The clawlight LED took GPIO13/19/26 (pins 33/35/37) rather than any of those:
 they form a tidy block at the corner of the header with GND on pin 39, and
 leave every one of the free-for-a-button pins above untouched. Note it is a
 third GPIO process on this Pi - see
-`incidents/2026-09-04-lgpio-notify-fifo-collision.md` for why each one needs
+`docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md` for why each one needs
 its own lgpio notify directory.

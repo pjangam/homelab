@@ -5,7 +5,7 @@
 # can be authenticated, connected, and `active (running)` while advertising
 # nothing at all - that exact state lasted five days in Sept 2026 and only
 # surfaced when an HA script failed. See
-# incidents/2026-09-11-spotifyd-zeroconf-lost-to-boot-race.md.
+# docs/incidents/2026-09-11-spotifyd-zeroconf-lost-to-boot-race.md.
 #
 # Checking the advertisement rather than a log line is deliberate: it's the
 # end state the rest of the chain (Spotify device list -> spotcast entity ->

@@ -66,7 +66,7 @@ def isolate_lgpio_notify_dir():
     Same guard as the button bridges: lgpio picks the first free `.lgd-nfy<N>`
     slot in the process CWD, so two GPIO services started in the same second
     from the same directory can end up sharing one FIFO and silently eating
-    each other's events (incidents/2026-09-04-lgpio-notify-fifo-collision.md).
+    each other's events (docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md).
     This service only writes to pins, but it is a third GPIO process on this
     Pi and there is no reason to be the one that reintroduces the collision.
     """

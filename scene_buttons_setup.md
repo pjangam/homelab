@@ -85,5 +85,5 @@ pattern from the start, not the original racy manual loop.
 Same failure modes and tooling as the white-noise buttons - see the
 "Troubleshooting" section of `white_noise_buttons_setup.md`. Both bridges run
 on the same Pi and hit the same lgpio notify-FIFO collision on 2026-09-04
-(`incidents/2026-09-04-lgpio-notify-fifo-collision.md`); redeploy either with
+(`docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`); redeploy either with
 `scripts/pi-buttons/deploy_button_bridges_pi.sh`.

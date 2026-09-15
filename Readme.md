@@ -243,7 +243,7 @@ The last command should show one retained `whitenoise/available online` and one 
 1. **Push buttons → white noise start/stop** (`scripts/pi-buttons/white-noise-buttons-mqtt.py`, `white-noise-buttons-mqtt.service` on the Pi) — two momentary push buttons (GPIO17/pin 11 ↔ GND/pin 9 for start, GPIO18/pin 12 ↔ GND/pin 14 for stop) each publish a plain non-retained MQTT message on press; two HA automations (`white_noise_button_start`/`_stop` in `automations.yaml`) call `switch.turn_on`/`turn_off` directly on `switch.white_noise`. Supersedes an earlier latching toggle switch on GPIO17 alone (`binary_sensor.toggle_switch_1` + `toggle1_white_noise_on`/`_off`) — see `white_noise_buttons_setup.md` and the reconnect-loop bug note below for why momentary buttons with no persisted state are the more robust shape. Setup details: `white_noise_buttons_setup.md`.
 2. **Push buttons → oju sleep/awake scenes** (`scripts/pi-buttons/scene-buttons-mqtt.py`, `scene-buttons-mqtt.service` on the Pi) — two momentary push buttons (GPIO27/pin 13 and GPIO22/pin 15, both ↔ GND/pin 14) each publish a plain non-retained MQTT message on press; two HA automations (`scene_button_oju_sleep`/`_awake`) call `scene.turn_on` directly. Deliberately no persisted state/entity here (unlike the toggle switch) — a momentary trigger doesn't need one, and it sidesteps a real bug class hit with the toggle switch (see below). Setup details: `scene_buttons_setup.md`.
 
-**GPIO pinout reference:** `gpio_pinout.md` — the Pi's full 40-pin header layout, marked up with what's already wired and which pins are free for the next button.
+**GPIO pinout reference:** `docs/gpio_pinout.md` — the Pi's full 40-pin header layout, marked up with what's already wired and which pins are free for the next button.
 
 **Reconnect-loop bug (2026-08-25, recurred 2026-08-31):** `toggle-button-mqtt.py`'s original manual MQTT reconnect loop was racy — checking `client.is_connected()` right after `loop_start()` could read `False` before the CONNACK was processed, tearing the connection down and reconnecting on a ~5s cycle indefinitely. Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire its HA automation every 5 seconds — overriding manual scene/dashboard control of white noise regardless of the physical switch's actual position. Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). `scene-buttons-mqtt.py` was written to avoid the whole bug class by design — no retained state to republish in the first place. The same buggy pattern was independently present in `scripts/white-noise/white-noise-mqtt.py` (it predates the 2026-08-25 fix and wasn't back-ported) and caused the same `whitenoise/available` flapping, making the HA white-noise switch flicker unavailable every ~5s. Fixed the same way on 2026-08-31, with the periodic `publish_state` poll moved to a background thread since `loop_forever()` blocks the main thread.
 
@@ -458,7 +458,7 @@ when the loss is upstream of the LAN rather than a whole-house outage.
 - [ ] ftp server to dump files
 - [ ] ftp backups — compress and encrypt
 - [x] Immich data redundancy: ZFS mirror for the photo volume — backup is skipped due to size, so disk redundancy is the safety net
-- [x] Immich: Google Photos imported via immich-go — 12,913 photos/videos uploaded (22/23 takeout parts). 21 files from part 019 missing, listed in `google_takeout_missing.md`, to be uploaded manually.
+- [x] Immich: Google Photos imported via immich-go — 12,913 photos/videos uploaded (22/23 takeout parts). 21 files from part 019 missing, listed in `docs/google_takeout_missing.md`, to be uploaded manually.
 
 ## Immich hardware requirements
 
@@ -537,7 +537,7 @@ amixer sset Master 50%
 
 **Troubleshooting:**
 - **Stuck "active" but throwing 429/websocket errors** - just restart it: `systemctl --user restart spotifyd`.
-- **"xero" doesn't show up as a Connect device in the Spotify app** - check for a zeroconf/mDNS failure: `journalctl --user -u spotifyd -b | grep libmdns`. An `Setting up dns-sd failed: No such device (os error 19)` line means spotifyd's mDNS advertisement is silently failing on every startup (it logs this and keeps running normally otherwise, so nothing else looks wrong). Root cause found 2026-09-02: an orphaned Docker network interface (`docker network ls`, look for a bridge with 0 containers) broke libmdns's interface enumeration entirely. Remove the orphaned network (`docker network rm <name>`) and `systemctl --user restart spotifyd` - see `incidents/2026-09-02-spotifyd-zeroconf-broken-by-orphaned-docker-network.md`.
+- **"xero" doesn't show up as a Connect device in the Spotify app** - check for a zeroconf/mDNS failure: `journalctl --user -u spotifyd -b | grep libmdns`. An `Setting up dns-sd failed: No such device (os error 19)` line means spotifyd's mDNS advertisement is silently failing on every startup (it logs this and keeps running normally otherwise, so nothing else looks wrong). Root cause found 2026-09-02: an orphaned Docker network interface (`docker network ls`, look for a bridge with 0 containers) broke libmdns's interface enumeration entirely. Remove the orphaned network (`docker network rm <name>`) and `systemctl --user restart spotifyd` - see `docs/incidents/2026-09-02-spotifyd-zeroconf-broken-by-orphaned-docker-network.md`.
 
 ---
 
@@ -632,7 +632,7 @@ It renews via `tailscale cert --min-validity 720h`, writes to temp files and
 validates them before installing, and **pushes a priority-5 ntfy alert on any
 failure** - see "Push Notifications" above. That alerting exists because this
 job failed silently for three months
-(`incidents/2026-09-04-tls-cert-renewal-silently-broken.md`).
+(`docs/incidents/2026-09-04-tls-cert-renewal-silently-broken.md`).
 
 Two things that will bite you if you edit it:
 - **No `sudo`.** This user has `NOPASSWD` only for `shutdown`, so any `sudo` in
@@ -678,12 +678,12 @@ infrastructure, not a stopgap**.
 
 ## Past incidents
 
-Full write-ups live in [`incidents/`](incidents/), one file per incident (symptom/root cause/diagnosis/fix/prevention):
+Full write-ups live in [`docs/incidents/`](docs/incidents/), one file per incident (symptom/root cause/diagnosis/fix/prevention):
 
-- [`2026-06-29-zfs-postgres-freeze.md`](incidents/2026-06-29-zfs-postgres-freeze.md) — SSH + display dead, Docker still accessible; orphaned `immich_postgres` container deadlocked on ZFS I/O
-- [`2026-08-31-white-noise-mqtt-reconnect-loop.md`](incidents/2026-08-31-white-noise-mqtt-reconnect-loop.md) — racy manual MQTT reconnect loop flapping HA switches "unavailable" every ~5s; found in `toggle-button-mqtt.py` (2026-08-25), recurred in `white-noise-mqtt.py` (2026-08-31)
-- [`2026-07-23-getty-tty1-crash-loop.md`](incidents/2026-07-23-getty-tty1-crash-loop.md) — `getty@tty1` crash-looped after a reboot changed the console video mode; a hardcoded TTY font choice stopped fitting. Includes a corrected theory ruling this out as the cause of the same-day white-noise bug
-- [`2026-09-04-tls-cert-renewal-silently-broken.md`](incidents/2026-09-04-tls-cert-renewal-silently-broken.md) — the monthly `tailscale cert` cron produced no effect for 3 months and was found 5 days from expiry; `sudo` cannot run from this crontab, the `&&`-chain sent the error to unread cron mail, and `tailscale cert` without `--min-validity` returns the cached cert rather than renewing
+- [`2026-06-29-zfs-postgres-freeze.md`](docs/incidents/2026-06-29-zfs-postgres-freeze.md) — SSH + display dead, Docker still accessible; orphaned `immich_postgres` container deadlocked on ZFS I/O
+- [`2026-08-31-white-noise-mqtt-reconnect-loop.md`](docs/incidents/2026-08-31-white-noise-mqtt-reconnect-loop.md) — racy manual MQTT reconnect loop flapping HA switches "unavailable" every ~5s; found in `toggle-button-mqtt.py` (2026-08-25), recurred in `white-noise-mqtt.py` (2026-08-31)
+- [`2026-07-23-getty-tty1-crash-loop.md`](docs/incidents/2026-07-23-getty-tty1-crash-loop.md) — `getty@tty1` crash-looped after a reboot changed the console video mode; a hardcoded TTY font choice stopped fitting. Includes a corrected theory ruling this out as the cause of the same-day white-noise bug
+- [`2026-09-04-tls-cert-renewal-silently-broken.md`](docs/incidents/2026-09-04-tls-cert-renewal-silently-broken.md) — the monthly `tailscale cert` cron produced no effect for 3 months and was found 5 days from expiry; `sudo` cannot run from this crontab, the `&&`-chain sent the error to unread cron mail, and `tailscale cert` without `--min-validity` returns the cached cert rather than renewing
 
 ---
 

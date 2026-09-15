@@ -15,7 +15,7 @@
 #   [ERROR] libmdns error: Setting up dns-sd failed: No such device (os error 19)
 # and then runs forever, healthy in every other respect, never advertising
 # itself as a Spotify Connect device. See
-# incidents/2026-09-11-spotifyd-zeroconf-lost-to-boot-race.md.
+# docs/incidents/2026-09-11-spotifyd-zeroconf-lost-to-boot-race.md.
 #
 # Used as an ExecStartPre guard. Prefixed with `-` in the unit so a timeout
 # degrades to "start anyway" rather than refusing to start the service.

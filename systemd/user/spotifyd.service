@@ -7,7 +7,7 @@ Description=Spotifyd - Spotify Connect daemon
 # wait is the ExecStartPre below - spotifyd's zeroconf advertisement is set
 # up once at startup and never retried, so starting before enp1s0 has an
 # address costs you Spotify Connect discovery until the next restart.
-# See incidents/2026-09-11-spotifyd-zeroconf-lost-to-boot-race.md
+# See docs/incidents/2026-09-11-spotifyd-zeroconf-lost-to-boot-race.md
 After=sound.target
 
 [Service]

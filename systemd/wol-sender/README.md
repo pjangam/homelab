@@ -13,7 +13,7 @@ white-noise unit (heredoc), and the scene-buttons unit is documented in
 
 Note `WorkingDirectory=/home/pramod` in both button-bridge units. That shared
 line is what caused the 2026-09-04 outage
-(`incidents/2026-09-04-lgpio-notify-fifo-collision.md`). It is now harmless -
+(`docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`). It is now harmless -
 each bridge script moves itself into its own directory before touching GPIO -
 and is left as-is deliberately, so the fix does not depend on unit config
 being right.

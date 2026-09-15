@@ -98,7 +98,7 @@ fi
 # docker kill --signal=USR1 caddy`. That entry failed silently for three months
 # (sudo has no NOPASSWD for tailscale and cron has no TTY), and its caddy reload
 # also marked the container manually-stopped so it never came back after a
-# reboot. Both are written up in incidents/ (2026-09-04 and 2026-09-06). The
+# reboot. Both are written up in docs/incidents/ (2026-09-04 and 2026-09-06). The
 # live crontab was replaced on 2026-09-04; this line was stale until 2026-09-06,
 # meaning a freshly provisioned machine would have reintroduced both bugs.
 #
@@ -148,7 +148,7 @@ if tailscale status &>/dev/null; then
   # Let $USER drive tailscale without sudo. This is what makes the weekly
   # cron/renew_certs.sh job work: cron has no TTY, so a `sudo tailscale cert`
   # in there fails instantly and silently - which is exactly how renewal went
-  # unnoticed for three months (see incidents/2026-09-04-tls-cert-renewal-
+  # unnoticed for three months (see docs/incidents/2026-09-04-tls-cert-renewal-
   # silently-broken.md). Idempotent, so re-running this script is harmless.
   sudo tailscale set --operator="$USER"
   # Read the setting back rather than trusting the exit code. If the operator

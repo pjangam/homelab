@@ -6,7 +6,7 @@
 # first failure with the container still stopped, and since `docker stop` also
 # sets Docker's HasBeenManuallyStopped flag, `restart: unless-stopped` then keeps
 # it down through the next reboot too - that's how caddy went missing on
-# 2026-09-06 (see incidents/2026-09-06-caddy-not-restarting-after-reboot.md).
+# 2026-09-06 (see docs/incidents/2026-09-06-caddy-not-restarting-after-reboot.md).
 #
 # This tests the PATTERN against real Docker on a throwaway container rather than
 # running the real backup (which stops the live vaultwarden, writes a GPG archive

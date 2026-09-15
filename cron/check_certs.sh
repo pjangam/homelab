@@ -6,7 +6,7 @@
 # it fails, but it cannot alert if it never runs at all - a removed crontab
 # line, a deleted script, or a machine that was off every Sunday all look
 # identical to silence. That exact failure mode went unnoticed for three months
-# (incidents/2026-09-04-tls-cert-renewal-silently-broken.md), so the check that
+# (docs/incidents/2026-09-04-tls-cert-renewal-silently-broken.md), so the check that
 # catches it deliberately shares no machinery with the thing it checks.
 #
 # Called by cron/healthcheck.sh (every 15 min). Takes an optional cert
