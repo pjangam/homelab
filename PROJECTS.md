@@ -340,6 +340,19 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 
 ## ✅ Done
 
+### scripts/ split into one folder per project
+**Why:** `scripts/` had grown to 73 loose files across a dozen unrelated projects, with nothing saying which ones cron or a service depended on - the start of a big ball of mud.
+**What shipped (2026-09-15):** 14 project folders (`aarti-lights/`, `healthcheck/`, `notify/`, `miraie-ac/`, `spotifyd/`, `white-noise/`, `pi-buttons/`, `wol-sender/`, `clawlight/`, `network/`, `esp32-tools/`, `certs-backup/`, `dev-shell/`, `repo-tools/`), no loose files, and `scripts/README.md` saying where a new script goes. Done in two phases: the ~50 scripts nothing live calls first, then the cron- and systemd-called ones together with their callers, moved just after a cron tick with no job running.
+**Notes worth keeping:**
+- **`scripts/repo-tools/find_script_references.sh NAME` before moving or renaming anything.** It covers what `git grep` cannot see: the crontab via `cron/*.sh`, installed systemd units, HA's gitignored config, running processes.
+- **Installed user units are copies, not symlinks** - a repo edit changes nothing until re-copied, daemon-reloaded and restarted. spotifyd's `wait_for_network.sh` is `-` prefixed, so a missed copy would have silently brought back the boot race.
+- **Scripts are now two levels below the repo root.** One level short resolves to `scripts/` and fails only when it reaches for `.env*` or `HOMEASSISTANT_CONFIG/`.
+- **Nearly deleted the live healthcheck scripts.** Two healthcheck tests built a fake repo by symlinking each `scripts/` entry and then wrote stubs into it; once entries became folders the stubs would have gone through to the real cron-called scripts. Caught before the move; the tests now mirror real directories with per-file symlinks.
+- Found on the way, not caused by the move: the tmux installer's `mktemp -t` only worked on macOS, so its test failed 32/63 on `xero`. Fixed.
+**Verified:** every file parses; no reference uses an old flat path; all moved tests pass with real scripts byte-identical before and after; aarti-lights, white-noise-mqtt and volume-mqtt restarted and running from the new paths; the 14:20 power watchdog sourced `notify/` silently, and the 14:30 healthcheck advanced its retained `last_check` (08:30 -> 09:00 UTC) with no problems.
+**Not updated:** four descriptions in HA's root-owned `automations.yaml` still say `scripts/scene-buttons-mqtt.py` / `scripts/white-noise-buttons-mqtt.py`. Text only. Root's crontab was not checked (needs sudo).
+**Next step:** none.
+
 ### Sound-reactive aarti lights (Ganapati decoration)
 **Why:** festival decoration for Ganesh Chaturthi - a WS2812 backdrop behind the makhar that reacts to the aarti in real time. Chosen 2026-09-07 over the other ideas (fountain + mist bowl, ghanta striker, fiber-optic canopy, infinity mirror halo, water curtain) on wow-per-rupee and on being the only one whose long-lead part could still arrive in time. The first fully local light in the house - no cloud.
 **What shipped (2026-09-12 to 2026-09-14), built breadboard-first per `aarti_lights_setup.md`:**
