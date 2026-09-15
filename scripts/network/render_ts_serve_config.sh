@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Renders a tailscale-sidecar serve-config.json from ts-serve-config.template.json.
+# Renders a tailscale-sidecar serve-config.json from services/tailscale/serve-config.template.json.
 #
 # Every tailscale sidecar in docker-compose.yml (ha-tailscale, ntfy-tailscale)
 # wants the same shape: terminate HTTPS on :443 with a Tailscale-provisioned,
@@ -13,7 +13,7 @@
 #                       with the node's own cert domain. Do not expand it here.
 #
 # Usage:
-#   scripts/network/render_ts_serve_config.sh http://ntfy:80 ts-ntfy-config/serve-config.json
+#   scripts/network/render_ts_serve_config.sh http://ntfy:80 services/tailscale/ntfy/serve-config.json
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -22,7 +22,7 @@ outfile="${2:?usage: render_ts_serve_config.sh <upstream-url> <output-file>}"
 
 # Substitute with awk rather than sed so a URL containing / or & needs no escaping.
 awk -v up="$upstream" '{ gsub(/@@UPSTREAM@@/, up); print }' \
-    ts-serve-config.template.json > "$outfile.tmp"
+    services/tailscale/serve-config.template.json > "$outfile.tmp"
 
 python3 -m json.tool "$outfile.tmp" >/dev/null  # fail loudly on malformed JSON
 mv "$outfile.tmp" "$outfile"

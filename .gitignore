@@ -15,8 +15,8 @@ postgres/
 .healthcheck_state
 *.log
 *.swp
-mosquitto/log/
-mosquitto/passwd
+services/mosquitto/log/
+services/mosquitto/passwd
 client_secret*.json
 hardware.md
 security_findings*.md

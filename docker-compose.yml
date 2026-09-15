@@ -170,7 +170,7 @@ services:
       # Proxies to HA over the LAN (192.168.1.123:8123) rather than by container
       # name, because HA runs with network_mode: host and so isn't on this
       # compose network. Rendered by scripts/network/render_ts_serve_config.sh.
-      - ./ts-ha-config:/config
+      - ./services/tailscale/ha:/config
 
   mosquitto:
     image: eclipse-mosquitto:latest
@@ -178,7 +178,7 @@ services:
     ports:
       - "1883:1883"
     volumes:
-      - ./mosquitto:/mosquitto/config
+      - ./services/mosquitto:/mosquitto/config
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
     restart: unless-stopped
@@ -194,7 +194,7 @@ services:
     environment:
       - TAILNET_SUFFIX=${TAILNET_SUFFIX}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ./certs:/certs:ro
       - caddy_data:/data
       - caddy_config:/config
@@ -296,7 +296,7 @@ services:
       # delivery derives its upstream topic hash from this value.
       NTFY_BASE_URL: "https://ntfy.${TAILNET_SUFFIX}"
     volumes:
-      - ./ntfy/server.yml:/etc/ntfy/server.yml:ro
+      - ./services/ntfy/server.yml:/etc/ntfy/server.yml:ro
       - ntfy-cache:/var/cache/ntfy
       - ntfy-auth:/var/lib/ntfy
     networks:
@@ -325,7 +325,7 @@ services:
       # Unlike ha-tailscale, this proxies to the ntfy container by service name
       # over the compose network - ntfy isn't host-networked, so it needs no
       # LAN-exposed port at all.
-      - ./ts-ntfy-config:/config
+      - ./services/tailscale/ntfy:/config
     depends_on:
       - ntfy
 

@@ -7,6 +7,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 import time
 
 import paho.mqtt.client as mqtt
@@ -74,6 +75,16 @@ def on_message(client, userdata, msg):
     publish_state(client)
 
 
+def periodic_publish(client):
+    while True:
+        time.sleep(15)
+        publish_state(client)
+
+
+# Reconnection is left to paho. The old manual loop checked is_connected()
+# straight after loop_start(), which can read False before the CONNACK lands -
+# so after a broker restart it tore down and redialled every 5s forever. Same
+# race, and same fix, as docs/incidents/2026-08-31-white-noise-mqtt-reconnect-loop.md.
 def main():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="volume-bridge")
     client.username_pw_set(os.environ["MQTT_USERNAME"], os.environ["MQTT_PASSWORD"])
@@ -81,20 +92,9 @@ def main():
     client.on_connect = on_connect
     client.on_message = on_message
 
-    while True:
-        try:
-            client.connect(BROKER, PORT, keepalive=30)
-        except OSError:
-            time.sleep(5)
-            continue
-        client.loop_start()
-        try:
-            while client.is_connected():
-                publish_state(client)
-                time.sleep(15)
-        finally:
-            client.loop_stop()
-        time.sleep(5)
+    client.connect_async(BROKER, PORT, keepalive=30)
+    threading.Thread(target=periodic_publish, args=(client,), daemon=True).start()
+    client.loop_forever()
 
 
 if __name__ == "__main__":
