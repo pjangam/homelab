@@ -1,0 +1,31 @@
+[
+    {
+        "id": "a1c0ffee5e7a7e01",
+        "type": "comment",
+        "z": "f6f2187d.f17ca8",
+        "name": "Why the AC status refresh exists (managed by homelab repo)",
+        "info": "The MirAIe node publishes the AC's availability retain=false and only when something changes or it reconnects, so Home Assistant can miss it (2026-09-15: 75 minutes unavailable with the AC online).\n\nAny message into the MirAIe node makes it ask the MirAIe cloud for each AC's current status and publish state and availability again. The value comes from the cloud's onlineStatus, so an AC that is off still shows unavailable.\n\nThis refresh republishes state and availability only, not the discovery config. After an HA restart the entity is gone entirely until a node-red restart; xero's healthcheck.sh handles that by running fix_miraie_ac.sh.\n\nDeployed by projects/miraie-ac/deploy_nodered_refresh_flow.sh - edit the JSON there, not here.",
+        "x": 270,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "a1c0ffee5e7a7e02",
+        "type": "inject",
+        "z": "f6f2187d.f17ca8",
+        "name": "Refresh AC status every 5 min",
+        "props": [],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "90",
+        "topic": "",
+        "x": 250,
+        "y": 380,
+        "wires": [
+            [
+                "8970a24f077dd9a9"
+            ]
+        ]
+    }
+]
