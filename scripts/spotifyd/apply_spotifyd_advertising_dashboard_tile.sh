@@ -16,7 +16,7 @@
 # Idempotent - re-running when the tile is already present is a no-op.
 set -euo pipefail
 
-REPO="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+REPO="$(cd "$(dirname "$(readlink -f "$0")")/../.." && pwd)"
 DASH="$REPO/HOMEASSISTANT_CONFIG/.storage/lovelace.dashboard_stats"
 ENTITY="binary_sensor.homelab_healthcheck_homelab_spotifyd_connect_advertising"
 ANCHOR="binary_sensor.homelab_healthcheck_homelab_spotifyd"

@@ -6,14 +6,14 @@ them in memory, so hand-editing that JSON does nothing until HA restarts -
 and on 2026-09-11 restarting HA for exactly that reason is what knocked the
 MirAIe AC entity out for 37 minutes (the AC's availability is published
 retain=false, so a fresh HA has no availability value and pins the entity
-`unavailable`; see scripts/fix_miraie_ac.sh). Going through the websocket API
+`unavailable`; see scripts/miraie-ac/fix_miraie_ac.sh). Going through the websocket API
 instead updates the live config and writes the file, with no restart and
 nothing else disturbed.
 
 Idempotent: adding a tile that is already on the board changes nothing.
 
-  scripts/add_stats_dashboard_tile.py binary_sensor.foo
-  scripts/add_stats_dashboard_tile.py binary_sensor.foo --after binary_sensor.bar
+  scripts/healthcheck/add_stats_dashboard_tile.py binary_sensor.foo
+  scripts/healthcheck/add_stats_dashboard_tile.py binary_sensor.foo --after binary_sensor.bar
 
 Needs HA_TOKEN in the environment (it is in .env.healthcheck).
 """
@@ -28,7 +28,7 @@ from pathlib import Path
 
 import websockets
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parent.parent.parent
 STORAGE = REPO / "HOMEASSISTANT_CONFIG" / ".storage"
 
 

@@ -45,7 +45,7 @@ log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG"; }
 # publishing to the agent-status topic after the 2026-09-11 topic split - a
 # duplicate of push_ntfy.sh is a duplicate that doesn't get updated.
 # shellcheck disable=SC1091
-. "$(dirname "$0")/../scripts/push_ntfy.sh"
+. "$(dirname "$0")/../scripts/notify/push_ntfy.sh"
 
 alert() {
   log "ALERT: $*"

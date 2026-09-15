@@ -18,7 +18,7 @@ ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do \
   done; \
   echo "WLED at 192.168.1.125 did not answer in 120s" >&2; exit 1'
 
-ExecStart=/usr/bin/python3 /home/pramod/code/homelab/scripts/aarti-render.py --mode layers --quiet
+ExecStart=/usr/bin/python3 /home/pramod/code/homelab/scripts/aarti-lights/aarti-render.py --mode layers --quiet
 
 # The renderer is the decoration's brain but not its life support: WLED falls
 # back to its own effects a couple of seconds after frames stop arriving, so a

@@ -66,9 +66,9 @@ Node-RED publishes `homeassistant/climate/panasonic-ac/config` on every
 connect, so if the bridge is down it never gets republished.
 
 ```bash
-scripts/fix_miraie_ac.sh           # no-op if the bridge is already healthy
-scripts/fix_miraie_ac.sh --force   # restart anyway (republishes discovery)
-scripts/diagnose_miraie_ac.sh      # read-only: what is actually broken
+scripts/miraie-ac/fix_miraie_ac.sh           # no-op if the bridge is already healthy
+scripts/miraie-ac/fix_miraie_ac.sh --force   # restart anyway (republishes discovery)
+scripts/miraie-ac/diagnose_miraie_ac.sh      # read-only: what is actually broken
 ```
 
 The fix is one `docker restart node-red` on the Pi - nothing on xero needs
@@ -96,21 +96,21 @@ The container then sat `Up (healthy)` for 29 hours holding **zero** broker
 connections. Note the entrypoint's `until nslookup auth.miraie.in` guard did
 not help: it passed, and DNS failed again five seconds later at login.
 
-`scripts/diagnose_miraie_ac.sh --capture` restarts Node-RED while sniffing
+`scripts/miraie-ac/diagnose_miraie_ac.sh --capture` restarts Node-RED while sniffing
 MQTT, which is the only way to see this path's traffic - `ha-miraie-ac`
 publishes state and availability with `retain=false`, so subscribing while the
 AC sits idle shows nothing whether the bridge is healthy or dead.
 
 ### Is the AC actually usable? (healthcheck alert + dashboard tile)
 
-`scripts/check_miraie_ac_available.sh` asks the only question that matters -
+`scripts/miraie-ac/check_miraie_ac_available.sh` asks the only question that matters -
 what does HA hold for `climate.panasonic_ac_panasonic_ac`? - and
 `cron/healthcheck.sh` alerts by email + ntfy when the answer has been
 `unavailable` for **30 minutes**, with a tile on the Stats dashboard
 (`binary_sensor.homelab_healthcheck_homelab_miraie_ac`) reflecting the latest
 observation immediately.
 
-That tile was added with `scripts/add_stats_dashboard_tile.py`, which edits the
+That tile was added with `scripts/healthcheck/add_stats_dashboard_tile.py`, which edits the
 dashboard over HA's websocket API. Use it rather than hand-editing
 `.storage/lovelace.dashboard_stats`: storage-mode dashboards live in HA's
 memory, so a file edit does nothing until HA restarts - and restarting HA is
@@ -144,9 +144,9 @@ on that: HA being down is already covered by the container check.
 
 **Currently enabled** (re-enabled 2026-09-11 for AC season, expected to stay on through at least mid-November 2026). It had been disabled since 2026-08-23 for the off-season. Verified on re-enable by stopping `node-red` and running the script by hand: it logged `MQTT bridge down (cloud_connected=0 local_connected=0)`, restarted the container, and the bridge was back in ~5s.
 
-**A second, separate way the AC entity goes unavailable.** Later the same evening (2026-09-11 21:05) it happened again with a different cause: the unit was provably online - it answered a `mode/set` and published fresh state - while HA held the entity `unavailable` for 37 minutes. The node publishes the unit's `availability` with `retain=false`, and HA gates the entity on that topic (`avty_t` in the discovery payload). So once **HA** restarts it holds no availability value and keeps the entity unavailable no matter how much state arrives; it recovers only if HA happens to be subscribed when Node-RED republishes `online`, and since the config and availability go out back-to-back on a reconnect, that is a race HA can lose. Re-publishing `online` to `miraie-ac/panasonic-ac/availability` brings it straight back. `scripts/fix_miraie_ac.sh` now checks the HA entity and does exactly that re-delivery (exit 3 if the entity still will not come back, which means the problem is HA-side).
+**A second, separate way the AC entity goes unavailable.** Later the same evening (2026-09-11 21:05) it happened again with a different cause: the unit was provably online - it answered a `mode/set` and published fresh state - while HA held the entity `unavailable` for 37 minutes. The node publishes the unit's `availability` with `retain=false`, and HA gates the entity on that topic (`avty_t` in the discovery payload). So once **HA** restarts it holds no availability value and keeps the entity unavailable no matter how much state arrives; it recovers only if HA happens to be subscribed when Node-RED republishes `online`, and since the config and availability go out back-to-back on a reconnect, that is a race HA can lose. Re-publishing `online` to `miraie-ac/panasonic-ac/availability` brings it straight back. `scripts/miraie-ac/fix_miraie_ac.sh` now checks the HA entity and does exactly that re-delivery (exit 3 if the entity still will not come back, which means the problem is HA-side).
 
-**What it does not cover.** This watchdog only sees the *bridge*. On 2026-09-11 the AC entity went `unavailable` in HA while both broker connections stayed healthy the whole time - the indoor unit itself had gone silent to the MirAIe cloud, and three `docker restart node-red` in a row reported success and changed nothing. The watchdog correctly stays quiet in that case, because restarting cannot fix a unit that is switched off. That failure is what `scripts/fix_miraie_ac.sh` diagnoses (exit 2 = the unit, not the bridge).
+**What it does not cover.** This watchdog only sees the *bridge*. On 2026-09-11 the AC entity went `unavailable` in HA while both broker connections stayed healthy the whole time - the indoor unit itself had gone silent to the MirAIe cloud, and three `docker restart node-red` in a row reported success and changed nothing. The watchdog correctly stays quiet in that case, because restarting cannot fix a unit that is switched off. That failure is what `scripts/miraie-ac/fix_miraie_ac.sh` diagnoses (exit 2 = the unit, not the bridge).
 
 **Disable / re-enable** (no need to touch cron; edit on the Pi): the toggle lives in `WATCHDOG_ENABLED` inside `/home/pramod/nodered-watchdog.env`, next to the script itself - a plain env file rather than a hidden dotfile, so it's easier to stumble on again next summer.
 ```bash
@@ -204,7 +204,7 @@ Webhook URL: `http://<ha-ip>:8123/api/webhook/alfred_motion`
 How the HA white noise switch works, end to end:
 
 1. **HA MQTT switch** — `switch.white_noise` is created via MQTT discovery (no YAML entity config needed); toggling it publishes `ON`/`OFF` to `whitenoise/set` on the local Mosquitto broker (`localhost:1883`, container name `mosquitto`)
-2. **MQTT bridge** (`scripts/white-noise-mqtt.py`) — a `uv run --script` (deps declared inline, no venv to manage) that subscribes to `whitenoise/set`, translates it into systemctl calls, and publishes retained state/availability back to `whitenoise/state` / `whitenoise/available` so HA reflects reality instantly instead of polling (`systemd/user/white-noise-mqtt.service`)
+2. **MQTT bridge** (`scripts/white-noise/white-noise-mqtt.py`) — a `uv run --script` (deps declared inline, no venv to manage) that subscribes to `whitenoise/set`, translates it into systemctl calls, and publishes retained state/availability back to `whitenoise/state` / `whitenoise/available` so HA reflects reality instantly instead of polling (`systemd/user/white-noise-mqtt.service`)
 3. **systemctl** — starts/stops the `white-noise` user service (`systemd/user/white-noise.service`), which runs `sox` (`play -n -q synth brownnoise fade t 60`, `sudo apt install sox`) directly. SoX's own `fade` effect ramps volume in over ~60s in software — no wrapper script needed. The unit's `ExecStartPre`/`ExecStop` pin the ALSA `Speaker` control (card 1, the USB speaker pinned as default in `~/.asoundrc`) to a fixed 59% ceiling and do a quick ~1.2s ALSA ramp-down before killing the process on stop, so it doesn't cut out abruptly. This is the point to tune if you want a different fade timing or volume range.
 
 Both `white-noise.service` and `white-noise-mqtt.service` are `systemd --user` units, so `loginctl enable-linger pramod` must be set — otherwise they die whenever the login session they started under ends, and the HA switch silently stops responding (this bit us once: see git history).
@@ -245,7 +245,7 @@ The last command should show one retained `whitenoise/available online` and one 
 
 **GPIO pinout reference:** `gpio_pinout.md` — the Pi's full 40-pin header layout, marked up with what's already wired and which pins are free for the next button.
 
-**Reconnect-loop bug (2026-08-25, recurred 2026-08-31):** `toggle-button-mqtt.py`'s original manual MQTT reconnect loop was racy — checking `client.is_connected()` right after `loop_start()` could read `False` before the CONNACK was processed, tearing the connection down and reconnecting on a ~5s cycle indefinitely. Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire its HA automation every 5 seconds — overriding manual scene/dashboard control of white noise regardless of the physical switch's actual position. Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). `scene-buttons-mqtt.py` was written to avoid the whole bug class by design — no retained state to republish in the first place. The same buggy pattern was independently present in `scripts/white-noise-mqtt.py` (it predates the 2026-08-25 fix and wasn't back-ported) and caused the same `whitenoise/available` flapping, making the HA white-noise switch flicker unavailable every ~5s. Fixed the same way on 2026-08-31, with the periodic `publish_state` poll moved to a background thread since `loop_forever()` blocks the main thread.
+**Reconnect-loop bug (2026-08-25, recurred 2026-08-31):** `toggle-button-mqtt.py`'s original manual MQTT reconnect loop was racy — checking `client.is_connected()` right after `loop_start()` could read `False` before the CONNACK was processed, tearing the connection down and reconnecting on a ~5s cycle indefinitely. Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire its HA automation every 5 seconds — overriding manual scene/dashboard control of white noise regardless of the physical switch's actual position. Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). `scene-buttons-mqtt.py` was written to avoid the whole bug class by design — no retained state to republish in the first place. The same buggy pattern was independently present in `scripts/white-noise/white-noise-mqtt.py` (it predates the 2026-08-25 fix and wasn't back-ported) and caused the same `whitenoise/available` flapping, making the HA white-noise switch flicker unavailable every ~5s. Fixed the same way on 2026-08-31, with the periodic `publish_state` poll moved to a background thread since `loop_forever()` blocks the main thread.
 
 Both bridge scripts need MQTT credentials for the `homelab` Mosquitto user (`~/toggle-button-mqtt.env` on the Pi, shared between both services) and `WorkingDirectory=/home/pramod` + `Environment=GPIOZERO_PIN_FACTORY=lgpio` in their systemd units — see `toggle_button_setup.md` for why those two matter on this hardware/kernel combination.
 
@@ -342,19 +342,19 @@ explicit grant.
 |---|---|---|---|
 | `pramod` | read-write | read-write | the phone app / web UI |
 | `clawlight` | **write-only**, token | *none* | `clawlight/server.py` |
-| `healthcheck` | *none* | **write-only**, token | `scripts/push_ntfy.sh` |
+| `healthcheck` | *none* | **write-only**, token | `scripts/notify/push_ntfy.sh` |
 
 The split is deliberate twice over: a leaked publish token cannot read
 notification history, and neither publisher can post to the other's topic. No
 rule is denial under `deny-all`, so there is nothing to revoke. Verify with:
 
 ```bash
-./scripts/verify_ntfy_topics.sh   # proves both directions are refused
+./scripts/notify/verify_ntfy_topics.sh   # proves both directions are refused
 ```
 Credentials live in gitignored `.env.ntfy` (mode 600), created by:
 
 ```bash
-./scripts/setup_ntfy_users.sh   # idempotent, safe to re-run
+./scripts/notify/setup_ntfy_users.sh   # idempotent, safe to re-run
 ```
 
 ### Phone setup
@@ -402,17 +402,17 @@ ID is the only thing that actually identifies what changed.
 
 ntfy is reached at `ntfy-server` on the compose network (not `ntfy` — that
 name resolves to the tailscale sidecar), so nothing extra is published on the
-host. The write-only token comes from `scripts/setup_ntfy_users.sh`, which
+host. The write-only token comes from `scripts/notify/setup_ntfy_users.sh`, which
 also mirrors it into `.env` because that is the only env file docker compose
 auto-loads.
 
 ### Adding another alert source
 
-Source the shared helper (companion to `scripts/send_email.sh`):
+Source the shared helper (companion to `scripts/notify/send_email.sh`):
 
 ```bash
 [ -f "$SCRIPT_DIR/.env.ntfy" ] && { set -a; . "$SCRIPT_DIR/.env.ntfy"; set +a; }
-source "$SCRIPT_DIR/scripts/push_ntfy.sh"
+source "$SCRIPT_DIR/scripts/notify/push_ntfy.sh"
 
 push_ntfy "title" "body" [priority] [tags]    # priority defaults 4, tags "warning"
 ```

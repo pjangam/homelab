@@ -7,7 +7,7 @@
 # content here, so this script itself stays clean of automations.yaml's data.
 set -euo pipefail
 
-TARGET="$(dirname "$0")/../HOMEASSISTANT_CONFIG/automations.yaml"
+TARGET="$(dirname "$0")/../../HOMEASSISTANT_CONFIG/automations.yaml"
 
 if grep -q "^- id: toggle1_white_noise_on$" "$TARGET" 2>/dev/null; then
   echo "Already applied - toggle1_white_noise_on found in $TARGET. Skipping."

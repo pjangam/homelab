@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests scripts/check_spotifyd_advertising.sh without touching the real
+# Tests scripts/spotifyd/check_spotifyd_advertising.sh without touching the real
 # spotifyd, avahi, or the alerting path. Faults are simulated by shadowing
 # avahi-browse / systemctl with stubs earlier in PATH.
 set -uo pipefail

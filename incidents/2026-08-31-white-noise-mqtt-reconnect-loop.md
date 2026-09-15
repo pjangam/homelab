@@ -6,7 +6,7 @@
 
 **Timeline:**
 - **2026-08-25** - first found in `toggle-button-mqtt.py` (the original GPIO17 toggle-switch bridge). Confirmed via Mosquitto's own broker log (not the Pi's systemd restart count, which never moved). Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). Confirmed stable via 90+ seconds with zero reconnects before re-enabling the automation.
-- **2026-08-31** - same-day as an unrelated hardware change (GPIO17 toggle switch swapped for momentary start/stop buttons), found the identical unfixed race in `scripts/white-noise-mqtt.py` - the switch's own MQTT bridge, unrelated to the physical buttons. It predated the 2026-08-25 fix and the fix was never back-ported to it. Fixed the same way (`connect_async()` + `loop_forever()`), with the periodic `publish_state` poll moved to a background thread since `loop_forever()` blocks the main thread.
+- **2026-08-31** - same-day as an unrelated hardware change (GPIO17 toggle switch swapped for momentary start/stop buttons), found the identical unfixed race in `scripts/white-noise/white-noise-mqtt.py` - the switch's own MQTT bridge, unrelated to the physical buttons. It predated the 2026-08-25 fix and the fix was never back-ported to it. Fixed the same way (`connect_async()` + `loop_forever()`), with the periodic `publish_state` poll moved to a background thread since `loop_forever()` blocks the main thread.
 
 **Fix (both occurrences):**
 ```python

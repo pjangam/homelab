@@ -49,8 +49,8 @@
 # Safe to run any time: if the bridge is already healthy it changes nothing
 # and exits 0. Use --force to restart anyway.
 #
-#   scripts/fix_miraie_ac.sh
-#   scripts/fix_miraie_ac.sh --force
+#   scripts/miraie-ac/fix_miraie_ac.sh
+#   scripts/miraie-ac/fix_miraie_ac.sh --force
 #
 # Exit codes:
 #   0  healthy - bridge connected and the unit reports online
@@ -60,7 +60,7 @@
 #   3  bridge and unit are both fine but HA still will not show the entity -
 #      an HA-side problem; restart the MQTT integration
 #
-# See scripts/diagnose_miraie_ac.sh for a read-only look at the same path.
+# See scripts/miraie-ac/diagnose_miraie_ac.sh for a read-only look at the same path.
 set -u
 
 PI_HOST="${PI_HOST:-pramod@192.168.1.124}"
@@ -72,7 +72,7 @@ CONNECT_TIMEOUT=90             # how long to wait for the bridge to come back
 STATE_WAIT="${STATE_WAIT:-30}" # how long after reconnect to wait for the unit's availability
 TOPIC_PREFIX="${TOPIC_PREFIX:-miraie-ac}"
 MOSQ_CONTAINER="${MOSQ_CONTAINER:-mosquitto}"
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HA_DB="${HA_DB:-$REPO_ROOT/HOMEASSISTANT_CONFIG/home-assistant_v2.db}"
 HA_ENTITY="${HA_ENTITY:-climate.panasonic_ac_panasonic_ac}"
 ENV_MQTT="${ENV_MQTT:-$REPO_ROOT/.env.mqtt}"

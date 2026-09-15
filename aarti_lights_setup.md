@@ -171,7 +171,7 @@ effects. **Updated 2026-09-14 to 16.0.1 audioreactive**, 220 effects.
 pins, squelch/gain/AGC, LED pin, count, current cap, colour order, boot
 preset. What did *not* survive was the **multi-segment arrangement** - the
 three-band split collapsed back to one segment. Re-apply it with
-`./scripts/wled.sh bands`.
+`./scripts/aarti-lights/wled.sh bands`.
 
 It cannot be stored as a preset either: **WLED's preset save only captures
 segment 0**, so saving the band split as a preset and recalling it restores
@@ -220,7 +220,7 @@ for the real build never goes through a breadboard.
 
 **Done 2026-09-12.** 30 pixels steady red at brightness 110, drawing 367mA of
 the 800mA cap on GPIO4, colour order GRB confirmed (red renders red). Driving
-it from the command line rather than the web UI: `./scripts/wled.sh`.
+it from the command line rather than the web UI: `./scripts/aarti-lights/wled.sh`.
 
 Three things cost time, all worth knowing before Phase 3 solders anything:
 
@@ -236,7 +236,7 @@ Three things cost time, all worth knowing before Phase 3 solders anything:
   one rail. Suspect this before suspecting the strip.
 - **An open WLED web UI holds a websocket and silently overwrites anything set
   over the API.** A leftover amber from the UI was briefly mistaken for a
-  colour-order bug. `./scripts/wled.sh info` prints the client count - get it
+  colour-order bug. `./scripts/aarti-lights/wled.sh info` prints the client count - get it
   to 0 before trusting what the strip shows.
 
 Also: WLED defaulted the data pin to **GPIO16**, not the GPIO4 this doc
@@ -268,7 +268,7 @@ rainbow effect does.
 electronic is now proven, and only from here is it worth committing solder.
 
 **Done 2026-09-13.** Mic working on SD=32, WS=25, SCK=33, `L/R` to GND. Verify
-it numerically rather than by eye - `./scripts/wled-audio-monitor.py` reads
+it numerically rather than by eye - `./scripts/aarti-lights/wled-audio-monitor.py` reads
 WLED's own analysis and prints levels plus a 16-bin FFT bar.
 
 Four things that cost time, all avoidable next run:
@@ -307,7 +307,7 @@ It is a slow-decaying peak *hold*, not a level: it ratchets upward, resets low
 after a config change, and then climbs, so consecutive identical readings mean
 nothing and a lower gain can appear to read higher purely because the hold had
 already climbed. That cost a confusing round of gain comparisons on
-2026-09-13, every one of them invalid. Use `./scripts/wled-audio-monitor.py`,
+2026-09-13, every one of them invalid. Use `./scripts/aarti-lights/wled-audio-monitor.py`,
 which reads instantaneous samples about 20x a second off the UDP stream.
 
 And tune in the actual room, in the evening, with the actual aarti playing -
@@ -364,7 +364,7 @@ baseline to 0 between sounds, which is what the effects need.
 
 Too high and quiet passages of the aarti vanish; too low and the room holds
 the lights on. Tune it against the actual aarti, and use
-`./scripts/wled-audio-monitor.py` rather than the web UI's peak field - you
+`./scripts/aarti-lights/wled-audio-monitor.py` rather than the web UI's peak field - you
 want `sampleRaw` resting at 0 between sounds and reaching a few hundred on
 the loud moments.
 

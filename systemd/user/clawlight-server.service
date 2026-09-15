@@ -4,7 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-# ntfy publish token + click-through URL (see scripts/setup_ntfy_users.sh).
+# ntfy publish token + click-through URL (see scripts/notify/setup_ntfy_users.sh).
 # The dash prefix keeps the service starting on a machine that has no
 # .env.ntfy - clawlight then simply runs without push notifications.
 EnvironmentFile=-/home/pramod/code/homelab/.env.ntfy

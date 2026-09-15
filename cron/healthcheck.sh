@@ -159,7 +159,7 @@ SPOTIFYD_ADVERT_FAIL_FILE="$SPOTIFYD_STATE_DIR/advert-failing-since"
 mkdir -p "$SPOTIFYD_STATE_DIR"
 
 spotifyd_advertising=true
-"$SCRIPT_DIR/scripts/check_spotifyd_advertising.sh" >/dev/null 2>&1
+"$SCRIPT_DIR/scripts/spotifyd/check_spotifyd_advertising.sh" >/dev/null 2>&1
 advert_rc=$?
 
 if [ "$advert_rc" -eq 1 ]; then
@@ -199,7 +199,7 @@ mkdir -p "$MIRAIE_AC_STATE_DIR"
 
 miraie_ac_ok=true
 miraie_ac_unavailable_minutes=""
-miraie_ac_detail="$("$SCRIPT_DIR/scripts/check_miraie_ac_available.sh" 2>/dev/null)"
+miraie_ac_detail="$("$SCRIPT_DIR/scripts/miraie-ac/check_miraie_ac_available.sh" 2>/dev/null)"
 miraie_ac_rc=$?
 
 if [ "$miraie_ac_rc" -eq 1 ]; then
@@ -208,7 +208,7 @@ if [ "$miraie_ac_rc" -eq 1 ]; then
     miraie_ac_since=$(cat "$MIRAIE_AC_FAIL_FILE")
     miraie_ac_unavailable_minutes=$(( ($(date +%s) - miraie_ac_since) / 60 ))
     if [ "$miraie_ac_unavailable_minutes" -ge "$MIRAIE_AC_ALERT_AFTER_MIN" ]; then
-      problems+=("MirAIe AC has been unavailable in Home Assistant for ${miraie_ac_unavailable_minutes}m (${miraie_ac_detail:-unavailable}) - it cannot be controlled from HA or automations. Run scripts/fix_miraie_ac.sh --force: exit 2 means the indoor unit is off and needs switching on by hand, exit 3 means HA needs its MQTT integration restarted.")
+      problems+=("MirAIe AC has been unavailable in Home Assistant for ${miraie_ac_unavailable_minutes}m (${miraie_ac_detail:-unavailable}) - it cannot be controlled from HA or automations. Run scripts/miraie-ac/fix_miraie_ac.sh --force: exit 2 means the indoor unit is off and needs switching on by hand, exit 3 means HA needs its MQTT integration restarted.")
     fi
   else
     date +%s > "$MIRAIE_AC_FAIL_FILE"
@@ -307,7 +307,7 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
       miraie_ac_unavailable_minutes: (if $miraie_ac_unavailable_minutes == "" then null else ($miraie_ac_unavailable_minutes|tonumber) end),
       power_on_battery: $power_on_battery,
       power_down_minutes: (if $power_down_minutes == "" then null else ($power_down_minutes|tonumber) end)
-    }' | "$SCRIPT_DIR/scripts/publish_healthcheck_mqtt.py"
+    }' | "$SCRIPT_DIR/scripts/healthcheck/publish_healthcheck_mqtt.py"
 } || true
 
 # Verify the dashboard actually received all of the above. Runs after the
@@ -324,7 +324,7 @@ DASHBOARD_STATE_DIR="$HOME/.cache/healthcheck"
 DASHBOARD_FAIL_FILE="$DASHBOARD_STATE_DIR/dashboard-failing-since"
 mkdir -p "$DASHBOARD_STATE_DIR"
 
-dashboard_faults=$("$SCRIPT_DIR/scripts/verify_healthcheck_entities.sh" 2>/dev/null)
+dashboard_faults=$("$SCRIPT_DIR/scripts/healthcheck/verify_healthcheck_entities.sh" 2>/dev/null)
 dashboard_rc=$?
 
 if [ "$dashboard_rc" -eq 1 ] && [ -n "$dashboard_faults" ]; then
@@ -343,9 +343,9 @@ else
   rm -f "$DASHBOARD_FAIL_FILE"
 fi
 
-source "$SCRIPT_DIR/scripts/send_email.sh"
+source "$SCRIPT_DIR/scripts/notify/send_email.sh"
 
-source "$SCRIPT_DIR/scripts/push_ntfy.sh"
+source "$SCRIPT_DIR/scripts/notify/push_ntfy.sh"
 
 # Only email on a *change* from the last alert (new/different problems, or a
 # prior problem clearing) - not on every repeat of the same ongoing issue.

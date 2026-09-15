@@ -12,7 +12,7 @@ Enable transmit first:
   curl -X POST http://<board>/json/cfg -H 'Content-Type: application/json' \
     -d '{"um":{"AudioReactive":{"sync":{"mode":1,"port":11988}}}}'
 
-    ./scripts/wled-audio-monitor.py [--seconds 20] [--port 11988]
+    ./scripts/aarti-lights/wled-audio-monitor.py [--seconds 20] [--port 11988]
 """
 import argparse
 import socket

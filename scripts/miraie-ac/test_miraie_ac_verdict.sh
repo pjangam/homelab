@@ -10,7 +10,7 @@
 # So everything external is faked: `ssh` to the Pi, the local `docker`, and
 # the MQTT capture. Nothing here touches the Pi, Mosquitto, HA, or the AC.
 #
-#   scripts/test_miraie_ac_verdict.sh
+#   scripts/miraie-ac/test_miraie_ac_verdict.sh
 set -u
 
 FIX="$(cd "$(dirname "$0")" && pwd)/fix_miraie_ac.sh"

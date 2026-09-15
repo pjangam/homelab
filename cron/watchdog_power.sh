@@ -36,8 +36,8 @@ source "$SCRIPT_DIR/.env.healthcheck"
 # this file only exists on xero, where ntfy runs.
 [ -f "$SCRIPT_DIR/.env.ntfy" ] && source "$SCRIPT_DIR/.env.ntfy"
 set +a
-source "$SCRIPT_DIR/scripts/send_email.sh"
-source "$SCRIPT_DIR/scripts/push_ntfy.sh"
+source "$SCRIPT_DIR/scripts/notify/send_email.sh"
+source "$SCRIPT_DIR/scripts/notify/push_ntfy.sh"
 
 DISABLE_FLAG="$HOME/.power-watchdog-disabled"
 ARM_FLAG="$HOME/.power-watchdog-armed"

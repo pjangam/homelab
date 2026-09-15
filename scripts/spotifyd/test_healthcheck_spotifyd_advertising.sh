@@ -10,39 +10,45 @@
 # watchdog state files under ~/.cache are untouched.
 set -uo pipefail
 
-REPO="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+REPO="$(cd "$(dirname "$(readlink -f "$0")")/../.." && pwd)"
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 fails=0
 
 mkdir -p "$T/repo/cron" "$T/repo/scripts" "$T/home/.cache"
 for f in "$REPO"/cron/*; do ln -sf "$f" "$T/repo/cron/$(basename "$f")"; done
-for f in "$REPO"/scripts/*; do ln -sf "$f" "$T/repo/scripts/$(basename "$f")"; done
+# Mirror scripts/ as REAL directories holding per-file symlinks. Linking each
+# top-level entry used to be enough when scripts/ was flat, but since it split
+# into scripts/<project>/ a top-level entry is a directory: a symlinked
+# directory would make the `rm -f` + stub writes below go straight through to
+# the real repo, deleting and replacing the live cron-called script.
+(cd "$REPO/scripts" && find . -type d -not -name __pycache__) | while read -r d; do mkdir -p "$T/repo/scripts/$d"; done
+(cd "$REPO/scripts" && find . -type f -not -path '*/__pycache__/*') | while read -r f; do ln -sf "$REPO/scripts/$f" "$T/repo/scripts/$f"; done
 for f in "$REPO"/.env*; do [ -f "$f" ] && ln -sf "$f" "$T/repo/$(basename "$f")"; done
 
 # Overrides (rm the symlink first so we don't write through to the real file).
 ADVERT_RC_FILE="$T/advert_rc"
-rm -f "$T/repo/scripts/check_spotifyd_advertising.sh"
-cat > "$T/repo/scripts/check_spotifyd_advertising.sh" <<'S'
+rm -f "$T/repo/scripts/spotifyd/check_spotifyd_advertising.sh"
+cat > "$T/repo/scripts/spotifyd/check_spotifyd_advertising.sh" <<'S'
 #!/usr/bin/env bash
 exit "$(cat "$ADVERT_RC_FILE")"
 S
-chmod +x "$T/repo/scripts/check_spotifyd_advertising.sh"
+chmod +x "$T/repo/scripts/spotifyd/check_spotifyd_advertising.sh"
 
-rm -f "$T/repo/scripts/send_email.sh"
-cat > "$T/repo/scripts/send_email.sh" <<'S'
+rm -f "$T/repo/scripts/notify/send_email.sh"
+cat > "$T/repo/scripts/notify/send_email.sh" <<'S'
 send_email() { printf 'EMAIL|%s|%s\n' "$1" "$(printf '%s' "$2" | tr '\n' ' ')" >> "$ALERT_LOG"; }
 S
-rm -f "$T/repo/scripts/push_ntfy.sh"
-cat > "$T/repo/scripts/push_ntfy.sh" <<'S'
+rm -f "$T/repo/scripts/notify/push_ntfy.sh"
+cat > "$T/repo/scripts/notify/push_ntfy.sh" <<'S'
 push_ntfy() { printf 'NTFY|%s|%s\n' "$1" "$(printf '%s' "$2" | tr '\n' ' ')" >> "$ALERT_LOG"; }
 S
-rm -f "$T/repo/scripts/publish_healthcheck_mqtt.py"
-cat > "$T/repo/scripts/publish_healthcheck_mqtt.py" <<'S'
+rm -f "$T/repo/scripts/healthcheck/publish_healthcheck_mqtt.py"
+cat > "$T/repo/scripts/healthcheck/publish_healthcheck_mqtt.py" <<'S'
 #!/usr/bin/env bash
 cat > "$MQTT_LOG"
 S
-chmod +x "$T/repo/scripts/publish_healthcheck_mqtt.py"
+chmod +x "$T/repo/scripts/healthcheck/publish_healthcheck_mqtt.py"
 
 export ADVERT_RC_FILE
 export ALERT_LOG="$T/alerts.log"

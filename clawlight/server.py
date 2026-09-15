@@ -39,7 +39,7 @@ BACKGROUND_STATES = {"task_start", "task_end"}
 # Published over loopback rather than the tailnet URL: no TLS dependency, the
 # publish token never leaves the host, and it still works if the tailnet is
 # having a moment. The token is write-only on this topic (see
-# scripts/setup_ntfy_users.sh), so a leak cannot read notification history.
+# scripts/notify/setup_ntfy_users.sh), so a leak cannot read notification history.
 #
 # Credentials come from .env.ntfy via the systemd unit's EnvironmentFile.
 # Unset token = notifications silently disabled, which is the correct

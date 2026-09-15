@@ -9,40 +9,46 @@
 # live broker.
 set -uo pipefail
 
-REPO="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+REPO="$(cd "$(dirname "$(readlink -f "$0")")/../.." && pwd)"
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 fails=0
 
 mkdir -p "$T/repo/cron" "$T/repo/scripts" "$T/home/.cache"
 for f in "$REPO"/cron/*; do ln -sf "$f" "$T/repo/cron/$(basename "$f")"; done
-for f in "$REPO"/scripts/*; do ln -sf "$f" "$T/repo/scripts/$(basename "$f")"; done
+# Mirror scripts/ as REAL directories holding per-file symlinks. Linking each
+# top-level entry used to be enough when scripts/ was flat, but since it split
+# into scripts/<project>/ a top-level entry is a directory: a symlinked
+# directory would make the `rm -f` + stub writes below go straight through to
+# the real repo, deleting and replacing the live cron-called script.
+(cd "$REPO/scripts" && find . -type d -not -name __pycache__) | while read -r d; do mkdir -p "$T/repo/scripts/$d"; done
+(cd "$REPO/scripts" && find . -type f -not -path '*/__pycache__/*') | while read -r f; do ln -sf "$REPO/scripts/$f" "$T/repo/scripts/$f"; done
 for f in "$REPO"/.env*; do [ -f "$f" ] && ln -sf "$f" "$T/repo/$(basename "$f")"; done
 
 VERIFY_RC="$T/verify_rc"; VERIFY_MSG="$T/verify_msg"
-rm -f "$T/repo/scripts/verify_healthcheck_entities.sh"
-cat > "$T/repo/scripts/verify_healthcheck_entities.sh" <<'S'
+rm -f "$T/repo/scripts/healthcheck/verify_healthcheck_entities.sh"
+cat > "$T/repo/scripts/healthcheck/verify_healthcheck_entities.sh" <<'S'
 #!/usr/bin/env bash
 cat "$VERIFY_MSG" 2>/dev/null
 exit "$(cat "$VERIFY_RC")"
 S
-chmod +x "$T/repo/scripts/verify_healthcheck_entities.sh"
+chmod +x "$T/repo/scripts/healthcheck/verify_healthcheck_entities.sh"
 
 # Keep the spotifyd advertising check healthy so it can't muddy these results.
-rm -f "$T/repo/scripts/check_spotifyd_advertising.sh"
-printf '#!/usr/bin/env bash\nexit 0\n' > "$T/repo/scripts/check_spotifyd_advertising.sh"
-chmod +x "$T/repo/scripts/check_spotifyd_advertising.sh"
+rm -f "$T/repo/scripts/spotifyd/check_spotifyd_advertising.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$T/repo/scripts/spotifyd/check_spotifyd_advertising.sh"
+chmod +x "$T/repo/scripts/spotifyd/check_spotifyd_advertising.sh"
 
-rm -f "$T/repo/scripts/send_email.sh"
-cat > "$T/repo/scripts/send_email.sh" <<'S'
+rm -f "$T/repo/scripts/notify/send_email.sh"
+cat > "$T/repo/scripts/notify/send_email.sh" <<'S'
 send_email() { printf 'EMAIL|%s|%s\n' "$1" "$(printf '%s' "$2" | tr '\n' ' ')" >> "$ALERT_LOG"; }
 S
-rm -f "$T/repo/scripts/push_ntfy.sh"
-cat > "$T/repo/scripts/push_ntfy.sh" <<'S'
+rm -f "$T/repo/scripts/notify/push_ntfy.sh"
+cat > "$T/repo/scripts/notify/push_ntfy.sh" <<'S'
 push_ntfy() { printf 'NTFY|%s|%s\n' "$1" "$(printf '%s' "$2" | tr '\n' ' ')" >> "$ALERT_LOG"; }
 S
-rm -f "$T/repo/scripts/publish_healthcheck_mqtt.py"
-printf '#!/usr/bin/env bash\ncat > "$MQTT_LOG"\n' > "$T/repo/scripts/publish_healthcheck_mqtt.py"
-chmod +x "$T/repo/scripts/publish_healthcheck_mqtt.py"
+rm -f "$T/repo/scripts/healthcheck/publish_healthcheck_mqtt.py"
+printf '#!/usr/bin/env bash\ncat > "$MQTT_LOG"\n' > "$T/repo/scripts/healthcheck/publish_healthcheck_mqtt.py"
+chmod +x "$T/repo/scripts/healthcheck/publish_healthcheck_mqtt.py"
 
 export ALERT_LOG="$T/alerts.log" MQTT_LOG="$T/mqtt.json" VERIFY_RC VERIFY_MSG
 FAULT="Health dashboard entities are 'unavailable' in Home Assistant - tiles are not reflecting reality (check the MQTT bridge)"

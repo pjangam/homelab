@@ -12,8 +12,8 @@
 # the same signal scripts/wol-sender/watchdog_nodered_pi.sh acts on.
 #
 # Run from xero (needs SSH to the Pi and the mosquitto container locally):
-#   scripts/diagnose_miraie_ac.sh            # checks only, changes nothing
-#   scripts/diagnose_miraie_ac.sh --capture  # also RESTARTS Node-RED and
+#   scripts/miraie-ac/diagnose_miraie_ac.sh            # checks only, changes nothing
+#   scripts/miraie-ac/diagnose_miraie_ac.sh --capture  # also RESTARTS Node-RED and
 #                                            # sniffs what it republishes
 #
 # --capture exists because ha-miraie-ac publishes state/availability with
@@ -27,7 +27,7 @@ PI_HOST="${PI_HOST:-pramod@192.168.1.124}"
 CONTAINER="${CONTAINER:-node-red}"
 CLOUD_PORT_HEX="22B3"  # 8883, MirAIe cloud MQTT broker (TLS)
 LOCAL_PORT_HEX="075B"  # 1883, Mosquitto on xero
-HA_DB="${HA_DB:-$(cd "$(dirname "$0")/.." && pwd)/HOMEASSISTANT_CONFIG/home-assistant_v2.db}"
+HA_DB="${HA_DB:-$(cd "$(dirname "$0")/../.." && pwd)/HOMEASSISTANT_CONFIG/home-assistant_v2.db}"
 capture=0
 [ "${1:-}" = "--capture" ] && capture=1
 
@@ -90,7 +90,7 @@ PY
 
 if [ "$capture" -eq 1 ]; then
   echo "== Capture: restarting Node-RED and sniffing what it republishes =="
-  env_file="$(cd "$(dirname "$0")/.." && pwd)/.env.mqtt"
+  env_file="$(cd "$(dirname "$0")/../.." && pwd)/.env.mqtt"
   # shellcheck disable=SC1090
   set -a; . "$env_file"; set +a
   docker exec mosquitto mosquitto_sub -h localhost \
