@@ -209,7 +209,7 @@ if [ "$dns_ok" -ne 1 ]; then
   echo "FAIL: DNS for miraie.in is still broken after $((DNS_ATTEMPTS * 5))s - NOT restarting."
   echo "Restarting now would just recreate the original failure (the node does not"
   echo "retry a failed login). Fix DNS on the Pi first, then re-run this script."
-  echo "Start with: scripts/diagnose_dns_paths.sh, and check Pi-hole is up on xero."
+  echo "Start with: scripts/network/diagnose_dns_paths.sh, and check Pi-hole is up on xero."
   exit 1
 fi
 echo "  DNS ok."

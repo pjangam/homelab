@@ -11,7 +11,7 @@
 #
 # Called by cron/healthcheck.sh (every 15 min). Takes an optional cert
 # directory argument so it can be tested against synthetic certs - see
-# scripts/test_cert_expiry_check.sh.
+# scripts/certs-backup/test_cert_expiry_check.sh.
 #
 # Threshold: renewal runs weekly with --min-validity 720h (30d), so a cert can
 # legitimately sit just under 30d for up to a week before the next Sunday run.

@@ -240,8 +240,8 @@ The last command should show one retained `whitenoise/available online` and one 
 
 **Why:** the rest of the household and house help don't want to use the HA app or voice control - physical buttons wired to the wol-sender Pi's GPIO give a simple, no-app way to trigger specific things. See `PROJECTS.md` ("Easier HA control for household + house help") for the full research/decision history.
 
-1. **Push buttons → white noise start/stop** (`scripts/white-noise-buttons-mqtt.py`, `white-noise-buttons-mqtt.service` on the Pi) — two momentary push buttons (GPIO17/pin 11 ↔ GND/pin 9 for start, GPIO18/pin 12 ↔ GND/pin 14 for stop) each publish a plain non-retained MQTT message on press; two HA automations (`white_noise_button_start`/`_stop` in `automations.yaml`) call `switch.turn_on`/`turn_off` directly on `switch.white_noise`. Supersedes an earlier latching toggle switch on GPIO17 alone (`binary_sensor.toggle_switch_1` + `toggle1_white_noise_on`/`_off`) — see `white_noise_buttons_setup.md` and the reconnect-loop bug note below for why momentary buttons with no persisted state are the more robust shape. Setup details: `white_noise_buttons_setup.md`.
-2. **Push buttons → oju sleep/awake scenes** (`scripts/scene-buttons-mqtt.py`, `scene-buttons-mqtt.service` on the Pi) — two momentary push buttons (GPIO27/pin 13 and GPIO22/pin 15, both ↔ GND/pin 14) each publish a plain non-retained MQTT message on press; two HA automations (`scene_button_oju_sleep`/`_awake`) call `scene.turn_on` directly. Deliberately no persisted state/entity here (unlike the toggle switch) — a momentary trigger doesn't need one, and it sidesteps a real bug class hit with the toggle switch (see below). Setup details: `scene_buttons_setup.md`.
+1. **Push buttons → white noise start/stop** (`scripts/pi-buttons/white-noise-buttons-mqtt.py`, `white-noise-buttons-mqtt.service` on the Pi) — two momentary push buttons (GPIO17/pin 11 ↔ GND/pin 9 for start, GPIO18/pin 12 ↔ GND/pin 14 for stop) each publish a plain non-retained MQTT message on press; two HA automations (`white_noise_button_start`/`_stop` in `automations.yaml`) call `switch.turn_on`/`turn_off` directly on `switch.white_noise`. Supersedes an earlier latching toggle switch on GPIO17 alone (`binary_sensor.toggle_switch_1` + `toggle1_white_noise_on`/`_off`) — see `white_noise_buttons_setup.md` and the reconnect-loop bug note below for why momentary buttons with no persisted state are the more robust shape. Setup details: `white_noise_buttons_setup.md`.
+2. **Push buttons → oju sleep/awake scenes** (`scripts/pi-buttons/scene-buttons-mqtt.py`, `scene-buttons-mqtt.service` on the Pi) — two momentary push buttons (GPIO27/pin 13 and GPIO22/pin 15, both ↔ GND/pin 14) each publish a plain non-retained MQTT message on press; two HA automations (`scene_button_oju_sleep`/`_awake`) call `scene.turn_on` directly. Deliberately no persisted state/entity here (unlike the toggle switch) — a momentary trigger doesn't need one, and it sidesteps a real bug class hit with the toggle switch (see below). Setup details: `scene_buttons_setup.md`.
 
 **GPIO pinout reference:** `gpio_pinout.md` — the Pi's full 40-pin header layout, marked up with what's already wired and which pins are free for the next button.
 
@@ -658,7 +658,7 @@ slack. Problems go to email *and* an ntfy push.
 
 ```bash
 ./cron/check_certs.sh                  # silent when healthy; exits 1 if not
-./scripts/test_cert_expiry_check.sh    # 8 cases against synthetic certs
+./scripts/certs-backup/test_cert_expiry_check.sh    # 8 cases against synthetic certs
 ```
 
 The test drives the real script against generated certs (89d/30d/22d silent,

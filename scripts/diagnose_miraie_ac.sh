@@ -9,7 +9,7 @@
 # time - healthy only means Node-RED's web UI answers, it says nothing about
 # the MQTT bridge - so `docker ps` is not a useful check here. What actually
 # tells you is whether the container holds ESTABLISHED sockets to both brokers,
-# the same signal scripts/watchdog_nodered_pi.sh acts on.
+# the same signal scripts/wol-sender/watchdog_nodered_pi.sh acts on.
 #
 # Run from xero (needs SSH to the Pi and the mosquitto container locally):
 #   scripts/diagnose_miraie_ac.sh            # checks only, changes nothing

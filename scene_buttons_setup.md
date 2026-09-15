@@ -19,7 +19,7 @@ hold** - this doc is for whenever that happens.
      new, separate pins.)
 2. **Copy the script to the Pi**:
    ```
-   scp scripts/scene-buttons-mqtt.py pramod@192.168.1.124:~/
+   scp scripts/pi-buttons/scene-buttons-mqtt.py pramod@192.168.1.124:~/
    chmod +x ~/scene-buttons-mqtt.py
    ```
 3. **Reuse the existing MQTT credentials** - `~/toggle-button-mqtt.env` on
@@ -56,7 +56,7 @@ hold** - this doc is for whenever that happens.
    sudo systemctl daemon-reload
    sudo systemctl enable --now scene-buttons-mqtt
    ```
-5. **Apply the HA automations**: `scripts/apply_scene_button_automations.sh`
+5. **Apply the HA automations**: `scripts/pi-buttons/apply_scene_button_automations.sh`
    (already written - adds `scene_button_oju_sleep`/`scene_button_oju_awake`
    to `HOMEASSISTANT_CONFIG/automations.yaml`, root-owned so it uses `sudo
    tee`). Reload automations in HA afterward (Settings -> Automations &
@@ -86,4 +86,4 @@ Same failure modes and tooling as the white-noise buttons - see the
 "Troubleshooting" section of `white_noise_buttons_setup.md`. Both bridges run
 on the same Pi and hit the same lgpio notify-FIFO collision on 2026-09-04
 (`incidents/2026-09-04-lgpio-notify-fifo-collision.md`); redeploy either with
-`scripts/deploy_button_bridges_pi.sh`.
+`scripts/pi-buttons/deploy_button_bridges_pi.sh`.

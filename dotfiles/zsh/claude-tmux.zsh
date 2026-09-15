@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # Claude Code shell wrappers: never run it outside tmux without asking first.
 #
-# Installed to ~/.zsh/functions/claude-tmux.zsh by scripts/setup-tmux-shell.sh
+# Installed to ~/.zsh/functions/claude-tmux.zsh by scripts/dev-shell/setup-tmux-shell.sh
 # and sourced from ~/.zshrc. Edit the copy in the repo, then re-run the script -
 # a hand-edit in $HOME is invisible to every other machine.
 #

@@ -8,12 +8,12 @@ re-Googling every time a new button/sensor gets wired in.
 
 | Pin(s) | GPIO | Used for |
 |---|---|---|
-| 11 + 9 | GPIO17 + GND | White noise start button (`scripts/white-noise-buttons-mqtt.py`) |
-| 12 + 14 | GPIO18 + GND | White noise stop button (`scripts/white-noise-buttons-mqtt.py`) |
-| 13 + 14 | GPIO27 + GND | Sleep button (`scripts/scene-buttons-mqtt.py`) - **claimed, nothing wired** |
-| 15 + 14 | GPIO22 + GND | Awake button (`scripts/scene-buttons-mqtt.py`) - **claimed, nothing wired** |
+| 11 + 9 | GPIO17 + GND | White noise start button (`scripts/pi-buttons/white-noise-buttons-mqtt.py`) |
+| 12 + 14 | GPIO18 + GND | White noise stop button (`scripts/pi-buttons/white-noise-buttons-mqtt.py`) |
+| 13 + 14 | GPIO27 + GND | Sleep button (`scripts/pi-buttons/scene-buttons-mqtt.py`) - **claimed, nothing wired** |
+| 15 + 14 | GPIO22 + GND | Awake button (`scripts/pi-buttons/scene-buttons-mqtt.py`) - **claimed, nothing wired** |
 | 2 or 4 (5V) + a GND | - | Cooling fan (always-on load, exact pin not recorded) |
-| 33 + 35 + 37, GND 39 | GPIO13 + GPIO19 + GPIO26 | Clawlight status LED (`scripts/clawlight-led.py`) - common-cathode RGB LED, 220R per leg |
+| 33 + 35 + 37, GND 39 | GPIO13 + GPIO19 + GPIO26 | Clawlight status LED (`scripts/clawlight/clawlight-led.py`) - common-cathode RGB LED, 220R per leg |
 
 The two scene-button pins have no buttons attached at the moment (noted
 2026-09-04). They still count as in use: `scene-buttons-mqtt.service` runs at

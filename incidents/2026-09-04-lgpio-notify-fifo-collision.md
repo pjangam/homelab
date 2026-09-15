@@ -79,7 +79,7 @@ Each step splits the chain in half, which is what made it quick once logging was
 2. **Buttons and wiring?** `pinctrl poll 17,18` on the Pi during real presses -> clean edges on both pins (`pinctrl` reads the registers directly, so it works alongside the service that owns the pins). Hardware is fine, so the break is inside the bridge process.
 3. **Inside the process?** `ls -l /proc/<pid>/fd` on both bridges -> same `.lgd-nfy0`, same inode. Root cause.
 
-`scripts/capture_white_noise_button_presses.sh` automates steps 1-2, logging `pinctrl poll` edges on the Pi next to the broker's MQTT traffic; edges with no matching MQTT message is the signature of this bug class. `scripts/diagnose_white_noise_buttons.sh --inject` covers step 1 alone.
+`scripts/pi-buttons/capture_white_noise_button_presses.sh` automates steps 1-2, logging `pinctrl poll` edges on the Pi next to the broker's MQTT traffic; edges with no matching MQTT message is the signature of this bug class. `scripts/pi-buttons/diagnose_white_noise_buttons.sh --inject` covers step 1 alone.
 
 ## Fix
 
@@ -100,7 +100,7 @@ scene-buttons-mqtt       -> /home/pramod/.lgpio/scene-buttons-mqtt/.lgd-nfy0    
 
 Both scripts also log now: notify dir, each watched pin/topic, MQTT connect/disconnect, and one line per press with the publish rc.
 
-Deployed with `scripts/deploy_button_bridges_pi.sh`, which needs no sudo on the Pi - the units run as `pramod` with `Restart=always`, so killing the main pid is enough to restart them with the new code.
+Deployed with `scripts/pi-buttons/deploy_button_bridges_pi.sh`, which needs no sudo on the Pi - the units run as `pramod` with `Restart=always`, so killing the main pid is enough to restart them with the new code.
 
 ## Prevention
 
@@ -125,13 +125,13 @@ Worth being explicit, because there are three separate pieces of code involved a
 
 | Piece | What it does | Where it lives | Changed? |
 | --- | --- | --- | --- |
-| `scripts/white-noise-buttons-mqtt.py`, `scripts/scene-buttons-mqtt.py` | The relay: watches the pins, publishes a `PRESS` to MQTT. This is the process that owns the pipe. | Checked in. Deployed to `~/` on the Pi as a copy. | **Yes - this is the fix** |
-| `scripts/deploy_white_noise_buttons_pi.sh` | The installer: writes the systemd unit and enables it. Runs once at setup. | Checked in. | No |
+| `scripts/pi-buttons/white-noise-buttons-mqtt.py`, `scripts/pi-buttons/scene-buttons-mqtt.py` | The relay: watches the pins, publishes a `PRESS` to MQTT. This is the process that owns the pipe. | Checked in. Deployed to `~/` on the Pi as a copy. | **Yes - this is the fix** |
+| `scripts/pi-buttons/deploy_white_noise_buttons_pi.sh` | The installer: writes the systemd unit and enables it. Runs once at setup. | Checked in. | No |
 | `/etc/systemd/system/*.service` on the Pi | Tells systemd how to launch the relay, including the `WorkingDirectory` line that armed the bug. | Lives on the Pi. Reference copies now checked in at `systemd/wol-sender/`. | No - deliberately |
 
 The fix is in **the relay scripts, not the installer**, and that choice is the point. The bug came from unit configuration, so the natural instinct is to fix the installer and the unit files. But then correctness depends on every future unit being written correctly - and units get copy-pasted, hand-edited on the box, and (as here) written months apart by someone not thinking about pipes. Putting it in the relay means the process fixes its own environment on startup, whatever launched it and whatever the unit says.
 
-The deployed copies on the Pi (`~/white-noise-buttons-mqtt.py`, `~/scene-buttons-mqtt.py`) are exactly that - copies. `scripts/deploy_button_bridges_pi.sh` pushes the repo versions and restarts both services; `md5sum` on both sides is the check that they have not drifted.
+The deployed copies on the Pi (`~/white-noise-buttons-mqtt.py`, `~/scene-buttons-mqtt.py`) are exactly that - copies. `scripts/pi-buttons/deploy_button_bridges_pi.sh` pushes the repo versions and restarts both services; `md5sum` on both sides is the check that they have not drifted.
 
 ## Not part of this bug
 

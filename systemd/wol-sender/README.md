@@ -7,7 +7,7 @@ persistent journal, so nothing about its past state can be recovered from the
 device once it reboots.
 
 These are **copies, not the source of truth**: systemd reads the files on the
-Pi. `scripts/deploy_white_noise_buttons_pi.sh` is what installs the
+Pi. `scripts/pi-buttons/deploy_white_noise_buttons_pi.sh` is what installs the
 white-noise unit (heredoc), and the scene-buttons unit is documented in
 `scene_buttons_setup.md`. Edit the Pi, then refresh these copies.
 

@@ -5,7 +5,7 @@ Two momentary push buttons for `switch.white_noise` (see `PROJECTS.md`,
 latching toggle switch on GPIO17 - that hardware was physically swapped for
 two independent push buttons (GPIO17 start, GPIO18 stop), so the bridge
 script and HA automations changed shape to match (see
-`scripts/white-noise-buttons-mqtt.py` for why - same reasoning as
+`scripts/pi-buttons/white-noise-buttons-mqtt.py` for why - same reasoning as
 `scene-buttons-mqtt.py` vs. the old `toggle-button-mqtt.py`: a momentary
 press has no persisted state, so there's nothing for a reconnect to
 replay/refire).
@@ -18,7 +18,7 @@ replay/refire).
    - Stop button: **GPIO18 (physical pin 12)** <-> **GND (physical pin 14)**
 2. **Copy the script to the Pi**:
    ```
-   scp scripts/white-noise-buttons-mqtt.py pramod@192.168.1.124:~/
+   scp scripts/pi-buttons/white-noise-buttons-mqtt.py pramod@192.168.1.124:~/
    chmod +x ~/white-noise-buttons-mqtt.py
    ```
 3. **Reuse the existing MQTT credentials** - `~/toggle-button-mqtt.env` on
@@ -60,7 +60,7 @@ replay/refire).
    sudo systemctl daemon-reload
    sudo systemctl enable --now white-noise-buttons-mqtt
    ```
-6. **Apply the HA automations**: `scripts/apply_white_noise_button_automations.sh`
+6. **Apply the HA automations**: `scripts/pi-buttons/apply_white_noise_button_automations.sh`
    (run on xero, needs sudo since `automations.yaml` is root-owned) - removes
    the dead `toggle1_white_noise_on`/`_off` automations (they trigger on
    `binary_sensor.toggle_switch_1`, which no longer exists) and adds
@@ -83,9 +83,9 @@ ssh pramod@192.168.1.124 'journalctl -u white-noise-buttons-mqtt -f'
 
 - **Press lines appear, HA does nothing** - the break is MQTT/HA side. Check
   the automations are loaded and `switch.white_noise` responds to a synthetic
-  press: `scripts/diagnose_white_noise_buttons.sh --inject`.
+  press: `scripts/pi-buttons/diagnose_white_noise_buttons.sh --inject`.
 - **No press lines at all** - either the wiring or the GPIO layer. Run
-  `scripts/capture_white_noise_button_presses.sh`, which logs `pinctrl poll`
+  `scripts/pi-buttons/capture_white_noise_button_presses.sh`, which logs `pinctrl poll`
   edges on the Pi next to the MQTT messages. Edges but no MQTT means the
   bridge process isn't seeing its own edge notifications - see
   `incidents/2026-09-04-lgpio-notify-fifo-collision.md` (two lgpio processes
@@ -93,6 +93,6 @@ ssh pramod@192.168.1.124 'journalctl -u white-noise-buttons-mqtt -f'
   now `chdir`s into its own `~/.lgpio/<script>/` to prevent it).
 
 **Redeploying either bridge script** after an edit:
-`scripts/deploy_button_bridges_pi.sh` - copies both scripts to the Pi and
+`scripts/pi-buttons/deploy_button_bridges_pi.sh` - copies both scripts to the Pi and
 restarts both services. No sudo needed (the units run as `pramod` with
 `Restart=always`, so killing the main pid restarts them).

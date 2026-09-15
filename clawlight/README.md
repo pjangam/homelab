@@ -139,8 +139,8 @@ to sit next to the desk - anywhere else this would need the ESP32 version
 parked in `PROJECTS.md`.
 
 ```sh
-scripts/deploy_clawlight_led_pi.sh --dry-run   # --no-gpio, foreground, no LED needed
-scripts/deploy_clawlight_led_pi.sh             # install + enable clawlight-led.service
+scripts/clawlight/deploy_clawlight_led_pi.sh --dry-run   # --no-gpio, foreground, no LED needed
+scripts/clawlight/deploy_clawlight_led_pi.sh             # install + enable clawlight-led.service
 ```
 
 **State reaches the Pi over MQTT, not the SSE endpoint the web page uses.** A
@@ -165,7 +165,7 @@ turns the LED amber within a second, and restarting it restores the real
 colour.
 
 Wiring and pin choice are in `gpio_pinout.md`. Set `COMMON_ANODE = True` in
-`scripts/clawlight-led.py` if the LED reads inverted (bright when idle).
+`scripts/clawlight/clawlight-led.py` if the LED reads inverted (bright when idle).
 
 ## Jumping to the console that needs you
 
@@ -232,9 +232,9 @@ A few consequences worth knowing:
   happens from the actual page, which is also where an ntfy notification's
   click-through lands you, so "phone buzzes → tap → jump" is one path.
 
-Tested by `scripts/test_clawlight_focus.py` (routing, staleness, and rejection
+Tested by `scripts/clawlight/test_clawlight_focus.py` (routing, staleness, and rejection
 of tmux coordinates that arrive malformed over the wire) and
-`scripts/test_clawlight_focus_e2e.sh`, which runs a throwaway tmux server with
+`scripts/clawlight/test_clawlight_focus_e2e.sh`, which runs a throwaway tmux server with
 a real attached client against the live server and checks the client actually
 moves.
 
@@ -265,8 +265,8 @@ the light actually goes red.
 No `NTFY_CLAWLIGHT_TOKEN` in the environment = pushes silently disabled, which
 is the right behaviour anywhere but xero.
 
-Tested by `scripts/test_clawlight_notify.py`, and end to end against the live
-server and topic by `scripts/verify_clawlight_notify.sh` (which does buzz the
+Tested by `scripts/clawlight/test_clawlight_notify.py`, and end to end against the live
+server and topic by `scripts/clawlight/verify_clawlight_notify.sh` (which does buzz the
 phone once).
 
 ## Hiding a single session
@@ -289,7 +289,7 @@ removes it on its very next hook event.
 
 The marker is keyed by session id, so it only ever applies to one session and
 is dead weight once that session is gone - `~/.claude/clawlight-ignore` is
-worth emptying occasionally. `scripts/test_clawlight_ignore.sh` exercises this
+worth emptying occasionally. `scripts/clawlight/test_clawlight_ignore.sh` exercises this
 against the running server using a throwaway session id.
 
 ## Viewing it

@@ -41,7 +41,7 @@ assembly. Do it before touching the strip.
 `_ESP32_audioreactive.bin`, and install.wled.me builds its variant list from
 those assets, so the "audio" option does not appear there for current
 versions. That is why this runbook pinned 0.14.4 and why
-`scripts/flash-wled-audioreactive.sh` defaults to it.
+`scripts/esp32-tools/flash-wled-audioreactive.sh` defaults to it.
 
 **That is a statement about the GitHub release assets, not about WLED.**
 Corrected 2026-09-14: the board is now running **16.0.1 with AudioReactive** -
@@ -68,7 +68,7 @@ both - so presets survived the jump.
    look like it did not work.
 3. **Verify the board, writing nothing:**
    ```
-   ./scripts/flash-wled-audioreactive.sh
+   ./scripts/esp32-tools/flash-wled-audioreactive.sh
    ```
    Read-only. It finds the port, reads the chip back, and refuses to go on if
    it is an ESP8266 or an S2/C3 variant - AudioReactive needs the original
@@ -76,7 +76,7 @@ both - so presets survived the jump.
    It also flags a flash smaller than the 4MB WLED needs.
 4. **Flash it:**
    ```
-   ./scripts/flash-wled-audioreactive.sh --flash
+   ./scripts/esp32-tools/flash-wled-audioreactive.sh --flash
    ```
    Downloads the 0.14.4 audioreactive image, erases the flash and writes it at
    `0x0`. Erasing wipes any existing WiFi credentials, which is the standard
@@ -98,7 +98,7 @@ devices hands you a free control and this cost an hour without it.
 
 ### If the board does not show up at all
 
-Run `./scripts/watch-usb-serial.sh` only if you are about to **replug**
+Run `./scripts/esp32-tools/watch-usb-serial.sh` only if you are about to **replug**
 something - it is a change detector and reports nothing for a board that is
 already sitting in the port. For a board that is plugged in right now, check
 the steady state instead:
