@@ -107,6 +107,28 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 **Caveat:** all "always-on" numbers above are spec/datasheet estimates, not measured - could realistically be off ±30-40% per device without a real inline meter. Good enough to rank contributors and sanity-check "does this add to my bill" questions (context: prompted by the Shelly WiFi-button power question), not precise enough to reconcile against an actual bill.
 **Next step:** if precision matters, a cheap plug-in energy meter (or checking whether the Tinxy app/HA integration exposes real energy-monitoring data for whatever's wired behind the two Tinxy units) would replace the router/extender/xero/Pi estimates with real numbers cheaply. Fridge is the highest-value next target to actually measure, since it's likely the single biggest line item of everything in this audit.
 
+### Clawlight physical LED (Pi GPIO)
+**Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
+
+**State:** built and verified 2026-09-07, **not yet wired** - the software is deployed and tested with `--no-gpio`; it needs an LED soldered up and `scripts/clawlight/deploy_clawlight_led_pi.sh` run for real.
+
+**Design decisions:**
+- **State reaches the Pi over retained MQTT, not the SSE endpoint the web page uses.** A hardware light must be correct the moment it powers on, and clawlight only emits on hook events - a subscriber starting cold during a quiet stretch would sit wrong for as long as the quiet lasted. `server.py` now publishes the aggregate to `clawlight/state` retained, so the broker replays it on connect. Verified correct within a second of process start. Reuses the house MQTT pattern, and makes the state available to HA for free.
+- **An MQTT last-will means the light never lies.** If `server.py` dies the broker publishes `offline` on `clawlight/availability` and the LED goes to an amber pulse rather than holding a stale colour. Directly informed by the same-day MirAIe outage, where something that looked healthy while reporting nothing went unnoticed for 29 hours. Both directions tested.
+- **Idle is dim white, not off** - so "nothing running" is distinguishable from "unplugged".
+- **GPIO13/19/26 (pins 33/35/37, GND on 39)** - a tidy corner block that leaves every pin `gpio_pinout.md` lists as free-for-a-button untouched. Third GPIO process on this Pi, so it gets its own lgpio notify directory (see `incidents/2026-09-04-lgpio-notify-fifo-collision.md`).
+
+```parts
+qty | item | est | note
+2 | Common-cathode RGB LED 5mm | 20 | local - buy 2 of each polarity, COMMON_ANODE in the script covers the other
+3 | 220R resistor | 5 | local - one per colour leg; buy 330R/100R too, see the health LED entry
+1 | Female-female dupont jumpers (40-pin strip) | 120 | local - shared with the aarti lights build
+1 | Perfboard 5x7cm | 30 | local - shared with the health LED build
+1 | Ping-pong ball or diffuser | 20 | household - optional, turns a point of light into a beacon
+```
+
+**Next step:** wire the LED, run `scripts/clawlight/deploy_clawlight_led_pi.sh`, and check the colour polarity is right way round (if it reads inverted, set `COMMON_ANODE = True`).
+
 ---
 
 ## 🟡 Parked
@@ -278,32 +300,7 @@ Roughly **₹1000-1600** for both nodes if it goes the wired ESP32 way, all of i
 
 **Next step:** check Termius's URL scheme for a startup command. That answer decides between a pure link and the snippet-plus-lookup design.
 
-
-## 🔌 ESP32 Projects
-
-### ✅ Clawlight physical LED (Pi GPIO)
-**Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
-
-**State:** built and verified 2026-09-07, **not yet wired** - the software is deployed and tested with `--no-gpio`; it needs an LED soldered up and `scripts/clawlight/deploy_clawlight_led_pi.sh` run for real.
-
-**Design decisions:**
-- **State reaches the Pi over retained MQTT, not the SSE endpoint the web page uses.** A hardware light must be correct the moment it powers on, and clawlight only emits on hook events - a subscriber starting cold during a quiet stretch would sit wrong for as long as the quiet lasted. `server.py` now publishes the aggregate to `clawlight/state` retained, so the broker replays it on connect. Verified correct within a second of process start. Reuses the house MQTT pattern, and makes the state available to HA for free.
-- **An MQTT last-will means the light never lies.** If `server.py` dies the broker publishes `offline` on `clawlight/availability` and the LED goes to an amber pulse rather than holding a stale colour. Directly informed by the same-day MirAIe outage, where something that looked healthy while reporting nothing went unnoticed for 29 hours. Both directions tested.
-- **Idle is dim white, not off** - so "nothing running" is distinguishable from "unplugged".
-- **GPIO13/19/26 (pins 33/35/37, GND on 39)** - a tidy corner block that leaves every pin `gpio_pinout.md` lists as free-for-a-button untouched. Third GPIO process on this Pi, so it gets its own lgpio notify directory (see `incidents/2026-09-04-lgpio-notify-fifo-collision.md`).
-
-```parts
-qty | item | est | note
-2 | Common-cathode RGB LED 5mm | 20 | local - buy 2 of each polarity, COMMON_ANODE in the script covers the other
-3 | 220R resistor | 5 | local - one per colour leg; buy 330R/100R too, see the health LED entry
-1 | Female-female dupont jumpers (40-pin strip) | 120 | local - shared with the aarti lights build
-1 | Perfboard 5x7cm | 30 | local - shared with the health LED build
-1 | Ping-pong ball or diffuser | 20 | household - optional, turns a point of light into a beacon
-```
-
-**Next step:** wire the LED, run `scripts/clawlight/deploy_clawlight_led_pi.sh`, and check the colour polarity is right way round (if it reads inverted, set `COMMON_ANODE = True`).
-
-### 💡 Homelab health LED (Pi GPIO) - the whole healthcheck as one light
+### Homelab health LED (Pi GPIO) - the whole healthcheck as one light
 **Why:** `cron/healthcheck.sh` already knows whether the homelab is healthy, but the only way to find that out is to go looking - open the Stats dashboard, or wait for an email/ntfy push on a failure. The clawlight LED above proved the other shape works: a light on the desk that is simply *right*, with nothing to open. Same idea, different source of truth - green means every check passed, red means at least one did not, and the answer is visible from across the room.
 
 **State:** idea only, noted 2026-09-11. Nothing built - but most of the pieces are already in place, which is the reason to write it down now.
