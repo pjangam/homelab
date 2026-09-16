@@ -314,45 +314,44 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 **Next step:** pull the router DHCP table and Pi-hole client list, diff them against `docs/hardware.md`, and extend the file with the access columns above.
 
-### Monitor bias light (leftover WS2812B)
-**Why:** there is leftover WS2812B strip, probably the ~2m spare from the aarti lights reel. Stuck behind the desk monitor it becomes a bias light. It could also show the same state as the clawlight or health LED as a glow around the screen, readable without looking away. Noted 2026-09-16.
+### Pegboard backlight as the clawlight (leftover WS2812B on Pi GPIO13)
+**Why:** the shipped clawlight LED is not noticeable enough by day. There is leftover WS2812B strip, probably the ~2m spare from the aarti lights reel. Mounted on the back of the pegboard the wol-sender Pi already hangs on, it would throw clawlight state onto the wall as a glow visible across the room. It would replace the single red/green LED on the same pins. Noted 2026-09-16; started as "a bias light behind the monitor" and moved to the pegboard in the same conversation.
 
-**State:** idea only. The strip needs something to drive it, and there are two ways:
+**State:** idea, direction decided, nothing built.
 
-**(A) Move the wol-sender Pi behind the monitor and drive the strip from its GPIO.** The Pi already sits next to the desk (that is why the clawlight LED is on it), so the move is short. Moving it still costs something:
-- **The clawlight LED would end up hidden behind the monitor**, which defeats the point of it. That only works if the strip takes over the LED's job.
-- **The Pi's attached hardware moves with it**, and so does anything it depends on. The white-noise button wiring (GPIO17/18) and the fan go too, and so does its network link: if it is on Ethernet, check the cable reaches. Its WoL and Node-RED roles don't care where it sits.
-- **The default WS2812 pin is taken.** `rpi_ws281x` drives the strip from PWM0, whose usual pin is GPIO18, which is the white-noise stop button. The alternatives are free: GPIO12 (pin 32, the other PWM0 pin) or GPIO10 (pin 19, SPI). PWM also takes over the Pi's analog audio output. The library needs root, so it runs as a system unit like `clawlight-led.service`.
-- **3.3V data into a 5V strip** is outside spec, but the aarti ESP32 is also 3.3V and drives the same strip fine without a level shifter. A 74AHCT125 is the proper fix if the first pixel flickers.
-- **The strip must not be powered from the Pi's 5V pin.** The Pi already has an unresolved undervoltage problem from its wall-mount cable. The strip needs its own 5V supply with a shared ground, and a brightness cap in software.
-- **No WLED on a Pi**, so the HA integration and effects would have to be written, where WLED gives them for free.
-- **It puts the Pi at risk.** That board runs WoL for xero, the MirAIe AC bridge and the buttons, and a DIY 5V build plus cables behind a monitor that gets moved is how that board gets knocked offline.
+**Why the LED is dim, and why a diffuser does not fix it.** It is the drive current, not the LED. A GPIO pin through 220R at 3.3V gives the red die ~6mA and the green ~1.5mA, and the Pi's pins cannot supply much more without a transistor. A ping-pong ball spreads that same small amount of light over a bigger surface: it helps at night and makes daytime worse. WS2812B pixels are driven from their own 5V supply at up to ~20mA per colour, so the strip has headroom to run bright by day and dim at night by schedule or HA's sun state. It is also full RGB, which brings back the dim white idle the RG LED could not show. Bouncing off the wall diffuses it for free.
 
-**(B) An ESP32 on WLED behind the monitor. This is the recommended one.** It repeats the aarti lights build, whose traps are already written down (flash offsets, segment-0 presets, `light.wled_main`), with `tools/` flashing scripts and the HA WLED integration already working. It is self-contained: nothing on the Pi changes, and a failure takes out a bias light and nothing else. **It may cost nothing:** the aarti entry still has to decide whether that strip stays up after the festival. If it comes down, its ESP32 and 5V 4A supply are free for this.
+**Why the Pi drives it, not an ESP32 on WLED:**
+- **Nothing moves.** The pegboard is where the Pi already is, so the data run is short. The earlier "behind the monitor" version meant relocating the Pi along with its button wiring and fan, and hiding the existing LED.
+- **The pins already exist.** A strip takes one data wire: **GPIO13 (pin 33)**, today the LED's red leg. It is a hardware PWM pin (PWM1) that `rpi_ws281x` supports. GND stays on pin 39. **GPIO19 (pin 35) is freed** - it shares PWM1 with GPIO13, so it cannot drive a second strip.
+- **The logic stays in `clawlight-led.py`.** It moves from gpiozero to `rpi_ws281x` for output. The MQTT side is unchanged, including the retained `clawlight/state` and the last-will that turns an unknown state into a pulse, so no WLED realtime-timeout trick is needed.
+- An ESP32 on WLED remains the answer if the strip ever has to be somewhere away from the Pi.
 
-Only pick (A) if the Pi has to move behind the monitor for some other reason anyway.
+**What changes on the Pi:**
+- **Analog audio off:** `dtparam=audio=off` in `/boot/firmware/config.txt`, then reboot. PWM output shares hardware with the headphone jack and glitches the strip otherwise. Checked 2026-09-16: nothing plays audio there, pipewire only holds the MIDI sequencer.
+- **The service runs as root:** `rpi_ws281x` needs root for the PWM hardware. `clawlight-led.service` is `User=pramod` today, so the unit and `scripts/clawlight/deploy_clawlight_led_pi.sh` change with it.
+- **The strip gets its own 5V supply, never the Pi's 5V pin.** The Pi has an unresolved undervoltage problem from its wall-mount cable. The supply's ground joins the Pi's GND. A 470R goes in series on the data line, and a 1000uF capacitor across the strip's input.
+- **3.3V data into a 5V strip is outside spec,** but the aarti ESP32 is also 3.3V and drives this same strip without a level shifter. A 74AHCT125 is the fix if the first pixel flickers.
+- **Cap brightness in software** and size the supply from the LED count. A strip around the whole pegboard edge is many more LEDs than a clawlight needs. Only part of the edge can be lit, or the whole edge at a low cap.
 
-**Showing state on the strip - and why it may be the real clawlight light.** Added 2026-09-16: the shipped clawlight LED is not noticeable enough by day. That is mostly the drive current, not the LED. A GPIO pin through 220R at 3.3V gives the red die ~6mA and the green ~1.5mA (worked out in the health LED entry), and the Pi's pins cannot supply much more without a transistor. A diffuser like a ping-pong ball spreads that same small amount of light over a bigger surface, so it helps at night and makes daytime worse. A short piece of this WS2812B strip fixes all of that at once:
-- **Brightness headroom:** each pixel is driven from its own 5V supply at up to ~20mA per colour, so it can run bright by day and be dimmed at night by schedule or HA's sun state, instead of one fixed brightness.
-- **Full RGB,** which brings back the dim white idle the RG LED could not show.
-- **"LED strings" from reels are this same part.** Addressable fairy/pixel strings are WS2811/WS2812 on wire instead of a flexible strip: one data line, no common cathode or anode to choose. Plain non-addressable RGB strings are usually 12V common anode and need a MOSFET per colour, so they are not a better buy than strip already owned.
-- **Keep the "never lies" rule without a daemon on the board:** a renderer on xero streams the state over WLED realtime UDP, as the aarti Tier 3 renderer does. If xero, the broker or the renderer dies, WLED's protocol timeout drops back to a boot preset set as the "unknown" pulse. That is the on-device equivalent of the Pi LED's MQTT last-will, and the aarti build already showed the timeout works.
+**Pegboard-specific:**
+- **Standoff decides the glow.** The halo needs a few cm between the board and the wall. Mount the strip facing the wall, or angled out, on the back edge.
+- **If the pegboard is metal,** insulate the strip's cut ends and solder joints (heatshrink or tape). Bare 5V pads against a metal board are a short.
+- **LED "strings" from reels are this same part:** WS2811/WS2812 pixels on wire instead of a flexible strip, one data line, no common cathode or anode to choose. Plain non-addressable RGB strings are usually 12V common anode and need a MOSFET per colour, so they are not a better buy than strip already owned.
 
-The same bridge can tint it from `homelab/healthcheck/overall` instead, or as well, if the health LED idea goes this way.
-
-**Unknowns to settle first:** how much strip is left and its LED density; that it is really 5V WS2812B, not 12V WS2815; the monitor's size (the length around the back sets current and supply size); and whether there is a free socket behind the desk.
+**Unknowns to settle first:** how much strip is left and its LED density; that it is really 5V WS2812B, not 12V WS2815; the pegboard's size, material and gap from the wall; and whether there is a spare socket for the strip's supply.
 
 ```parts
 qty | item | est | note
-1 | ESP32 dev board with USB | 400-600 | local - skip if the aarti lights board is freed after the festival
-1 | 5V 3A power supply | 300-500 | local - skip if the aarti 5V 4A supply is freed; size it from strip length
+1 | 5V 2-3A power supply | 250-500 | local - size from the LED count; skip if the aarti 5V 4A supply is freed after the festival
 1 | 470R resistor | 2 | local - series on the data line, same as the aarti build
 1 | 1000uF 10V electrolytic capacitor | 15 | local - across the strip's 5V/GND at the input
+1 | Heatshrink assortment | 50-100 | local - insulate cut ends, essential on a metal pegboard
 ```
 
-If this gets built, add the board to `docs/hardware.md` as part of done (see `CLAUDE.md`).
+When built: update `docs/gpio_pinout.md` (GPIO13 = strip data, GPIO19 free), `docs/hardware.md` (see `CLAUDE.md`), and the clawlight LED entry in Done.
 
-**Next step:** measure the leftover strip and the back of the monitor, and decide the aarti strip's post-festival fate, which decides whether (B) needs a purchase at all.
+**Next step:** measure the leftover strip and the pegboard (size, material, gap from the wall), then check a pixel test from the Pi on GPIO13 with audio off, before any mounting.
 
 ### Homelab health LED (Pi GPIO) - the whole healthcheck as one light
 **Why:** `projects/healthcheck/healthcheck.sh` already knows whether the homelab is healthy, but the only way to find that out is to go looking - open the Stats dashboard, or wait for an email/ntfy push on a failure. The clawlight LED above proved the other shape works: a light on the desk that is simply *right*, with nothing to open. Same idea, different source of truth - green means every check passed, red means at least one did not, and the answer is visible from across the room.
