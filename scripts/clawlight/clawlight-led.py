@@ -40,6 +40,7 @@ import argparse
 import math
 import os
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -53,7 +54,7 @@ AVAILABILITY_TOPIC = os.environ.get("MQTT_AVAILABILITY_TOPIC", "clawlight/availa
 COMMON_ANODE = False
 PINS = {"red": 13, "green": 19}
 
-AMBER = (1.0, 0.4)  # (red, green) - tune on the bench, see the docstring
+AMBER = (1.0, 1.0)  # (red, green) - pick with --tune-amber; green is maxed, see PROJECTS.md
 IDLE_BRIGHTNESS = 0.06
 COLOURS = {
     "active": (0.0, 1.0),
@@ -162,16 +163,36 @@ class Clawlight:
         self.refresh()
 
 
+def tune_amber(light: Light):
+    """Hold amber at a series of green shares so one can be picked by eye.
+
+    Run by scripts/clawlight/tune_led_amber.sh with the service stopped. Steady,
+    not pulsed: a hue is easier to judge when it is not also changing brightness.
+    """
+    for green in (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0):
+        print(f"green={green}", flush=True)
+        light.led.value = (1.0, green)
+        time.sleep(5)
+    light.led.off()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-gpio", action="store_true",
                         help="log colour changes instead of driving pins (test without hardware)")
+    parser.add_argument("--tune-amber", action="store_true",
+                        help="step through amber mixes for picking AMBER by eye, then exit")
     args = parser.parse_args()
+    if args.tune_amber and args.no_gpio:
+        parser.error("--tune-amber needs the real LED")
 
     if not args.no_gpio:
         isolate_lgpio_notify_dir()
 
     light = Light(use_gpio=not args.no_gpio)
+    if args.tune_amber:
+        tune_amber(light)
+        return
     app = Clawlight(light)
     app.refresh()  # amber until the broker tells us otherwise
 
