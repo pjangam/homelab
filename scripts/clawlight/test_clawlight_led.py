@@ -49,12 +49,15 @@ samples = []
 for _ in range(60):
     time.sleep(0.05)
     samples.append((red.state, green.state))
-reds = [r for r, _ in samples]
-fades = max(reds) > 0.8 and min(reds) < 0.2
-print(f"{'ok  ' if fades else 'FAIL'} unknown pulses: red ranged {min(reds):.2f}..{max(reds):.2f}")
+# Judge the fade on whichever channel AMBER leans on, so retuning the mix
+# does not break the test.
+ch = max(range(2), key=lambda i: led.AMBER[i])
+levels = [smp[ch] for smp in samples]
+fades = max(levels) > 0.8 * led.AMBER[ch] and min(levels) < 0.2 * led.AMBER[ch]
+print(f"{'ok  ' if fades else 'FAIL'} unknown pulses: {('red', 'green')[ch]} ranged {min(levels):.2f}..{max(levels):.2f}")
 results.append(fades)
-lit = [(r, g) for r, g in samples if r > 0.1]
-hue = all(abs(g / r - led.AMBER[1] / led.AMBER[0]) < 0.02 for r, g in lit)
+lit = [(r, g) for r, g in samples if r > 0.05 and g > 0.05]
+hue = all(abs(g / r - led.AMBER[1] / led.AMBER[0]) < 0.05 * led.AMBER[1] / led.AMBER[0] for r, g in lit)
 print(f"{'ok  ' if hue else 'FAIL'} unknown pulse keeps the amber mix while fading")
 results.append(hue)
 

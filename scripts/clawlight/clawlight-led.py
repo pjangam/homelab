@@ -54,7 +54,7 @@ AVAILABILITY_TOPIC = os.environ.get("MQTT_AVAILABILITY_TOPIC", "clawlight/availa
 COMMON_ANODE = False
 PINS = {"red": 13, "green": 19}
 
-AMBER = (1.0, 1.0)  # (red, green) - pick with --tune-amber; green is maxed, see PROJECTS.md
+AMBER = (0.5, 1.0)  # (red, green) - picked by eye with --tune-amber, 2026-09-16
 IDLE_BRIGHTNESS = 0.06
 COLOURS = {
     "active": (0.0, 1.0),
@@ -164,14 +164,21 @@ class Clawlight:
 
 
 def tune_amber(light: Light):
-    """Hold amber at a series of green shares so one can be picked by eye.
+    """Hold a series of red/green mixes so the amber one can be picked by eye.
 
     Run by scripts/clawlight/tune_led_amber.sh with the service stopped. Steady,
     not pulsed: a hue is easier to judge when it is not also changing brightness.
+
+    The walk runs from red-heavy to green-heavy: green rises with red at full,
+    then red falls with green at full, since a weak green die can need more
+    green than 1.0 can give (2026-09-16: green=1.0 was still the best of the
+    first half). Each printed pair is a ready-made AMBER value.
     """
-    for green in (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0):
-        print(f"green={green}", flush=True)
-        light.led.value = (1.0, green)
+    mixes = [(1.0, g) for g in (0.2, 0.4, 0.6, 0.8, 1.0)]
+    mixes += [(r, 1.0) for r in (0.8, 0.6, 0.5, 0.4, 0.3, 0.2)]
+    for red, green in mixes:
+        print(f"AMBER = ({red}, {green})", flush=True)
+        light.led.value = (red, green)
         time.sleep(5)
     light.led.off()
 
