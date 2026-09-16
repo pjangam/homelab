@@ -127,37 +127,6 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 **Caveat:** all "always-on" numbers above are spec/datasheet estimates, not measured - could realistically be off ±30-40% per device without a real inline meter. Good enough to rank contributors and sanity-check "does this add to my bill" questions (context: prompted by the Shelly WiFi-button power question), not precise enough to reconcile against an actual bill.
 **Next step:** if precision matters, a cheap plug-in energy meter (or checking whether the Tinxy app/HA integration exposes real energy-monitoring data for whatever's wired behind the two Tinxy units) would replace the router/extender/xero/Pi estimates with real numbers cheaply. Fridge is the highest-value next target to actually measure, since it's likely the single biggest line item of everything in this audit.
 
-### Clawlight physical LED (Pi GPIO)
-**Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
-
-**State:** built and verified 2026-09-07, **wired and deployed 2026-09-16** - `clawlight-led.service` is active on the Pi and came up showing the real aggregate state (red, a Mac session waiting) within a second. The deploy script's install step had never run for real: it used sudo over a terminal-less ssh, which cannot prompt for the Pi's password; fixed to `ssh -t`.
-
-**LED bought 2026-09-15 - RG (red/green bi-colour), not RGB. Checked 2026-09-16: 3 legs, common cathode.** So red and green are driven independently and amber is a PWM mix of the two - active, waiting and the "don't believe me" amber pulse all survive. Only idle (dim white) needed blue; it is now dim steady amber (see design decisions). `clawlight-led.py` now drives two PWM pins through gpiozero `LEDBoard` and does its own amber pulse, because gpiozero's `pulse()` fades each pin to full and would turn the mix yellow. `scripts/clawlight/test_clawlight_led.py` checks it on mock pins - which caught `LEDBoard` ordering keyword pins alphabetically, swapping red and green.
-
-Wiring: long leg to GND (pin 39), red leg through 220R to GPIO13 (pin 33), green leg through 220R to GPIO19 (pin 35) - drawn in full, with the leg test and bench checks, in `clawlight/led_wiring.html` (artifact: https://claude.ai/artifact/UDgsMP8uYK5FkHFydLMwP9). If the green die is pure/emerald green (~3.0V forward) rather than yellow-green, 220R leaves it at ~1.4mA and dim beside red - use 100R on that leg.
-
-**Design decisions:**
-- **State reaches the Pi over retained MQTT, not the SSE endpoint the web page uses.** A hardware light must be correct the moment it powers on, and clawlight only emits on hook events - a subscriber starting cold during a quiet stretch would sit wrong for as long as the quiet lasted. `server.py` now publishes the aggregate to `clawlight/state` retained, so the broker replays it on connect. Verified correct within a second of process start. Reuses the house MQTT pattern, and makes the state available to HA for free.
-- **An MQTT last-will means the light never lies.** If `server.py` dies the broker publishes `offline` on `clawlight/availability` and the LED goes to an amber pulse rather than holding a stale colour. Directly informed by the same-day MirAIe outage, where something that looked healthy while reporting nothing went unnoticed for 29 hours. Both directions tested.
-- **Idle is dim, not off** - so "nothing running" is distinguishable from "unplugged". Was dim white; on the RG LED it is **dim steady amber** (decided 2026-09-16, over dim green). What keeps it apart from "unknown" is motion, not hue: only the unknown state ever pulses.
-- **GPIO13/19 (pins 33/35, GND on 39)** - a tidy corner block that leaves every pin `docs/gpio_pinout.md` lists as free-for-a-button untouched. Third GPIO process on this Pi, so it gets its own lgpio notify directory (see `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`).
-
-```parts
-qty | item | est | note
-2 | 220R resistor | 5 | local - one per colour leg (RG LED: 2 legs); buy 330R/100R too, see the health LED entry
-1 | Female-female dupont jumpers (40-pin strip) | 120 | local - shared with the aarti lights build
-1 | Perfboard 5x7cm | 30 | local - shared with the health LED build
-1 | Ping-pong ball or diffuser | 20 | household - optional, turns a point of light into a beacon
-```
-
-**Bench, 2026-09-16:** red and green were first wired to each other's pins (fixed); with that swap the 0.4 mix read yellow, which said nothing about the mix. `scripts/clawlight/tune_led.sh` then stepped green from 0.1 to 1.0 on the corrected wiring: 0.2 pulsed plain red, and only **green at 1.0** read amber - so the green die is weak on 220R (consistent with a pure-green die at ~1.4mA against red's ~6mA). The sweep was extended past full green by lowering red instead (hue is the ratio, and red has brightness to spare), and **`AMBER = (0.5, 1.0)`** read amber. No resistor swap needed.
-
-Checked by eye with `scripts/clawlight/show_led_states.sh` (stops the server for the pulse, then hand-publishes idle): the pulse looked right; idle at 6% read as very dim, and `tune_led.sh idle` picked **`IDLE_BRIGHTNESS = 0.3`**. A plain `systemctl --user stop clawlight-server` does trip the MQTT last-will - the LED logged `offline` in the same second.
-
-**Next step:** redeploy with `IDLE_BRIGHTNESS = 0.3`, confirm idle once with `show_led_states.sh`, then move this entry to Done.
-
----
-
 ## 🟡 Parked
 
 ### ZFS mirror (real redundancy for datapool)
@@ -358,7 +327,7 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 **One LED, not a bar.** The ask is "overall", and a single worst-of light is what gets read from across the room; *which* check failed is what the Stats dashboard and the ntfy push already answer well. A per-subsystem LED bar is the obvious escalation if the single light turns out to send you to the dashboard every time anyway.
 
-**Wiring:** GPIO13/19/26 are taken by the clawlight LED, so this needs its own block - GPIO16 + GPIO20 + GPIO21 (pins 36/38/40) with GND on pin 34 is free and leaves every button-reserved pin alone. The RG LED needs only two of those (GPIO16 red, GPIO20 green), leaving GPIO21 free. Update `docs/gpio_pinout.md` when it gets wired.
+**Wiring:** GPIO13/19 are taken by the clawlight LED (GPIO26 was planned for its blue and is free again), so this needs its own block - GPIO16 + GPIO20 + GPIO21 (pins 36/38/40) with GND on pin 34 is free and leaves every button-reserved pin alone. The RG LED needs only two of those (GPIO16 red, GPIO20 green), leaving GPIO21 free. Update `docs/gpio_pinout.md` when it gets wired.
 
 **Known trap:** this would be the **fourth** GPIO process on that Pi - it needs its own lgpio notify directory or it will silently break one of the existing ones, see `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`. That incident is exactly how the white-noise buttons died last time.
 
@@ -395,6 +364,28 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 ---
 
 ## ✅ Done
+
+### Clawlight physical LED (Pi GPIO)
+**Why:** the software clawlight (see below) only shows status while its browser tab or PiP window is actually visible. A LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version.
+**What shipped (software 2026-09-07, wired and deployed 2026-09-16):**
+- **Part:** 3-leg common-cathode **red/green** bi-colour LED - bought as RGB, turned out RG. Long leg to GND (pin 39), red through 220R to GPIO13 (pin 33), green through 220R to GPIO19 (pin 35). Diagram, leg test and bench checks: `clawlight/led_wiring.html` (https://claude.ai/artifact/UDgsMP8uYK5FkHFydLMwP9).
+- **`clawlight-led.service`** on the Pi (system unit, `systemd/wol-sender/`), driven by `scripts/clawlight/clawlight-led.py` through gpiozero `LEDBoard` with PWM. Deployed from xero by `scripts/clawlight/deploy_clawlight_led_pi.sh`, which asks for the Pi's sudo password.
+- **Colours:** green active · red waiting · dim steady amber idle · amber pulse = state unknown. `AMBER = (0.5, 1.0)`, `IDLE_BRIGHTNESS = 0.3`, both picked by eye on the real LED.
+- **Bench tools:** `scripts/clawlight/tune_led.sh amber|idle` steps through values printed as ready-made code lines; `scripts/clawlight/show_led_states.sh` shows the pulse and idle on demand (stops the server, then hand-publishes idle, then restores); `scripts/clawlight/test_clawlight_led.py` checks pin output on gpiozero mock pins.
+**Design decisions:**
+- **State reaches the Pi over retained MQTT, not the SSE endpoint the web page uses.** A hardware light must be correct the moment it powers on, and clawlight only emits on hook events - a subscriber starting cold during a quiet stretch would sit wrong for as long as the quiet lasted. `server.py` publishes the aggregate to `clawlight/state` retained, so the broker replays it on connect. Reuses the house MQTT pattern, and makes the state available to HA for free.
+- **An MQTT last-will means the light never lies.** If `server.py` dies the broker publishes `offline` on `clawlight/availability` and the LED pulses amber rather than holding a stale colour. Directly informed by the 2026-09-07 MirAIe outage, where something that looked healthy while reporting nothing went unnoticed for 29 hours.
+- **Idle is dim, not off** - so "nothing running" is distinguishable from "unplugged". Planned as dim white, which needs blue; on the RG LED it is dim steady amber (chosen over dim green). What keeps it apart from "unknown" is motion, not hue: only the unknown state ever pulses.
+- **GPIO13/19 (pins 33/35, GND on 39)** - a tidy corner block that leaves every pin `docs/gpio_pinout.md` lists as free-for-a-button untouched. GPIO26 (pin 37), planned for blue, stays free. Third GPIO process on this Pi, so it gets its own lgpio notify directory (see `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`).
+**Notes worth keeping:**
+- **gpiozero `LEDBoard` orders keyword pins alphabetically.** `LEDBoard(red=13, green=19)` takes values as (green, red), which would have swapped every colour. Pins are passed positionally; the mock-pin test caught it before any wiring.
+- **gpiozero's `pulse()` fades each pin from 0 to full,** which turns a red/green mix into yellow. The amber pulse scales both channels by one shared brightness instead.
+- **Tune colours only after checking plain red and green.** The legs were first wired to each other's pins, and the resulting "yellow" amber sent one retune the wrong way.
+- **Hue is the ratio, not the levels.** The green die is weak on 220R - even green at full with red at full read red-orange - so amber came from lowering red to 0.5 rather than swapping the green resistor to 100R. A 100R on green would still brighten green and amber if either ever looks weak; re-run `tune_led.sh amber` afterwards, since the ratio would move.
+- **The deploy script's install step had never run for real.** It ran sudo inside a heredoc over a terminal-less ssh, which cannot prompt for the Pi's password; only `--dry-run` had ever worked. Fixed with `ssh -t`, and it restarts rather than `enable --now` so a redeploy picks up new code.
+- **A plain `systemctl --user stop clawlight-server` trips the last-will** - the LED logged `offline` in the same second - so a clean stop is not mistaken for "still online".
+**Verified (2026-09-16):** the service starts at boot (survived a Pi reboot mid-bench with no redeploy) and shows the real aggregate within a second of starting; red, green, the amber pulse and dim amber idle each confirmed by eye, with the matching state transitions in the Pi's journal.
+**Next step:** none.
 
 ### scripts/ split into one folder per project
 **Why:** `scripts/` had grown to 73 loose files across a dozen unrelated projects, with nothing saying which ones cron or a service depended on - the start of a big ball of mud.
