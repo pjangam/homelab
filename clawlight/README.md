@@ -1,7 +1,8 @@
 # Clawlight (software-only)
 
 A color-coded status light for Claude Code sessions - green while Claude is
-working, red when it needs your input, gray when nothing's running. This is a
+working, red when it needs your input, amber when a session's turn ended but
+its own background shells are still running, gray when nothing's running. This is a
 software stand-in for the parked "Claw Light" hardware idea in `PROJECTS.md`
 (a physical ESP32 desk light) - no hardware here, just a web page you keep
 floating on top of everything else via the browser's native Picture-in-Picture.
@@ -26,9 +27,21 @@ floating on top of everything else via the browser's native Picture-in-Picture.
   foreground turn is active OR any background task is still running - so a
   forked/background agent still working doesn't make the light lie about
   needing your input just because the main turn ended.
+- **Background shells** (Bash `run_in_background`, Monitor) fire no hook at
+  all when they start or finish, so the counter above can't see them. Instead
+  `set-status.sh` checks the process table when `Stop` fires: every shell
+  Claude Code runs a command in is a direct child of the `claude` process
+  sourcing a `~/.claude/shell-snapshots/` file, and no foreground command can
+  still be running at `Stop`, so any such child left is a background one. Then
+  it reports `shells` instead of `waiting` - **amber**, never a push. Claude is
+  re-invoked when the shell finishes, and that turn's own `Stop` re-checks.
+  Two edges: a turn you interrupt (Esc) with a shell still running shows amber
+  though it is waiting on you, and between a shell finishing and Claude's
+  reply it can read amber for a few seconds. The Pi LED shows `shells` as
+  green (amber there already means idle/unknown).
 - The light is an **aggregate** across every session that has reported in and
   hasn't gone stale (30 min): red if any session needs input, green if any is
-  active, gray otherwise. This intentionally doesn't distinguish which
+  active, amber if any is only waiting on its own shells, gray otherwise. This intentionally doesn't distinguish which
   account a session belongs to - on both machines only one account is logged
   in at a time, so concurrent sessions are never split across accounts on the
   same host.
@@ -90,8 +103,10 @@ proof it works.)
 
 ## Setup on another machine (e.g. the MacBook)
 
-1. Copy `clawlight/set-status.sh` to that machine (or `git clone`/`pull` this
-   repo there) and make sure `jq` and `curl` are installed.
+1. `git clone` this repo on that machine and make sure `jq` and `curl` are
+   installed. A clone, not copies: `git pull` is then the whole deploy, where
+   scp'd copies made "committed on xero" and "running on the Mac" two
+   different things (three debugging rounds went on stale copies, 2026-09-09).
 2. Set `CLAWLIGHT_SERVER_URL` (xero's tailnet URL) and, if `hostname` reports
    something unhelpful on that machine (e.g. a DHCP-style name), a friendly
    `CLAWLIGHT_HOST_NAME` too:
@@ -100,7 +115,7 @@ proof it works.)
    export CLAWLIGHT_HOST_NAME=mac
    ```
 3. Wire the same ten hooks in that machine's global `~/.claude/settings.json`,
-   pointing at the local copy of `set-status.sh`. Hook commands don't source
+   pointing at the clone's `clawlight/set-status.sh`. Hook commands don't source
    your shell profile, so embed both env vars directly in each command
    instead of relying on step 2's exports, e.g.:
    ```
@@ -114,14 +129,20 @@ proof it works.)
 
 4. Install the focus agent, so the light can jump you to a console on this
    machine (see "Jumping to the console that needs you"). Run this **on the
-   Mac** - it resolves the two values that can't be known from xero (where
-   `set-status.sh` was copied to, and the terminal's AppleScript name), then
-   writes and loads the launchd plist:
+   Mac**, from the clone - it points every clawlight hook at the clone's
+   `set-status.sh` (backing up `settings.json` first, and warning about any
+   event whose hook is missing or sends the wrong state), detects the
+   terminal's AppleScript name, then writes and loads the launchd plist for the
+   clone's `focus-agent.sh`:
    ```bash
-   scp pramod@xero.<tailnet>:/path/to/homelab/clawlight/setup-mac-focus-agent.sh /tmp/
-   bash /tmp/setup-mac-focus-agent.sh --dry-run   # show what it would do
-   bash /tmp/setup-mac-focus-agent.sh
+   bash ~/code/homelab/clawlight/setup-mac-focus-agent.sh --dry-run   # show what it would do
+   bash ~/code/homelab/clawlight/setup-mac-focus-agent.sh
    ```
+   Updating afterwards is `git pull`. `set-status.sh` changes apply on the
+   next hook event; `focus-agent.sh` is long-running, so also
+   `launchctl kickstart -k gui/$(id -u)/dev.clawlight.focus-agent`. Re-run
+   the setup script only if `clawlight/` moves within the repo, since the
+   hooks and plist hold its path.
    It reads `CLAWLIGHT_SERVER_URL`/`CLAWLIGHT_HOST_NAME` back out of the hook
    commands rather than taking them again, so the agent can't end up
    disagreeing with what the hooks report - the failure mode where clicks
@@ -151,7 +172,7 @@ the quiet lasted. `server.py` publishes the aggregate to `clawlight/state`
 **retained**, so the broker replays it to the Pi the instant it connects.
 Verified: the LED is correct within a second of process start.
 
-Colours: green active, red waiting, dim steady amber idle (dim rather than off,
+Colours: green active (and `shells` - see "How it works"), red waiting, dim steady amber idle (dim rather than off,
 so "nothing running" is distinguishable from "unplugged"), **amber pulse when
 the state is unknown**. The LED has no blue die, so amber is red and green mixed;
 the idle shade is the pulse's own amber held steady at low brightness, and only

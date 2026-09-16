@@ -2,6 +2,8 @@
 # Reports this session's clawlight state to the server. Called from Claude Code
 # hooks (see ~/.claude/settings.json) with the new state as $1:
 #   active | waiting | input_needed | end
+# (`waiting` is sent on as `shells` when the turn ended with its own background
+# shells still running - see background_shells below.)
 #
 # `waiting` (Stop) and `input_needed` (Notification/PermissionRequest) both turn
 # the light red. Only `input_needed` can send a push: Stop fires at the end of
@@ -51,6 +53,47 @@ host="${CLAWLIGHT_HOST_NAME:-$(hostname)}"
 # non-focusable rather than breaking anything.
 tmux_socket="${TMUX%%,*}"
 tmux_pane="${TMUX_PANE:-}"
+
+# How many of this session's background shells (Bash run_in_background, Monitor)
+# are still alive. No hook fires when one starts or ends, so this asks the
+# process table instead: every shell Claude Code runs a command in is a direct
+# child of the claude process, and its command line sources a file from
+# ~/.claude/shell-snapshots/. By the time `Stop` fires no foreground command can
+# still be running, so any such child left over is a background one.
+#
+# The hook reaches us as claude -> sh -c -> this script, but `sh -c` may exec
+# straight into the script instead (bash does, dash doesn't), so walk up to the
+# nearest claude ancestor rather than counting levels. Stopping at the nearest
+# one matters: a claude started from another session's Bash tool is itself
+# inside a snapshot shell, which the outer claude would count.
+background_shells() {
+  local pid="$PPID" comm cmd i
+  for i in 1 2 3 4; do
+    [ -n "$pid" ] && [ "$pid" -gt 1 ] 2>/dev/null || break
+    # Both names, because they disagree across installs: the native binary is a
+    # file named after its version (versions/2.1.273), renames its process to
+    # `claude` on Linux, and macOS `comm` may still show the file name. argv[0]
+    # is `claude` whenever it was launched as `claude`.
+    comm="$(ps -o comm= -p "$pid" 2>/dev/null)"
+    cmd="$(ps -o args= -p "$pid" 2>/dev/null)"; cmd="${cmd%% *}"
+    case "${comm##*/} ${cmd##*/}" in
+      claude\ * | *\ claude | node\ *)
+        ps -A -o ppid=,args= 2>/dev/null |
+          awk -v p="$pid" '$1 == p && /shell-snapshots\/snapshot-/' | wc -l | tr -d ' '
+        return ;;
+    esac
+    pid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')"
+  done
+  echo 0
+}
+
+# A turn that ends with its own shells still running is not waiting on you:
+# Claude is re-invoked when they finish. Report that as its own state (amber)
+# rather than red. Only `Stop` can mean this - `input_needed` is a real prompt.
+# CLAWLIGHT_BACKGROUND_SHELLS overrides the count, for the tests.
+if [ "$state" = "waiting" ] && [ "${CLAWLIGHT_BACKGROUND_SHELLS:-$(background_shells)}" -gt 0 ] 2>/dev/null; then
+  state="shells"
+fi
 
 # A hidden session reports `end` rather than simply going quiet: going quiet
 # would leave whatever state it last reported sitting on the light until the

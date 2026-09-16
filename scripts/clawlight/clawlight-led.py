@@ -22,6 +22,10 @@ mix reads amber rather than yellow-green or orange.
 Colours:
   active   green        a session is working
   waiting  red          a session needs input
+  shells   green        sessions only waiting on their own background shells;
+                        the web page shows these amber, but amber on this LED
+                        already means idle/unknown, and "not you" is what
+                        matters from across the room
   idle     dim amber    nothing running (dim rather than off, so "no sessions"
                         is distinguishable from "this thing is unplugged");
                         steady, never pulsing, so it can't pass for unknown
@@ -58,6 +62,7 @@ AMBER = (0.5, 1.0)  # (red, green) - picked by eye with --tune-amber, 2026-09-16
 IDLE_BRIGHTNESS = 0.3  # picked by eye with --tune-idle, 2026-09-16; 0.06 read as very dim
 COLOURS = {
     "active": (0.0, 1.0),
+    "shells": (0.0, 1.0),
     "waiting": (1.0, 0.0),
     "idle": tuple(c * IDLE_BRIGHTNESS for c in AMBER),
 }

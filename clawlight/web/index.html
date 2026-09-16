@@ -96,6 +96,9 @@
 const COLORS = {
   active:  { css: '#22c55e', label: 'active' },
   waiting: { css: '#ef4444', label: 'needs input' },
+  // Turn ended with the session's own background shells still running. Not
+  // you - Claude is re-invoked when they finish - but not thinking either.
+  shells:  { css: '#f59e0b', label: 'running shells' },
   idle:    { css: '#6b7280', label: 'idle' },
 };
 

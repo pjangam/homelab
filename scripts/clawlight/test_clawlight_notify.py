@@ -129,7 +129,22 @@ srv.report("s4", "xero", "end")
 delay_elapses()
 check("a session that ends within the delay never notifies", len(fired), 0)
 
-# 10. no token configured = notifications disabled entirely
+# 10. a turn ending on its own background shells is amber, not red, and silent
+reset()
+srv.report("s5", "xero", "active", HOMELAB)
+srv.report("s5", "xero", "shells", HOMELAB)
+delay_elapses()
+check("ending a turn with background shells running does not notify", len(fired), 0)
+check("a session waiting on its own shells reads as shells", srv.snapshot()["state"], "shells")
+srv.report("s6", "mac", "active", "/home/pramod/code/other")
+check("an active session outranks one on its shells", srv.snapshot()["state"], "active")
+srv.report("s6", "mac", "waiting", "/home/pramod/code/other")
+check("a waiting session outranks one on its shells", srv.snapshot()["state"], "waiting")
+srv.report("s6", "mac", "end")
+srv.report("s5", "xero", "waiting", HOMELAB)  # shells done, Claude replied
+check("the next plain Stop turns it red", srv.snapshot()["state"], "waiting")
+
+# 11. no token configured = notifications disabled entirely
 reset()
 srv.NTFY_TOKEN = ""
 srv.report("s3", "xero", "input_needed", HOMELAB)

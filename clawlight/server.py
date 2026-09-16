@@ -32,7 +32,12 @@ STALE_AFTER_SECONDS = 30 * 60
 # blocked on a human (a permission prompt, the idle nudge) rather than merely
 # done talking, and it is the only state that sends a push. See
 # maybe_notify_locked().
-FOREGROUND_STATES = {"active", "waiting", "input_needed"}
+#
+# `shells` is what `Stop` becomes when the turn ended with the session's own
+# background shells still running (set-status.sh checks the process table).
+# Claude gets re-invoked when they finish, so it is not waiting on you: amber,
+# never a push, and ranked below `active` in the aggregate.
+FOREGROUND_STATES = {"active", "waiting", "input_needed", "shells"}
 BACKGROUND_STATES = {"task_start", "task_end"}
 
 # --- push notifications (self-hosted ntfy) -----------------------------------
@@ -137,7 +142,7 @@ MIME_TYPES = {
 }
 
 lock = threading.Lock()
-# session_id -> {foreground: active|waiting, needs_input: bool,
+# session_id -> {foreground: active|waiting|shells, needs_input: bool,
 #                background: int, host, ts}
 #
 # `foreground` tracks the main turn (UserPromptSubmit/Stop/Notification).
@@ -319,10 +324,14 @@ def snapshot() -> dict:
 
     states = [effective_state(s) for _, s in items]
 
+    # Most urgent first. `shells` sits below `active` because it asks less of
+    # you: both mean "not you", but active is Claude thinking right now.
     if "waiting" in states:
         agg = "waiting"
     elif "active" in states:
         agg = "active"
+    elif "shells" in states:
+        agg = "shells"
     else:
         agg = "idle"
 

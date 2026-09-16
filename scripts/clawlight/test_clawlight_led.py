@@ -41,6 +41,8 @@ light.show("active")
 results.append(check("active is green", pins(), (0.0, 1.0)))
 light.show("waiting")
 results.append(check("waiting is red", pins(), (1.0, 0.0)))
+light.show("shells")
+results.append(check("shells is green, like active", pins(), (0.0, 1.0)))
 light.show("idle")
 results.append(check("idle is dim amber", pins(), led.COLOURS["idle"]))
 

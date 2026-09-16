@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Works out why a jump to an ssh-reached session isn't landing. RUN ON THE MAC.
 #
-#   scp <user>@xero.<your-tailnet-suffix>:/path/to/homelab/clawlight/diagnose-mac-focus.sh /tmp/
-#   bash /tmp/diagnose-mac-focus.sh
+#   bash ~/code/homelab/clawlight/diagnose-mac-focus.sh   # from the clone
 #
 # The jump to a session on another host takes four steps on this machine, and
 # when it fails all four look the same from the browser: nothing happens. This
@@ -70,7 +69,7 @@ if grep -q raise_ssh_tab "$agent"; then
   ok "it has the ssh-raise code"
 else
   bad "this copy PREDATES the ssh-raise feature - that alone explains it"
-  note "re-run setup-mac-focus-agent.sh to pull the current one, then retry"
+  note "git pull in the clone (re-run setup-mac-focus-agent.sh if the agent still runs an old scp'd copy), then retry"
   exit 1
 fi
 

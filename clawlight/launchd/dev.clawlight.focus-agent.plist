@@ -16,9 +16,8 @@
   <key>Label</key>
   <string>dev.clawlight.focus-agent</string>
 
-  <!-- Wherever focus-agent.sh actually lives on this Mac. If set-status.sh was
-       copied here rather than cloned, put focus-agent.sh alongside it and
-       point this at that path. -->
+  <!-- focus-agent.sh in this Mac's clone of the repo. Prefer
+       setup-mac-focus-agent.sh, which fills this in. -->
   <key>ProgramArguments</key>
   <array>
     <string>/Users/pramod/code/homelab/clawlight/focus-agent.sh</string>
