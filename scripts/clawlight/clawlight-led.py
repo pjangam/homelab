@@ -55,7 +55,7 @@ COMMON_ANODE = False
 PINS = {"red": 13, "green": 19}
 
 AMBER = (0.5, 1.0)  # (red, green) - picked by eye with --tune-amber, 2026-09-16
-IDLE_BRIGHTNESS = 0.06
+IDLE_BRIGHTNESS = 0.3  # picked by eye with --tune-idle, 2026-09-16; 0.06 read as very dim
 COLOURS = {
     "active": (0.0, 1.0),
     "waiting": (1.0, 0.0),
@@ -166,7 +166,7 @@ class Clawlight:
 def tune_amber(light: Light):
     """Hold a series of red/green mixes so the amber one can be picked by eye.
 
-    Run by scripts/clawlight/tune_led_amber.sh with the service stopped. Steady,
+    Run by `scripts/clawlight/tune_led.sh amber` with the service stopped. Steady,
     not pulsed: a hue is easier to judge when it is not also changing brightness.
 
     The walk runs from red-heavy to green-heavy: green rises with red at full,
@@ -183,22 +183,37 @@ def tune_amber(light: Light):
     light.led.off()
 
 
+def tune_idle(light: Light):
+    """Hold idle's amber at a series of brightnesses so one can be picked by eye.
+
+    6% read as very dim on the real LED (2026-09-16). The upper end stops well
+    short of full: idle has to stay clearly quieter than the pulse's peak.
+    """
+    for brightness in (0.06, 0.1, 0.15, 0.2, 0.3, 0.4):
+        print(f"IDLE_BRIGHTNESS = {brightness}", flush=True)
+        light.led.value = tuple(c * brightness for c in AMBER)
+        time.sleep(6)
+    light.led.off()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-gpio", action="store_true",
                         help="log colour changes instead of driving pins (test without hardware)")
     parser.add_argument("--tune-amber", action="store_true",
                         help="step through amber mixes for picking AMBER by eye, then exit")
+    parser.add_argument("--tune-idle", action="store_true",
+                        help="step through idle brightnesses for picking IDLE_BRIGHTNESS by eye, then exit")
     args = parser.parse_args()
-    if args.tune_amber and args.no_gpio:
-        parser.error("--tune-amber needs the real LED")
+    if (args.tune_amber or args.tune_idle) and args.no_gpio:
+        parser.error("tuning needs the real LED")
 
     if not args.no_gpio:
         isolate_lgpio_notify_dir()
 
     light = Light(use_gpio=not args.no_gpio)
-    if args.tune_amber:
-        tune_amber(light)
+    if args.tune_amber or args.tune_idle:
+        (tune_amber if args.tune_amber else tune_idle)(light)
         return
     app = Clawlight(light)
     app.refresh()  # amber until the broker tells us otherwise

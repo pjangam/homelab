@@ -463,10 +463,11 @@
       <pre>scripts/clawlight/deploy_clawlight_led_pi.sh</pre></div></li>
     <li><div><strong>Active: green.</strong> Give a Claude session something to work on. Red instead of green means the colour legs are swapped &mdash; swap the jumpers on pins 33 and 35, not the code. Dark while working and lit when idle means the polarity is inverted (step 4 of the leg test).</div></li>
     <li><div><strong>Waiting: red.</strong> Let the session finish its turn and wait for you. Red alone, no green tint: a green tint means the pins share a wire somewhere.</div></li>
-    <li><div><strong>Idle: dim, steady amber.</strong> With no sessions running. Visible but not distracting at 6% brightness. Tune <code>AMBER = (1.0, 0.4)</code> here: raise the green share if it reads orange, lower it if it reads yellow-green, then redeploy.</div></li>
-    <li><div><strong>Unknown: amber pulse.</strong> Stop the server on xero; within a second the LED should pulse amber, holding the same hue as it fades. Start it again and the real colour returns.
-      <pre>systemctl --user stop clawlight-server
-systemctl --user start clawlight-server</pre></div></li>
+    <li><div><strong>Unknown, then idle, on demand.</strong> Both are hard to catch naturally, so this script stops the server (amber pulse, holding the same hue as it fades), then hand-publishes idle (dim steady amber), then starts the server again and the real colour returns.
+      <pre>scripts/clawlight/show_led_states.sh 45</pre></div></li>
+    <li><div><strong>Tune by eye if either looks wrong.</strong> Each sweep stops the service, steps through values printed as ready-made lines for <code>clawlight-led.py</code>, and starts it again; paste the one that looks right and redeploy. Bench result, 2026-09-16: <code>AMBER = (0.5, 1.0)</code> &mdash; the green die is weak on 220R, so red came down rather than green going up &mdash; and <code>IDLE_BRIGHTNESS = 0.3</code>, since 6% read as very dim.
+      <pre>scripts/clawlight/tune_led.sh amber
+scripts/clawlight/tune_led.sh idle</pre></div></li>
   </ol>
 
   <footer>

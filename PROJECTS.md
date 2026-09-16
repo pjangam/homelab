@@ -150,9 +150,11 @@ qty | item | est | note
 1 | Ping-pong ball or diffuser | 20 | household - optional, turns a point of light into a beacon
 ```
 
-**Bench, 2026-09-16:** red and green were first wired to each other's pins (fixed); with that swap the 0.4 mix read yellow, which said nothing about the mix. `scripts/clawlight/tune_led_amber.sh` then stepped green from 0.1 to 1.0 on the corrected wiring: 0.2 pulsed plain red, and only **green at 1.0** read amber - so the green die is weak on 220R (consistent with a pure-green die at ~1.4mA against red's ~6mA). The sweep was extended past full green by lowering red instead (hue is the ratio, and red has brightness to spare), and **`AMBER = (0.5, 1.0)`** read amber. No resistor swap needed.
+**Bench, 2026-09-16:** red and green were first wired to each other's pins (fixed); with that swap the 0.4 mix read yellow, which said nothing about the mix. `scripts/clawlight/tune_led.sh` then stepped green from 0.1 to 1.0 on the corrected wiring: 0.2 pulsed plain red, and only **green at 1.0** read amber - so the green die is weak on 220R (consistent with a pure-green die at ~1.4mA against red's ~6mA). The sweep was extended past full green by lowering red instead (hue is the ratio, and red has brightness to spare), and **`AMBER = (0.5, 1.0)`** read amber. No resistor swap needed.
 
-**Next step:** redeploy with `AMBER = (0.5, 1.0)`, check the amber pulse and dim idle by eye (idle is 3% red / 6% green - may be too faint, flickery or off-hue at that level, in which case give idle its own mix), then move this entry to Done.
+Checked by eye with `scripts/clawlight/show_led_states.sh` (stops the server for the pulse, then hand-publishes idle): the pulse looked right; idle at 6% read as very dim, and `tune_led.sh idle` picked **`IDLE_BRIGHTNESS = 0.3`**. A plain `systemctl --user stop clawlight-server` does trip the MQTT last-will - the LED logged `offline` in the same second.
+
+**Next step:** redeploy with `IDLE_BRIGHTNESS = 0.3`, confirm idle once with `show_led_states.sh`, then move this entry to Done.
 
 ---
 
