@@ -134,6 +134,43 @@ pending_focus: dict[str, dict] = {}
 # didn't - you stop trusting the honest cases too.
 focus_listeners: dict[str, int] = {}
 
+# --- jump-to-console from the phone ------------------------------------------
+# The iPhone can't run a focus agent, and no Claude runs on it, so its jump is
+# the reverse of the desk one: the phone opens a new ssh connection to the host,
+# and the host pulls the target instead of having it pushed. The page records
+# the request here, opens Termius, and the saved Termius host's startup command
+# (phone-attach.sh) claims it and attaches to that pane.
+#
+# It has to go through the server because Termius links can only open a host,
+# not pass a command (checked 2026-09-17, see PROJECTS.md).
+#
+# Longer than a desk jump's TTL: between the tap and the claim there is an app
+# switch, a Tailscale wake-up and an ssh handshake. It still expires, so a
+# plain Termius connect an hour later doesn't land in a pane you asked for then.
+PHONE_REQUEST_TTL_SECONDS = 60
+
+# host -> {tmux_socket, tmux_pane, ts}. Newest per host wins, claimed once.
+phone_requests: dict[str, dict] = {}
+
+
+def parse_open_urls(raw: str) -> dict[str, str]:
+    """`xero=ssh://me@xero,mac=ssh://me@mac` -> {host: url}.
+
+    What opens Termius at the right saved host is not settled (an ssh:// link,
+    or a Shortcut wrapping Termius's "Connect to a host" action), so it is
+    config rather than code. A host with no URL still works: the page tells
+    you to open it in Termius yourself.
+    """
+    urls = {}
+    for part in raw.split(","):
+        host, sep, url = part.strip().partition("=")
+        if sep and host and url:
+            urls[host.strip()] = url.strip()
+    return urls
+
+
+PHONE_OPEN_URLS = parse_open_urls(os.environ.get("CLAWLIGHT_PHONE_OPEN_URLS", ""))
+
 
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -405,6 +442,37 @@ def take_focus(host: str) -> dict | None:
     return {k: v for k, v in req.items() if k != "ts"}
 
 
+def request_phone_jump(session_id: str) -> dict:
+    """Record that the phone wants this session's pane, for phone-attach.sh.
+
+    Unlike request_focus() this can't check that anything will collect it -
+    the collector is an ssh connection that doesn't exist yet.
+    """
+    with lock:
+        prune_locked()
+        entry = sessions.get(session_id)
+        if entry is None:
+            return {"ok": False, "reason": "no such session"}
+        if not entry.get("tmux_pane"):
+            return {"ok": False, "reason": "session is not running under tmux"}
+        host = entry["host"]
+        phone_requests[host] = {
+            "tmux_socket": entry["tmux_socket"],
+            "tmux_pane": entry["tmux_pane"],
+            "ts": time.time(),
+        }
+    return {"ok": True, "host": host, "open_url": PHONE_OPEN_URLS.get(host, "")}
+
+
+def claim_phone_jump(host: str) -> dict | None:
+    """Pop this host's phone request, if there is a fresh one."""
+    with lock:
+        req = phone_requests.pop(host, None)
+    if req is None or time.time() - req["ts"] > PHONE_REQUEST_TTL_SECONDS:
+        return None
+    return {"tmux_socket": req["tmux_socket"], "tmux_pane": req["tmux_pane"]}
+
+
 def start_mqtt():
     """Connect to Mosquitto in the background. Never fatal - the web UI is the
     primary interface and must keep working with the broker down."""
@@ -482,6 +550,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == f"{PREFIX}/api/raise-ssh":
             self._handle_raise_ssh()
             return
+        if path == f"{PREFIX}/api/phone-jump":
+            self._handle_phone_jump()
+            return
+        if path == f"{PREFIX}/api/phone-claim":
+            self._handle_phone_claim()
+            return
         if path != f"{PREFIX}/api/report":
             self.send_error(404)
             return
@@ -516,6 +590,32 @@ class Handler(BaseHTTPRequestHandler):
             return
         ok, reason = request_focus(session_id)
         self._send_json({"ok": ok, "reason": reason})
+
+    def _handle_phone_jump(self):
+        """Posted by the page on a phone, before it opens Termius."""
+        length = int(self.headers.get("Content-Length", 0))
+        try:
+            data = json.loads(self.rfile.read(length) or b"{}")
+            session_id = str(data["session_id"])
+        except (KeyError, ValueError, json.JSONDecodeError):
+            self.send_error(400)
+            return
+        self._send_json(request_phone_jump(session_id))
+
+    def _handle_phone_claim(self):
+        """Posted by phone-attach.sh on the host the phone just ssh'd into.
+
+        A POST even though it mostly reads, because it consumes the request.
+        """
+        length = int(self.headers.get("Content-Length", 0))
+        try:
+            data = json.loads(self.rfile.read(length) or b"{}")
+            host = str(data["host"])
+        except (KeyError, ValueError, json.JSONDecodeError):
+            self.send_error(400)
+            return
+        req = claim_phone_jump(host)
+        self._send_json({"ok": req is not None, **(req or {})})
 
     def _handle_raise_ssh(self):
         """Posted by a focus agent after it handled the tmux half of a jump."""

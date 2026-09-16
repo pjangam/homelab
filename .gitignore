@@ -25,5 +25,6 @@ __pycache__/
 esp32/wol_on_boot/src/secrets.h
 esp32/wol_on_boot/.pio/
 .env.ntfy
+.env.clawlight
 # tools/diagrams/render.sh output, throwaway screenshots
 *-render/

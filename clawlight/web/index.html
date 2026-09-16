@@ -165,9 +165,11 @@ function sessionRow(s) {
 
   const row = document.createElement('button');
   row.className = 'session';
-  row.title = `jump to this console on ${s.host}`;
+  row.title = ON_PHONE
+    ? `open this console on ${s.host} in Termius`
+    : `jump to this console on ${s.host}`;
   row.textContent = text;
-  row.addEventListener('click', () => jumpTo(s.id, row));
+  row.addEventListener('click', () => (ON_PHONE ? phoneJumpTo : jumpTo)(s.id, row));
   return row;
 }
 
@@ -182,6 +184,39 @@ function flashRow(row, cls, note) {
     row.classList.remove(cls);
     badge.remove();
   }, 2500);
+}
+
+// The phone can't run a focus agent, and a desk-style jump from it would move
+// the Mac's terminal while you're looking at the phone. So on iOS a tap opens
+// the session here instead: iPadOS reports itself as a Mac, hence the touch check.
+const ON_PHONE = /iPhone|iPad|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+async function phoneJumpTo(sessionId, row) {
+  // Termius links can't carry a command, so the target goes to the server and
+  // phone-attach.sh (the saved Termius host's startup command) claims it once
+  // the ssh connection is up. Nothing can confirm that from here - the page
+  // only knows the request was recorded, and says no more than that.
+  try {
+    const res = await fetch('/clawlight/api/phone-jump', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      flashRow(row, 'failed', data.reason || 'could not jump');
+      return;
+    }
+    if (!data.open_url) {
+      flashRow(row, 'flash', `open ${data.host} in Termius within a minute`);
+      return;
+    }
+    flashRow(row, 'flash', 'opening Termius');
+    window.location.href = data.open_url;
+  } catch (e) {
+    flashRow(row, 'failed', 'server unreachable');
+  }
 }
 
 async function jumpTo(sessionId, row) {

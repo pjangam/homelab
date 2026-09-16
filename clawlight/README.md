@@ -265,6 +265,53 @@ of tmux coordinates that arrive malformed over the wire) and
 a real attached client against the live server and checks the client actually
 moves.
 
+## Jumping to a console from the iPhone
+
+On an iPhone or iPad, tapping a session opens it in Termius instead of moving a
+desk terminal. The phone can't run a focus agent, and a desk-style jump from it
+would move the Mac's terminal while you're looking at the phone.
+
+**The target goes through the server, because Termius links can't carry a
+command** (checked 2026-09-17: a link can open a host, nothing more). So:
+
+1. The tap posts `/clawlight/api/phone-jump`, which records "the phone wants
+   pane X" for that session's host.
+2. The page opens that host's link from `CLAWLIGHT_PHONE_OPEN_URLS`, if one is
+   set. Otherwise it tells you to open the host in Termius yourself.
+3. The saved Termius host's startup command, `phone-attach.sh`, claims the
+   request (`/clawlight/api/phone-claim`) and attaches to that pane.
+
+**Setup, once per host** (xero and the Mac):
+
+- In Termius, save a host for the machine and set its startup command to the
+  script's path in that machine's checkout, e.g.
+  `~/code/homelab/clawlight/phone-attach.sh`. It needs
+  `CLAWLIGHT_SERVER_URL` and `CLAWLIGHT_HOST_NAME` from your shell profile, the
+  same as `set-status.sh`. The Mac also needs Remote Login on.
+- Optional, on xero: in `.env.clawlight` (gitignored), set
+  `CLAWLIGHT_PHONE_OPEN_URLS=xero=<link>,mac=<link>` and restart
+  `clawlight-server`. Whether an `ssh://` link opens the *saved* host (with its
+  startup command) or a bare connection is untested. A Shortcut wrapping
+  Termius's "Connect to a host" action, opened with
+  `shortcuts://run-shortcut?name=<name>`, is the other candidate.
+
+What to expect:
+
+- **Only a request up to 60s old is used**, and only once. A plain Termius
+  connect later says "no jump requested" and leaves you at the shell.
+- **The phone gets its own grouped session** (`phone-<pid>`). It shares the
+  windows, so switching to the tapped window doesn't switch the desk terminal.
+  It is removed when the phone detaches.
+- **Two things still change on the desk.** The tapped pane becomes the active
+  pane of its window for every client. With `window-size latest`, the window
+  shrinks to the phone's size until the desk terminal is used again.
+- **The page can't confirm the attach.** "Opening Termius" means only that the
+  request was recorded.
+
+Tested by `scripts/clawlight/test_clawlight_phone_jump.py` (routing, claim-once
+and expiry) and `scripts/clawlight/test_clawlight_phone_jump_e2e.sh`, which runs
+`phone-attach.sh` in a pty against the live server and a throwaway tmux server.
+
 ## Push notifications
 
 The server pushes to a self-hosted ntfy topic ("Claude needs you") when a

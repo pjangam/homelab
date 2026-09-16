@@ -11,6 +11,10 @@ EnvironmentFile=-/home/pramod/code/homelab/.env.ntfy
 # Mosquitto credentials, for the retained state topic the Pi's GPIO light
 # subscribes to. Dash prefix again: no .env.mqtt just means no MQTT publishing.
 EnvironmentFile=-/home/pramod/code/homelab/.env.mqtt
+# Per-host links the page opens on the phone to reach that host in Termius
+# (CLAWLIGHT_PHONE_OPEN_URLS, see clawlight/README.md). Dash prefix: without
+# it the phone jump still works, you just open Termius yourself.
+EnvironmentFile=-/home/pramod/code/homelab/.env.clawlight
 ExecStart=%h/.local/bin/uv run --script /home/pramod/code/homelab/clawlight/server.py
 Restart=on-failure
 RestartSec=3
