@@ -17,6 +17,26 @@ qty | item | est | note
 
 ## 🟢 Active
 
+### MacBook DNS keeps breaking the same way - root cause still unknown
+
+**Why:** the Mac's resolver has broken four times now with an identical signature, and each repair has destroyed the evidence before anyone could say what causes it. Between breaks the Mac is silently unfiltered - the 2026-08-28 occurrence went unnoticed for 10 days.
+
+**The signature, every time:** `en0` resolves against `192.168.0.2` + `192.169.0.2`. Neither is on this LAN (192.168.1.0/24) and the second is a typo landing in publicly routable space, so queries *hang* rather than fail fast - which is why it reads as "the internet is slow", not "DNS is down".
+
+**What is already known:**
+- `networksetup -getdnsservers` shows **no** manual override, and DHCP is correctly offering `192.168.1.123` at the time. So the bad pair lives at the runtime (`State:`) layer, not the persistent (`Setup:`) one - something writes it *after* the lease is applied.
+- The repair that actually works is step 3 of `fix_macbook_dns.sh`, the `tailscale set --accept-dns` toggle, which makes tailscaled rewrite the resolver config. Clearing the Wi-Fi override (step 1) is a no-op, because there is never anything there to clear.
+- **Ruled out 2026-09-16:** a stale global nameserver in the Tailscale admin console. `tailscale dns status` on both xero and the Mac shows `Resolvers: 100.70.215.25` only, with no trace of the bad pair.
+- Still open as suspects: a second DHCP server on the LAN (the TP-Link extender under "Not yet inventoried" is the obvious candidate - `192.168.0.2`/`192.169.0.2` reads exactly like hand-typed DNS fields with a 168→169 fat-finger), a stale lease carried over from another network, or an app writing `State:` DNS directly.
+
+**Occurrences:** 2026-08-28 (last clean query 20:47, found 09-07) · 2026-09-07 · 2026-09-10 · 2026-09-16.
+
+**The blocker is that the fix is run before the evidence is collected.** `tools/network/mac-dns-recorder.sh` was written on 2026-09-10 for exactly this - it polls every 20s, snapshots only on change, and captures `Setup:` vs `State:` ownership, the Wi-Fi network and location, the DHCP offer, per-resolver reachability, and any VPN client or tunnel. **It has never been installed on the Mac.** The Mac's copies are scp'd, not a clone, so committing it here did nothing there.
+
+**Next step:** run `bash setup-mac-dns-recorder.sh` **on the Mac** (scp it from `tools/network/` first, or `--dry-run` it). Then leave it alone until the next break and open with `mac-dns-recorder.sh --timeline` *before* running any fix. Until that lands, every future occurrence costs the same investigation and yields the same nothing.
+
+---
+
 ### ESP32 UPS LED monitor
 **Why:** `watchdog_power.sh` (below) currently guesses "90 minutes on battery is probably safe" before shutting down cleanly. The RouterUPS has 4 status LEDs (plug=mains, battery-full=on-battery-ok, lightning=charging, battery-low=critical) - reading the actual battery-low LED would replace the time guess with the UPS's own real signal.
 
