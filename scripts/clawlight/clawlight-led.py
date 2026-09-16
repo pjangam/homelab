@@ -2,25 +2,29 @@
 # /// script
 # dependencies = ["paho-mqtt", "gpiozero", "rpi-lgpio"]
 # ///
-"""Physical clawlight: drives an RGB LED on the Pi's GPIO from clawlight state.
+"""Physical clawlight: drives a red/green LED on the Pi's GPIO from clawlight state.
 
 The hardware version of clawlight/web/index.html - same source of truth, but
 visible without a browser tab open. Runs on the wol-sender Pi (GPIO needs real
 pins, xero has none), which works only because that Pi sits next to the desk.
 
-Wiring - common-cathode RGB LED, one 220R resistor per colour leg:
-  - Red   -> GPIO13 (physical pin 33)
-  - Green -> GPIO19 (physical pin 35)
-  - Blue  -> GPIO26 (physical pin 37)
-  - Common cathode -> GND (physical pin 39)
+Wiring - 3-leg common-cathode RG (bi-colour) LED, one resistor per colour leg:
+  - Red   -> 220R -> GPIO13 (physical pin 33)
+  - Green -> 220R -> GPIO19 (physical pin 35)  (100R if a pure-green die looks dim)
+  - Common cathode (long leg) -> GND (physical pin 39)
 Set COMMON_ANODE = True below if the LED is the other polarity (it will look
-inverted - bright when idle, dark when active).
+inverted - bright when idle, dark when active) and move the long leg to 3.3V.
+
+There is no blue, so amber is red and green mixed. AMBER's green share depends
+on the green die and the resistor on its leg - tune it on the bench until the
+mix reads amber rather than yellow-green or orange.
 
 Colours:
   active   green        a session is working
   waiting  red          a session needs input
-  idle     dim white    nothing running (dim rather than off, so "no sessions"
-                        is distinguishable from "this thing is unplugged")
+  idle     dim amber    nothing running (dim rather than off, so "no sessions"
+                        is distinguishable from "this thing is unplugged");
+                        steady, never pulsing, so it can't pass for unknown
   unknown  amber pulse  the server is gone or the broker connection dropped
 
 That last state is the point of the design. The light is only useful if it is
@@ -33,6 +37,7 @@ Deployed by scripts/clawlight/deploy_clawlight_led_pi.sh; runs as clawlight-led.
 Test without hardware: ./clawlight-led.py --no-gpio
 """
 import argparse
+import math
 import os
 import sys
 from datetime import datetime
@@ -46,18 +51,35 @@ STATE_TOPIC = os.environ.get("MQTT_STATE_TOPIC", "clawlight/state")
 AVAILABILITY_TOPIC = os.environ.get("MQTT_AVAILABILITY_TOPIC", "clawlight/availability")
 
 COMMON_ANODE = False
-PINS = {"red": 13, "green": 19, "blue": 26}
+PINS = {"red": 13, "green": 19}
 
+AMBER = (1.0, 0.4)  # (red, green) - tune on the bench, see the docstring
+IDLE_BRIGHTNESS = 0.06
 COLOURS = {
-    "active": (0.0, 1.0, 0.0),
-    "waiting": (1.0, 0.0, 0.0),
-    "idle": (0.06, 0.06, 0.06),
+    "active": (0.0, 1.0),
+    "waiting": (1.0, 0.0),
+    "idle": tuple(c * IDLE_BRIGHTNESS for c in AMBER),
 }
-UNKNOWN_COLOUR = (1.0, 0.35, 0.0)  # amber, pulsed
+PULSE_PERIOD = 2.0  # seconds, off -> full amber -> off
+PULSE_STEP = 0.02
 
 
 def log(msg):
     print(f"{datetime.now().isoformat(timespec='seconds')} {msg}", flush=True)
+
+
+def amber_pulse():
+    """Endless (red, green) values fading amber in and out.
+
+    gpiozero's own pulse() only fades each pin between 0 and full, which would
+    turn the red/green mix into yellow. Scaling both channels by one shared
+    brightness keeps the hue fixed while it fades.
+    """
+    t = 0.0
+    while True:
+        brightness = (1 - math.cos(2 * math.pi * t / PULSE_PERIOD)) / 2
+        yield tuple(c * brightness for c in AMBER)
+        t += PULSE_STEP
 
 
 def isolate_lgpio_notify_dir():
@@ -82,12 +104,15 @@ class Light:
         self.led = None
         self.shown = None
         if use_gpio:
-            from gpiozero import RGBLED
+            from gpiozero import LEDBoard
 
-            self.led = RGBLED(
-                red=PINS["red"], green=PINS["green"], blue=PINS["blue"],
-                active_high=not COMMON_ANODE,
+            # Positional, not red=/green= keywords: LEDBoard orders named pins
+            # alphabetically, which would swap every (red, green) value below.
+            self.led = LEDBoard(
+                PINS["red"], PINS["green"],
+                pwm=True, active_high=not COMMON_ANODE,
             )
+            self.led.source_delay = PULSE_STEP
 
     def show(self, state: str):
         if state == self.shown:
@@ -97,12 +122,12 @@ class Light:
         if colour is None:
             log(f"state={state!r} -> amber pulse (state unknown)")
             if self.led:
-                self.led.pulse(fade_in_time=1, fade_out_time=1,
-                               on_color=UNKNOWN_COLOUR, off_color=(0, 0, 0))
+                self.led.source = amber_pulse()
             return
-        log(f"state={state!r} -> rgb{colour}")
+        log(f"state={state!r} -> rg{colour}")
         if self.led:
-            self.led.color = colour
+            self.led.source = None  # stop any pulse before setting a steady colour
+            self.led.value = colour
 
 
 class Clawlight:

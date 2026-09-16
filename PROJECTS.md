@@ -130,17 +130,17 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 ### Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
 
-**State:** built and verified 2026-09-07, **not yet wired** - the software is deployed and tested with `--no-gpio`; it needs an LED soldered up and `scripts/clawlight/deploy_clawlight_led_pi.sh` run for real.
+**State:** built and verified 2026-09-07, **code adapted to the RG LED 2026-09-16, not yet wired** - it needs the LED soldered up and `scripts/clawlight/deploy_clawlight_led_pi.sh` run for real.
 
-**LED bought 2026-09-15 - but it is RG (red/green bi-colour), not RGB.** Red, green and amber (red + green together) still work, so active, waiting and the "don't believe me" amber pulse all survive. The one state that needed blue is **idle = dim white**, which this LED cannot show. `clawlight-led.py` also assumes three colour pins (gpiozero `RGBLED` with blue on GPIO26), so it needs a small change before this LED will drive correctly. Two things to check on the bench first:
-- **Leg count.** 3 legs = common cathode/anode, red and green driven independently, amber by mixing - a drop-in minus the blue pin. 2 legs = the two dies are wired back to back, only one can be lit at a time, and amber would need rapid alternation between them.
-- **Polarity** (3-leg only) - which is what `COMMON_ANODE` is for.
+**LED bought 2026-09-15 - RG (red/green bi-colour), not RGB. Checked 2026-09-16: 3 legs, common cathode.** So red and green are driven independently and amber is a PWM mix of the two - active, waiting and the "don't believe me" amber pulse all survive. Only idle (dim white) needed blue; it is now dim steady amber (see design decisions). `clawlight-led.py` now drives two PWM pins through gpiozero `LEDBoard` and does its own amber pulse, because gpiozero's `pulse()` fades each pin to full and would turn the mix yellow. `scripts/clawlight/test_clawlight_led.py` checks it on mock pins - which caught `LEDBoard` ordering keyword pins alphabetically, swapping red and green.
+
+Wiring: long leg to GND (pin 39), red leg through 220R to GPIO13 (pin 33), green leg through 220R to GPIO19 (pin 35). If the green die is pure/emerald green (~3.0V forward) rather than yellow-green, 220R leaves it at ~1.4mA and dim beside red - use 100R on that leg.
 
 **Design decisions:**
 - **State reaches the Pi over retained MQTT, not the SSE endpoint the web page uses.** A hardware light must be correct the moment it powers on, and clawlight only emits on hook events - a subscriber starting cold during a quiet stretch would sit wrong for as long as the quiet lasted. `server.py` now publishes the aggregate to `clawlight/state` retained, so the broker replays it on connect. Verified correct within a second of process start. Reuses the house MQTT pattern, and makes the state available to HA for free.
 - **An MQTT last-will means the light never lies.** If `server.py` dies the broker publishes `offline` on `clawlight/availability` and the LED goes to an amber pulse rather than holding a stale colour. Directly informed by the same-day MirAIe outage, where something that looked healthy while reporting nothing went unnoticed for 29 hours. Both directions tested.
-- **Idle is dim white, not off** - so "nothing running" is distinguishable from "unplugged". *Not possible on the RG LED bought* - needs a replacement idle colour that is still not off and does not read as the amber pulse (e.g. dim steady amber, or dim green). Undecided.
-- **GPIO13/19/26 (pins 33/35/37, GND on 39)** - a tidy corner block that leaves every pin `docs/gpio_pinout.md` lists as free-for-a-button untouched. Third GPIO process on this Pi, so it gets its own lgpio notify directory (see `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`).
+- **Idle is dim, not off** - so "nothing running" is distinguishable from "unplugged". Was dim white; on the RG LED it is **dim steady amber** (decided 2026-09-16, over dim green). What keeps it apart from "unknown" is motion, not hue: only the unknown state ever pulses.
+- **GPIO13/19 (pins 33/35, GND on 39)** - a tidy corner block that leaves every pin `docs/gpio_pinout.md` lists as free-for-a-button untouched. Third GPIO process on this Pi, so it gets its own lgpio notify directory (see `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`).
 
 ```parts
 qty | item | est | note
@@ -150,7 +150,7 @@ qty | item | est | note
 1 | Ping-pong ball or diffuser | 20 | household - optional, turns a point of light into a beacon
 ```
 
-**Next step:** check the RG LED's leg count and polarity, pick an idle colour that does not need blue, and adapt `clawlight-led.py` to two colour pins (GPIO13 red, GPIO19 green - GPIO26 is no longer needed). Then wire it and run `scripts/clawlight/deploy_clawlight_led_pi.sh`.
+**Next step:** wire it as above, run `scripts/clawlight/deploy_clawlight_led_pi.sh`, then on the bench tune `AMBER`'s green share in `clawlight-led.py` until the mix reads amber (not yellow-green or orange) and check the idle brightness is visible but not distracting.
 
 ---
 

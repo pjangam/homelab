@@ -133,7 +133,7 @@ logged in at a time), so no extra setup is needed per account.
 
 ## Physical LED (wol-sender Pi)
 
-An RGB LED on the Pi's GPIO shows the same aggregate state as the web page,
+A red/green bi-colour LED on the Pi's GPIO shows the same aggregate state as the web page,
 without needing a browser tab open. It works here only because that Pi happens
 to sit next to the desk - anywhere else this would need the ESP32 version
 parked in `PROJECTS.md`.
@@ -151,9 +151,11 @@ the quiet lasted. `server.py` publishes the aggregate to `clawlight/state`
 **retained**, so the broker replays it to the Pi the instant it connects.
 Verified: the LED is correct within a second of process start.
 
-Colours: green active, red waiting, dim white idle (dim rather than off, so
-"nothing running" is distinguishable from "unplugged"), **amber pulse when the
-state is unknown**.
+Colours: green active, red waiting, dim steady amber idle (dim rather than off,
+so "nothing running" is distinguishable from "unplugged"), **amber pulse when
+the state is unknown**. The LED has no blue die, so amber is red and green mixed;
+the idle shade is the pulse's own amber held steady at low brightness, and only
+the pulse ever moves.
 
 That last one is the design's whole point. `server.py` sets an MQTT last-will
 on `clawlight/availability`, so if it dies the broker announces `offline` on
@@ -166,6 +168,8 @@ colour.
 
 Wiring and pin choice are in `docs/gpio_pinout.md`. Set `COMMON_ANODE = True` in
 `scripts/clawlight/clawlight-led.py` if the LED reads inverted (bright when idle).
+`scripts/clawlight/test_clawlight_led.py` checks the pin output on gpiozero mock
+pins, no Pi or LED needed.
 
 ## Jumping to the console that needs you
 
