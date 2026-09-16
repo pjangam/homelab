@@ -166,7 +166,9 @@ unnoticed for 29 hours. Both paths are tested: killing `clawlight-server`
 turns the LED amber within a second, and restarting it restores the real
 colour.
 
-Wiring and pin choice are in `docs/gpio_pinout.md`. Set `COMMON_ANODE = True` in
+Wiring diagram: `clawlight/led_wiring.html` (published at
+https://claude.ai/artifact/UDgsMP8uYK5FkHFydLMwP9). Pin choice is in
+`docs/gpio_pinout.md`. Set `COMMON_ANODE = True` in
 `scripts/clawlight/clawlight-led.py` if the LED reads inverted (bright when idle).
 `scripts/clawlight/test_clawlight_led.py` checks the pin output on gpiozero mock
 pins, no Pi or LED needed.

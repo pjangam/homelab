@@ -1,0 +1,475 @@
+<title>Clawlight LED Wiring</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper:   #eaeef2;
+    --surface: #ffffff;
+    --sunk:    #dfe5ea;
+    --ink:     #15202b;
+    --muted:   #566676;
+    --line:    #c6d0d9;
+    --w5v:     #bf3327;
+    --w33:     #6d4aa8;
+    --wgnd:    #2b3a47;
+    --wdata:   #b3820f;
+    --wred:    #c62f3b;
+    --wgreen:  #2c7a3f;
+    --warn:    #9a4a10;
+    --ok:      #2f6b4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:   #101822;
+      --surface: #17212c;
+      --sunk:    #0b1219;
+      --ink:     #e4ebf1;
+      --muted:   #93a5b6;
+      --line:    #2c3b4a;
+      --w5v:     #ee6155;
+      --w33:     #b292e8;
+      --wgnd:    #93a9bd;
+      --wdata:   #e3a92c;
+      --wred:    #f06a72;
+      --wgreen:  #62c47a;
+      --warn:    #e79a4e;
+      --ok:      #62c093;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:   #101822;
+    --surface: #17212c;
+    --sunk:    #0b1219;
+    --ink:     #e4ebf1;
+    --muted:   #93a5b6;
+    --line:    #2c3b4a;
+    --w5v:     #ee6155;
+    --w33:     #b292e8;
+    --wgnd:    #93a9bd;
+    --wdata:   #e3a92c;
+    --wred:    #f06a72;
+    --wgreen:  #62c47a;
+    --warn:    #e79a4e;
+    --ok:      #62c093;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 40px 64px;
+  }
+
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 18px; margin-bottom: 32px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    font-size: clamp(30px, 6vw, 42px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+
+  .standfirst { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  h2 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    font-size: 23px;
+    margin: 44px 0 6px;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin: 26px 0 4px;
+  }
+
+  p { max-width: 65ch; }
+
+  figure { margin: 22px 0 8px; }
+
+  .scroller {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 10px;
+  }
+
+  .scroller svg { display: block; min-width: 680px; width: 100%; height: auto; }
+
+  figcaption {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 10px;
+    max-width: 65ch;
+  }
+
+  code, .mono { font-family: "IBM Plex Mono", monospace; font-size: 0.92em; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 15px; margin-top: 14px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  td:first-child { font-family: "IBM Plex Mono", monospace; white-space: nowrap; }
+  .tablewrap { overflow-x: auto; }
+
+  .swatch {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    margin-right: 7px;
+    vertical-align: baseline;
+  }
+
+  .callout {
+    border-left: 3px solid var(--warn);
+    padding: 2px 0 2px 16px;
+    margin: 22px 0;
+  }
+  .callout p { margin: 0; }
+  .callout .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--warn);
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  ol.checks { padding-left: 0; list-style: none; counter-reset: c; margin: 16px 0 0; }
+  ol.checks li {
+    counter-increment: c;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+    max-width: 68ch;
+  }
+  ol.checks li::before {
+    content: counter(c);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    color: var(--muted);
+    padding-top: 2px;
+  }
+  ol.checks li > div { min-width: 0; }
+  ol.checks strong { font-weight: 600; }
+
+  pre {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    background: var(--sunk);
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    margin: 8px 0 0;
+    overflow-x: auto;
+  }
+
+  .settings { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .pill {
+    border: 1px solid var(--line);
+    background: var(--sunk);
+    padding: 7px 13px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+  }
+  .pill b { color: var(--muted); font-weight: 400; }
+
+  footer {
+    margin-top: 52px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--muted);
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Clawlight physical LED &middot; wol-sender Pi 3B &middot; bench wiring</p>
+    <h1>Clawlight LED Wiring</h1>
+    <p class="standfirst">One 3-leg red/green LED, two resistors and three header pins in the bottom corner of the Pi. The one thing that matters most: a resistor on <em>each colour leg</em>, never one on the shared leg &mdash; otherwise amber, the colour that means &ldquo;don&rsquo;t believe me&rdquo;, cannot be mixed.</p>
+  </header>
+
+  <h2>The whole circuit</h2>
+  <p>Everything runs at the Pi&rsquo;s 3.3V GPIO level. Each die gets its own pin and its own resistor; both dies return through the long leg to ground on pin 39. There is no 5V anywhere in this circuit.</p>
+
+  <figure>
+    <div class="scroller">
+      <svg viewBox="0 0 780 440" role="img" aria-label="Wiring diagram: on the Raspberry Pi 3B header, pin 33 (GPIO13) goes through a 220 ohm resistor to the red leg of a common-cathode red/green LED, pin 35 (GPIO19) goes through a 220 ohm resistor, or 100 ohm for a pure-green die, to the green leg, and the LED's long common-cathode leg goes to ground on pin 39. Pins 31, 37 and all even pins 32 to 40 stay empty.">
+        <!-- ===== Pi header, pins 31-40, real two-column layout ===== -->
+        <text x="590" y="30" text-anchor="middle" font-family="IBM Plex Sans Condensed, sans-serif" font-size="17" font-weight="700" fill="var(--ink)">Pi 3B header</text>
+        <text x="590" y="48" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">pins 31&ndash;40 only</text>
+        <rect x="546" y="62" width="88" height="296" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"></rect>
+
+        <!-- row 31/32 -->
+        <circle cx="568" cy="90" r="11" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5"></circle>
+        <text x="568" y="94" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">31</text>
+        <circle cx="612" cy="90" r="11" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5"></circle>
+        <text x="612" y="94" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">32</text>
+        <text x="534" y="94" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">pin 31 &middot; GPIO6</text>
+        <text x="646" y="94" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">pin 32 &middot; GPIO12</text>
+
+        <!-- row 33/34 -->
+        <text x="646" y="154" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">pin 34 &middot; GND</text>
+        <circle cx="612" cy="150" r="11" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5"></circle>
+        <text x="612" y="154" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">34</text>
+
+        <!-- row 35/36 -->
+        <text x="646" y="214" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">pin 36 &middot; GPIO16</text>
+        <circle cx="612" cy="210" r="11" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5"></circle>
+        <text x="612" y="214" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">36</text>
+
+        <!-- row 37/38 -->
+        <circle cx="568" cy="270" r="11" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5"></circle>
+        <text x="568" y="274" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">37</text>
+        <circle cx="612" cy="270" r="11" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5"></circle>
+        <text x="612" y="274" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">38</text>
+        <text x="534" y="268" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">pin 37 &middot; GPIO26</text>
+        <text x="534" y="284" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">empty (was blue, old RGB plan)</text>
+        <text x="646" y="274" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">pin 38 &middot; GPIO20</text>
+
+        <!-- row 39/40 -->
+        <circle cx="612" cy="330" r="11" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5"></circle>
+        <text x="612" y="334" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">40</text>
+        <text x="646" y="334" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">pin 40 &middot; GPIO21</text>
+
+        <text x="590" y="380" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">pin 40 end is nearest</text>
+        <text x="590" y="393" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">the USB ports</text>
+
+        <!-- ===== the LED package ===== -->
+        <rect x="170" y="112" width="152" height="130" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"></rect>
+        <text x="170" y="84" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">Red/green LED</text>
+        <text x="170" y="101" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">one part, 3 legs, common cathode</text>
+
+        <!-- red die: anode right, cathode left -->
+        <text x="256" y="132" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--wred)">red die</text>
+        <polygon points="268,138 268,162 244,150" fill="var(--wred)"></polygon>
+        <line x1="242" y1="137" x2="242" y2="163" stroke="var(--ink)" stroke-width="2.5"></line>
+        <text x="280" y="164" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--muted)">A</text>
+        <text x="226" y="164" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--muted)">K</text>
+
+        <!-- green die -->
+        <text x="256" y="192" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--wgreen)">green die</text>
+        <polygon points="268,198 268,222 244,210" fill="var(--wgreen)"></polygon>
+        <line x1="242" y1="197" x2="242" y2="223" stroke="var(--ink)" stroke-width="2.5"></line>
+        <text x="280" y="224" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--muted)">A</text>
+        <text x="226" y="224" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--muted)">K</text>
+
+        <!-- cathodes joined inside the package, out through the long leg -->
+        <polyline points="242,150 200,150 200,330 557,330" fill="none" stroke="var(--wgnd)" stroke-width="2.5"></polyline>
+        <line x1="242" y1="210" x2="200" y2="210" stroke="var(--wgnd)" stroke-width="2.5"></line>
+        <circle cx="200" cy="210" r="5" fill="var(--wgnd)"></circle>
+        <text x="190" y="274" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wgnd)">long leg</text>
+        <text x="190" y="289" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">common cathode</text>
+
+        <!-- red channel: pin 33 -> 220R -> red anode -->
+        <line x1="268" y1="150" x2="350" y2="150" stroke="var(--wred)" stroke-width="2.5"></line>
+        <polyline points="350,150 356,138 368,162 380,138 392,162 404,138 410,150" fill="none" stroke="var(--wred)" stroke-width="2.5"></polyline>
+        <line x1="410" y1="150" x2="557" y2="150" stroke="var(--wred)" stroke-width="2.5"></line>
+        <text x="380" y="128" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wred)">220R</text>
+        <text x="480" y="170" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">&asymp;5.9 mA</text>
+        <circle cx="568" cy="150" r="11" fill="var(--wred)"></circle>
+        <text x="568" y="154" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="500" fill="var(--surface)">33</text>
+        <text x="534" y="142" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">pin 33 &middot; GPIO13</text>
+
+        <!-- green channel: pin 35 -> 220R/100R -> green anode -->
+        <line x1="268" y1="210" x2="350" y2="210" stroke="var(--wgreen)" stroke-width="2.5"></line>
+        <polyline points="350,210 356,198 368,222 380,198 392,222 404,198 410,210" fill="none" stroke="var(--wgreen)" stroke-width="2.5"></polyline>
+        <line x1="410" y1="210" x2="557" y2="210" stroke="var(--wgreen)" stroke-width="2.5"></line>
+        <text x="380" y="188" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wgreen)">220R</text>
+        <text x="392" y="240" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">100R if pure green</text>
+        <text x="480" y="230" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">&asymp;5.5 or 3 mA</text>
+        <circle cx="568" cy="210" r="11" fill="var(--wgreen)"></circle>
+        <text x="568" y="214" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="500" fill="var(--surface)">35</text>
+        <text x="534" y="202" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">pin 35 &middot; GPIO19</text>
+
+        <!-- ground to pin 39 -->
+        <circle cx="568" cy="330" r="11" fill="var(--wgnd)"></circle>
+        <text x="568" y="334" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="500" fill="var(--surface)">39</text>
+        <text x="534" y="322" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">pin 39 &middot; GND</text>
+        <text x="380" y="350" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">carries both dies, &asymp;11 mA at most</text>
+
+        <!-- legend -->
+        <line x1="20" y1="408" x2="760" y2="408" stroke="var(--line)" stroke-width="1"></line>
+        <circle cx="30" cy="426" r="5" fill="var(--ink)"></circle>
+        <text x="42" y="430" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">dot = joined</text>
+        <line x1="140" y1="420" x2="156" y2="432" stroke="var(--muted)" stroke-width="1.5"></line>
+        <line x1="140" y1="432" x2="156" y2="420" stroke="var(--muted)" stroke-width="1.5"></line>
+        <text x="166" y="430" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">crossing = not joined</text>
+        <circle cx="330" cy="426" r="6" fill="var(--wgnd)"></circle>
+        <text x="342" y="430" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">filled = wire it</text>
+        <circle cx="484" cy="426" r="6" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5"></circle>
+        <text x="496" y="430" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">hollow = empty</text>
+        <text x="620" y="430" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">A anode, K cathode</text>
+      </svg>
+    </div>
+    <figcaption>Two independent current paths that share only the return. The Pi mixes amber by driving both pins with PWM at once, which is only possible because each die has its own resistor.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>LED leg</th><th>Connects to</th><th>Why it matters</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="swatch" style="background:var(--wred)"></span>red</td>
+          <td>220R &rarr; <span class="mono">pin 33 &middot; GPIO13</span></td>
+          <td>(3.3 &minus; 2.0V) / 220&Omega; &asymp; 5.9mA. Well under the ~16mA a Pi pin should source, and bright enough for a desk light.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wgreen)"></span>green</td>
+          <td>220R &rarr; <span class="mono">pin 35 &middot; GPIO19</span></td>
+          <td>Yellow-green die (~2.1V): &asymp;5.5mA, matches red. Pure/emerald green die (~3.0V): only 0.3V left across the resistor, &asymp;1.4mA &mdash; swap in <strong>100R</strong> for &asymp;3mA.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wgnd)"></span>long leg</td>
+          <td><span class="mono">pin 39 &middot; GND</span></td>
+          <td>No resistor here. It returns both dies&rsquo; current, &asymp;11mA with both fully on.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>The driver matches this exactly: <code>PINS = {"red": 13, "green": 19}</code> and <code>COMMON_ANODE = False</code> in <code>scripts/clawlight/clawlight-led.py</code>. Pins are BCM numbers in the code, physical numbers on the board &mdash; count the physical ones.</p>
+
+  <h2>Which leg is which</h2>
+  <p>The long leg is settled: you confirmed on the bench that it is the common cathode. What the part itself does not tell you is which of the two outer legs is red. Find out with the Pi, one resistor and two jumpers, before anything is soldered.</p>
+
+  <figure>
+    <div class="scroller">
+      <svg viewBox="0 0 780 330" role="img" aria-label="Left: side view of the bi-colour LED showing a dome, a rim with a flat edge on one side, and three legs with the middle, longest leg being the common cathode. Right: test circuit from pin 1 (3.3V) through a 220 ohm resistor to one outer leg, with the long leg to pin 39 (ground); the colour that lights names that leg.">
+        <!-- LED side view -->
+        <path d="M100,96 A40,40 0 0 1 180,96 L180,176 L100,176 Z" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"></path>
+        <rect x="100" y="176" width="90" height="12" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"></rect>
+        <line x1="118" y1="188" x2="118" y2="262" stroke="var(--muted)" stroke-width="3"></line>
+        <line x1="140" y1="188" x2="140" y2="296" stroke="var(--wgnd)" stroke-width="3.5"></line>
+        <line x1="162" y1="188" x2="162" y2="262" stroke="var(--muted)" stroke-width="3"></line>
+
+        <text x="140" y="30" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">The part, side on</text>
+
+        <!-- flat edge pointer -->
+        <polyline points="98,182 60,182 60,150" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="3 3"></polyline>
+        <text x="60" y="126" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">flat edge</text>
+        <text x="60" y="141" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">on the rim</text>
+
+        <!-- leg labels -->
+        <text x="112" y="280" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">colour ?</text>
+        <text x="168" y="280" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">colour ?</text>
+        <text x="140" y="316" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--wgnd)">longest = cathode &rarr; GND</text>
+
+        <line x1="300" y1="30" x2="300" y2="310" stroke="var(--line)" stroke-width="1"></line>
+
+        <!-- test circuit -->
+        <text x="330" y="30" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">The leg test, Pi powered on</text>
+
+        <circle cx="352" cy="110" r="11" fill="var(--w33)"></circle>
+        <text x="352" y="114" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="500" fill="var(--surface)">1</text>
+        <text x="352" y="84" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">pin 1 &middot; 3.3V</text>
+        <line x1="363" y1="110" x2="420" y2="110" stroke="var(--w33)" stroke-width="2.5"></line>
+        <polyline points="420,110 426,98 438,122 450,98 462,122 474,98 480,110" fill="none" stroke="var(--w33)" stroke-width="2.5"></polyline>
+        <text x="450" y="88" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--w33)">220R</text>
+        <line x1="480" y1="110" x2="560" y2="110" stroke="var(--w33)" stroke-width="2.5"></line>
+        <text x="520" y="88" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">outer leg</text>
+
+        <!-- die under test, anode left -->
+        <polygon points="560,98 560,122 584,110" fill="var(--muted)"></polygon>
+        <line x1="586" y1="97" x2="586" y2="123" stroke="var(--ink)" stroke-width="2.5"></line>
+        <line x1="586" y1="110" x2="660" y2="110" stroke="var(--wgnd)" stroke-width="2.5"></line>
+        <text x="630" y="88" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">long leg</text>
+
+        <circle cx="672" cy="110" r="11" fill="var(--wgnd)"></circle>
+        <text x="672" y="114" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="500" fill="var(--surface)">39</text>
+        <text x="672" y="146" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">pin 39 &middot; GND</text>
+
+        <text x="330" y="196" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--wred)">glows red</text>
+        <text x="450" y="196" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">&rarr; that leg goes to pin 33</text>
+        <text x="330" y="222" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--wgreen)">glows green</text>
+        <text x="450" y="222" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">&rarr; that leg goes to pin 35</text>
+        <text x="330" y="248" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">neither lights</text>
+        <text x="450" y="248" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">&rarr; see step 4 below</text>
+        <text x="330" y="290" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">Not pin 2 or 4: those are 5V.</text>
+      </svg>
+    </div>
+    <figcaption>Leg lengths are only reliable before the legs are trimmed, so do this test first and mark the red leg (a dab of marker, or bend it) before cutting anything. A reversed LED at 3.3V behind 220R simply stays dark &mdash; the test cannot damage the part.</figcaption>
+  </figure>
+
+  <ol class="checks">
+    <li><div><strong>Find the longest leg.</strong> On this part it is the common cathode (confirmed on the bench 2026-09-16). It goes to GND and never gets a resistor.</div></li>
+    <li><div><strong>Jumper pin 39 to the long leg, and pin 1 through a 220R to one outer leg.</strong> Clip leads or a breadboard, no solder. Count pins from the square pad, pin 1, at the end away from the USB ports.</div></li>
+    <li><div><strong>Note the colour, then move the resistor to the other outer leg.</strong> One should glow red and the other green. Write down which side of the flat edge red is on &mdash; the flat edge is the orientation mark that survives after the legs are trimmed. Which colour sits beside it varies between makers, so it has to be read off this part, not assumed.</div></li>
+    <li><div><strong>If neither outer leg lights,</strong> check the jumpers first. If they are right, the LED is common <em>anode</em> after all: the long leg would go to 3.3V and the code needs <code>COMMON_ANODE = True</code>. Stop and re-plan before soldering; this page assumes common cathode.</div></li>
+  </ol>
+
+  <h3>The green resistor</h3>
+  <p>The same test tells you which green you have. If the green leg glows a yellowish green about as bright as red, it is a ~2.1V die and 220R is right. If it glows a cool, bluish green that looks clearly dimmer than red, it is a ~3.0V pure-green die and gets <strong>100R</strong> instead &mdash; at 1.4mA it would lose every amber mix to red.</p>
+  <div class="settings">
+    <span class="pill"><b>220R</b> red &middot; red &middot; brown &middot; gold</span>
+    <span class="pill"><b>100R</b> brown &middot; black &middot; brown &middot; gold</span>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">One resistor per colour leg, never on the long leg</span>A single resistor on the shared cathode looks tidier and lights each colour fine on its own. The moment both are on, red&rsquo;s lower forward voltage takes almost all the current and green barely glows, so amber comes out plain red. Idle and the unknown pulse both depend on that mix.</p>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">Pin 37 stays empty</span>The earlier RGB plan put blue on GPIO26, pin 37, right between the two wires you need. Nothing drives it any more. A jumper left there from an old breadboard layout does nothing, but it is the easiest wire to plug a colour leg into by mistake.</p>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">Tune amber with the diffuser on</span>The optional ping-pong ball (in the parts list) blends the two dies into one colour instead of two points of light. It also shifts how the mix reads, so set <code>AMBER</code> after the ball is fitted, not before.</p>
+  </div>
+
+  <h2>Verify in this order</h2>
+  <p>Each check isolates one fault, so a failure tells you where to look. Run the deploy script from xero.</p>
+  <ol class="checks">
+    <li><div><strong>Dry run, before the LED matters.</strong> This proves the credentials and the MQTT path with no GPIO involved. Expect <code>server availability: online</code> followed by a <code>state=&hellip; -&gt; rg(&hellip;)</code> line. Ctrl-C to stop.
+      <pre>scripts/clawlight/deploy_clawlight_led_pi.sh --dry-run</pre></div></li>
+    <li><div><strong>Deploy for real.</strong> Expect <code>== clawlight-led: active ==</code> and the same log lines. If the service fails here but the dry run worked, the fault is GPIO access on the Pi, not the wiring.
+      <pre>scripts/clawlight/deploy_clawlight_led_pi.sh</pre></div></li>
+    <li><div><strong>Active: green.</strong> Give a Claude session something to work on. Red instead of green means the colour legs are swapped &mdash; swap the jumpers on pins 33 and 35, not the code. Dark while working and lit when idle means the polarity is inverted (step 4 of the leg test).</div></li>
+    <li><div><strong>Waiting: red.</strong> Let the session finish its turn and wait for you. Red alone, no green tint: a green tint means the pins share a wire somewhere.</div></li>
+    <li><div><strong>Idle: dim, steady amber.</strong> With no sessions running. Visible but not distracting at 6% brightness. Tune <code>AMBER = (1.0, 0.4)</code> here: raise the green share if it reads orange, lower it if it reads yellow-green, then redeploy.</div></li>
+    <li><div><strong>Unknown: amber pulse.</strong> Stop the server on xero; within a second the LED should pulse amber, holding the same hue as it fades. Start it again and the real colour returns.
+      <pre>systemctl --user stop clawlight-server
+systemctl --user start clawlight-server</pre></div></li>
+  </ol>
+
+  <footer>
+    State 2026-09-16: code adapted to this red/green LED (commit <span class="mono">458519f</span>), <strong>not yet wired or deployed</strong>. Driven by <span class="mono">scripts/clawlight/clawlight-led.py</span> as <span class="mono">clawlight-led.service</span> on the wol-sender Pi; installed with <span class="mono">scripts/clawlight/deploy_clawlight_led_pi.sh</span>. Mock-pin tests in <span class="mono">scripts/clawlight/test_clawlight_led.py</span>. Pin claims in <span class="mono">docs/gpio_pinout.md</span>. Other wired pins on this header (buttons on 9&ndash;15, the fan on 5V) are outside this corner and untouched.
+  </footer>
+</div>
