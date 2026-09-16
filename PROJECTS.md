@@ -130,7 +130,7 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 ### Clawlight physical LED (Pi GPIO)
 **Why:** the software clawlight (see ✅ Done) only shows status while its browser tab or PiP window is actually visible. An RGB LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version - the light has to be where you work, which is the whole reason the hardware idea exists.
 
-**State:** built and verified 2026-09-07, **code adapted to the RG LED 2026-09-16, not yet wired** - it needs the LED soldered up and `scripts/clawlight/deploy_clawlight_led_pi.sh` run for real.
+**State:** built and verified 2026-09-07, **wired and deployed 2026-09-16** - `clawlight-led.service` is active on the Pi and came up showing the real aggregate state (red, a Mac session waiting) within a second. The deploy script's install step had never run for real: it used sudo over a terminal-less ssh, which cannot prompt for the Pi's password; fixed to `ssh -t`.
 
 **LED bought 2026-09-15 - RG (red/green bi-colour), not RGB. Checked 2026-09-16: 3 legs, common cathode.** So red and green are driven independently and amber is a PWM mix of the two - active, waiting and the "don't believe me" amber pulse all survive. Only idle (dim white) needed blue; it is now dim steady amber (see design decisions). `clawlight-led.py` now drives two PWM pins through gpiozero `LEDBoard` and does its own amber pulse, because gpiozero's `pulse()` fades each pin to full and would turn the mix yellow. `scripts/clawlight/test_clawlight_led.py` checks it on mock pins - which caught `LEDBoard` ordering keyword pins alphabetically, swapping red and green.
 
@@ -150,7 +150,7 @@ qty | item | est | note
 1 | Ping-pong ball or diffuser | 20 | household - optional, turns a point of light into a beacon
 ```
 
-**Next step:** wire it as above, run `scripts/clawlight/deploy_clawlight_led_pi.sh`, then on the bench tune `AMBER`'s green share in `clawlight-led.py` until the mix reads amber (not yellow-green or orange) and check the idle brightness is visible but not distracting.
+**Next step:** check each state on the real LED (green, dim amber idle, amber pulse when `clawlight-server` is stopped), then tune `AMBER`'s green share in `clawlight-led.py` until the mix reads amber (not yellow-green or orange) and check the idle brightness is visible but not distracting.
 
 ---
 

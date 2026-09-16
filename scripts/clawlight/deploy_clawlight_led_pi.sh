@@ -37,14 +37,19 @@ if [ "$dry_run" -eq 1 ]; then
   exit 0
 fi
 
-ssh "$PI" bash -s <<'REMOTE'
+# ssh -t, and the commands as an argument rather than a heredoc on stdin: sudo
+# on the Pi asks for a password, and it can only do that with a terminal.
+# restart, not just enable --now, so an update to an already-running service
+# actually takes effect.
+ssh -t "$PI" '
 set -euo pipefail
 chmod +x ~/clawlight-led.py
 sudo install -m 644 ~/clawlight-led.service /etc/systemd/system/clawlight-led.service
 rm -f ~/clawlight-led.service
 sudo systemctl daemon-reload
-sudo systemctl enable --now clawlight-led
+sudo systemctl enable clawlight-led
+sudo systemctl restart clawlight-led
 sleep 8
 echo "== clawlight-led: $(systemctl is-active clawlight-led) =="
-journalctl -u clawlight-led --no-pager -n 10 -o cat
-REMOTE
+sudo journalctl -u clawlight-led --no-pager -n 10 -o cat
+'

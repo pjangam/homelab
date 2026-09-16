@@ -1,5 +1,5 @@
 [Unit]
-Description=Clawlight physical status LED (RGB LED on Pi GPIO)
+Description=Clawlight physical status LED (red/green LED on Pi GPIO)
 After=network-online.target
 Wants=network-online.target
 
