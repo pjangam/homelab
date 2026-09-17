@@ -350,12 +350,21 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 ```parts
 qty | item | est | note
-1 | Quartz clock movement | 150-300 | local - buy a spare to practise the coil surgery on; or sacrifice a clock already owned
-1 | ESP32 dev board with USB | 400-600 | local - or reuse the aarti lights board
-1 | DRV8833 or L293D H-bridge module | 100-200 | local - two transistors and four diodes also work
+2 | Quartz clock movement | 300-600 | local - two on purpose: the first is for practising the coil surgery. A clock already owned can be the second
+1 | ESP32 dev board with USB | 400-600 | local - skip if the aarti lights board is freed after the festival
 1 | Reed switch + small magnet | 50-100 | local - the homing sensor; a hall sensor works too
-1 | Resistors (100R-1k assortment) | 20 | local - the coil is ~1.5V rated, driven from 3.3V
+1 | Resistors (100R-1k assortment) | 20 | local - the coil is rated ~1.5V and gets driven from 3.3V
+1 | DRV8833 or L293D H-bridge | 0-200 | local, and probably not needed - the coil can sit directly between two GPIO pins through a resistor, which is an H-bridge in software. Buy only if that reads too weak
 ```
+
+**Cost: about ₹800-1300 all in, or ₹400-700 reusing the aarti board** - and no shop trip is gated on delivery, since every line is loose local stock. A clock body to put it in is on top of that if one is not already owned (₹200-650 for a plain wall clock).
+
+**Effort: roughly 8-12 hours, over two or three evenings, plus a few days of watching it.** Four phases, and the cheap ones come first on purpose:
+- **Free the coil and pulse it by hand from the ESP32 - 1-2h.** This is the go/no-go test and the one where a movement gets destroyed, hence buying two.
+- **Firmware - 2-4h,** less if an existing sketch is adapted rather than written: NTP, the one-pulse-per-second loop, fast-forward, and the position kept in flash.
+- **Homing sensor - 2-3h,** and this is where it overruns. Aligning a magnet and reed switch against a moving hand is fiddly mechanical work, the same class of problem the fiber-optic option in the UPS LED project was rejected for.
+- **Install, tidy, mount - 1-2h.**
+Then it verifies itself slowly: leave it a few days against a known-good clock, and test an outage by pulling power and confirming it re-homes and catches up on its own.
 
 **Next step:** open a spare movement and confirm the coil can be freed from its quartz chip and pulsed by hand, before designing anything around it. That one bench test decides the whole project.
 
