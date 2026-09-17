@@ -347,6 +347,23 @@ street noise alone is enough to make a bench measurement meaningless.
     ambient, off), then expose them as HA scenes so the light is reachable
     without the WLED app.
 
+**Which light entity to target depends on how many segments the board has,**
+and it changes under you. HA's WLED integration only creates the whole-device
+`light.wled_main` when the strip has **more than one segment**; with a single
+segment it publishes just `light.wled`, which is then the whole strip.
+`light.wled_main` stays in the entity registry either way, so an automation
+aimed at it does not error - it logs `Referenced entities light.wled_main are
+missing or not currently available` and does nothing.
+
+That is the reverse of the multi-segment trap below, and both have bitten this
+project. While the three-segment band split was applied, `light.wled` was
+segment 0 and switching it off left the other two lit. Once the board went back
+to one segment, `light.wled_main` went unavailable and the aarti automations
+were running on their second action alone - the `brightness_pct: 85` in the
+`light.wled_main` action of the 17:45 automation is silently dropped today.
+Check `/json/state` for the segment count before deciding, or target both, as
+those automations do.
+
 ## Phase 6 - tune in the room, in the evening, at real volume (1-2h)
 
 20. **Tune gain and squelch last**, in place, with the actual aarti playing at
@@ -395,6 +412,36 @@ matrix-only. Of the 29 audio-reactive effects in this build, **24 work on a
 curl -s http://<board>/json/fxdata | python3 -c "import sys,json;print(json.load(sys.stdin)[139])"
 ```
 A `2` in the fourth semicolon-separated field means it needs a matrix.
+
+### The renderer has its own floor, separate from squelch
+
+Squelch is a WLED setting and acts on `sampleRaw`, which is what the built-in
+effects (Tier 1 and 2) respond to. The Tier 3 renderer does not use it: it
+thresholds the **sum of the 16 FFT bins** against `FLOOR_ENERGY` in
+`aarti_audio.py`. Those are different scales, so a squelch that looks right in
+the WLED app says nothing about what the classifier will do. Measure that one
+with `./projects/aarti-lights/ambient-energy.py`, which prints the distribution
+of exactly the number the classifier compares.
+
+A resting reading from this room (2026-09-18, 01:20, ceiling fan on): total
+energy median 294, max 371 over 30s, against `FLOOR_ENERGY` 450 - not one
+frame of 1318 crossed it. So the fan is **not** picked up, with reasonable
+headroom.
+
+**The strip goes dark on its own after 20s of silence** (`IDLE_TIMEOUT_S` in
+`aarti-render.py`, then a 3s fade). Before that it painted `IDLE = 0.05` amber
+on every pixel forever, so a silent room still showed a dim low glow - which
+looks exactly like a mic picking up the fan, and was the reason the
+measurement above got taken. `--idle-timeout 0` restores the always-lit
+behaviour. `test_aarti_idle_blackout.sh` covers it.
+
+It keeps **sending black frames** rather than stopping: going silent would let
+WLED's realtime timeout lapse and hand the strip back to its own Gravimeter
+boot preset, which is lit and sound-reactive - the opposite of off. Holding the
+realtime lock with black keeps it dark and still lights it instantly on the
+next sound. Note this means `sensor.wled_estimated_current` rests at ~300mA
+(WLED's fixed overhead plus 180 idle LEDs), not the ~120mA of a genuinely
+switched-off board.
 
 ## If the deadline arrives mid-build
 

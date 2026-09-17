@@ -25,6 +25,12 @@ carries a timeout, so if this process stops, WLED reverts to its own effects
 on its own after a couple of seconds - the decoration keeps working if this
 does not.
 
+IDLE: with nothing classified for IDLE_TIMEOUT_S the strip fades to black and
+stays there, so a silent room means a dark decoration rather than a dim glow.
+It keeps sending black frames so WLED's own effects do not take back over, and
+the next sound lights it immediately. --idle-timeout 0 restores the old
+always-lit resting glow.
+
 Because a strike cannot be identified at onset, both the CLAP and GHANTA zones
 light dimly together the moment a bright sound starts, and the one that wins
 goes to full while the other falls away. That ambiguity is honest and reads as
@@ -62,8 +68,25 @@ ZONES = [
     ("GHANTA", 120, 180, (30, 90, 255)),
 ]
 
-IDLE = 0.05         # never fully dark: an unlit third reads as broken, not idle
+IDLE = 0.05         # resting glow while the room is awake - see IDLE_TIMEOUT_S
 MASTER = 0.55       # composite headroom - see soft_clip
+
+# The resting glow exists so an idle strip reads as idle rather than broken.
+# But left on a timer of its own it also means the decoration is never off: at
+# 01:20 on 2026-09-18 the strip sat at a dim amber low with the room silent,
+# which looked like the mic picking up the ceiling fan. It was not - measured
+# with ambient-energy.py, a resting room runs 215-371 total FFT energy against
+# a FLOOR_ENERGY of 450, so nothing was classified at all. The glow was this
+# floor, painted unconditionally.
+#
+# So the floor now expires. After IDLE_TIMEOUT_S with nothing classified it
+# fades out over IDLE_FADE_S and the renderer sends black frames. Black frames
+# rather than no frames on purpose: silence would let WLED's realtime timeout
+# lapse and hand the strip back to its own Gravimeter preset, which is lit and
+# sound-reactive - the opposite of off. Holding the realtime lock with black
+# keeps the strip dark and still lights it on the next sound with no ramp-up.
+IDLE_TIMEOUT_S = 20.0   # silence before the resting glow starts to go
+IDLE_FADE_S = 3.0       # and how long it takes to reach black
 
 DECAY_PER_S = 2.2   # how fast a zone falls back once its sound stops
 FPS = 40
@@ -73,6 +96,22 @@ BURST_LIFE = 0.9      # seconds for a clap burst to cross and fade
 BURST_SPEED = 0.85    # fraction of half-strip per second
 VOICE_DECAY = 1.6
 GHANTA_DECAY = 1.1
+
+
+def idle_floor(quiet_for, timeout=IDLE_TIMEOUT_S, fade=IDLE_FADE_S):
+    """The resting glow level, given how long the room has been silent.
+
+    Full IDLE up to the timeout, then a linear fade to zero. Zero means the
+    strip is genuinely dark - see the note beside IDLE_TIMEOUT_S for why it
+    keeps sending black rather than stopping.
+    """
+    if timeout <= 0:                    # --idle-timeout 0: never go dark
+        return IDLE
+    if quiet_for <= timeout:
+        return IDLE
+    if fade <= 0:
+        return 0.0
+    return IDLE * max(0.0, 1.0 - (quiet_for - timeout) / fade)
 
 
 class Layers:
@@ -92,14 +131,15 @@ class Layers:
     def on_clap(self, strength=1.0):
         self.bursts.append({"t0": time.time(), "s": min(1.0, strength)})
 
-    def frame(self, now, dt):
+    def frame(self, now, dt, floor=IDLE):
         self.voice = max(0.0, self.voice - VOICE_DECAY * dt)
         self.ghanta = max(0.0, self.ghanta - GHANTA_DECAY * dt)
         n = self.n
         buf = [[0.0, 0.0, 0.0] for _ in range(n)]
 
-        # Base glow. Never zero - a dark strip reads as broken, not resting.
-        lvl = max(IDLE, self.voice)
+        # Base glow. Floored while the room is awake, and faded to nothing
+        # once it has been silent for IDLE_TIMEOUT_S.
+        lvl = max(floor, self.voice)
         for i in range(n):
             k = lvl * (0.72 + 0.28 * math.sin(i / n * math.pi))
             buf[i][0] += 255 * k
@@ -162,7 +202,7 @@ def pack(buf):
     return bytes(out)
 
 
-def render(levels, phase):
+def render(levels, phase, floor=IDLE):
     """levels: 0-1 per zone. Returns a DRGB payload for WLED.
 
     Byte 0 is the protocol (2 = DRGB), byte 1 a timeout in seconds after which
@@ -170,7 +210,7 @@ def render(levels, phase):
     """
     buf = bytearray([2, 2])
     for zi, (_, start, stop, (r, g, b)) in enumerate(ZONES):
-        lvl = max(IDLE, min(1.0, levels[zi]))
+        lvl = max(floor, min(1.0, levels[zi]))
         n = stop - start
         for i in range(n):
             # A gentle centre-weighted falloff so a zone reads as a body of
@@ -223,6 +263,9 @@ def main():
     ap.add_argument("--seconds", type=float, default=0.0)
     ap.add_argument("--quiet", action="store_true")
     ap.add_argument("--mode", choices=("zones", "layers"), default="layers")
+    ap.add_argument("--idle-timeout", type=float, default=IDLE_TIMEOUT_S,
+                    help="seconds of silence after which the strip goes dark "
+                         "(0 keeps the old always-lit resting glow)")
     ap.add_argument("--ignore-power", action="store_true",
                     help="render even when WLED is switched off")
     a = ap.parse_args()
@@ -235,12 +278,18 @@ def main():
     layers = Layers(N_LEDS)         # (layers mode)
     t0 = time.time()
     next_frame = t0
+    last_sound = t0     # nothing classified since: drives the idle blackout
+    dark = False
 
     print(f"rendering to {a.wled}:{WLED_UDP_PORT}, {N_LEDS} LEDs, {FPS}fps, mode={a.mode}")
     if a.mode == "zones":
         print("zones:  0-59 VOICE amber | 60-119 CLAP white | 120-179 GHANTA blue")
     else:
         print("layers: amber glow = voice | white burst = clap | blue shimmer = ghanta")
+    if a.idle_timeout > 0:
+        print(f"idle:   dark after {a.idle_timeout:.0f}s with nothing classified")
+    else:
+        print("idle:   resting glow stays lit (--idle-timeout 0)")
     print("Ctrl-C to stop - WLED returns to its own effects a moment later.\n", flush=True)
 
     try:
@@ -253,6 +302,8 @@ def main():
                 fft = None
             if fft:
                 for kind, info in clf.update(fft, now):
+                    if kind in ("strike", "clap", "ghanta", "voice"):
+                        last_sound = now
                     if kind == "strike":
                         # Cannot yet tell bell from clap: light both, dimly.
                         levels[1] = max(levels[1], 0.45)
@@ -279,17 +330,29 @@ def main():
                         print(f"[{now-t0:6.2f}] ghanta ended "
                               f"({info['duration']:.1f}s)", flush=True)
                 if clf.ghanta_ringing:
+                    last_sound = now
                     levels[2] = max(levels[2], 0.55 + 0.45 * clf.level)
                     layers.ghanta = max(layers.ghanta, 0.55 + 0.45 * clf.level)
 
             if now >= next_frame:
                 dt = 1.0 / FPS
+                quiet_for = now - last_sound
+                floor = idle_floor(quiet_for, a.idle_timeout)
+                if floor <= 0.0 and not dark:
+                    dark = True
+                    if not a.quiet:
+                        print(f"[{now-t0:6.2f}] dark - {quiet_for:.0f}s silent",
+                              flush=True)
+                elif floor > 0.0 and dark:
+                    dark = False
+                    if not a.quiet:
+                        print(f"[{now-t0:6.2f}] awake", flush=True)
                 if a.mode == "zones":
                     for i in range(3):
                         levels[i] = max(0.0, levels[i] - DECAY_PER_S * dt)
-                    payload = render(levels, now - t0)
+                    payload = render(levels, now - t0, floor)
                 else:
-                    payload = pack(layers.frame(now, dt))
+                    payload = pack(layers.frame(now, dt, floor))
                 if power is None or power.on:
                     tx.sendto(payload, (a.wled, WLED_UDP_PORT))
                 next_frame = now + dt
@@ -300,4 +363,5 @@ def main():
     print("\nstopped - WLED will resume its own effects shortly.", flush=True)
 
 
-main()
+if __name__ == "__main__":
+    main()
