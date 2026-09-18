@@ -1,9 +1,9 @@
 # Labelled sound samples for the aarti lights Tier 3 classifier
 
-Captured 2026-09-14 with `scripts/aarti-sound-lab.py record`, from WLED's
+Captured 2026-09-14 with `aarti-sound-lab.py record`, from WLED's
 AudioReactive UDP broadcast - i.e. through the INMP441 mounted behind the
 makhar, in that room, with that bell. The thresholds in
-`scripts/aarti-classify.py` are derived from these files, so if the mic
+`aarti_audio.py` are derived from these files, so if the mic
 moves, the bell changes, or the room does, re-record rather than re-guess.
 
 Recorded with WLED squelch at **0**: any higher and the board zeroes quiet

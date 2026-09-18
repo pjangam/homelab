@@ -1,14 +1,133 @@
-# Sound-reactive aarti lights setup (ESP32 + WLED + WS2812B)
+# Sound-reactive aarti lights (ESP32 + WLED + WS2812B)
 
-Build runbook for the Ganapati backdrop - see PROJECTS.md, "Sound-reactive
-aarti lights". Parts are in hand as of 2026-09-12: strip (bought local),
-INMP441 I2S mic, and a 5V 2A supply already owned.
+A 3m strip of WS2812B behind the makhar that reacts to the aarti as it
+happens - the ghanta, the claps and the singing each light the strip
+differently, in real time. It is the first fully local light in the house: the
+microphone, the analysis and the rendering all stay on the LAN, and nothing
+about it touches a cloud.
 
-**The ordering principle: prove it on a breadboard, then build it.** Nothing
-gets cut, soldered or stuck to a wall until the ESP32 drives pixels and the
-mic reports levels. Every step up to Phase 3 is reversible, and each one
-either passes or tells you exactly what is wrong - which matters because the
-deadline is days away and a hard-wired mistake costs an evening.
+Shipped 2026-09-12 to 2026-09-14 and running since. **This file is the
+reference for what exists and how it works.** The story of how it got built,
+what it cost and what was decided along the way lives in `PROJECTS.md` under
+"Sound-reactive aarti lights"; the build runbook further down is kept for
+re-wiring and diagnosis, not as a narrative.
+
+## The wiring, in one picture
+
+![Aarti lights wiring as built: an INMP441 I2S mic on GPIO32/25/33 with L/R to GND, an ESP32 running WLED 16.0.1 driving 180 WS2812B pixels from GPIO4 through a 470R, and a 5V 4A supply feeding the strip directly, sharing a common ground with the board.](wiring.svg)
+
+The same diagram with the current numbers, the mistakes that cost time on this
+build and the checks that isolate each fault: [`wiring.html`](wiring.html)
+(published at <https://claude.ai/artifact/9htRRMwTKPzQxMk5Fmqbmb>). Edit the
+diagram there, then regenerate the inline copy with
+`./projects/aarti-lights/make_wiring_svg.py`.
+
+The inline copy is a **standalone SVG with the light-theme colours baked in as
+literal hex, system fonts instead of webfonts, and an opaque panel behind the
+drawing**. That is deliberate: GitHub serves SVG in markdown through an `<img>`
+tag, which blocks external CSS and webfonts and honours `prefers-color-scheme`
+unreliably, so a diagram that themes itself renders as invisible text on some
+backgrounds. Baking one theme in and carrying its own background means it looks
+identical on a light and a dark page. Verified against `#ffffff` and GitHub's
+`#0d1117`.
+
+## Hardware
+
+| Part | Detail |
+|---|---|
+| **ESP32** | D0WD-V3, 4MB. Runs **WLED 16.0.1 audioreactive**. Static **192.168.1.125** / `wled-sound.local` |
+| **LED strip** | WS2812B, **180 pixels / ~3m**, cut from a locally bought 5m reel (~2m spare). Data on **GPIO4** |
+| **Microphone** | **INMP441** I2S, mounted behind the makhar. `SD`=GPIO32, `WS`=GPIO25, `SCK`=GPIO33, `L/R` to GND |
+| **Strip supply** | **5V 4A** (already owned), wired to the strip directly over mains-wire offcuts. WLED current cap **3400mA** |
+| **Board supply** | Its own USB adapter - the ESP32 is not fed from the 5V 4A rail |
+| **Passives** | **470R** in series on the data line, **1000µF** bulk across the strip's supply pair |
+| **Host** | `xero` runs the renderer as a `systemd --user` service and talks to the board over the LAN |
+
+No level shifter and no far-end power injection: both were measured as
+unnecessary at 3m (see the wiring page). All-red at full brightness draws
+3411mA against the 3400mA cap, and nothing runs warm.
+
+## How it all fits together
+
+The board does the listening and the lighting. `xero` does the thinking. They
+talk over two different UDP streams in opposite directions:
+
+```
+  INMP441 ──I2S──▶ ESP32 / WLED ──GPIO4──▶ 470R ──▶ 180 WS2812B pixels
+                     │      ▲
+    16 FFT bins,     │      │   every pixel, 40fps
+    44 frames/s      │      │   DRGB realtime UDP :21324
+                     ▼      │
+       multicast 239.0.0.1:11988          xero
+                     └──────────▶ aarti-render.py ──┘
+                                  (classify, then draw)
+```
+
+WLED analyses the audio on-board and broadcasts only its **analysis** - 16
+bins of 8-bit spectral envelope, never audio. `aarti-render.py` on `xero`
+classifies that into ghanta / clap / voice and draws every pixel itself,
+pushing frames back over WLED's realtime protocol.
+
+**It degrades in three tiers, and that is the whole design.** Each one works
+without the ones above it:
+
+1. **Tier 1 - WLED's own Gravimeter**, saved as boot preset 1. The strip comes
+   up sound-reactive on power alone, even with `xero` down and Home Assistant
+   off. This is the floor, and it is why a dead renderer is never a dark
+   decoration.
+2. **Tier 2 - a three-segment band split** by pitch: vocals orange, presence
+   and claps green, ghanta and cymbals blue. Restored with `./wled.sh bands`.
+3. **Tier 3 - `aarti-render.py`**, the default and what runs today. It
+   classifies rather than splitting by pitch, because a clap and a ghanta have
+   the same spectral centroid (8.72 against 8.75) and differ only in *time*.
+
+The handover between tiers is automatic: realtime UDP carries a timeout, so if
+the renderer stops, WLED reverts to its own effects a couple of seconds later
+by itself.
+
+**Home Assistant owns the schedule, not the renderer.** Four time-triggered
+automations (on 08:00, off 10:00, on 17:45, off 23:00) and three dashboard
+scripts live in the gitignored `HOMEASSISTANT_CONFIG/`. The renderer polls
+WLED's own on/off state and stops sending while it is off - without that,
+realtime UDP would override everything and the light could never be switched
+off.
+
+## The scripts, and what each one is for
+
+| File | What it is |
+|---|---|
+| `aarti-render.py` | **The service.** Classifies and renders every pixel over realtime UDP. `--mode layers` (default) composites voice/clap/ghanta on the whole strip; `--mode zones` gives each a third. `--idle-timeout` controls the blackout |
+| `aarti_audio.py` | **The thresholds, in one place.** Shared feature extraction and the classifier state machine. Imported by everything else - change numbers only here |
+| `aarti-lights.service` | The `systemd --user` unit that runs the renderer. Waits for the board in `ExecStartPre` |
+| `aarti-classify.py` | Prints classifications live **without touching the lights**. The first thing to run when the strip reacts to the wrong things |
+| `aarti-sound-lab.py` | Records labelled samples into `aarti-sound/` and inspects them. How every threshold in `aarti_audio.py` was derived |
+| `wled-audio-monitor.py` | Measures WLED's `sampleRaw` and suggests a squelch for the ambient it just heard. Answers "is the mic working at all" |
+| `ambient-energy.py` | Measures the **total FFT energy** the classifier actually thresholds, against `FLOOR_ENERGY`. A different scale from squelch - see the Glossary |
+| `wled.sh` | CLI for the board: `info`, `count`, `pin`, `cap`, `solid`, `rainbow`, `bands`, `groups`, `order` |
+| `test_aarti_idle_blackout.sh` | Checks the idle blackout reaches true black and that a sound relights it. Pure maths, no hardware needed |
+| `make_wiring_svg.py` | Regenerates `wiring.svg` from `wiring.html` after the diagram changes |
+| `aarti-sound/*.jsonl` | The labelled recordings the thresholds come from, plus their own README |
+| `wiring.html` / `wiring.svg` | The wiring diagram above, and its inline copy |
+
+### Which one answers which question
+
+- **"Is the mic alive?"** - `wled-audio-monitor.py`. It prints a level
+  distribution and says so explicitly, because a high squelch in a quiet room
+  looks exactly like dead hardware.
+- **"Why is the strip lit / dark right now?"** - `ambient-energy.py` for
+  whether anything is crossing the classifier's floor, then
+  `journalctl --user -u aarti-lights` for what the renderer thinks.
+- **"Why did it flash at the wrong moment?"** - `aarti-classify.py`, which
+  shows the classification without changing the lights.
+- **"The room or the bell changed."** - re-record with `aarti-sound-lab.py`
+  and retune `aarti_audio.py` against the recordings. Do not re-guess the
+  numbers.
+
+## The build runbook
+
+Everything below is how it was built, kept for re-wiring, repair and
+diagnosis. The phases are in the order they were done, and each one names the
+traps that cost time.
 
 ## Pin assignment (decided here so it is not re-decided at the bench)
 
@@ -29,25 +148,6 @@ Two constraints behind those choices, both of which bite silently:
 - **GPIO34-39 are input-only.** `SD` could live there, but `WS` and `SCK` are
   *driven by* the ESP32 and will simply never appear if assigned to one - a
   dead-silent mic with no error anywhere.
-
-## The wiring, in one picture
-
-![Aarti lights wiring as built: an INMP441 I2S mic on GPIO32/25/33 with L/R to GND, an ESP32 running WLED 16.0.1 driving 180 WS2812B pixels from GPIO4 through a 470R, and a 5V 4A supply feeding the strip directly, sharing a common ground with the board.](wiring.svg)
-
-The same diagram with the current numbers, the mistakes that cost time on this
-build and the checks that isolate each fault: [`wiring.html`](wiring.html)
-(published at <https://claude.ai/artifact/9htRRMwTKPzQxMk5Fmqbmb>). Edit the
-diagram there, then regenerate the inline copy with
-`./projects/aarti-lights/make_wiring_svg.py`.
-
-The inline copy is a **standalone SVG with the light-theme colours baked in as
-literal hex, system fonts instead of webfonts, and an opaque panel behind the
-drawing**. That is deliberate: GitHub serves SVG in markdown through an `<img>`
-tag, which blocks external CSS and webfonts and honours `prefers-color-scheme`
-unreliably, so a diagram that themes itself renders as invisible text on some
-backgrounds. Baking one theme in and carrying its own background means it looks
-identical on a light and a dark page. Verified against `#ffffff` and GitHub's
-`#0d1117`.
 
 ## Phase 0 - firmware, no hardware attached (~1h, do this first)
 
@@ -209,7 +309,7 @@ for the real build never goes through a breadboard.
    long the reel is. Keep it coiled at low brightness only - a coiled reel run
    bright cooks itself.
 6. **Wire it up:**
-   - ESP32 from **USB** (laptop or a phone charger), strip from the **2A
+   - ESP32 from **USB** (laptop or a phone charger), strip from the **bench
      supply**. Keeping them separate means a sagging strip cannot brown out
      the ESP32, and serial stays available.
    - **Tie the grounds together: strip GND, ESP32 GND, supply GND.** This is
@@ -340,19 +440,26 @@ street noise alone is enough to make a bench measurement meaningless.
 ## Phase 3 - real power, real length (~30min)
 
 13. **Swap to the proper supply and set WLED's max current to its actual
-    rating.** The limiter then auto-caps brightness, which makes over-draw
-    impossible by construction rather than by discipline.
-    - 60mA per LED at full white: 300 LEDs is ~18A, which no sane supply for
-      this build provides. The limiter is what makes a 10A supply correct
-      rather than merely optimistic.
-    - Still on the 2A? It works and it will look dim - and it will not tell
-      you it is the problem. See PROJECTS.md for why that is the trap.
-14. **Set the real LED count**, and **inject power at both ends with 18AWG**
-    on a 5m run. The strip's own copper drops enough voltage over 5m that
-    white drifts pink toward the far end even with an adequate supply.
+    rating** - `./wled.sh cap 3400` for the 5V 4A supply this build uses. The
+    limiter then auto-caps brightness, which makes over-draw impossible by
+    construction rather than by discipline.
+    - The cap is load-bearing, not decorative. At ~55mA per LED at full white,
+      180 pixels model to **9.9A** against a 4A supply. The limiter is the only
+      reason that is safe.
+    - What it actually draws: all-red at full brightness measured **3411mA**
+      against the 3400mA cap, and nothing ran warm.
+    - **A too-small supply does not announce itself.** It works, it looks dim,
+      and it never tells you that is the problem - see PROJECTS.md.
+14. **Set the real LED count** - `./wled.sh count 180` for the ~3m as built.
+    - **No far-end power injection was needed at 3m**, and it was measured, not
+      assumed. Beyond that the strip's own copper drops enough voltage that
+      white drifts pink toward the far end even with an adequate supply, so a
+      5m run would want 18AWG injected at both ends.
 15. **Move the strip and mic off the breadboard** onto the perfboard now that
     the pinout is proven. Strip power goes supply-to-strip directly and never
-    through the perfboard either.
+    through the perfboard either - **jumper wires cap strip current at about
+    1A**, which on this build made three different supplies look identically
+    dim before the wiring was suspected.
 
 ## Phase 4 - mount and diffuse (2-4h, the phase that always overruns)
 
@@ -467,14 +574,16 @@ next sound. Note this means `sensor.wled_estimated_current` rests at ~300mA
 (WLED's fixed overhead plus 180 idle LEDs), not the ~120mA of a genuinely
 switched-off board.
 
-## If the deadline arrives mid-build
+## If you have to stop partway
 
 WLED with no working mic is still the full addressable strip - 100+ effects,
 chases, palettes, phone app, HA. **A backdrop running programmed effects is a
 finished decoration**, and the mic upgrades it to reacting to the live aarti
 whenever Phase 2 lands. So if something has to give, give up Phase 2 and 6,
 not Phase 4 - an unmounted strip looks like a project, a mounted one looks
-like a decoration.
+like a decoration. This was written against a festival deadline and it is the
+right order to rebuild in anyway: get it mounted and lit, then make it
+listen.
 
 
 ## Glossary - the audio terms this doc and the code use
