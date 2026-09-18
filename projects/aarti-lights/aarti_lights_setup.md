@@ -250,6 +250,11 @@ rainbow effect does.
 
 ## Phase 2 - mic on the same breadboard (~1h)
 
+> Everything from here on uses audio vocabulary - squelch, gain, centroid,
+> flatness, F0, bins. If any of it is unfamiliar or has gone stale since the
+> last time this project was open, the **Glossary** at the end of this doc
+> defines each one against the numbers actually measured on this board.
+
 9. **Wire the INMP441** per the pin table above: `VDD`->3V3, `GND`->GND,
    `L/R`->GND, `SD`->GPIO32, `WS`->GPIO25, `SCK`->GPIO33. If the module
    arrived with its header pins loose in the bag, they need soldering on first
@@ -451,3 +456,131 @@ finished decoration**, and the mic upgrades it to reacting to the live aarti
 whenever Phase 2 lands. So if something has to give, give up Phase 2 and 6,
 not Phase 4 - an unmounted strip looks like a project, a mounted one looks
 like a decoration.
+
+
+## Glossary - the audio terms this doc and the code use
+
+Defined against this board's own measurements rather than in the abstract, so
+the numbers here are the ones to expect when something is working.
+
+### The two settings on the board
+
+**Gain** - how much the mic signal is amplified before anything analyses it.
+This board sits at `1.06x`. Turning it up enlarges the noise along with the
+signal, so it does not help hear the aarti over the street.
+
+**Squelch** - a floor. Anything quieter is forced to zero and treated as
+silence. The word is from radio, where squelch mutes the hiss between
+transmissions. **This is the setting that decides whether the strip looks
+reactive at all** (see Phase 6): at squelch 10 street noise sat above the
+floor permanently, levels read 93% constantly, and every effect pinned at
+maximum looking exactly like a dead mic. At 40 the resting level fell to 0
+between sounds and the effects worked.
+
+In short: gain is the volume knob, squelch is the "ignore anything quieter
+than this" line. Gain makes a quiet sound louder; squelch decides whether it
+counts at all.
+
+### Turning sound into numbers
+
+**FFT** (Fast Fourier Transform) - the maths that takes a moment of sound and
+reports how much energy sits at each frequency. Play a chord, and the FFT says
+which notes are in it.
+
+**Bins** - the FFT gives buckets, not infinite precision. This board runs a
+512-point FFT at 22050Hz, so the underlying resolution is **~43Hz per
+bucket** - ample to separate 110Hz from 190Hz, useless for 175 vs 200. WLED
+then groups those into the **16 bins** it broadcasts, centred roughly at 64,
+107, 172, 323, 495, 710, 990, 1270, 1570, 1936, 2584, 3375, 4428, 5621, 6644
+and 11383Hz (`BIN_HZ` in `aarti-sound-lab.py`). The spacing is roughly
+logarithmic, like hearing. They arrive as **8-bit** values, so absolute level
+is already gone by the time anything here sees them.
+
+**F0, the fundamental frequency** - the lowest frequency of a voice, heard as
+its pitch. Adult male roughly 85-155Hz, adult female 165-255, a toddler
+350-500.
+
+**Harmonics** - whole-number multiples of F0: a 150Hz voice also puts energy
+at 300, 450 and 600Hz. This is why "is there energy up high?" cannot by itself
+identify a child's voice in a room of adults singing - their harmonics run
+straight through a child's range. The test has to be high-band energy *with a
+quiet low band*.
+
+**Decay tail** - how a sound fades after it stops. The ghanta rings ~13s; a
+clap is gone inside 0.5s. That gap is the most useful feature for separating
+them, which is why recordings are made at **squelch 0** - a higher squelch
+zeroes the quiet frames and throws the tail away.
+
+**Far-field** - the mic is metres from the source rather than at someone's
+mouth, so it collects room reverb and everything else in the room. It degrades
+anything trying to recognise a voice.
+
+### The three features the classifier actually uses
+
+All three come out of `features()` in `aarti_audio.py`, and the labelled
+figures below are from the recordings in `aarti-sound/`.
+
+| Term | Plain meaning | Measured here |
+|---|---|---|
+| **Energy** | Total loudness - the 16 bins added up | Resting room 294 median (max 371); `FLOOR_ENERGY` 450; clap 2340 |
+| **Spectral centroid** | The balance point of the spectrum. Low = boomy, high = bright or hissy | Voice 2.32, clap 8.72, ghanta 8.75 |
+| **Spectral flatness** | Noise-like vs tone-like. Near 1 = broadband hiss, near 0 = a pure ringing tone | Ghanta 0.694 live, claps 0.839-0.887 |
+
+Centroid is what separates voice from everything else. Flatness is what tells
+the bell from the clap *early*, since their centroids are nearly identical
+(8.72 vs 8.75) - a bell is a tone, a clap is a burst of noise.
+
+**The centroid is a weighted mean bin *index*, not a frequency in Hz.** So
+`VOICE_CENTROID_MAX = 4.5` means bin 4.5, somewhere around 400-500Hz. Reading
+it as Hz is an easy and badly misleading mistake.
+
+**sampleRaw / sampleSmth** - the instantaneous level and a smoothed version.
+Squelch acts on `sampleRaw`. **This is a different scale from the energy
+above**, and confusing the two is the trap that made the 2026-09-18 dim-glow
+question hard to answer: squelch 40 and `FLOOR_ENERGY` 450 are not comparable
+numbers. `wled-audio-monitor.py` measures the first, `ambient-energy.py` the
+second.
+
+**FFT_MajorPeak / FFT_Magnitude** - the single loudest frequency present, and
+how strong that peak is.
+
+### Statistics shorthand used throughout
+
+**p90 / p95 / p99** - "90% of readings fell below this". Thresholds are set
+from percentiles rather than the maximum, because one freak spike should not
+define a floor. "Median 294, max 371" means a typical frame read 294 and the
+worst frame in 30s read 371.
+
+### Speaker identification (considered and closed - see PROJECTS.md)
+
+Not used by this project. Recorded because the terms appear in the backlog
+entry that evaluated giving each family member their own colour.
+
+**VAD** (voice activity detection) - a first pass finding which chunks contain
+a voice at all, so silence is not analysed.
+
+**Embedding, or voice print** - a neural net turning a few seconds of speech
+into a list of numbers (typically ~192) that captures *who* is speaking rather
+than what was said. **ECAPA-TDNN** and **x-vector** are the usual networks.
+
+**Enrollment** - recording each person once to build their reference print.
+
+**Cosine similarity** - how two embeddings are compared: the angle between
+them, 1 being identical and 0 unrelated. "Closest match" means taking the
+highest.
+
+**Open-set recognition** - deciding a voice is *nobody enrolled*, which needs
+a rejection threshold calibrated with **impostor data** (recordings of
+non-family). This is why a blanket "visitor" colour is harder than closest
+match, not easier.
+
+**Diarization** - working out who spoke when in a recording containing several
+people, which overlapping singing would require.
+
+**Jitter / shimmer** - small variations between one vocal cycle and the next,
+in pitch and in loudness. With breathiness these carry age - and they are
+exactly what 16 coarse 8-bit bins discard.
+
+**Mel bands** - frequency bands spaced the way hearing works, fine at the
+bottom and coarse at the top. Speaker ID normally wants 40-80 of them; this
+stream carries 16.
