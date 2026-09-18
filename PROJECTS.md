@@ -324,6 +324,30 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 **Next step:** pull the router DHCP table and Pi-hole client list, diff them against `docs/hardware.md`, and extend the file with the access columns above.
 
+### Ganapati 2027: solar system / general relativity decoration
+**Why:** next year's makhar theme, picked while this year's sound-reactive strip was still up. The solar system as spacetime curvature - planets orbiting in a warped grid - is a decoration and a physics demo at once, and it is the kind of thing visiting kids will actually queue up for. Noted 2026-09-18, roughly a year ahead, which is the point: this year's shortlist was decided partly by what could still arrive in time.
+
+**State:** idea only, nothing decided. Ganesh Chaturthi 2027 is around early September - confirm the date before planning backwards from it.
+
+**Three builds, and they combine well:**
+- **(A) The spandex gravity well.** Stretchy fabric over a hoop, a heavy mass in the middle, marbles rolled in to spiral around it. The classic, and the only one that is *interactive* - people will play with it for far longer than they will look at a light. Cheap (fabric, a hoop, ball bearings), no electronics at all, and it needs someone to re-launch marbles, which at a festival is a feature rather than a chore.
+- **(B) A WS2812 grid as the curved spacetime sheet.** Strips laid in a grid behind the makhar, rendered as a warped mesh with planets moving along their orbits, light bending near the sun, and a ripple when two masses merge. This is the one that reuses everything already learned: ESP32 + WLED, and the aarti Tier 3 renderer's shape (`aarti-render.py` streams every pixel over realtime UDP, with WLED's own boot preset as the fallback if xero is down). The work is the renderer, not the wiring.
+- **(C) Planets as glowing spheres, using the pixel strings.** WS2811 bullet-pixel strings are made for this: one pixel inside each ping-pong ball or frosted acrylic sphere, one data line for the whole set, each planet its own colour and brightness. Hangs in front of, or through, the grid in (B) and gives the display depth that a flat strip cannot.
+
+**Be honest about the physics, because someone will ask.** The rubber-sheet demo is the standard picture and it is *wrong* in an interesting way: it explains gravity by using gravity (the marbles fall because the Earth pulls them down), and what it really draws is closer to a potential well than curved spacetime. Two cheap additions fix it:
+- **A gravitational lens.** A shaped acrylic or glass lens - the base of a wine glass is the classic stand-in - held over a picture or over the LED grid distorts the image the way a real mass distorts light. That *is* general relativity, not an analogy, and it is the cheapest true demo of the three.
+- **A sign, and someone able to explain it.** "The sheet is an analogy; the light bending is the real thing" turns the flaw into the interesting part.
+
+**Constraints already known from this year:**
+- **Mains only, no UPS**, and the renderer on xero means the display dies if xero does - hence a WLED boot preset that stands on its own.
+- **Power budget:** current cap in software, strip power never through a breadboard or dupont wires, and size the supply from the pixel count (the aarti entry has the real numbers).
+- **Everything local.** Last year's build was the first fully cloud-free light in the house; keep that.
+- **A soldering iron, decent power supply and 2m of spare WS2812B are already owned,** so only the new parts count.
+
+**Rough shape of the spend:** the fabric-and-marbles half is a few hundred rupees. The lit half depends entirely on pixel count - a grid dense enough to read as a curved mesh is the one line that can quietly run into thousands, so decide the grid size early and price *that* before anything else. Pixel strings and spheres are the cheap, high-impact part.
+
+**Next step:** nothing until mid-2027. Then: fix the makhar size, decide the grid resolution, and price the pixel count. Order anything long-lead by July, which is the lesson from this year's shortlist.
+
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Why:** a wall clock that is simply always right, with no twice-a-year fiddling and no drift to correct by hand. Noted 2026-09-18.
 
