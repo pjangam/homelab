@@ -30,6 +30,25 @@ Two constraints behind those choices, both of which bite silently:
   *driven by* the ESP32 and will simply never appear if assigned to one - a
   dead-silent mic with no error anywhere.
 
+## The wiring, in one picture
+
+![Aarti lights wiring as built: an INMP441 I2S mic on GPIO32/25/33 with L/R to GND, an ESP32 running WLED 16.0.1 driving 180 WS2812B pixels from GPIO4 through a 470R, and a 5V 4A supply feeding the strip directly, sharing a common ground with the board.](wiring.svg)
+
+The same diagram with the current numbers, the mistakes that cost time on this
+build and the checks that isolate each fault: [`wiring.html`](wiring.html)
+(published at <https://claude.ai/artifact/9htRRMwTKPzQxMk5Fmqbmb>). Edit the
+diagram there, then regenerate the inline copy with
+`./projects/aarti-lights/make_wiring_svg.py`.
+
+The inline copy is a **standalone SVG with the light-theme colours baked in as
+literal hex, system fonts instead of webfonts, and an opaque panel behind the
+drawing**. That is deliberate: GitHub serves SVG in markdown through an `<img>`
+tag, which blocks external CSS and webfonts and honours `prefers-color-scheme`
+unreliably, so a diagram that themes itself renders as invisible text on some
+backgrounds. Baking one theme in and carrying its own background means it looks
+identical on a light and a dark page. Verified against `#ffffff` and GitHub's
+`#0d1117`.
+
 ## Phase 0 - firmware, no hardware attached (~1h, do this first)
 
 This is the phase that de-risks the whole project, because AudioReactive is a
