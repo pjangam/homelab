@@ -324,6 +324,35 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 **Next step:** pull the router DHCP table and Pi-hole client list, diff them against `docs/hardware.md`, and extend the file with the access columns above.
 
+### Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance
+**Why:** asked 2026-09-18 whether a big screen could be made into a wall clock with an ESP32. It can, but not any screen, and as a *clock alone* it loses to a ₹1500 shop clock. It only earns its place if it also shows what nothing else in the house shows at a glance: clawlight, healthcheck state, AC, power-on-battery.
+
+**First, what an ESP32 can actually drive.** No HDMI, ever - a TV or monitor needs a Pi or mini PC, not an ESP32. That leaves three kinds of screen:
+- **HUB75 LED matrix panels** - the right answer for a wall clock. Bright enough to read across a room in daylight, fast, and cheap per area. `ESP32-HUB75-MatrixPanel-I2S-DMA` drives them; a 64x64 P3 panel is 192x192mm, so two side by side is ~38cm wide, four in a square is ~38cm x 38cm.
+- **E-paper** - gorgeous, no glow, readable in sun, but refreshes in seconds, so a second hand is out and even a minute tick is a visible flash. It suits the **shopping list display** idea above far better than a clock, and a 7.5" 800x480 raw panel plus the ESP32 driver board lands around ₹6000-9000 - for a screen the size of a paperback.
+- **SPI/RGB LCDs** - 3.5" to 7", fine on a desk, not a wall.
+
+**Prices checked 2026-09-18** (Hubtronics, India, incl. GST): P3 64x64 panel **₹2269** (192x192mm), P2.5 64x64 **₹2899** (160x160mm, denser and smaller). Panels chain, so cost scales linearly with area.
+
+```parts
+qty | item | est | note
+2 | HUB75 P3 64x64 panel | 4540 | online (Hubtronics) - two side by side is ~38cm wide; four for a square, double this
+1 | ESP32 dev board | 400-600 | local - 13 signal lines to the panel; a HUB75 adapter board is optional tidiness
+1 | 5V 5A power supply | 500-800 | local - panels are rated 4A each at full white, but clock digits are sparse and draw far less
+1 | Frame + acrylic/diffuser | 500-1000 | local - a bare panel looks like a component, not a clock
+```
+
+**So ~₹6000-7000 for a two-panel build, ~₹11000 for four.**
+
+**Against the readymade options:**
+- **A big LED digital wall clock** is ₹1200-3000 (e.g. a 15.7" one with 4" digits, date and temperature). For *telling the time* it wins outright - cheaper, brighter, done. It will never show homelab state.
+- **A smart display** (Echo Show class, roughly ₹6000-15000) does far more, but it is cloud-tied and app-driven, the Tinxy problem again.
+- **An old tablet or spare monitor** is the cheapest real dashboard: a Pi or the tablet's own browser on the HA dashboard, ~₹0-2000 if the hardware exists. Glossy, needs charging or a cable, and looks like a screen rather than a clock.
+
+**Verdict to record:** if it is only a clock, buy one. Build the matrix only if it is a *homelab display* - the data is already there (`homelab/healthcheck/overall`, `clawlight/state`, the AC and power entities all publish over MQTT), so the work is a renderer, not plumbing. This overlaps two entries already here: **shopping list display** (which wants e-paper, not this) and **consolidated status dashboard** (which this would be the physical face of). Decide them together rather than buying two screens.
+
+**Next step:** none until the shape is decided - clock-first (buy one) or dashboard-first (build the matrix). If dashboard, start by listing what actually deserves wall space, since a 64x128 grid holds very little text.
+
 ### Ganapati 2027: solar system / general relativity decoration
 **Why:** next year's makhar theme, picked while this year's sound-reactive strip was still up. The solar system as spacetime curvature - planets orbiting in a warped grid - is a decoration and a physics demo at once, and it is the kind of thing visiting kids will actually queue up for. Noted 2026-09-18, roughly a year ahead, which is the point: this year's shortlist was decided partly by what could still arrive in time.
 
