@@ -328,7 +328,7 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 **Why:** asked 2026-09-18 whether a big screen could be made into a wall clock with an ESP32. It can, but not any screen, and as a *clock alone* it loses to a ₹1500 shop clock. It only earns its place if it also shows what nothing else in the house shows at a glance: clawlight, healthcheck state, AC, power-on-battery.
 
 **First, what an ESP32 can actually drive.** No HDMI, ever - a TV or monitor needs a Pi or mini PC, not an ESP32. That leaves three kinds of screen:
-- **HUB75 LED matrix panels** - the right answer for a wall clock. Bright enough to read across a room in daylight, fast, and cheap per area. `ESP32-HUB75-MatrixPanel-I2S-DMA` drives them; a 64x64 P3 panel is 192x192mm, so two side by side is ~38cm wide, four in a square is ~38cm x 38cm.
+- **HUB75 LED matrix panels** - the right answer for a wall clock. Bright enough to read across a room in daylight, fast, and cheap per area. `ESP32-HUB75-MatrixPanel-I2S-DMA` drives them; a 64x32 P3 panel is 192x96mm (about the footprint of a paperback) and a 64x64 is 192x192mm. Panels chain, so area scales linearly with cost.
 - **E-paper** - gorgeous, no glow, readable in sun, but refreshes in seconds, so a second hand is out and even a minute tick is a visible flash. It suits the **shopping list display** idea above far better than a clock, and a 7.5" 800x480 raw panel plus the ESP32 driver board lands around ₹6000-9000 - for a screen the size of a paperback.
   - **E-paper plus a small lamp, suggested 2026-09-18, is a better idea than it sounds.** E-paper is reflective, like paper: in a dark room it shows nothing at all, which is the usual reason it loses to a glowing display. A ~1W lamp over it fixes exactly that, and keeps what makes e-paper worth having - it stays paper-like by day and is lit only when someone is there. 1W continuous is ~0.7 kWh/month, around ₹5, so even left on it is nothing; on a PIR it is less.
   - **Wash it, don't spot it.** A single 1W LED aimed at a flat panel gives a hotspot and glare at the viewing angle. A short warm-white strip in an aluminium channel along the top, lipped forward like a picture light, lights it evenly - the same trick as a painting light, and it looks deliberate on a wall.
@@ -337,26 +337,23 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
   - **It does not fix the refresh limits** - still no seconds, still ghosting on a partial refresh. This makes e-paper viable *at night*, not suddenly a clock.
 - **SPI/RGB LCDs** - 3.5" to 7", fine on a desk, not a wall.
 
-**Prices checked 2026-09-18** (Hubtronics, India, incl. GST): P3 64x64 panel **₹2269** (192x192mm), P2.5 64x64 **₹2899** (160x160mm, denser and smaller). Panels chain, so cost scales linearly with area.
+**Prices checked 2026-09-18** (India, incl. GST): a 64x64 P3 panel is **₹2269** at Hubtronics (192x192mm), a 64x32 P3 panel is **₹600-1200** (192x96mm), and a MAX7219 4-in-1 red dot matrix (32x8) is about **₹260**.
+
+**The first version of this entry priced two 64x64 panels at ₹6000-7000, and that is not worth it** - rejected 2026-09-18. The cheap configurations are the ones to consider, and they only work because the aarti lights board and its 5V 4A supply are freed after the festival:
 
 ```parts
 qty | item | est | note
-2 | HUB75 P3 64x64 panel | 4540 | online (Hubtronics) - two side by side is ~38cm wide; four for a square, double this
-1 | ESP32 dev board | 400-600 | local - 13 signal lines to the panel; a HUB75 adapter board is optional tidiness
-1 | 5V 5A power supply | 500-800 | local - panels are rated 4A each at full white, but clock digits are sparse and draw far less
-1 | Frame + acrylic/diffuser | 500-1000 | local - a bare panel looks like a component, not a clock
+1 | HUB75 P3 64x32 panel | 600-1200 | online - 192x96mm, full colour, digits up to ~7cm tall
+1 | ESP32 dev board | 0-600 | reuse the aarti lights board; only a purchase if that stays in service
+1 | 5V 3-4A power supply | 0-600 | reuse the aarti supply; one sparse-content panel draws well under its rating
+1 | Frame + acrylic diffuser | 300-600 | local - a bare panel looks like a component, not a clock
 ```
 
-**So ~₹6000-7000 for a two-panel build, ~₹11000 for four.**
-
-**Against the readymade options:**
-- **A big LED digital wall clock** is ₹1200-3000 (e.g. a 15.7" one with 4" digits, date and temperature). For *telling the time* it wins outright - cheaper, brighter, done. It will never show homelab state.
-- **A smart display** (Echo Show class, roughly ₹6000-15000) does far more, but it is cloud-tied and app-driven, the Tinxy problem again.
-- **An old tablet or spare monitor** is the cheapest real dashboard: a Pi or the tablet's own browser on the HA dashboard, ~₹0-2000 if the hardware exists. Glossy, needs charging or a cable, and looks like a screen rather than a clock.
+**So ~₹1000-1800 built from freed parts, ~₹2500 buying everything new.** The even cheaper option is a **MAX7219 chain at ₹260-520 plus a board** - a 32x8 or 64x8 red ticker that scrolls time and one line of status for well under ₹1000. It is red-only, so it cannot use colour as the signal the way clawlight and the health LED do, and its digits are ~3cm tall against ~7cm on the panel.
 
 **Verdict to record:** if it is only a clock, buy one. Build the matrix only if it is a *homelab display* - the data is already there (`homelab/healthcheck/overall`, `clawlight/state`, the AC and power entities all publish over MQTT), so the work is a renderer, not plumbing. This overlaps two entries already here: **shopping list display** (which wants e-paper, not this) and **consolidated status dashboard** (which this would be the physical face of). Decide them together rather than buying two screens.
 
-**Next step:** none until the shape is decided - clock-first (buy one) or dashboard-first (build the matrix). If dashboard, start by listing what actually deserves wall space, since a 64x128 grid holds very little text.
+**Next step:** none until the shape is decided - clock-first (buy one) or dashboard-first (build the matrix). If dashboard, start by listing what actually deserves wall space, since a 64x32 grid holds very little text.
 
 ### Ganapati 2027: solar system / general relativity decoration
 **Why:** next year's makhar theme, picked while this year's sound-reactive strip was still up. The solar system as spacetime curvature - planets orbiting in a warped grid - is a decoration and a physics demo at once, and it is the kind of thing visiting kids will actually queue up for. Noted 2026-09-18, roughly a year ahead, which is the point: this year's shortlist was decided partly by what could still arrive in time.
