@@ -344,6 +344,25 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 **Next step:** pull the router DHCP table and Pi-hole client list, diff them against `docs/hardware.md`, and extend the file with the access columns above.
 
+### A clean HA dashboard, next to Overview rather than instead of it
+**Why:** the default **Overview** is rigid and cluttered (noted 2026-09-19). It is auto-generated, so it lists *every* entity - including diagnostics and the stale Tinxy devices that made up ~60% of unavailable entities while tuning the watchdog - and it cannot be curated without giving up the thing that makes it useful.
+
+**State:** idea only. HA is on **2026.9.2**, and there is already one custom dashboard (**Stats**, `dashboard-stats`), so the pattern exists.
+
+**Do not "take control" of Overview.** That is the tempting one-click option and it is a trap: the moment it is taken over it stops auto-adding new entities, so every future device has to be placed by hand, and going back means losing the layout. Leave it as the complete, ugly, always-current index it is good at being.
+
+**Build a second dashboard instead** - call it Home - and make it the default on the devices that want it (a dashboard can be set as default per device, so the phone and the desktop can differ). Overview stays one click away as the fallback.
+
+**What makes it clean, in this order:**
+- **Sections layout**, not the old masonry one. It is the current default in this HA version and it is what makes a hand-built dashboard look deliberate rather than stacked.
+- **Only what gets acted on:** the AC, white noise, the scenes, lights. Everything read-only-but-interesting already has a home on **Stats**, so this one does not need to repeat it.
+- **Nothing diagnostic, and nothing dead.** The stale Tinxy entities are the loudest source of clutter and they are their own backlog entry above - removing them from the account fixes this dashboard and every other view at once.
+- **A handful of badges** at the top for the two or three states worth knowing at a glance (power on battery, healthcheck overall).
+
+**Keep a tracked copy.** `HOMEASSISTANT_CONFIG/` is gitignored, so a UI-built dashboard exists only in `.storage/` and dies with the container. Two ways, both already used here: export the YAML from the raw configuration editor into the repo as the record, or write it from a script the way `projects/healthcheck/add_stats_dashboard_tile.py` already edits `.storage` (it keeps `.bak` copies, and those backups are the reason that approach is safe).
+
+**Next step:** list the entities actually touched in a normal week - that list *is* the dashboard. Then build it in the UI, and commit the exported YAML.
+
 ### Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance
 **Why:** asked 2026-09-18 whether a big screen could be made into a wall clock with an ESP32. It can, but not any screen, and as a *clock alone* it loses to a ₹1500 shop clock. It only earns its place if it also shows what nothing else in the house shows at a glance: clawlight, healthcheck state, AC, power-on-battery.
 
