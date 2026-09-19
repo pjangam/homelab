@@ -395,7 +395,14 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 **Keep a tracked copy.** `HOMEASSISTANT_CONFIG/` is gitignored, so a UI-built dashboard exists only in `.storage/` and dies with the container. Two ways, both already used here: export the YAML from the raw configuration editor into the repo as the record, or write it from a script the way `projects/healthcheck/add_stats_dashboard_tile.py` already edits `.storage` (it keeps `.bak` copies, and those backups are the reason that approach is safe).
 
-**Next step:** list the entities actually touched in a normal week - that list *is* the dashboard. Then build it in the UI, and commit the exported YAML.
+**Intended, not just noted (2026-09-19):** this one is meant to get built, in a session of its own rather than here.
+
+**Next step, in order:**
+1. **List the entities actually touched in a normal week** - that list *is* the dashboard, and it is the only input nobody else can supply.
+2. **Build it in the UI first,** in storage mode, where iterating on a Sections layout takes minutes instead of reload cycles.
+3. **Then export its YAML into the repo and switch that dashboard to YAML mode**, so it is tracked and survives a container rebuild. After the switch it is file-edit-and-reload, with no UI editing - that is the trade being accepted deliberately.
+
+Two decisions to settle while doing step 1: whether **Stats** stays a separate health view or folds into this one (two half-dashboards is the outcome to avoid), and which devices get it as their default, since that is per-device and the phone and desktop can differ.
 
 ### Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance
 **Why:** asked 2026-09-18 whether a big screen could be made into a wall clock with an ESP32. It can, but not any screen, and as a *clock alone* it loses to a ₹1500 shop clock. It only earns its place if it also shows what nothing else in the house shows at a glance: clawlight, healthcheck state, AC, power-on-battery.
