@@ -435,7 +435,7 @@ qty | item | est | note
 - **The 16-wide matrix (112) no longer fits.** A stacked one does: `HH` over `MM`, 6 columns by 11 rows = **66 pixels**, portrait instead of landscape, ~10cm wide and ~18cm tall.
 - **Measure the actual leftover before trusting any of this** - 120 pixels is inferred from the reel being 60/m, not counted.
 
-**The reason it will probably still collect dust** is effort, not strip: the fiddly part is all of it - cutting, joining, building a light-tight diffuser that makes pixels read as digits - while the pegboard clawlight is a smaller build with a clearer daily payoff. Kept here because it costs nothing to record and the pixel maths is the part nobody wants to redo.
+**Why this will sit here a long time, in the user's own words (2026-09-19): it is not a priority and it would not help day to day.** That is the honest reason, not effort and not parts - a clock is a solved problem in this house, and a nicer-looking one changes nothing about a day. Worth saying out loud so it is not picked up later on the assumption that something was blocking it. Recorded because it costs nothing to keep and the pixel maths is the part nobody wants to redo.
 
 **Verdict to record:** if it is only a clock, buy one. Build the matrix only if it is a *homelab display* - the data is already there (`homelab/healthcheck/overall`, `clawlight/state`, the AC and power entities all publish over MQTT), so the work is a renderer, not plumbing. This overlaps two entries already here: **shopping list display** (which wants e-paper, not this) and **consolidated status dashboard** (which this would be the physical face of). Decide them together rather than buying two screens.
 
