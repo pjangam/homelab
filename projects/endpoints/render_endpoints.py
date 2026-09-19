@@ -79,7 +79,17 @@ def render_endpoint(ep: dict, tailnet: str) -> str:
     out.append(f'<span class="badge {PROTO_CLASS.get(proto, "raw")}">{esc(proto, tailnet)}</span>')
     if "url" in ep:
         url = esc(ep["url"], tailnet)
-        out.append(f'<h3><a href="{url}">{esc(ep["name"], tailnet)}</a></h3>')
+        # Open web links in a new tab: this page is a jumping-off point kept on
+        # a bookmark, and navigating away from it in place means coming back
+        # through history every time.
+        #
+        # Only http(s) gets target=_blank. smb:// and ssh:// are handed to the
+        # OS rather than navigated to, so the page is not left behind anyway -
+        # and _blank on those opens a blank tab that never fills and never
+        # closes itself. rel=noopener because target=_blank without it hands
+        # the opened page a window.opener reference back to this one.
+        target = ' target="_blank" rel="noopener"' if url.startswith(("http://", "https://")) else ""
+        out.append(f'<h3><a href="{url}"{target}>{esc(ep["name"], tailnet)}</a></h3>')
     else:
         out.append(f'<h3>{esc(ep["name"], tailnet)}</h3>')
     out.append(f'<code class="addr">{address}</code>')
