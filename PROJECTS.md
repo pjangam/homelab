@@ -344,6 +344,22 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 **Next step:** pull the router DHCP table and Pi-hole client list, diff them against `docs/hardware.md`, and extend the file with the access columns above.
 
+### One page listing every endpoint we serve
+**Why:** there is no single place that answers "what is running here and where do I open it" (noted 2026-09-19). The endpoints are scattered - some behind Caddy on `xero.<tailnet>`, some on their own tailnet hostnames, some plain LAN ports, one on the Pi, one on an ESP32 - and the only way to find one is to remember it or grep the repo. A links page fixes the everyday case: open one bookmark, click the thing.
+
+**State:** idea only. The list itself is short and already known: HA (8123, own tailnet name), Pi-hole admin, Vaultwarden (`/` behind Caddy), ntfy (own tailnet name), clawlight (`/clawlight`), projects-ui (`/projects`), the Stats dashboard inside HA, Node-RED on the Pi, WLED on the ESP32, the Samba share, and Immich whenever it comes back.
+
+**Three ways, cheapest first:**
+- **(A) A static page served by Caddy.** Caddy already fronts `/projects` and `/clawlight` and proxies everything else to Vaultwarden at `/`. A hand-written `index.html` at its own path is a handful of lines, no new container, no RAM, and it lives in the repo as tracked config like the rest of `services/caddy/`. **Start here.**
+- **(B) Homer.** A static YAML-configured dashboard served by nginx - tiny (single-digit MB), config is one file that belongs in git, and it gives grouping, icons and a tidy look for roughly the effort of (A) plus a container.
+- **(C) gethomepage / Dashy.** Prettier, and they add live widgets: service up/down, Docker status, even Pi-hole and HA readouts. They are also Node apps in the 100-200MB range, which is real on a box with 8GB where Immich is parked for exactly that reason. Only worth it if the *status* half is wanted.
+
+**The status half may already exist elsewhere.** `healthcheck.sh` publishes per-check state to MQTT and HA renders it on the **Stats** dashboard, so a links page does not need to re-solve up/down. Worth deciding deliberately: either this page is a plain index (A or B) and Stats stays the health view, or it becomes the single front door (C) and Stats folds into it. Two half-dashboards would be the worst outcome.
+
+**Related, deliberately separate:** the **network device + access map** above is the private inventory - addresses, open ports, what auth guards what - and stays gitignored. This page is the opposite: the handful of links a person actually clicks, safe to serve behind Tailscale.
+
+**Next step:** write the endpoint list out of `docker-compose.yml`, the Caddyfile and `docs/hardware.md`, and decide whether it stays a static page or earns a container.
+
 ### A clean HA dashboard, next to Overview rather than instead of it
 **Why:** the default **Overview** is rigid and cluttered (noted 2026-09-19). It is auto-generated, so it lists *every* entity - including diagnostics and the stale Tinxy devices that made up ~60% of unavailable entities while tuning the watchdog - and it cannot be curated without giving up the thing that makes it useful.
 
