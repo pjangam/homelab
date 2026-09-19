@@ -1,0 +1,311 @@
+# Every endpoint this homelab serves - one machine-readable list, rendered into
+# the links page by render_endpoints.py. See README.md in this folder.
+#
+# WHY A DATA FILE AND NOT A HAND-WRITTEN index.html: the page has to stay in
+# step with docker-compose.yml, the Caddyfile and docs/hardware.md, and a
+# hand-edited HTML page drifts from those the first time a port moves. One
+# list, one rendering. If a second rendering is ever wanted (a terminal
+# `endpoints` command, a check that every port here is actually listening),
+# it reads this file too rather than re-deriving the list.
+#
+# WHAT MAY GO IN HERE: service names, protocols, ports, LAN addresses that
+# docker-compose.yml already publishes in the clear, and which process speaks
+# to what. That is the same exposure the repo already has.
+#
+# WHAT MAY NOT: credentials, and the tailnet suffix. Write `{tailnet}` and the
+# renderer substitutes TAILNET_SUFFIX from .env at render time - the rendered
+# site/ is gitignored for exactly that reason. The private half (which panels
+# have no auth, full device inventory) stays in the gitignored docs/hardware.md
+# and must not be copied here.
+#
+# FIELDS
+#   name    - what it is called
+#   proto   - badge on the page: https, http, mqtt, dns, smb, ssh, udp
+#   host    - hostname or LAN address ({tailnet} substituted at render time)
+#   port    - numeric port, or omitted where the scheme's default is the point
+#   url     - present = the page renders a clickable link. Omit for anything
+#             a browser cannot open (MQTT, WoL, the UDP feeds).
+#   connect - a copyable connection string for the non-clickable ones. This is
+#             the field that earns the page its keep: it is what otherwise gets
+#             re-derived from docker-compose.yml every single time.
+#   desc    - what it is, in one line
+#   who     - what actually depends on it. Answers "can I turn this off".
+#   note    - optional caveat
+#   topics  - optional list of "topic = who publishes/consumes it"
+
+[[group]]
+name = "Web pages"
+blurb = "Things a browser opens. Everything under xero is behind Caddy on one hostname; HA and ntfy have tailnet names of their own."
+
+  [[group.endpoint]]
+  name = "Vaultwarden"
+  proto = "https"
+  host = "xero.{tailnet}"
+  port = 443
+  url = "https://xero.{tailnet}/"
+  desc = "Password manager. Caddy's catch-all - anything not matched by /projects or /clawlight lands here."
+  who = "Browser extensions and the iOS app. Signups are disabled; existing accounts only."
+  note = "Also on the LAN at http://192.168.1.123:8080 with no TLS. Backed up nightly to Dropbox by projects/certs-backup/backup_vaultwarden.sh."
+
+  [[group.endpoint]]
+  name = "Projects dashboard"
+  proto = "https"
+  host = "xero.{tailnet}"
+  port = 443
+  url = "https://xero.{tailnet}/projects/"
+  desc = "Read-only rendering of PROJECTS.md. The repo root is bind-mounted read-only, so an edit shows on refresh with no rebuild."
+  who = "Nothing depends on it; it is a reading surface."
+  note = "Container projects-ui, published on 192.168.1.123:8125."
+
+  [[group.endpoint]]
+  name = "clawlight"
+  proto = "https"
+  host = "xero.{tailnet}"
+  port = 443
+  url = "https://xero.{tailnet}/clawlight"
+  desc = "Per-machine Claude session status light. Kept in Picture-in-Picture on the phone as an always-on-top light."
+  who = "Claude Code hooks on every wired machine POST to /clawlight/api/report; the phone and the Pi LED read the state."
+  note = "systemd --user unit clawlight-server on xero, port 8126. Not a container."
+
+  [[group.endpoint]]
+  name = "clawlight focus stream"
+  proto = "https"
+  host = "xero.{tailnet}"
+  port = 443
+  url = "https://xero.{tailnet}/clawlight/api/focus-stream"
+  desc = "Server-sent events. A Mac's focus agent holds this open and runs the tmux commands that jump iTerm to the clicked session."
+  who = "The launchd focus agent on each Mac, one connection per machine."
+  note = "Takes ?host=<its own hostname>. Opening it in a browser shows a stream that never closes - that is correct, not a hang."
+
+  [[group.endpoint]]
+  name = "Home Assistant"
+  proto = "https"
+  host = "ha.{tailnet}"
+  port = 443
+  url = "https://ha.{tailnet}/"
+  desc = "The house. Automations, the AC, scenes, white noise, the WLED board."
+  who = "Phone app, browser, and the webhook Watchtower posts its update report to."
+  note = "Runs host-networked on 192.168.1.123:8123; the tailnet name comes from the ha-tailscale sidecar, whose cert renews itself."
+
+  [[group.endpoint]]
+  name = "HA Stats dashboard"
+  proto = "https"
+  host = "ha.{tailnet}"
+  port = 443
+  url = "https://ha.{tailnet}/dashboard-stats"
+  desc = "The health view: per-check state from healthcheck.sh, published to MQTT every 15 minutes."
+  who = "This is deliberately where up/down lives - see the note at the foot of this page."
+
+  [[group.endpoint]]
+  name = "ntfy"
+  proto = "https"
+  host = "ntfy.{tailnet}"
+  port = 443
+  url = "https://ntfy.{tailnet}/"
+  desc = "Self-hosted push notifications. Three topics: clawlight, homelab-health, homelab-updates."
+  who = "The iOS ntfy app subscribes; healthcheck.sh, Watchtower and clawlight publish."
+  note = "The container binds 127.0.0.1:8127 only - publishers on xero use loopback, and everything else comes in over the tailnet. NTFY_BASE_URL must match the URL typed into the phone app exactly or iOS instant delivery breaks."
+
+  [[group.endpoint]]
+  name = "Pi-hole admin"
+  proto = "http"
+  host = "192.168.1.123"
+  port = 8081
+  url = "http://192.168.1.123:8081/admin"
+  desc = "DNS blocking, query log, upstream config."
+  who = "Opened by hand when something is being blocked that should not be."
+  note = "LAN only, plain HTTP. Not behind Caddy."
+
+  [[group.endpoint]]
+  name = "Node-RED"
+  proto = "http"
+  host = "192.168.1.124"
+  port = 1880
+  url = "http://192.168.1.124:1880/"
+  desc = "MirAIe AC integration, on the Pi rather than xero. Bridges MirAIe's cloud broker to Mosquitto here."
+  who = "Home Assistant sees the AC only through this. If it is down, the AC is unavailable in HA."
+  note = "Its MirAIe login lasts 84 days; xero's renew_miraie_login.sh restarts it at day 70. watchdog_nodered.sh restarts it if the MQTT links drop."
+
+  [[group.endpoint]]
+  name = "WLED"
+  proto = "http"
+  host = "192.168.1.125"
+  url = "http://192.168.1.125/"
+  desc = "The aarti-lights ESP32's own web UI - presets, segments, the audioreactive settings."
+  who = "HA's WLED integration, and hands-on tuning."
+  note = "Also at http://wled-sound.local via mDNS. Mains only, no UPS - it does not come back by itself after an outage."
+
+  [[group.endpoint]]
+  name = "This page"
+  proto = "https"
+  host = "xero.{tailnet}"
+  port = 443
+  url = "https://xero.{tailnet}/endpoints/"
+  desc = "Served by Caddy straight off disk from projects/endpoints/site/."
+  who = "You, once."
+
+  [[group.endpoint]]
+  name = "Immich"
+  proto = "http"
+  host = "192.168.1.123"
+  port = 2283
+  desc = "Photos. Commented out in docker-compose.yml - 8GB of RAM is not enough to run it alongside everything else."
+  who = "Nothing. Listed so the port is not handed to something else."
+  note = "Parked, not removed. The library is safe on datapool/immich-upload."
+
+[[group]]
+name = "MQTT"
+blurb = "One broker, and the thing most of the house actually runs on. Not clickable from anywhere - the connection string is the endpoint."
+
+  [[group.endpoint]]
+  name = "Mosquitto"
+  proto = "mqtt"
+  host = "192.168.1.123"
+  port = 1883
+  connect = "mosquitto_sub -h 192.168.1.123 -p 1883 -u homelab -P \"$MQTT_PASSWORD\" -t '#' -v"
+  desc = "The broker. Authenticated - allow_anonymous is false, user homelab, password in .env.mqtt."
+  who = "Home Assistant, Node-RED on the Pi, the white-noise and volume bridges, the healthcheck publisher, clawlight's server and the Pi's LED, and both sets of GPIO buttons."
+  note = "No TLS: it is LAN-only and the password is the whole of the auth. Published on the host, which is how the Pi reaches it."
+
+    [[group.endpoint.topic]]
+    name = "clawlight/state"
+    desc = "Retained. Current light colour. The Pi's LED subscribes and gets the current state replayed the moment it connects."
+
+    [[group.endpoint.topic]]
+    name = "clawlight/availability"
+    desc = "Retained, with a last-will. Goes to offline by itself if the clawlight server dies, which is how the LED knows to stop trusting the state above."
+
+    [[group.endpoint.topic]]
+    name = "homelab/healthcheck/#"
+    desc = "One subtopic per check, plus /attributes. Written every 15 minutes by healthcheck.sh; this is what the HA Stats dashboard renders."
+
+    [[group.endpoint.topic]]
+    name = "whitenoise/set, /state, /available"
+    desc = "The white-noise switch on xero, bridged by white-noise-mqtt.service."
+
+    [[group.endpoint.topic]]
+    name = "volume/set, /state, /available"
+    desc = "Server volume as an HA number, bridged by volume-mqtt.service."
+
+    [[group.endpoint.topic]]
+    name = "homeassistant/#"
+    desc = "HA's MQTT discovery tree. The bridges above publish retained configs here, which is why their entities survive an HA restart."
+
+    [[group.endpoint.topic]]
+    name = "white_noise_buttons/start|stop/pressed"
+    desc = "The Pi's GPIO17 and GPIO18 push buttons."
+
+    [[group.endpoint.topic]]
+    name = "scene_buttons/oju_sleep|oju_awake/pressed"
+    desc = "GPIO27 and GPIO22 on the Pi. The service runs but no buttons are attached."
+
+[[group]]
+name = "Network services"
+blurb = "The ones nobody thinks of as endpoints until they break."
+
+  [[group.endpoint]]
+  name = "DNS (Pi-hole)"
+  proto = "dns"
+  host = "192.168.1.123"
+  port = 53
+  connect = "dig @192.168.1.123 example.com"
+  desc = "TCP and UDP. Listening mode is all, because Pi-hole sits on Docker's bridge network."
+  who = "Every device the router hands this address to - which is the whole LAN."
+  note = "The outage nobody diagnoses as DNS at first. If xero is down, name resolution is down with it."
+
+  [[group.endpoint]]
+  name = "phone-uploads (SMB)"
+  proto = "smb"
+  host = "192.168.1.123"
+  port = 445
+  url = "smb://192.168.1.123/phone-uploads"
+  connect = "smb://192.168.1.123/phone-uploads"
+  desc = "iPhone video drop zone on datapool/phone-uploads. Everything written lands owned by uid 1000 whichever login wrote it."
+  who = "The phone, offloading video to free up storage."
+  note = "Port 139 is published too, for older clients. The smb:// link opens Finder on a Mac and the Files app on iOS."
+
+  [[group.endpoint]]
+  name = "SSH - xero"
+  proto = "ssh"
+  host = "192.168.1.123"
+  port = 22
+  url = "ssh://192.168.1.123"
+  connect = "ssh 192.168.1.123"
+  desc = "The homelab server itself. Where docker compose, the cron jobs and the systemd --user units live."
+  who = "Hands, and the deploy scripts in scripts/ that push to the Pi from here."
+
+  [[group.endpoint]]
+  name = "SSH - wol-sender (Pi)"
+  proto = "ssh"
+  host = "192.168.1.124"
+  port = 22
+  url = "ssh://192.168.1.124"
+  connect = "ssh 192.168.1.124"
+  desc = "The Pi. Node-RED, the GPIO buttons, the clawlight LED, and the WoL sender."
+  who = "Hands, and xero's renew_miraie_login.sh."
+  note = "Key-only - password auth is off, and rpcbind is disabled."
+
+[[group]]
+name = "Not services at all"
+blurb = "Packets with a direction and no listener, or a listener that never answers. There is nothing to open here - the point is that these exist and where they point."
+
+  [[group.endpoint]]
+  name = "Wake-on-LAN"
+  proto = "udp"
+  host = "192.168.1.255"
+  port = 9
+  connect = "wakeonlan -i 192.168.1.255 <xero-mac>"
+  desc = "A magic packet at the broadcast address. Nothing listens; xero's NIC wakes on the pattern while the machine is off."
+  who = "The Pi's wol-xero.service, fired on every Pi boot - which is how xero comes back after a power cut."
+  note = "The endpoint is a direction, not a service. There is no way to test it other than letting xero sleep."
+
+  [[group.endpoint]]
+  name = "WLED realtime (DRGB)"
+  proto = "udp"
+  host = "192.168.1.125"
+  port = 21324
+  connect = "UDP 192.168.1.125:21324, DRGB - byte 0 = 2, byte 1 = timeout, then RGB per LED"
+  desc = "Pixel data straight at the strip, bypassing WLED's own effects entirely."
+  who = "aarti-lights.service on xero, the Tier 3 renderer. If it stops, WLED falls back to its own Gravimeter boot preset."
+  note = "Write-only. WLED does not answer on this port."
+
+  [[group.endpoint]]
+  name = "WLED audio sync"
+  proto = "udp"
+  host = "239.0.0.1"
+  port = 11988
+  connect = "UDP multicast 239.0.0.1:11988 - join the group, do not just bind the port"
+  desc = "The ESP32's INMP441 mic, broadcasting FFT bins and a smoothed level 20-40 times a second."
+  who = "The aarti-lights renderer and the sound-lab tools on xero listen; the ESP32 publishes whether or not anything is."
+  note = "Multicast: binding the port alone receives nothing, the group membership has to be joined."
+
+[[group]]
+name = "Tailnet names"
+blurb = "Three names, three different ways of getting a certificate. Worth knowing which is which the next time one expires."
+
+  [[group.endpoint]]
+  name = "xero.{tailnet}"
+  proto = "https"
+  host = "xero.{tailnet}"
+  port = 443
+  desc = "Caddy, with auto_https off, serving static cert files out of certs/."
+  who = "Vaultwarden, /projects, /clawlight and this page."
+  note = "These certs do NOT renew themselves. renew_certs.sh runs weekly from xero's cron - that job is the only thing standing between this name and an expiry."
+
+  [[group.endpoint]]
+  name = "ha.{tailnet}"
+  proto = "https"
+  host = "ha.{tailnet}"
+  port = 443
+  desc = "The ha-tailscale sidecar, in userspace mode, proxying to HA over the LAN."
+  who = "Home Assistant."
+  note = "tailscale serve provisions and renews this cert itself inside the container's state volume. Nothing to maintain."
+
+  [[group.endpoint]]
+  name = "ntfy.{tailnet}"
+  proto = "https"
+  host = "ntfy.{tailnet}"
+  port = 443
+  desc = "The ntfy-tailscale sidecar, proxying to the ntfy container over the compose network."
+  who = "ntfy, and the phone's instant delivery."
+  note = "Same self-renewing cert as ha. The sidecar must reach ntfy by the alias ntfy-server, not ntfy - that name resolves to the sidecar itself."

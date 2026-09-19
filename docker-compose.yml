@@ -196,6 +196,17 @@ services:
     volumes:
       - ./services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ./certs:/certs:ro
+      # The endpoint index (PROJECTS.md "One page listing every endpoint we
+      # serve"), served straight off disk by the /endpoints handle in the
+      # Caddyfile - no container of its own, which is the whole point of
+      # picking a static page over Homer or gethomepage.
+      #
+      # This mounts the RENDERED site/, which is gitignored: it is generated
+      # from projects/endpoints/endpoints.toml by render_endpoints.py and
+      # carries the tailnet suffix. So a fresh clone has an empty directory
+      # here and /endpoints 404s until the render is run. Directory mount, not
+      # a single-file one, for the same inode reason projects-ui documents.
+      - ./projects/endpoints/site:/srv/endpoints:ro
       - caddy_data:/data
       - caddy_config:/config
     restart: unless-stopped

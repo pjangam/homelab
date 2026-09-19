@@ -28,3 +28,7 @@ esp32/wol_on_boot/.pio/
 .env.clawlight
 # tools/diagrams/render.sh output, throwaway screenshots
 *-render/
+# Rendered endpoint index - generated from projects/endpoints/endpoints.toml by
+# render_endpoints.py, and carries the tailnet suffix that the TOML deliberately
+# leaves as a placeholder. Regenerate it, do not commit it.
+projects/endpoints/site/

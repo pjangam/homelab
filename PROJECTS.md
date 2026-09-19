@@ -360,36 +360,6 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 **Next step:** write it as `clawlight/setup-clawlight-hooks.sh`, driven by the same ten-event list the README documents, and use the personal MacBook as its first real test.
 
-### One page listing every endpoint we serve
-**Why:** there is no single place that answers "what is running here and where do I open it" (noted 2026-09-19). The endpoints are scattered - some behind Caddy on `xero.<tailnet>`, some on their own tailnet hostnames, some plain LAN ports, one on the Pi, one on an ESP32 - and the only way to find one is to remember it or grep the repo. A links page fixes the everyday case: open one bookmark, click the thing.
-
-**State:** idea only.
-
-**It has to cover more than HTTP (2026-09-19).** Most endpoints are web pages, but the ones that bite are the others - the protocol, port and *who speaks it* are exactly what gets re-derived from the compose file every time. The full set:
-- **HTTP:** HA (8123, own tailnet name) and the Stats dashboard inside it · Vaultwarden (`/` behind Caddy) · clawlight (8126, `/clawlight`, plus its `/api/focus-stream` SSE) · projects-ui (8125, `/projects`) · ntfy (loopback 8127, own tailnet name) · Pi-hole admin · Node-RED on the Pi · WLED's web UI on the ESP32 · Immich when it returns.
-- **MQTT** - Mosquitto on 1883, authenticated, and the one every device actually depends on: HA, Node-RED, the white-noise and volume bridges, the healthcheck publisher, the clawlight LED. Its *topics* are endpoints too (`clawlight/state`, `homelab/healthcheck/#`, the three ntfy topics).
-- **DNS** - Pi-hole on 53, the one outage nobody diagnoses as DNS at first.
-- **SMB** - the `phone-uploads` share on 445.
-- **SSH** - xero and the Pi, key-only on the Pi.
-- **WoL** - a UDP magic packet to the broadcast address on port 9. Not a service at all: nothing listens, and the "endpoint" is a direction.
-- **WLED realtime** - DRGB over UDP 21324, plus the audio-sync multicast group.
-- **Tailscale** - the tailnet names that front HA, ntfy and xero.
-
-**Some of those are clickable and some are not,** which shapes the page: `smb://` and `ssh://` open the right app on a Mac or phone, while MQTT, WoL and the UDP ones can only be *shown* - host, port, protocol, what speaks it, and a copyable connection string. A page that pretends everything is a link would be worse than a table.
-
-**One list, two renderings.** The sensible way to avoid this drifting from the network map above: keep a single machine-readable list in the repo (service, protocol, host, port, what uses it) and render the links page from it. Ports and service names are already tracked - `docker-compose.yml` and the Caddyfile hold them - so this adds no exposure. The sensitive half (which panels lack auth, device addresses, credentials) stays in the gitignored map and never goes on the page.
-
-**Three ways, cheapest first:**
-- **(A) A static page served by Caddy.** Caddy already fronts `/projects` and `/clawlight` and proxies everything else to Vaultwarden at `/`. A hand-written `index.html` at its own path is a handful of lines, no new container, no RAM, and it lives in the repo as tracked config like the rest of `services/caddy/`. **Start here.**
-- **(B) Homer.** A static YAML-configured dashboard served by nginx - tiny (single-digit MB), config is one file that belongs in git, and it gives grouping, icons and a tidy look for roughly the effort of (A) plus a container.
-- **(C) gethomepage / Dashy.** Prettier, and they add live widgets: service up/down, Docker status, even Pi-hole and HA readouts. They are also Node apps in the 100-200MB range, which is real on a box with 8GB where Immich is parked for exactly that reason. Only worth it if the *status* half is wanted.
-
-**The status half may already exist elsewhere.** `healthcheck.sh` publishes per-check state to MQTT and HA renders it on the **Stats** dashboard, so a links page does not need to re-solve up/down. Worth deciding deliberately: either this page is a plain index (A or B) and Stats stays the health view, or it becomes the single front door (C) and Stats folds into it. Two half-dashboards would be the worst outcome.
-
-**Related, deliberately separate:** the **network device + access map** above is the private inventory - addresses, open ports, what auth guards what - and stays gitignored. This page is the opposite: the handful of links a person actually clicks, safe to serve behind Tailscale.
-
-**Next step:** write the endpoint list out of `docker-compose.yml`, the Caddyfile and `docs/hardware.md`, and decide whether it stays a static page or earns a container.
-
 ### A clean HA dashboard, next to Overview rather than instead of it
 **Why:** the default **Overview** is rigid and cluttered (noted 2026-09-19). It is auto-generated, so it lists *every* entity - including diagnostics and the stale Tinxy devices that made up ~60% of unavailable entities while tuning the watchdog - and it cannot be curated without giving up the thing that makes it useful.
 
@@ -655,6 +625,30 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 ---
 
 ## ✅ Done
+
+### One page listing every endpoint we serve
+**Why:** there was no single place answering "what is running here and where do I open it" (noted 2026-09-19). The endpoints were scattered - some behind Caddy on `xero.<tailnet>`, some on their own tailnet hostnames, some plain LAN ports, one on the Pi, one on an ESP32 - and the only way to find one was to remember it or grep the repo.
+
+**Shipped 2026-09-19 at `https://xero.<tailnet>/endpoints/`. 23 endpoints, 5 groups.** Option (A) from the original entry - a static page served by Caddy - and it stayed there: no new container, no RAM.
+
+**What it is:** `projects/endpoints/endpoints.toml` is the single machine-readable list (service, protocol, host, port, what speaks it), `render_endpoints.py` renders it to `site/index.html`, and Caddy's new `/endpoints` handle serves that directory off disk via a read-only bind mount. Setup and editing rules: `projects/endpoints/README.md`.
+
+**It covers more than HTTP, which was the point.** Web pages are the easy half; the ones that bite are MQTT (the broker *and* its topics), DNS, SMB, SSH, the WoL magic packet, and WLED's two UDP feeds. Anything a browser cannot open carries a **copyable connection string** instead of a link - that field is what stops the `mosquitto_sub` line and the DRGB packet layout being re-derived from `docker-compose.yml` every time.
+
+**Design decisions worth keeping:**
+- **TOML, not YAML or JSON.** `tomllib` is in the standard library from Python 3.11 (xero is on 3.12), **pyyaml is not installed here**, and a links page does not justify a dependency. JSON was out because the data file wanted comments as much as any other config in this repo.
+- **The rendered page is gitignored, the list is not.** `endpoints.toml` writes `{tailnet}` wherever the tailnet suffix belongs and the renderer substitutes it from `.env`, so the source stays safe to track and the output never enters git. Same split as `services/tailscale/`'s template - the difference is that one's output carries no secret, so it *is* tracked. **Consequence: a fresh clone 404s on `/endpoints` until the render is run.** That is documented in three places (the Caddyfile block, the compose mount, the README) because it is the one surprise this design buys.
+- **`uri strip_prefix` plus a trailing-slash redirect**, unlike the `/projects` and `/clawlight` handles which keep their prefix intact. There is no app behind this one to route on the prefix - just an `index.html` - and without the redirect `/endpoints` strips to an empty path that `file_server` has no `/` to resolve against. The same redirect `projects-ui`'s nginx.conf does, for the same reason.
+- **No up/down on it, deliberately.** `healthcheck.sh` already publishes per-check state to MQTT and HA renders it on **Stats**. This page is the index; Stats is the health view. That decision is what kept it a static page rather than gethomepage or Dashy - those are Node apps in the 100-200MB range whose draw is precisely the status half that already exists, on a box where Immich is parked for exactly that reason.
+- **Kept apart from the private inventory on purpose.** Ports, protocols and the LAN addresses `docker-compose.yml` already publishes in the clear go on the page; credentials, full device specs and which panels lack auth stay in the gitignored `docs/hardware.md`.
+
+**It is now part of the definition of done (added 2026-09-19, at the user's ask).** A links page that nobody updates is worse than no page, so closing any project that serves something requires listing it in `endpoints.toml` first - a new rule in `CLAUDE.md`, deliberately shaped like the `docs/hardware.md` rule next to it, with `tools/repo-tools/check_endpoints_toml.sh` as the check. That script lists every host port `docker-compose.yml` publishes and every Caddyfile path the TOML does not mention. It reads the tracked config rather than the live machines, so it runs on any clone with no `.env` and no ssh - and so it is blind to the systemd `--user` units (clawlight on 8126), the Pi and the ESP32, which is called out in its header, its README row and the rule itself.
+
+**Verified:** `caddy adapt` on the real Caddyfile produces the expected route order (`/projects` -> `/clawlight` -> `/endpoints` -> Vaultwarden catch-all), and the page was screenshotted at desktop and phone widths in light and dark via `tools/diagrams/render.sh`'s Playwright image. The check script was negative-tested (a fake loopback-bound `127.0.0.1:9999:80` and a fake `/grafana` handle), which is what caught its first version silently reading `1` out of `127.0.0.1:8127:80` and never checking ntfy's port at all.
+
+**Left to do:** it has not been served yet - the Caddyfile change, the compose mount and the first `render_endpoints.py` run still have to land on xero (`git pull`, render, `docker compose up -d caddy`). Nothing enforces that the list matches reality either; when a port moves, `endpoints.toml` is part of that work the way `docs/hardware.md` is.
+
+**One portability snag found on the way, not fixed:** `tools/diagrams/render.sh` uses `realpath -m`, which is GNU-only, so it cannot run on a Mac. Left alone as unrelated to this work - the underlying docker command was run by hand instead.
 
 ### A flashy colour for the toddler when she makes a noise
 **Why:** the Tier 3 renderer already tells a ghanta from a clap from a voice (see "Sound-reactive aarti lights" in ✅ Done). The question was whether it can tell *whose* voice and give each person a colour - but the value is not evenly spread. Scoped down 2026-09-18 by the user, and the scoping is the most useful thing in this entry: **the 1-year-old getting her own flashy colour is the whole point, and everything else is good-to-have.** That is a happy accident, because she is by a distance the easiest of the four to detect and the only one whose case survives a room full of people singing. Build her band first and stop there if the rest never happens.

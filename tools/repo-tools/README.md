@@ -7,6 +7,7 @@ Scripts about this repo itself.
 | `find_script_references.sh [NAME]` | everything that refers to a script - in the repo and in the places `git grep` never sees |
 | `rewrite_paths.py OLD=NEW ...` | rewrites repo paths across every tracked file for a move (dry run unless `--apply`) |
 | `check_hardware_md.sh` | drift check for `docs/hardware.md` |
+| `check_endpoints_toml.sh` | drift check for `projects/endpoints/endpoints.toml` |
 | `convert_apple_to_bitwarden.py` | one-off password export conversion |
 
 ## Before moving or renaming a file
