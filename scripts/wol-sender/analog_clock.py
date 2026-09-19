@@ -21,6 +21,7 @@ FACE = (0.07, 0.07, 0.08)
 TICK = (0.55, 0.55, 0.58)
 HAND = (0.93, 0.93, 0.95)
 SECOND = (1.0, 0.42, 0.18)
+NUMBER = (0.78, 0.78, 0.80)
 TEXT = (0.45, 0.45, 0.48)
 
 # Ignore input for this long after opening, so the event that triggered the
@@ -61,6 +62,18 @@ def draw(widget, cr):
         cr.move_to(cx + math.sin(a) * inner, cy - math.cos(a) * inner)
         cr.line_to(cx + math.sin(a) * r * 0.95, cy - math.cos(a) * r * 0.95)
         cr.stroke()
+
+    cr.select_font_face("Sans", 0, 0)
+    cr.set_font_size(r * 0.13)
+    cr.set_source_rgb(*NUMBER)
+    for n in range(1, 13):
+        a = n * math.pi / 6
+        label = str(n)
+        ext = cr.text_extents(label)
+        x = cx + math.sin(a) * r * 0.69
+        y = cy - math.cos(a) * r * 0.69
+        cr.move_to(x - ext.width / 2 - ext.x_bearing, y - ext.height / 2 - ext.y_bearing)
+        cr.show_text(label)
 
     t = time.localtime()
     sec = t.tm_sec

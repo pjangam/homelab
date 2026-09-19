@@ -6,6 +6,7 @@
 # Installed by deploy_clock_screensaver.sh.
 IDLE_SECONDS=300
 CLOCK="$HOME/analog_clock.py"
+# [a]: stop pgrep matching the sh -c line that runs it.
 
 exec swayidle timeout "$IDLE_SECONDS" \
-    "pgrep -f '$CLOCK' >/dev/null || python3 '$CLOCK' &"
+    "pgrep -f '[a]nalog_clock.py' >/dev/null || python3 '$CLOCK' &"
