@@ -95,11 +95,11 @@ prompt (which set `input_needed` via `PermissionRequest`) has no dedicated
 "resolved" hook, so nothing flipped the state back once Claude resumed - the
 next tool call succeeding is the natural "I'm working again" signal instead.
 
-(Set up via the `update-config` skill rather than hand-edited, to keep the
-hooks JSON schema correct. Hooks are only loaded when a session starts, so
-changes take effect on the *next* new session, never the one that made them -
-`PostToolUse` is the one exception, since its own next firing is itself the
-proof it works.)
+(Written by `setup-clawlight-hooks.sh` - see "Setup on another machine", it
+works here too and defaults to the local server - rather than hand-edited, so
+the JSON schema stays correct and no event ends up sending the wrong state.
+Hooks are read when a session starts, so changes generally take effect on the
+*next* new session rather than the one that made them.)
 
 ## Setup on another machine (e.g. the MacBook)
 
@@ -107,29 +107,45 @@ proof it works.)
    installed. A clone, not copies: `git pull` is then the whole deploy, where
    scp'd copies made "committed on xero" and "running on the Mac" two
    different things (three debugging rounds went on stale copies, 2026-09-09).
-2. Set `CLAWLIGHT_SERVER_URL` (xero's tailnet URL) and, if `hostname` reports
-   something unhelpful on that machine (e.g. a DHCP-style name), a friendly
-   `CLAWLIGHT_HOST_NAME` too:
+2. Wire the ten hooks into that machine's global `~/.claude/settings.json`,
+   from the clone, with the name you want this machine to show up as:
    ```bash
-   export CLAWLIGHT_SERVER_URL=https://xero.<your-tailnet-suffix>
-   export CLAWLIGHT_HOST_NAME=mac
+   bash ~/code/homelab/clawlight/setup-clawlight-hooks.sh --host mbp19 --dry-run
+   bash ~/code/homelab/clawlight/setup-clawlight-hooks.sh --host mbp19 \
+        --server https://xero.<your-tailnet-suffix>
    ```
-3. Wire the same ten hooks in that machine's global `~/.claude/settings.json`,
-   pointing at the clone's `clawlight/set-status.sh`. Hook commands don't source
-   your shell profile, so embed both env vars directly in each command
-   instead of relying on step 2's exports, e.g.:
-   ```
-   CLAWLIGHT_SERVER_URL=https://xero.<your-tailnet-suffix> CLAWLIGHT_HOST_NAME=mac /path/to/set-status.sh active
-   ```
-   The state argument for each event must match the list above - in
-   particular `Notification`/`PermissionRequest` → `input_needed`, not
-   `waiting`. That one is worth checking after any change here, because
-   getting it wrong fails silently: the light still works, the machine just
-   never sends a push (done on the MacBook 2026-09-10).
+   It writes all ten with the right state per event, embedding
+   `CLAWLIGHT_SERVER_URL` and `CLAWLIGHT_HOST_NAME` in each command - hook
+   commands don't source your shell profile, so exporting them in a profile is
+   not enough. It backs `settings.json` up, leaves any non-clawlight hooks
+   alone, and is re-runnable: it strips the old set-status.sh hooks before
+   writing, so a second run re-points paths rather than duplicating hooks.
+   `--server` defaults to whatever the existing hooks already use, so a re-run
+   to rename the host needs only `--host`.
+
+   **It checks the server is reachable before writing, and afterwards proves
+   the report actually arrived** rather than saying "done". Both matter
+   because every failure on this path is silent by design - `set-status.sh`
+   swallows errors so a network hiccup can't break a Claude Code turn, so a
+   wrong URL looks exactly like nothing happening. The same goes for the state
+   per event: `Notification`/`PermissionRequest` → `input_needed`, not
+   `waiting`. Getting that one wrong leaves the light working perfectly while
+   the machine never sends a push, ever (hand-wired wrong on the MacBook,
+   found 2026-09-10 - which is why this is a script now and not a list to copy
+   by hand).
+
+3. Pick a host label that says which machine it is. The light shows
+   `host/label` per session and the PiP bar renders it as small rotated text,
+   so short and distinct beats descriptive: `xero`, `mac` (the M2), `mbp19`
+   (the 2019 Intel 16", onboarded 2026-09-19). `--host` defaults to
+   `hostname`, which on a Mac is a DHCP-style
+   `Pramods-MacBook-Pro.local` - worth overriding.
 
 4. Install the focus agent, so the light can jump you to a console on this
    machine (see "Jumping to the console that needs you"). Run this **on the
-   Mac**, from the clone - it points every clawlight hook at the clone's
+   Mac**, from the clone, and **after step 2** - it reads the hooks step 2
+   wrote rather than taking the server and host again, and refuses to run if
+   they aren't there. It re-points every clawlight hook at the clone's
    `set-status.sh` (backing up `settings.json` first, and warning about any
    event whose hook is missing or sends the wrong state), detects the
    terminal's AppleScript name, then writes and loads the launchd plist for the
