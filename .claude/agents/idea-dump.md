@@ -62,7 +62,9 @@ These recur, and an entry that ignores them gets rebuilt later:
   last-will or a protocol timeout, so stale reads as "unknown", not "fine".
 - **Inventory what is already at hand before pricing anything.** An idea that
   needs a board and a 5V supply may need nothing bought at all. Check, in
-  order: the **Parts on hand** section of `docs/hardware.md`; the ` ```parts `
+  order: the **Parts on hand** and **Idle hardware** sections of
+  `docs/hardware.md` (spare laptops sit there - one of them is also a free
+  screen, which is worth remembering before pricing a display); the ` ```parts `
   blocks and **What shipped / Spend** lines of Done entries, which record what
   was bought, what was found at home and what turned out never to be needed;
   and devices that free up on a date (the aarti ESP32 and its 5V 4A supply
