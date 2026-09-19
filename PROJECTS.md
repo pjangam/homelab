@@ -424,6 +424,14 @@ qty | item | est | note
 
 **So ~₹1000-1800 built from freed parts, ~₹2500 buying everything new.** The even cheaper option is a **MAX7219 chain at ₹260-520 plus a board** - a 32x8 or 64x8 red ticker that scrolls time and one line of status for well under ₹1000. It is red-only, so it cannot use colour as the signal the way clawlight and the health LED do, and its digits are ~3cm tall against ~7cm on the panel.
 
+**The zero-cost option: digits built from the leftover WS2812B (recorded 2026-09-19, and honestly the least likely to get built).** The aarti reel is 60 LEDs/m, so the ~2m spare is about 120 pixels. Two layouts fit:
+- **True seven-segment** - 3 pixels per segment, 21 per digit, 4 digits plus a 2-pixel colon = **86 pixels** (~1.4m), digits ~10cm tall. At 4 px/segment it is 114 pixels, which fits 2m with nothing spare.
+- **Zigzag matrix** - 7 rows of 16 laid behind a diffuser, **112 pixels**, ~27cm x 10cm, digits drawn in software with a 3x5 font, ~7cm tall.
+
+**The matrix is the better build despite using more pixels:** 6 cut-and-solder joints against ~27 for the segment version (each 3 wires, so 80-odd joints), one sheet of diffuser instead of a divider per segment, and it can show anything - icons, scrolling text - rather than only digits. It also reuses the aarti renderer's exact shape. Cap brightness in software: 112 pixels at full white would pull ~6.7A, digits at a sane level closer to 0.8A.
+
+**Two reasons it will probably collect dust, said plainly:** the fiddly part is all of it (cutting, joining, building a light-tight diffuser that makes pixels read as digits), and **the same 2m of strip is already spoken for by the pegboard clawlight above** - which is a smaller build with a clearer daily payoff. If both are ever wanted, one of them needs new strip. Kept here because it costs nothing to record and the pixel maths is the part nobody wants to redo.
+
 **Verdict to record:** if it is only a clock, buy one. Build the matrix only if it is a *homelab display* - the data is already there (`homelab/healthcheck/overall`, `clawlight/state`, the AC and power entities all publish over MQTT), so the work is a renderer, not plumbing. This overlaps two entries already here: **shopping list display** (which wants e-paper, not this) and **consolidated status dashboard** (which this would be the physical face of). Decide them together rather than buying two screens.
 
 **Next step:** none until the shape is decided - clock-first (buy one) or dashboard-first (build the matrix). If dashboard, start by listing what actually deserves wall space, since a 64x32 grid holds very little text.
