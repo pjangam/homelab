@@ -430,7 +430,12 @@ qty | item | est | note
 
 **The matrix is the better build despite using more pixels:** 6 cut-and-solder joints against ~27 for the segment version (each 3 wires, so 80-odd joints), one sheet of diffuser instead of a divider per segment, and it can show anything - icons, scrolling text - rather than only digits. It also reuses the aarti renderer's exact shape. Cap brightness in software: 112 pixels at full white would pull ~6.7A, digits at a sane level closer to 0.8A.
 
-**Two reasons it will probably collect dust, said plainly:** the fiddly part is all of it (cutting, joining, building a light-tight diffuser that makes pixels read as digits), and **the same 2m of strip is already spoken for by the pegboard clawlight above** - which is a smaller build with a clearer daily payoff. If both are ever wanted, one of them needs new strip. Kept here because it costs nothing to record and the pixel maths is the part nobody wants to redo.
+**Both builds fit on the one reel (corrected 2026-09-19).** The pegboard clawlight needs about **0.5m, ~30 pixels**, not the whole spare - so roughly **90 pixels** are left for digits. That changes which layouts are on the table:
+- **Seven-segment `HH:MM` at 86 pixels still fits**, with four to spare. Tight, and it is the joint-heavy build.
+- **The 16-wide matrix (112) no longer fits.** A stacked one does: `HH` over `MM`, 6 columns by 11 rows = **66 pixels**, portrait instead of landscape, ~10cm wide and ~18cm tall.
+- **Measure the actual leftover before trusting any of this** - 120 pixels is inferred from the reel being 60/m, not counted.
+
+**The reason it will probably still collect dust** is effort, not strip: the fiddly part is all of it - cutting, joining, building a light-tight diffuser that makes pixels read as digits - while the pegboard clawlight is a smaller build with a clearer daily payoff. Kept here because it costs nothing to record and the pixel maths is the part nobody wants to redo.
 
 **Verdict to record:** if it is only a clock, buy one. Build the matrix only if it is a *homelab display* - the data is already there (`homelab/healthcheck/overall`, `clawlight/state`, the AC and power entities all publish over MQTT), so the work is a renderer, not plumbing. This overlaps two entries already here: **shopping list display** (which wants e-paper, not this) and **consolidated status dashboard** (which this would be the physical face of). Decide them together rather than buying two screens.
 
@@ -556,7 +561,7 @@ When done: `docs/hardware.md` (new board, Pi's power row, and `wol-xero.service`
 - **The service runs as root:** `rpi_ws281x` needs root for the PWM hardware. `clawlight-led.service` is `User=pramod` today, so the unit and `scripts/clawlight/deploy_clawlight_led_pi.sh` change with it.
 - **The strip gets its own 5V supply, never the Pi's 5V pin.** The Pi has an unresolved undervoltage problem from its wall-mount cable. The supply's ground joins the Pi's GND. A 470R goes in series on the data line, and a 1000uF capacitor across the strip's input.
 - **3.3V data into a 5V strip is outside spec,** but the aarti ESP32 is also 3.3V and drives this same strip without a level shifter. A 74AHCT125 is the fix if the first pixel flickers.
-- **Cap brightness in software** and size the supply from the LED count. A strip around the whole pegboard edge is many more LEDs than a clawlight needs. Only part of the edge can be lit, or the whole edge at a low cap.
+- **Cap brightness in software** and size the supply from the LED count. A clawlight piece is only ~30 pixels (~0.5m), so most of the spare reel stays free - the wall display entry below does the maths for digits on what is left. A strip around the whole pegboard edge is many more LEDs than this needs. Only part of the edge can be lit, or the whole edge at a low cap.
 
 **Pegboard-specific:**
 - **Standoff decides the glow.** The halo needs a few cm between the board and the wall. Mount the strip facing the wall, or angled out, on the back edge.
