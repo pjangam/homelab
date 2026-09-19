@@ -4,9 +4,10 @@
 # closes itself on any key, click or mouse movement.
 # Started at login by ~/.config/autostart/clock-screensaver.desktop.
 # Installed by deploy_clock_screensaver.sh.
-IDLE_SECONDS=300
+IDLE_SECONDS=${IDLE_SECONDS:-300}
 CLOCK="$HOME/analog_clock.py"
-# [a]: stop pgrep matching the sh -c line that runs it.
+# Anchored on ^python3 so pgrep matches neither swayidle's own command line
+# nor the sh -c that runs this, both of which contain the path.
 
 exec swayidle timeout "$IDLE_SECONDS" \
-    "pgrep -f '[a]nalog_clock.py' >/dev/null || python3 '$CLOCK' &"
+    "pgrep -f '^python3 .*analog_clock' >/dev/null || python3 '$CLOCK' &"
