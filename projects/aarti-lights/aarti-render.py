@@ -14,6 +14,11 @@ Tier 3 (see PROJECTS.md). Two ways to draw the same classification:
                  Nothing is wasted on dark thirds, and two sounds at once read
                  as two things happening rather than one winning.
 
+In both modes the toddler gets the whole strip: a red flash on each detection
+that falls away in about a third of a second, so babbling reads as a pulse.
+Red because it is the one hue none of amber/white/blue is near, and she is
+the point of it (PROJECTS.md, "A flashy colour for the toddler").
+
 This is different from Tier 2, which splits by pitch. A clap and a ghanta have
 the same spectral centroid (8.72 vs 8.75 measured), so a frequency split lights
 the same LEDs for both. Telling them apart needs time as well as spectrum,
@@ -96,6 +101,9 @@ BURST_LIFE = 0.9      # seconds for a clap burst to cross and fade
 BURST_SPEED = 0.85    # fraction of half-strip per second
 VOICE_DECAY = 1.6
 GHANTA_DECAY = 1.1
+KID_COLOUR = (255, 0, 0)
+KID_DECAY = 3.0     # a flash, gone in ~0.33s; detections repeat every 0.3s
+KID_DUCK = 0.8      # how far the other layers dim under her flash
 
 
 def idle_floor(quiet_for, timeout=IDLE_TIMEOUT_S, fade=IDLE_FADE_S):
@@ -126,6 +134,7 @@ class Layers:
         self.n = n
         self.voice = 0.0
         self.ghanta = 0.0
+        self.kid = 0.0
         self.bursts = []
 
     def on_clap(self, strength=1.0):
@@ -177,6 +186,17 @@ class Layers:
                     buf[i][1] += 255 * k
                     buf[i][2] += 255 * k
         self.bursts = alive
+
+        # Toddler flash, over everything. The rest is ducked under it rather
+        # than added to, or red on top of the amber glow reads as orange.
+        self.kid = max(0.0, self.kid - KID_DECAY * dt)
+        if self.kid > 0.01:
+            duck = 1.0 - KID_DUCK * self.kid
+            kr, kg, kb = KID_COLOUR
+            for px in buf:
+                px[0] = px[0] * duck + kr * self.kid
+                px[1] = px[1] * duck + kg * self.kid
+                px[2] = px[2] * duck + kb * self.kid
         return buf
 
 
@@ -202,7 +222,7 @@ def pack(buf):
     return bytes(out)
 
 
-def render(levels, phase, floor=IDLE):
+def render(levels, phase, floor=IDLE, kid=0.0):
     """levels: 0-1 per zone. Returns a DRGB payload for WLED.
 
     Byte 0 is the protocol (2 = DRGB), byte 1 a timeout in seconds after which
@@ -218,7 +238,9 @@ def render(levels, phase, floor=IDLE):
             # neighbour.
             d = abs((i + 0.5) / n - 0.5) * 2.0
             k = lvl * (1.0 - 0.35 * d * d)
-            buf += bytes((int(r * k), int(g * k), int(b * k)))
+            duck = 1.0 - KID_DUCK * kid
+            px = [c * k * duck + kc * kid for c, kc in zip((r, g, b), KID_COLOUR)]
+            buf += bytes(int(min(255, c)) for c in px)
     return bytes(buf)
 
 
@@ -275,6 +297,7 @@ def main():
     power = None if a.ignore_power else PowerWatch(a.wled)
     clf = Classifier()
     levels = [0.0, 0.0, 0.0]        # voice, clap, ghanta  (zones mode)
+    kid = 0.0                       # toddler flash        (zones mode)
     layers = Layers(N_LEDS)         # (layers mode)
     t0 = time.time()
     next_frame = t0
@@ -283,9 +306,11 @@ def main():
 
     print(f"rendering to {a.wled}:{WLED_UDP_PORT}, {N_LEDS} LEDs, {FPS}fps, mode={a.mode}")
     if a.mode == "zones":
-        print("zones:  0-59 VOICE amber | 60-119 CLAP white | 120-179 GHANTA blue")
+        print("zones:  0-59 VOICE amber | 60-119 CLAP white | 120-179 GHANTA blue "
+              "| whole strip red = toddler")
     else:
-        print("layers: amber glow = voice | white burst = clap | blue shimmer = ghanta")
+        print("layers: amber glow = voice | white burst = clap | blue shimmer = ghanta "
+              "| red flash = toddler")
     if a.idle_timeout > 0:
         print(f"idle:   dark after {a.idle_timeout:.0f}s with nothing classified")
     else:
@@ -302,7 +327,7 @@ def main():
                 fft = None
             if fft:
                 for kind, info in clf.update(fft, now):
-                    if kind in ("strike", "clap", "ghanta", "voice"):
+                    if kind in ("strike", "clap", "ghanta", "voice", "kid"):
                         last_sound = now
                     if kind == "strike":
                         # Cannot yet tell bell from clap: light both, dimly.
@@ -326,6 +351,11 @@ def main():
                         v = min(1.0, info["energy"] / 1500.0)
                         levels[0] = max(levels[0], v)
                         layers.voice = max(layers.voice, v)
+                    elif kind == "kid":
+                        kid = 1.0
+                        layers.kid = 1.0
+                        if not a.quiet:
+                            print(f"[{now-t0:6.2f}] KID", flush=True)
                     elif kind == "ghanta_end" and not a.quiet:
                         print(f"[{now-t0:6.2f}] ghanta ended "
                               f"({info['duration']:.1f}s)", flush=True)
@@ -350,7 +380,8 @@ def main():
                 if a.mode == "zones":
                     for i in range(3):
                         levels[i] = max(0.0, levels[i] - DECAY_PER_S * dt)
-                    payload = render(levels, now - t0, floor)
+                    kid = max(0.0, kid - KID_DECAY * dt)
+                    payload = render(levels, now - t0, floor, kid)
                 else:
                     payload = pack(layers.frame(now, dt, floor))
                 if power is None or power.on:

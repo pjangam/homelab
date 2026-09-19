@@ -15,6 +15,8 @@ telling a ringing bell from a clap.
 | `ghanta.jsonl` | ~13s of continuous ringing plus handling noise either side |
 | `clap.jsonl` | 12 discrete claps at roughly 1s intervals |
 | `voice.jsonl` | continuous speech at normal volume |
+| `kid.jsonl` | 2026-09-19: the toddler (1) babbling, ~30s |
+| `kid2.jsonl` | 2026-09-19: the toddler babbling with an older adult talking to her, 45s - held out from tuning and used to check the kid rule |
 
 Each line is one frame: `t`, `raw`, `smth`, `peak`, 16 `fft` bins, `mag`,
 `major`. About 40 frames/sec.
@@ -40,3 +42,15 @@ Flatness is the more promising fast discriminator: in live validation the
 ghanta read **0.694** against **0.839-0.887** for every clap, a wider gap
 than the aggregates above suggest. Worth using to call a bell in ~0.3s
 instead of waiting 1.2s for it to sustain.
+
+## The toddler (2026-09-19)
+
+| class | centroid p10/med/p90 | flatness med | energy med |
+|---|---|---|---|
+| kid | 2.93 / 4.57 / 7.74 | 0.941 | 1456 |
+
+Her centroid overlaps all three classes, so the old rules read her squeals
+as claps (12) and bells (4). She separates on **shape**: median share of
+energy per bin shows voice empty from bin 6 up, clap spread out to bin 15,
+ghanta piled into 14-15, and her with a bump at bins 6-8 and nothing above
+bin 9. The `KID_*` rule in `aarti_audio.py` keys on exactly that.

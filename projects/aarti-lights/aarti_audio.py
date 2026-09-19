@@ -14,6 +14,13 @@ Measured 2026-09-14 from labelled recordings (see projects/aarti-lights/aarti-so
 
 Voice separates on centroid alone. Clap and ghanta do not - their centroids
 are identical - so they separate on persistence and tonality instead.
+
+The toddler (kid.jsonl, kid2.jsonl, 2026-09-19) does not separate on centroid
+at all - hers spans 2.9-7.7 and straddles every threshold above, which is why
+her squeals used to fire the clap and ghanta layers. What she does have is a
+shape no one else makes: energy piled into bins 6-8 with the top of the
+spectrum (10-15) quiet. Voice never reaches bin 6, a clap lights all the way
+to 15, a bell piles into 14-15. See KID_* below.
 """
 import math
 import socket
@@ -32,6 +39,21 @@ GHANTA_SUSTAIN_S = 1.2      # ghanta rang 13s; every clap ended inside 0.5s
 GHANTA_FLATNESS_MAX = 0.78  # live: ghanta 0.694 vs claps 0.839-0.887
 GHANTA_FAST_S = 0.30        # tonal for this long => bell, without waiting 1.2s
 STRIKE_END_QUIET_S = 0.25
+
+# Toddler. A frame is hers when bins 6-8 hold KID_MID_MIN and bins 10-15 stay
+# under KID_HIGH_MAX; she is detected when KID_FRAMES of the last KID_WINDOW
+# frames are. Tuned on kid.jsonl, then checked on kid2.jsonl recorded after:
+# 45 and 44 detections, and zero across voice/clap/ghanta. Per-frame alone a
+# clap's decay tail can pass, which is what the window is for.
+KID_MID_MIN = 350
+KID_HIGH_MAX = 250
+KID_WINDOW = 5
+KID_FRAMES = 3
+# Her squeals are broadband too and look like strikes. Within this long of her
+# being detected, a bright burst is taken to be her rather than a clap: cut her
+# false claps from 14 to 2-4 per 30-45s take. The cost is a real clap in the
+# same second going unshown, which is the right way round.
+KID_HOLD_S = 1.5
 
 
 def features(fft):
@@ -71,7 +93,7 @@ def open_socket(iface, port=PORT):
 
 
 class Classifier:
-    """State machine over frames. Emits ('strike'|'ghanta'|'clap'|'voice', info).
+    """State machine over frames. Emits ('strike'|'ghanta'|'clap'|'voice'|'kid', info).
 
     A strike cannot be named at onset - a bell and a clap are indistinguishable
     for their first moments - so 'strike' fires immediately and is followed by
@@ -87,13 +109,30 @@ class Classifier:
         self.resolved = None
         self.voice_since = None
         self.level = 0.0        # 0-1, loudness of whatever is happening now
+        self.kid_recent = []    # last KID_WINDOW frames: was each hers?
+        self.kid_last = -1e9    # when she was last detected
+        self.kid_reported = -1e9
 
     def update(self, fft, now):
         events = []
         c, fl, tot = features(fft)
         self.level = min(1.0, tot / 3000.0)
 
-        bright = tot > FLOOR_ENERGY and c >= BRIGHT_CENTROID_MIN
+        self.kid_recent.append(tot > FLOOR_ENERGY and sum(fft[6:9]) >= KID_MID_MIN
+                               and sum(fft[10:16]) <= KID_HIGH_MAX)
+        del self.kid_recent[:-KID_WINDOW]
+        if sum(self.kid_recent) >= KID_FRAMES:
+            self.kid_last = now
+            if now - self.kid_reported > 0.30:
+                events.append(("kid", {"energy": tot}))
+                self.kid_reported = now
+        kid_hold = now - self.kid_last < KID_HOLD_S
+        if kid_hold and self.strike_start is not None and self.resolved is None:
+            # The burst that opened this strike was her onset: drop it unnamed
+            # rather than let it end as a clap.
+            self.strike_start = None
+
+        bright = tot > FLOOR_ENERGY and c >= BRIGHT_CENTROID_MIN and not kid_hold
         voiced = tot > FLOOR_ENERGY and c < VOICE_CENTROID_MAX
 
         if bright:
