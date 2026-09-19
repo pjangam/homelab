@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Clock screensaver
+Comment=Show a fullscreen analog clock after 5 idle minutes
+Exec=/home/pramod/clock_screensaver.sh
