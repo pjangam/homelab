@@ -60,9 +60,17 @@ These recur, and an entry that ignores them gets rebuilt later:
   pointed at xero - the Tinxy lesson. Prefer ESPHome/WLED/MQTT.
 - **Never lie about state.** Anything that reports status needs an MQTT
   last-will or a protocol timeout, so stale reads as "unknown", not "fine".
-- **Reuse what is free:** the aarti ESP32 and its 5V supply after the festival,
-  the leftover WS2812B (budget it in pixels, and check what other entries have
-  already claimed).
+- **Inventory what is already at hand before pricing anything.** An idea that
+  needs a board and a 5V supply may need nothing bought at all. Check, in
+  order: the **Parts on hand** section of `docs/hardware.md`; the ` ```parts `
+  blocks and **What shipped / Spend** lines of Done entries, which record what
+  was bought, what was found at home and what turned out never to be needed;
+  and devices that free up on a date (the aarti ESP32 and its 5V 4A supply
+  after the festival). Budget consumables in real units - the leftover WS2812B
+  in pixels, not metres - and check what other entries have already claimed of
+  it. Ask the user if a part's existence is uncertain rather than assuming
+  either way: a wrong "you already have this" wastes a shop trip, and a wrong
+  "buy this" wastes money.
 - **Hardware work is not done until `docs/hardware.md` says so** - if the idea
   adds a device, say so in the entry.
 
