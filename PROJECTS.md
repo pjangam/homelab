@@ -347,7 +347,21 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 ### One page listing every endpoint we serve
 **Why:** there is no single place that answers "what is running here and where do I open it" (noted 2026-09-19). The endpoints are scattered - some behind Caddy on `xero.<tailnet>`, some on their own tailnet hostnames, some plain LAN ports, one on the Pi, one on an ESP32 - and the only way to find one is to remember it or grep the repo. A links page fixes the everyday case: open one bookmark, click the thing.
 
-**State:** idea only. The list itself is short and already known: HA (8123, own tailnet name), Pi-hole admin, Vaultwarden (`/` behind Caddy), ntfy (own tailnet name), clawlight (`/clawlight`), projects-ui (`/projects`), the Stats dashboard inside HA, Node-RED on the Pi, WLED on the ESP32, the Samba share, and Immich whenever it comes back.
+**State:** idea only.
+
+**It has to cover more than HTTP (2026-09-19).** Most endpoints are web pages, but the ones that bite are the others - the protocol, port and *who speaks it* are exactly what gets re-derived from the compose file every time. The full set:
+- **HTTP:** HA (8123, own tailnet name) and the Stats dashboard inside it · Vaultwarden (`/` behind Caddy) · clawlight (8126, `/clawlight`, plus its `/api/focus-stream` SSE) · projects-ui (8125, `/projects`) · ntfy (loopback 8127, own tailnet name) · Pi-hole admin · Node-RED on the Pi · WLED's web UI on the ESP32 · Immich when it returns.
+- **MQTT** - Mosquitto on 1883, authenticated, and the one every device actually depends on: HA, Node-RED, the white-noise and volume bridges, the healthcheck publisher, the clawlight LED. Its *topics* are endpoints too (`clawlight/state`, `homelab/healthcheck/#`, the three ntfy topics).
+- **DNS** - Pi-hole on 53, the one outage nobody diagnoses as DNS at first.
+- **SMB** - the `phone-uploads` share on 445.
+- **SSH** - xero and the Pi, key-only on the Pi.
+- **WoL** - a UDP magic packet to the broadcast address on port 9. Not a service at all: nothing listens, and the "endpoint" is a direction.
+- **WLED realtime** - DRGB over UDP 21324, plus the audio-sync multicast group.
+- **Tailscale** - the tailnet names that front HA, ntfy and xero.
+
+**Some of those are clickable and some are not,** which shapes the page: `smb://` and `ssh://` open the right app on a Mac or phone, while MQTT, WoL and the UDP ones can only be *shown* - host, port, protocol, what speaks it, and a copyable connection string. A page that pretends everything is a link would be worse than a table.
+
+**One list, two renderings.** The sensible way to avoid this drifting from the network map above: keep a single machine-readable list in the repo (service, protocol, host, port, what uses it) and render the links page from it. Ports and service names are already tracked - `docker-compose.yml` and the Caddyfile hold them - so this adds no exposure. The sensitive half (which panels lack auth, device addresses, credentials) stays in the gitignored map and never goes on the page.
 
 **Three ways, cheapest first:**
 - **(A) A static page served by Caddy.** Caddy already fronts `/projects` and `/clawlight` and proxies everything else to Vaultwarden at `/`. A hand-written `index.html` at its own path is a handful of lines, no new container, no RAM, and it lives in the repo as tracked config like the rest of `services/caddy/`. **Start here.**
