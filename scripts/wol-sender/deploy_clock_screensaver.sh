@@ -2,9 +2,18 @@
 # Deploy the clock screensaver to the wol-sender Pi and (re)start it in the
 # running desktop session, so it works now and at every login.
 # Needs python3-gi-cairo on the Pi (sudo apt install python3-gi-cairo).
+# Run on xero: it copies HA_TOKEN from the repo's .env.healthcheck to the Pi's
+# ~/.config/analog-clock.env (mode 600) for the clock's weather panel.
 set -e
 PI=pramod@192.168.1.124
 cd "$(dirname "$0")"
+
+HA_TOKEN=$(grep '^HA_TOKEN=' ../../.env.healthcheck 2>/dev/null | cut -d= -f2- | tr -d '"')
+if [ -n "$HA_TOKEN" ]; then
+    echo "HA_TOKEN=$HA_TOKEN" | ssh "$PI" 'mkdir -p ~/.config && umask 077 && cat > ~/.config/analog-clock.env'
+else
+    echo "warning: no HA_TOKEN in .env.healthcheck - the clock will show no weather" >&2
+fi
 
 scp -q analog_clock.py clock_screensaver.sh "$PI":~/
 ssh "$PI" 'mkdir -p ~/.config/autostart && chmod +x ~/clock_screensaver.sh'

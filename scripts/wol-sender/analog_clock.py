@@ -4,11 +4,26 @@
 # clocks misbehave; GTK3 runs natively there and fullscreens itself.
 # Any key, click or mouse movement closes it.
 #
+# Either side of the clock: HA's weather (temperature, humidity, condition) on
+# the left, and clawlight's sessions on the right - one cwd name per line,
+# red when it needs input, green while working, amber while only its own
+# background shells run. Both are fetched from xero over the LAN in a
+# background thread; a source that stops answering fades out rather than
+# freezing a stale value on screen.
+#
+# The HA token is read from ~/.config/analog-clock.env (HA_TOKEN=...), which
+# deploy_clock_screensaver.sh writes. Without it the weather side stays blank.
+#
 # Needs: sudo apt install python3-gi-cairo
-# Deploy: scp scripts/wol-sender/analog_clock.py pramod@192.168.1.124:~/
+# Deploy: scripts/wol-sender/deploy_clock_screensaver.sh
 # Run on the Pi's desktop: python3 ~/analog_clock.py
+import json
 import math
+import os
+import threading
 import time
+import urllib.request
+from pathlib import Path
 
 import gi
 
@@ -23,6 +38,38 @@ HAND = (0.93, 0.93, 0.95)
 SECOND = (1.0, 0.42, 0.18)
 NUMBER = (0.78, 0.78, 0.80)
 TEXT = (0.45, 0.45, 0.48)
+DIM = (0.30, 0.30, 0.32)
+STATE_COLORS = {
+    "waiting": (0.95, 0.25, 0.22),
+    "input_needed": (0.95, 0.25, 0.22),
+    "active": (0.30, 0.85, 0.40),
+    "shells": (0.95, 0.70, 0.20),
+}
+# Most urgent first, matching the order clawlight's own aggregate uses.
+STATE_RANK = {"waiting": 0, "input_needed": 0, "active": 1, "shells": 2}
+MAX_SESSIONS = 8
+
+XERO = os.environ.get("XERO_HOST", "192.168.1.123")
+HA_URL = f"http://{XERO}:8123/api/states/weather.forecast_home"
+CLAWLIGHT_URL = f"http://{XERO}:8126/clawlight/api/status"
+ENV_FILE = Path.home() / ".config" / "analog-clock.env"
+WEATHER_EVERY = 300
+CLAWLIGHT_EVERY = 3
+# Drop a value that has not been refreshed for this long.
+WEATHER_STALE = 45 * 60
+CLAWLIGHT_STALE = 60
+
+CONDITIONS = {
+    "clear-night": "Clear", "cloudy": "Cloudy", "exceptional": "Exceptional",
+    "fog": "Fog", "hail": "Hail", "lightning": "Thunder",
+    "lightning-rainy": "Thunderstorm", "partlycloudy": "Partly cloudy",
+    "pouring": "Heavy rain", "rainy": "Rain", "snowy": "Snow",
+    "snowy-rainy": "Sleet", "sunny": "Sunny", "windy": "Windy",
+    "windy-variant": "Windy",
+}
+
+# (fetched_at, value) per source, written by the poller threads.
+data = {"weather": (0, None), "clawlight": (0, None)}
 
 # Ignore input for this long after opening, so the event that triggered the
 # screensaver (or the window mapping under the pointer) doesn't close it.
@@ -38,6 +85,113 @@ def hand(cr, cx, cy, angle, length, tail, width, rgb):
     cr.move_to(cx - dx * tail, cy - dy * tail)
     cr.line_to(cx + dx * length, cy + dy * length)
     cr.stroke()
+
+
+def read_token():
+    try:
+        for line in ENV_FILE.read_text().splitlines():
+            key, _, value = line.partition("=")
+            if key.strip() == "HA_TOKEN":
+                return value.strip().strip('"')
+    except OSError:
+        pass
+    return ""
+
+
+def fetch_json(url, headers=None):
+    req = urllib.request.Request(url, headers=headers or {})
+    with urllib.request.urlopen(req, timeout=5) as resp:
+        return json.load(resp)
+
+
+def poll(key, every, fetch):
+    while True:
+        try:
+            data[key] = (time.monotonic(), fetch())
+        except Exception:
+            pass  # keep the last value until it goes stale
+        time.sleep(every)
+
+
+def fetch_weather():
+    token = read_token()
+    if not token:
+        return None
+    w = fetch_json(HA_URL, {"Authorization": f"Bearer {token}"})
+    a = w.get("attributes", {})
+    return {
+        "temp": a.get("temperature"),
+        "unit": a.get("temperature_unit", "°C"),
+        "humidity": a.get("humidity"),
+        "condition": CONDITIONS.get(w.get("state"), ""),
+    }
+
+
+def fetch_clawlight():
+    return fetch_json(CLAWLIGHT_URL).get("sessions", [])
+
+
+def fresh(key, max_age):
+    at, value = data[key]
+    return value if value is not None and time.monotonic() - at < max_age else None
+
+
+def text_at(cr, text, x, y, size, rgb, align="left"):
+    cr.set_font_size(size)
+    ext = cr.text_extents(text)
+    if align == "right":
+        x -= ext.x_advance
+    cr.set_source_rgb(*rgb)
+    cr.move_to(x, y)
+    cr.show_text(text)
+    return ext.x_advance
+
+
+def draw_weather(cr, x, cy, r):
+    w = fresh("weather", WEATHER_STALE)
+    if not w or w["temp"] is None:
+        return
+    cr.select_font_face("Sans", 0, 1)
+    text_at(cr, f"{w['temp']:.0f}{w['unit']}", x, cy - r * 0.05, r * 0.30, HAND)
+    cr.select_font_face("Sans", 0, 0)
+    y = cy + r * 0.14
+    if w["condition"]:
+        text_at(cr, w["condition"], x, y, r * 0.09, NUMBER)
+        y += r * 0.14
+    if w["humidity"] is not None:
+        text_at(cr, f"Humidity {w['humidity']:.0f}%", x, y, r * 0.09, TEXT)
+
+
+def draw_clawlight(cr, x, cy, r, max_w):
+    sessions = fresh("clawlight", CLAWLIGHT_STALE)
+    cr.select_font_face("Sans", 0, 0)
+    if sessions is None:
+        text_at(cr, "clawlight offline", x, cy, r * 0.07, DIM, "right")
+        return
+    shown = sorted(
+        (s for s in sessions if s.get("state") in STATE_COLORS),
+        key=lambda s: (STATE_RANK[s["state"]], s.get("label", "")),
+    )[:MAX_SESSIONS]
+    if not shown:
+        text_at(cr, "no sessions", x, cy, r * 0.07, DIM, "right")
+        return
+    names = [s.get("label", "") for s in shown]
+    # The host only earns space when two sessions share a directory name.
+    labels = [
+        f"{s.get('host', '')}/{n}" if names.count(n) > 1 else n
+        for s, n in zip(shown, names)
+    ]
+    cr.select_font_face("Sans", 0, 1)
+    size = r * 0.10
+    cr.set_font_size(size)
+    widest = max(cr.text_extents(label).x_advance for label in labels)
+    if widest > max_w:
+        size *= max_w / widest
+    step = size * 1.5
+    y = cy - step * (len(shown) - 1) / 2 + size * 0.35
+    for s, label in zip(shown, labels):
+        text_at(cr, label, x, y, size, STATE_COLORS[s["state"]], "right")
+        y += step
 
 
 def draw(widget, cr):
@@ -95,10 +249,22 @@ def draw(widget, cr):
     cr.set_source_rgb(*TEXT)
     cr.move_to(w / 2 - ext.width / 2 - ext.x_bearing, cy + r + r * 0.16)
     cr.show_text(date)
+
+    # Side panels only when the screen is wide enough to leave room for them.
+    margin = (w - 2 * r) / 2
+    if margin > r * 0.6:
+        draw_weather(cr, margin * 0.12, cy, r)
+        draw_clawlight(cr, w - margin * 0.12, cy, r, margin * 0.8)
     return False
 
 
 def main():
+    for key, every, fetch in (
+        ("weather", WEATHER_EVERY, fetch_weather),
+        ("clawlight", CLAWLIGHT_EVERY, fetch_clawlight),
+    ):
+        threading.Thread(target=poll, args=(key, every, fetch), daemon=True).start()
+
     opened = time.monotonic()
     first_pos = {}
 
