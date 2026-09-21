@@ -65,13 +65,18 @@ What that adds up to:
   that SSD dies, the whole share goes with it. Accidental deletes are not
   covered either, because there are no snapshots. Treat the share as a staging
   area and keep anything irreplaceable somewhere else too.
-- **Older files have only one copy.** `copies` only applies to blocks written
-  after it is set. For this dataset, `used` equals `logicalused` (11.6G each),
-  so the videos already here when `copies=2` was turned on are still stored
-  once. Compare `datapool/recovered-media`, whose 425M of data uses 851M.
-  Copying a file to a new name and replacing the original rewrites it with two
-  copies. To check the dataset as a whole:
+- **Every file has two copies (since 2026-09-21).** `copies` only applies to
+  blocks written after it is set, and the videos from July were written
+  before, so `used` equalled `logicalused` (11.6G each).
+  `rewrite_for_copies.sh` rewrote them all, and `used` is now 23.2G for 11.6G
+  of data. To check it again:
   `zfs get -H -o property,value used,logicalused,copies datapool/phone-uploads`.
+  About 2x means two copies; about equal means one.
+- **Rewriting a file needs `dd`, not `cp` or `cat`.** The pool has block
+  cloning enabled, and `cp` (and `cat`, since coreutils 9) copy through
+  `copy_file_range`, which ZFS turns into a clone of the same blocks. The copy
+  then keeps however many copies the original had. The first attempt at the
+  rewrite used `cat` and changed nothing.
 
 ## Checking it from xero
 
@@ -86,6 +91,76 @@ docker run --rm --network host --entrypoint smbclient dperson/samba \
 To see the share config the container generated:
 `docker exec samba sed -n '/\[phone-uploads\]/,$p' /etc/samba/smb.conf`.
 
+## Users
+
+Users live in `docker-compose.yml`, not in the container. On every start,
+`dperson/samba` runs `adduser` and `smbpasswd -a` for each `-u` flag, and
+writes each share's `valid users` from its `-s` flag. Anything done with
+`docker exec samba smbpasswd ...` is lost the next time the container is
+recreated (for example when Watchtower updates the image), so always make the
+change in the compose file.
+
+**Adding a user - the quick way:**
+
+```sh
+services/samba/add_user.sh alice                 # read-write on phone-uploads
+services/samba/add_user.sh alice other-share     # or on another share
+NO_APPLY=1 services/samba/add_user.sh alice      # edit the files, don't restart
+```
+
+The script generates a password, appends `SAMBA_PASSWORD_ALICE` to `.env`,
+adds the user to `docker-compose.yml` as described below, recreates the
+container, checks the new login with `smbclient`, and prints the password once
+so you can put it in Vaultwarden. Commit the `docker-compose.yml` change
+afterwards. Recreating the container drops any SMB connections that are open,
+so do it when nothing is uploading.
+
+**Adding a user by hand** (this is what the script does):
+
+1. Add the password to `.env` (gitignored), and store it in Vaultwarden
+   too. The username is not a secret, so it goes straight into the compose
+   file.
+   ```sh
+   SAMBA_PASSWORD_ALICE=<a long random one>
+   ```
+   Do not use `;` in the password. The flag below uses `;` to separate its
+   fields.
+2. In `docker-compose.yml`, add a second `-u` pair under the samba service's
+   `command:`, and add the new user to the share's user list (field 6 of `-s`,
+   comma-separated):
+   ```yaml
+   command:
+     - "-p"
+     - "-u"
+     - "${SAMBA_USER};${SAMBA_PASSWORD};1000;1000;1000"
+     - "-u"
+     - "alice;${SAMBA_PASSWORD_ALICE}"
+     - "-s"
+     - "phone-uploads;/share;yes;no;no;${SAMBA_USER},alice;;;iPhone video drop zone"
+   ```
+   Leave the uid off the new user. The container uses busybox `adduser`,
+   which refuses a uid that is already taken, and it does not matter anyway:
+   the generated `smb.conf` has `force user = smbuser`, so files land owned by
+   uid 1000 whoever wrote them.
+3. `docker compose up -d samba`, then check the login with the `smbclient`
+   command above, swapping in the new user's credentials.
+   `docker exec samba pdbedit -L` lists the users Samba knows about.
+
+**Read-only user:** list them in the share's users field (field 6) and also
+set a write list (field 8) that holds only the users allowed to write, e.g.
+`...;${SAMBA_USER},alice;;${SAMBA_USER};...`.
+
+**A share of its own:** add another `-s` flag with a different name and path,
+and a bind mount for that path under `volumes:`. For anything that matters,
+give it its own ZFS dataset with `copies=2`, the way `phone-uploads` has.
+
+**Changing a password:** edit it in `.env`, run `docker compose up -d samba`,
+then update Vaultwarden.
+
+**Removing a user:** delete their `-u` pair and remove them from every `-s`
+user list, then run `docker compose up -d samba`. The container is recreated
+from scratch, so the old account is gone.
+
 ## Gotchas
 
 - **HEIC photos.** The iPhone uploads photos as `.heic`, which GitHub and most
@@ -93,5 +168,3 @@ To see the share config the container generated:
   HEIC support, while `ffmpeg` and `heif-convert` are not installed.
   `-strip` removes EXIF data, including any GPS location:
   `convert IMG_1234.heic -auto-orient -resize '1600x1600>' -strip -quality 82 out.jpg`
-- **Changing the password:** edit `SAMBA_PASSWORD` in `.env`, run
-  `docker compose up -d samba`, then update Vaultwarden.
