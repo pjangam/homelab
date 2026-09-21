@@ -220,9 +220,9 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   port = 445
   url = "smb://192.168.1.123/phone-uploads"
   connect = "smb://192.168.1.123/phone-uploads"
-  desc = "iPhone video drop zone on datapool/phone-uploads. Everything written lands owned by uid 1000 whichever login wrote it."
+  desc = "File drop zone (phone uploads, photos) on datapool/phone-uploads. Everything written lands owned by uid 1000 whichever login wrote it."
   who = "The phone, offloading video to free up storage."
-  note = "Port 139 is published too, for older clients. The smb:// link opens Finder on a Mac and the Files app on iOS."
+  note = "Also reachable over the tailnet as smb://xero.{tailnet}/phone-uploads. Port 139 is published too, for older clients. The smb:// link opens Finder on a Mac and the Files app on iOS. Login and paths: services/samba/README.md."
 
   [[group.endpoint]]
   name = "SSH - xero"

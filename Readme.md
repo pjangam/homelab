@@ -476,6 +476,7 @@ when the loss is upstream of the LAN rather than a whole-house outage.
   `com.centurylinklabs.watchtower.enable=false` because it is built locally,
   so checking it against Docker Hub only ever produced a 401 it could never
   succeed at.
+- [x] Samba: `phone-uploads` SMB share for dropping files onto xero, over LAN or tailnet. Login, paths and addresses: [`services/samba/README.md`](services/samba/README.md)
 - [x] Tinxy watchdog: auto-restarts HA after sustained ISP-outage disconnects (temporary, see below)
 - [ ] ftp server to dump files
 - [ ] ftp backups — compress and encrypt
@@ -716,6 +717,8 @@ Full write-ups live in [`docs/incidents/`](docs/incidents/), one file per incide
 - **thefuck** — disabled in `~/.zshrc`. Version 3.32 (latest PyPI release) uses `distutils` and `imp`, both removed in Python 3.12. Fix: `pipx uninstall thefuck && pipx install git+https://github.com/nvbn/thefuck.git && pipx inject thefuck setuptools`, then uncomment in `~/.zshrc`.
 
 ## Machine-specific config (Beelink Mini PC, Intel N5105, Lubuntu)
+Photos of the inside (the single SO-DIMM slot, the 8GB stick, both SSDs) are in [`docs/images/xero/`](docs/images/xero/).
+
 These fixes are gated behind a CPU model check (`N5105` in `/proc/cpuinfo`) in `new_machine_setup.sh` and won't run on other machines.
 
 - [x] Disable deep CPU C-states — N5105 Jasper Lake has a known Linux kernel bug causing hard freezes (`intel_idle.max_cstate=1` in GRUB)
