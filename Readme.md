@@ -331,6 +331,10 @@ Arming for the first time also requires a one-time sudoers setup (installed by `
 
 Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compose.yml`). To allow a new account, temporarily set it to `"true"`, run `sudo docker compose up -d vaultwarden`, create the account, then set it back to `"false"`.
 
+## Samba (`phone-uploads` share)
+
+SMB file drop on xero, backed by `/datapool/phone-uploads`. Log in as `phoneupload`; the password is `SAMBA_PASSWORD` in `.env` and in Vaultwarden. It works on the LAN at `smb://192.168.1.123/phone-uploads` and over the tailnet at `smb://xero.<tailnet>.ts.net/phone-uploads`. It is not backed up. Full details are in [`services/samba/README.md`](services/samba/README.md).
+
 ---
 
 ## Push Notifications (self-hosted ntfy)
