@@ -333,7 +333,7 @@ Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compos
 
 ## Samba (`phone-uploads` share)
 
-SMB file drop on xero, backed by `/datapool/phone-uploads`. Log in as `phoneupload`; the password is `SAMBA_PASSWORD` in `.env` and in Vaultwarden. It works on the LAN at `smb://192.168.1.123/phone-uploads` and over the tailnet at `smb://xero.<tailnet>.ts.net/phone-uploads`. It is not backed up. Full details are in [`services/samba/README.md`](services/samba/README.md).
+SMB file drop on xero, backed by `/datapool/phone-uploads`. Log in as `phoneupload`; the password is `SAMBA_PASSWORD` in `.env` and in Vaultwarden. It works on the LAN at `smb://192.168.1.123/phone-uploads` and over the tailnet at `smb://xero.<tailnet>.ts.net/phone-uploads`. It is stored on single-disk ZFS with `copies=2`, which repairs bit rot but does not survive losing the disk, and it is not backed up. Full details are in [`services/samba/README.md`](services/samba/README.md).
 
 ---
 
