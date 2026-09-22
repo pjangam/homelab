@@ -61,7 +61,7 @@ RAIN_URL = (
     "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
     "&hourly=precipitation_probability&forecast_hours={hours}&timezone=auto"
 )
-RAIN_HOURS = 3
+RAIN_HOURS = 12
 ENV_FILE = Path.home() / ".config" / "analog-clock.env"
 WEATHER_EVERY = 300
 RAIN_EVERY = 900
