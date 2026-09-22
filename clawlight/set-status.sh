@@ -43,7 +43,11 @@ ignore_dir="${CLAWLIGHT_IGNORE_DIR:-$HOME/.claude/clawlight-ignore}"
 
 hook_input="$(cat)"
 session_id="$(printf '%s' "$hook_input" | jq -r '.session_id // "unknown"' 2>/dev/null)"
-cwd="$(printf '%s' "$hook_input" | jq -r '.cwd // empty' 2>/dev/null)"
+# The label is the project, not wherever the shell happens to be: the hook's
+# `cwd` follows every `cd` Claude makes, so a session in ~/code/foo read as
+# `foo`, then `web`, then `scripts`. Claude Code sets CLAUDE_PROJECT_DIR for
+# hooks to the directory the session started in; cwd is only the fallback.
+cwd="${CLAUDE_PROJECT_DIR:-$(printf '%s' "$hook_input" | jq -r '.cwd // empty' 2>/dev/null)}"
 host="${CLAWLIGHT_HOST_NAME:-$(hostname)}"
 
 # tmux coordinates, so the light can jump you to the console that needs you
