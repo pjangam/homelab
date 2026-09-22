@@ -5,11 +5,11 @@
 # Any key, click or mouse movement closes it.
 #
 # Either side of the clock: HA's weather (temperature, humidity, condition)
-# and the chance of rain on the left, and clawlight's sessions on the right - one cwd name per line,
-# red when it needs input, green while working, amber while only its own
-# background shells run. Both are fetched from xero over the LAN in a
-# background thread; a source that stops answering fades out rather than
-# freezing a stale value on screen.
+# and the chance of rain on the left, and clawlight's sessions on the right -
+# one `cwd:tmux-session` per line, red when it needs input, green while
+# working, amber while only its own background shells run. All of it is
+# fetched in background threads; a source that stops answering fades out
+# rather than freezing a stale value on screen.
 #
 # The rain chance comes from Open-Meteo, not HA: HA's met.no forecast only
 # carries expected millimetres here, no probability. The coordinates are
@@ -236,7 +236,10 @@ def draw_clawlight(cr, x, cy, r, max_w):
     if not shown:
         text_at(cr, "no sessions", x, cy, r * 0.07, DIM, "right")
         return
-    names = [s.get("label", "") for s in shown]
+    names = [
+        f"{s.get('label', '')}:{s['session']}" if s.get("session") else s.get("label", "")
+        for s in shown
+    ]
     # The host only earns space when two sessions share a directory name.
     labels = [
         f"{s.get('host', '')}/{n}" if names.count(n) > 1 else n

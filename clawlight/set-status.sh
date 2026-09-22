@@ -53,6 +53,14 @@ host="${CLAWLIGHT_HOST_NAME:-$(hostname)}"
 # non-focusable rather than breaking anything.
 tmux_socket="${TMUX%%,*}"
 tmux_pane="${TMUX_PANE:-}"
+# The tmux session's name, for display only (e.g. `homelab:clock` on the Pi's
+# screensaver clock). A grouped session's own name carries a `-N` suffix, so
+# prefer the group name, which is the one you typed.
+tmux_session=""
+if [ -n "$tmux_pane" ]; then
+  tmux_session="$(tmux -S "$tmux_socket" display-message -p -t "$tmux_pane" \
+    '#{?session_group,#{session_group},#{session_name}}' 2>/dev/null)"
+fi
 
 # How many of this session's background shells (Bash run_in_background, Monitor)
 # are still alive. No hook fires when one starts or ends, so this asks the
@@ -109,9 +117,9 @@ case "$session_id" in
 esac
 
 payload="$(jq -n --arg session_id "$session_id" --arg host "$host" --arg state "$state" --arg cwd "$cwd" \
-  --arg tmux_socket "$tmux_socket" --arg tmux_pane "$tmux_pane" \
+  --arg tmux_socket "$tmux_socket" --arg tmux_pane "$tmux_pane" --arg tmux_session "$tmux_session" \
   '{session_id: $session_id, host: $host, state: $state, cwd: $cwd,
-    tmux_socket: $tmux_socket, tmux_pane: $tmux_pane}' 2>/dev/null)"
+    tmux_socket: $tmux_socket, tmux_pane: $tmux_pane, tmux_session: $tmux_session}' 2>/dev/null)"
 
 [ -n "$payload" ] && curl -fsS -m 3 -X POST "$server_url/clawlight/api/report" \
   -H 'Content-Type: application/json' \

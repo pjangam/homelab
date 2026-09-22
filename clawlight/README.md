@@ -46,7 +46,10 @@ floating on top of everything else via the browser's native Picture-in-Picture.
   in at a time, so concurrent sessions are never split across accounts on the
   same host.
 - Each session is labeled by its cwd's last path segment (e.g. `homelab`),
-  falling back to a short session id if cwd wasn't available yet. The page
+  falling back to a short session id if cwd wasn't available yet. Inside
+  tmux it also reports the tmux session's name (the group name, for a grouped
+  session) as `session` in `/api/status`; the Pi's screensaver clock shows
+  sessions as `label:session`. The page
   shows `host/label: state` per session, and the PiP bar renders the
   identifiers of whichever session(s) are driving the current color as small
   rotated text, so you can tell *which* console needs you, not just that one

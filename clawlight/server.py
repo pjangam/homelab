@@ -297,7 +297,7 @@ def valid_tmux(tmux_socket: str, tmux_pane: str) -> bool:
 
 
 def report(session_id: str, host: str, state: str, cwd: str = "",
-           tmux_socket: str = "", tmux_pane: str = ""):
+           tmux_socket: str = "", tmux_pane: str = "", tmux_session: str = ""):
     with lock:
         prune_locked()
         if state == "end":
@@ -309,7 +309,7 @@ def report(session_id: str, host: str, state: str, cwd: str = "",
         if entry is None:
             entry = {"foreground": "active", "needs_input": False, "background": 0,
                      "host": host, "cwd": "", "tmux_socket": "", "tmux_pane": "",
-                     "ts": 0.0}
+                     "tmux_session": "", "ts": 0.0}
             sessions[session_id] = entry
 
         entry["host"] = host
@@ -321,6 +321,10 @@ def report(session_id: str, host: str, state: str, cwd: str = "",
         if valid_tmux(tmux_socket, tmux_pane):
             entry["tmux_socket"] = tmux_socket
             entry["tmux_pane"] = tmux_pane
+        # Display only, so it just needs to be short and printable.
+        tmux_session = "".join(c for c in tmux_session if c.isprintable())[:40].strip()
+        if tmux_session:
+            entry["tmux_session"] = tmux_session
 
         if state in FOREGROUND_STATES:
             # `input_needed` is a red light exactly like `waiting`; what it adds
@@ -380,6 +384,9 @@ def snapshot() -> dict:
                 "host": s["host"],
                 "state": st,
                 "label": label_for(s, sid),
+                # The tmux session name, blank outside tmux or from a host
+                # whose set-status.sh predates reporting it.
+                "session": s.get("tmux_session", ""),
                 # False for a session started outside tmux - the page shows it
                 # as unreachable rather than offering a jump that can't work.
                 "reachable": bool(s.get("tmux_pane")),
@@ -569,6 +576,7 @@ class Handler(BaseHTTPRequestHandler):
             cwd = str(data.get("cwd", ""))
             tmux_socket = str(data.get("tmux_socket", ""))
             tmux_pane = str(data.get("tmux_pane", ""))
+            tmux_session = str(data.get("tmux_session", ""))
         except (KeyError, ValueError, json.JSONDecodeError):
             self.send_error(400)
             return
@@ -577,7 +585,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(400)
             return
 
-        report(session_id, host, state, cwd, tmux_socket, tmux_pane)
+        report(session_id, host, state, cwd, tmux_socket, tmux_pane, tmux_session)
         self._send_json({"ok": True})
 
     def _handle_focus(self):
