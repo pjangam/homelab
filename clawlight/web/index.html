@@ -264,7 +264,9 @@ function drawCanvas() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const lines = relevant.slice(0, 4).map((s) => `${s.host}:${sessionName(s)}`);
+    // No host: the bar is narrow, and the cwd:session pair already says which
+    // console it is. The full page still shows host/ per session.
+    const lines = relevant.slice(0, 4).map(sessionName);
     const maxLen = canvas.height - 12; // available run length after rotation
 
     // Shrink the font (not canvas's maxWidth squish, which distorts text)
