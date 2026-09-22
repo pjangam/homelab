@@ -4,12 +4,16 @@
 # clocks misbehave; GTK3 runs natively there and fullscreens itself.
 # Any key, click or mouse movement closes it.
 #
-# Either side of the clock: HA's weather (temperature, humidity, condition) on
-# the left, and clawlight's sessions on the right - one cwd name per line,
+# Either side of the clock: HA's weather (temperature, humidity, condition)
+# and the chance of rain on the left, and clawlight's sessions on the right - one cwd name per line,
 # red when it needs input, green while working, amber while only its own
 # background shells run. Both are fetched from xero over the LAN in a
 # background thread; a source that stops answering fades out rather than
 # freezing a stale value on screen.
+#
+# The rain chance comes from Open-Meteo, not HA: HA's met.no forecast only
+# carries expected millimetres here, no probability. The coordinates are
+# taken from HA's own config, so they live in HA rather than this repo.
 #
 # The HA token is read from ~/.config/analog-clock.env (HA_TOKEN=...), which
 # deploy_clock_screensaver.sh writes. Without it the weather side stays blank.
@@ -51,12 +55,20 @@ MAX_SESSIONS = 8
 
 XERO = os.environ.get("XERO_HOST", "192.168.1.123")
 HA_URL = f"http://{XERO}:8123/api/states/weather.forecast_home"
+HA_CONFIG_URL = f"http://{XERO}:8123/api/config"
 CLAWLIGHT_URL = f"http://{XERO}:8126/clawlight/api/status"
+RAIN_URL = (
+    "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
+    "&hourly=precipitation_probability&forecast_hours={hours}&timezone=auto"
+)
+RAIN_HOURS = 3
 ENV_FILE = Path.home() / ".config" / "analog-clock.env"
 WEATHER_EVERY = 300
+RAIN_EVERY = 900
 CLAWLIGHT_EVERY = 3
 # Drop a value that has not been refreshed for this long.
 WEATHER_STALE = 45 * 60
+RAIN_STALE = 60 * 60
 CLAWLIGHT_STALE = 60
 
 CONDITIONS = {
@@ -69,7 +81,7 @@ CONDITIONS = {
 }
 
 # (fetched_at, value) per source, written by the poller threads.
-data = {"weather": (0, None), "clawlight": (0, None)}
+data = {"weather": (0, None), "rain": (0, None), "clawlight": (0, None)}
 
 # Ignore input for this long after opening, so the event that triggered the
 # screensaver (or the window mapping under the pointer) doesn't close it.
@@ -127,6 +139,16 @@ def fetch_weather():
     }
 
 
+def fetch_rain():
+    token = read_token()
+    if not token:
+        return None
+    cfg = fetch_json(HA_CONFIG_URL, {"Authorization": f"Bearer {token}"})
+    url = RAIN_URL.format(lat=cfg["latitude"], lon=cfg["longitude"], hours=RAIN_HOURS)
+    chances = fetch_json(url)["hourly"]["precipitation_probability"]
+    return max(c for c in chances if c is not None)
+
+
 def fetch_clawlight():
     return fetch_json(CLAWLIGHT_URL).get("sessions", [])
 
@@ -160,6 +182,10 @@ def draw_weather(cr, x, cy, r):
         y += r * 0.14
     if w["humidity"] is not None:
         text_at(cr, f"Humidity {w['humidity']:.0f}%", x, y, r * 0.09, TEXT)
+        y += r * 0.14
+    rain = fresh("rain", RAIN_STALE)
+    if rain is not None:
+        text_at(cr, f"Rain {rain:.0f}% next {RAIN_HOURS}h", x, y, r * 0.09, TEXT)
 
 
 def draw_clawlight(cr, x, cy, r, max_w):
@@ -261,6 +287,7 @@ def draw(widget, cr):
 def main():
     for key, every, fetch in (
         ("weather", WEATHER_EVERY, fetch_weather),
+        ("rain", RAIN_EVERY, fetch_rain),
         ("clawlight", CLAWLIGHT_EVERY, fetch_clawlight),
     ):
         threading.Thread(target=poll, args=(key, every, fetch), daemon=True).start()
