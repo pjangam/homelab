@@ -61,7 +61,11 @@ RAIN_URL = (
     "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
     "&hourly=precipitation_probability&forecast_hours={hours}&timezone=auto"
 )
+# The next 12 hours as four bars, each the highest hourly chance in its window.
 RAIN_HOURS = 12
+RAIN_WINDOW = 3
+RAIN_BAR = (0.35, 0.60, 0.95)
+TRACK = (0.12, 0.12, 0.14)
 ENV_FILE = Path.home() / ".config" / "analog-clock.env"
 WEATHER_EVERY = 300
 RAIN_EVERY = 900
@@ -145,8 +149,14 @@ def fetch_rain():
         return None
     cfg = fetch_json(HA_CONFIG_URL, {"Authorization": f"Bearer {token}"})
     url = RAIN_URL.format(lat=cfg["latitude"], lon=cfg["longitude"], hours=RAIN_HOURS)
-    chances = fetch_json(url)["hourly"]["precipitation_probability"]
-    return max(c for c in chances if c is not None)
+    hourly = fetch_json(url)["hourly"]
+    windows = []
+    for i in range(0, len(hourly["time"]), RAIN_WINDOW):
+        chances = [c for c in hourly["precipitation_probability"][i:i + RAIN_WINDOW] if c is not None]
+        if chances:
+            # Open-Meteo's times are local ("2026-09-22T09:00") with timezone=auto.
+            windows.append((int(hourly["time"][i][11:13]), max(chances)))
+    return windows or None
 
 
 def fetch_clawlight():
@@ -169,23 +179,48 @@ def text_at(cr, text, x, y, size, rgb, align="left"):
     return ext.x_advance
 
 
-def draw_weather(cr, x, cy, r):
-    w = fresh("weather", WEATHER_STALE)
-    if not w or w["temp"] is None:
+def draw_rain(cr, x, y, r, max_w):
+    windows = fresh("rain", RAIN_STALE)
+    if not windows:
         return
-    cr.select_font_face("Sans", 0, 1)
-    text_at(cr, f"{w['temp']:.0f}{w['unit']}", x, cy - r * 0.05, r * 0.30, HAND)
+    size = r * 0.075
+    text_at(cr, "Rain", x, y, r * 0.09, TEXT)
+    cr.set_font_size(size)
+    hour_w = cr.text_extents("00").x_advance * 1.4
+    pct_w = cr.text_extents("100%").x_advance
+    bar_x = x + hour_w
+    bar_max = max_w - hour_w - pct_w * 1.25
+    bar_h = size * 0.75
+    for hour, chance in windows:
+        y += r * 0.12
+        text_at(cr, str(hour), x, y, size, TEXT)
+        cr.set_source_rgb(*TRACK)
+        cr.rectangle(bar_x, y - bar_h, bar_max, bar_h)
+        cr.fill()
+        cr.set_source_rgb(*RAIN_BAR)
+        cr.rectangle(bar_x, y - bar_h, bar_max * chance / 100, bar_h)
+        cr.fill()
+        text_at(cr, f"{chance:.0f}%", x + max_w, y, size, NUMBER, "right")
+
+
+def draw_weather(cr, x, cy, r, max_w):
+    w = fresh("weather", WEATHER_STALE)
+    y = cy - r * 0.30
+    if w and w["temp"] is not None:
+        cr.select_font_face("Sans", 0, 1)
+        text_at(cr, f"{w['temp']:.0f}{w['unit']}", x, y, r * 0.30, HAND)
     cr.select_font_face("Sans", 0, 0)
-    y = cy + r * 0.14
+    y += r * 0.19
+    if not w:
+        draw_rain(cr, x, y, r, max_w)
+        return
     if w["condition"]:
         text_at(cr, w["condition"], x, y, r * 0.09, NUMBER)
         y += r * 0.14
     if w["humidity"] is not None:
         text_at(cr, f"Humidity {w['humidity']:.0f}%", x, y, r * 0.09, TEXT)
-        y += r * 0.14
-    rain = fresh("rain", RAIN_STALE)
-    if rain is not None:
-        text_at(cr, f"Rain {rain:.0f}% next {RAIN_HOURS}h", x, y, r * 0.09, TEXT)
+        y += r * 0.18
+    draw_rain(cr, x, y, r, max_w)
 
 
 def draw_clawlight(cr, x, cy, r, max_w):
@@ -279,7 +314,7 @@ def draw(widget, cr):
     # Side panels only when the screen is wide enough to leave room for them.
     margin = (w - 2 * r) / 2
     if margin > r * 0.6:
-        draw_weather(cr, margin * 0.12, cy, r)
+        draw_weather(cr, margin * 0.12, cy, r, margin * 0.76)
         draw_clawlight(cr, w - margin * 0.12, cy, r, margin * 0.8)
     return False
 
