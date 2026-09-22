@@ -143,9 +143,15 @@ function noteSpan(text) {
   return note;
 }
 
+// `homelab:clock` - the cwd plus the tmux session's name, when the host's
+// set-status.sh reports one (older ones and non-tmux sessions don't).
+function sessionName(s) {
+  return s.session ? `${s.label}:${s.session}` : s.label;
+}
+
 function sessionRow(s) {
   const stateLabel = COLORS[s.state] ? COLORS[s.state].label : s.state;
-  const text = `${s.host}/${s.label}: ${stateLabel}`;
+  const text = `${s.host}/${sessionName(s)}: ${stateLabel}`;
 
   // A session started outside tmux has no pane to jump to, so say so plainly
   // rather than rendering a control that would quietly do nothing.
@@ -258,7 +264,7 @@ function drawCanvas() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const lines = relevant.slice(0, 3).map((s) => `${s.host}:${s.label}`);
+    const lines = relevant.slice(0, 3).map((s) => `${s.host}:${sessionName(s)}`);
     const maxLen = canvas.height - 12; // available run length after rotation
 
     // Shrink the font (not canvas's maxWidth squish, which distorts text)
