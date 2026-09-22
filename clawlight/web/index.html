@@ -89,7 +89,7 @@
     Picture-in-Picture isn't supported in this browser - the light still updates on this page.
   </div>
 
-  <canvas id="canvas" width="60" height="220" hidden></canvas>
+  <canvas id="canvas" width="80" height="220" hidden></canvas>
   <video id="pip-video" muted playsinline></video>
 
 <script>
@@ -253,7 +253,7 @@ function drawCanvas() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Identify which console(s) are driving this color (e.g. which one needs
-  // input when red) - too narrow at 60px for horizontal text, so rotate it
+  // input when red) - too narrow at 80px for horizontal text, so rotate it
   // to run the long way down the bar.
   const relevant = currentSessions.filter((s) => s.state === currentState);
   if (relevant.length) {
@@ -264,13 +264,13 @@ function drawCanvas() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const lines = relevant.slice(0, 3).map((s) => `${s.host}:${sessionName(s)}`);
+    const lines = relevant.slice(0, 4).map((s) => `${s.host}:${sessionName(s)}`);
     const maxLen = canvas.height - 12; // available run length after rotation
 
     // Shrink the font (not canvas's maxWidth squish, which distorts text)
     // until the longest line actually fits, down to a readable floor -
     // below that, truncate with an ellipsis instead of going illegible.
-    let fontSize = 13;
+    let fontSize = 11;
     const fits = (size) => {
       ctx.font = `bold ${size}px sans-serif`;
       return Math.max(...lines.map((l) => ctx.measureText(l).width));
@@ -287,7 +287,7 @@ function drawCanvas() {
       return truncated + '…';
     });
 
-    const lineHeight = fontSize + 4;
+    const lineHeight = fontSize + 3;
     const startOffset = -((displayLines.length - 1) * lineHeight) / 2;
     displayLines.forEach((line, i) => {
       ctx.fillText(line, 0, startOffset + i * lineHeight);
