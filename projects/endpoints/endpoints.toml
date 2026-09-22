@@ -97,6 +97,15 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   who = "This is deliberately where up/down lives - see the note at the foot of this page."
 
   [[group.endpoint]]
+  name = "HA Home dashboard"
+  proto = "https"
+  host = "ha.{tailnet}"
+  port = 443
+  url = "https://ha.{tailnet}/dashboard-home"
+  desc = "A YAML-mode copy of Overview, tracked in git (projects/ha-dashboard/dashboards/home.yaml) - the one to curate."
+  note = "Read-only in the UI by design: edit the file and refresh. Overview itself stays auto-generated at /home."
+
+  [[group.endpoint]]
   name = "ntfy"
   proto = "https"
   host = "ntfy.{tailnet}"

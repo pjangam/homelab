@@ -365,7 +365,9 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 ### A clean HA dashboard, next to Overview rather than instead of it
 **Why:** the default **Overview** is rigid and cluttered (noted 2026-09-19). It is auto-generated, so it lists *every* entity - including diagnostics and the stale Tinxy devices that made up ~60% of unavailable entities while tuning the watchdog - and it cannot be curated without giving up the thing that makes it useful.
 
-**State:** idea only. HA is on **2026.9.2**, and there is already one custom dashboard (**Stats**, `dashboard-stats`), so the pattern exists.
+**State (2026-09-22): the YAML-mode copy exists, curation not started.** **Home** (`/dashboard-home`) is a verbatim copy of Overview in `projects/ha-dashboard/dashboards/home.yaml`, bind-mounted into HA and declared via `lovelace: !include dashboards/lovelace.yaml` - so steps 2 and 3 below were done in reverse: tracked YAML first, curation next, and every change is file-edit-and-refresh. It renders identically to Overview with no error cards (checked with `projects/ha-dashboard/shot_dashboard.sh`). HA is on **2026.9.3** (the recreate for the bind mount picked up the newer image). Details: `projects/ha-dashboard/README.md`.
+
+**Overview is not what this entry assumed (found 2026-09-22).** In this HA version Overview is the new **Home panel** (`/home`; `/lovelace` redirects there) - favorites, summaries and area cards - not the old list-every-entity original-states dashboard. It is built in the browser by nested strategies and stored nowhere, so `projects/ha-dashboard/dump_overview.sh` renders it in the Playwright container and dumps the expanded config. Re-run it and diff against `home.yaml` to see what Overview picked up since.
 
 **Do not "take control" of Overview.** That is the tempting one-click option and it is a trap: the moment it is taken over it stops auto-adding new entities, so every future device has to be placed by hand, and going back means losing the layout. Leave it as the complete, ugly, always-current index it is good at being.
 
@@ -385,10 +387,7 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 **Intended, not just noted (2026-09-19):** this one is meant to get built, in a session of its own rather than here.
 
-**Next step, in order:**
-1. **List the entities actually touched in a normal week** - that list *is* the dashboard, and it is the only input nobody else can supply.
-2. **Build it in the UI first,** in storage mode, where iterating on a Sections layout takes minutes instead of reload cycles.
-3. **Then export its YAML into the repo and switch that dashboard to YAML mode**, so it is tracked and survives a container rebuild. After the switch it is file-edit-and-reload, with no UI editing - that is the trade being accepted deliberately.
+**Next step:** **list the entities actually touched in a normal week** - that list *is* the dashboard, and it is the only input nobody else can supply - then cut `home.yaml` down to it (the area subviews are full of Spotcast diagnostics and dead Tinxy bulbs). Check each edit with `shot_dashboard.sh`.
 
 Two decisions to settle while doing step 1: whether **Stats** stays a separate health view or folds into this one (two half-dashboards is the outcome to avoid), and which devices get it as their default, since that is per-device and the phone and desktop can differ.
 

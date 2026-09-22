@@ -1,0 +1,937 @@
+# Home - a YAML-mode copy of the auto-generated Overview (the Home panel),
+# dumped fully expanded on 2026-09-22 by dump_overview.sh. Unlike Overview it
+# does not pick up new devices by itself: edit this file and refresh the page.
+
+views:
+- icon: mdi:home
+  path: overview
+  type: sections
+  max_columns: 3
+  sections:
+  - column_span: 3
+    type: grid
+    cards:
+    - type: heading
+      heading: Favorites
+      heading_style: title
+      visibility:
+      - condition: view_columns
+        min: 2
+      grid_options:
+        rows: auto
+    - type: tile
+      entity: sensor.system_monitor_processor_temperature
+      state_content:
+      - state
+      - area_name
+      show_entity_picture: true
+    - type: tile
+      entity: sensor.system_monitor_processor_use
+      state_content:
+      - state
+      - area_name
+      show_entity_picture: true
+    - type: tile
+      entity: sensor.system_monitor_memory_free
+      state_content:
+      - state
+      - area_name
+      show_entity_picture: true
+    - type: tile
+      entity: scene.ojaswi_sleeping
+      state_content:
+      - state
+      - area_name
+      show_entity_picture: true
+    - type: tile
+      entity: scene.ojaswi_awake
+      state_content:
+      - state
+      - area_name
+      show_entity_picture: true
+    - type: tile
+      entity: fan.bedroom_fan_2
+      state_content:
+      - state
+      - area_name
+      show_entity_picture: true
+    - type: tile
+      entity: switch.white_noise
+      state_content:
+      - state
+      - area_name
+      show_entity_picture: true
+    - type: tile
+      entity: switch.bedroom_tubelight
+      state_content:
+      - state
+      - area_name
+      show_entity_picture: true
+    - type: tile
+      entity: number.server_volume
+      state_content:
+      - state
+      - area_name
+      show_entity_picture: true
+  - type: grid
+    column_span: 3
+    visibility:
+    - condition: view_columns
+      max: 1
+    cards:
+    - type: heading
+      heading: Summaries
+      heading_style: title
+    - type: repairs
+      hide_empty: true
+      tap_action:
+        action: navigate
+        navigation_path: /config/repairs?historyBack=1
+      grid_options:
+        columns: 6
+    - type: updates
+      hide_empty: true
+      tap_action:
+        action: navigate
+        navigation_path: /config/updates?historyBack=1
+      grid_options:
+        columns: 6
+    - type: discovered-devices
+      hide_empty: true
+      grid_options:
+        columns: 6
+    - type: home-summary
+      summary: light
+      tap_action:
+        action: navigate
+        navigation_path: /light?historyBack=1
+      grid_options:
+        columns: 6
+    - type: home-summary
+      summary: climate
+      tap_action:
+        action: navigate
+        navigation_path: /climate?historyBack=1
+      grid_options:
+        columns: 6
+    - type: home-summary
+      summary: maintenance
+      tap_action:
+        action: navigate
+        navigation_path: /maintenance?historyBack=1&backPath=/home
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: weather.forecast_home
+      name: Weather
+      state_content:
+      - temperature
+      - state
+      grid_options:
+        columns: 6
+    - type: shortcut
+      tap_action:
+        action: navigate
+        navigation_path: /config/automation
+      grid_options:
+        columns: 6
+    - type: shortcut
+      tap_action:
+        action: navigate
+        navigation_path: /config/scene
+      grid_options:
+        columns: 6
+  - type: grid
+    column_span: 3
+    cards:
+    - type: heading
+      heading: Areas
+      heading_style: title
+    - type: area
+      area: living_room
+      display_type: compact
+      sensor_classes: []
+      tap_action:
+        action: navigate
+        navigation_path: areas-living_room
+      vertical: true
+      grid_options:
+        rows: 2
+        columns: 4
+    - type: area
+      area: kitchen
+      display_type: compact
+      sensor_classes: []
+      tap_action:
+        action: navigate
+        navigation_path: areas-kitchen
+      vertical: true
+      grid_options:
+        rows: 2
+        columns: 4
+    - type: area
+      area: bedroom
+      display_type: compact
+      sensor_classes: []
+      tap_action:
+        action: navigate
+        navigation_path: areas-bedroom
+      vertical: true
+      grid_options:
+        rows: 2
+        columns: 4
+    - type: tile
+      entity: zone.home
+      vertical: true
+      name: Devices
+      icon: mdi:devices
+      hide_state: true
+      tap_action:
+        action: navigate
+        navigation_path: other-devices
+      grid_options:
+        rows: 2
+        columns: 4
+  header:
+    layout: responsive
+    card:
+      type: markdown
+      text_only: true
+      content: '## Welcome {{ user }}'
+  sidebar:
+    sections:
+    - type: grid
+      cards:
+      - type: heading
+        heading: Summaries
+        heading_style: title
+        grid_options:
+          rows: auto
+      - type: repairs
+        hide_empty: true
+        tap_action:
+          action: navigate
+          navigation_path: /config/repairs?historyBack=1
+        grid_options:
+          columns: 12
+      - type: updates
+        hide_empty: true
+        tap_action:
+          action: navigate
+          navigation_path: /config/updates?historyBack=1
+        grid_options:
+          columns: 12
+      - type: discovered-devices
+        hide_empty: true
+        grid_options:
+          columns: 12
+      - type: home-summary
+        summary: light
+        tap_action:
+          action: navigate
+          navigation_path: /light?historyBack=1
+        grid_options:
+          columns: 12
+      - type: home-summary
+        summary: climate
+        tap_action:
+          action: navigate
+          navigation_path: /climate?historyBack=1
+        grid_options:
+          columns: 12
+      - type: home-summary
+        summary: maintenance
+        tap_action:
+          action: navigate
+          navigation_path: /maintenance?historyBack=1&backPath=/home
+        grid_options:
+          columns: 12
+      - type: tile
+        entity: weather.forecast_home
+        name: Weather
+        state_content:
+        - temperature
+        - state
+        grid_options:
+          columns: 12
+      - type: shortcut
+        tap_action:
+          action: navigate
+          navigation_path: /config/automation
+        grid_options:
+          columns: 12
+      - type: shortcut
+        tap_action:
+          action: navigate
+          navigation_path: /config/scene
+        grid_options:
+          columns: 12
+    visibility:
+    - condition: view_columns
+      min: 2
+- title: Living Room
+  path: areas-living_room
+  subview: true
+  type: sections
+  header:
+    badges_position: bottom
+  max_columns: 3
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Lights
+      icon: mdi:lamps
+      tap_action:
+        action: navigate
+        navigation_path: /light?historyBack=1
+      badges:
+      - type: button
+        icon: mdi:power
+        text: 'Off'
+        tap_action:
+          action: perform-action
+          perform_action: light.turn_on
+          target:
+            area_id: living_room
+        visibility:
+        - condition: not
+          conditions:
+          - condition: or
+            conditions:
+            - condition: state
+              entity: light.wled
+              state: 'on'
+            - condition: state
+              entity: light.wled_main
+              state: 'on'
+            - condition: state
+              entity: light.wled_segment_1
+              state: 'on'
+            - condition: state
+              entity: light.wled_segment_2
+              state: 'on'
+      - type: button
+        icon: mdi:power
+        color: orange
+        text: 'On'
+        tap_action:
+          action: perform-action
+          perform_action: light.turn_off
+          target:
+            area_id: living_room
+        visibility:
+        - condition: or
+          conditions:
+          - condition: state
+            entity: light.wled
+            state: 'on'
+          - condition: state
+            entity: light.wled_main
+            state: 'on'
+          - condition: state
+            entity: light.wled_segment_1
+            state: 'on'
+          - condition: state
+            entity: light.wled_segment_2
+            state: 'on'
+    - type: tile
+      entity: light.wled
+      features:
+      - type: light-brightness
+    - type: tile
+      entity: light.wled_main
+      features:
+      - type: light-brightness
+    - type: tile
+      entity: light.wled_segment_1
+      features:
+      - type: light-brightness
+    - type: tile
+      entity: light.wled_segment_2
+      features:
+      - type: light-brightness
+  - type: grid
+    cards:
+    - type: heading
+      heading: Climate
+      icon: mdi:home-thermometer
+      tap_action:
+        action: navigate
+        navigation_path: /climate?historyBack=1
+    - type: tile
+      entity: fan.living_room_fan
+      name: Fan
+  - type: grid
+    column_span: 3
+    cards:
+    - type: heading
+      heading_style: subtitle
+      heading: ''
+  - type: grid
+    cards:
+    - type: heading
+      heading: Living Room
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/17bd8c7bd0fa85e5f92976d7e5b332d2
+      badges: []
+    - type: tile
+      entity: switch.living_room_tubelight
+      name:
+        type: entity
+    - type: tile
+      entity: switch.living_room_shelf_led
+      name:
+        type: entity
+    - type: tile
+      entity: switch.living_room_blank
+      name:
+        type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: WLED
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/cfccff4406a5b20cf364ba04f6956e50
+      badges: []
+    - type: tile
+      entity: select.wled_playlist
+      name:
+        type: entity
+    - type: tile
+      entity: select.wled_preset
+      name:
+        type: entity
+  badges: []
+- title: Kitchen
+  path: areas-kitchen
+  subview: true
+  type: sections
+  header:
+    badges_position: bottom
+  max_columns: 2
+  sections:
+  - type: grid
+    column_span: 3
+    cards:
+    - type: heading
+      heading_style: subtitle
+      heading: ''
+  - type: grid
+    cards:
+    - type: heading
+      heading: Dishwasher
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/d86d066d61e9fd37b851cb8d3371a911
+      badges: []
+    - type: tile
+      entity: button.dishwasher_stop_programme
+      name:
+        type: entity
+    - type: tile
+      entity: number.dishwasher_start_in_relative
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.dishwasher_programme_finish_time
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.dishwasher_programme_progress
+      name:
+        type: entity
+    - type: tile
+      entity: switch.dishwasher_half_load
+      name:
+        type: entity
+    - type: tile
+      entity: switch.dishwasher_extra_dry
+      name:
+        type: entity
+    - type: tile
+      entity: binary_sensor.dishwasher_remote_control
+      name:
+        type: entity
+    - type: tile
+      entity: binary_sensor.dishwasher_remote_start
+      name:
+        type: entity
+    - type: tile
+      entity: select.dishwasher_active_programme
+      name:
+        type: entity
+    - type: tile
+      entity: select.dishwasher_selected_programme
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.dishwasher_operation_state
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.dishwasher_door
+      name:
+        type: entity
+    - type: tile
+      entity: switch.dishwasher_power
+      name:
+        type: entity
+    - type: tile
+      entity: switch.dishwasher_child_lock
+      name:
+        type: entity
+  badges: []
+- title: Bedroom
+  path: areas-bedroom
+  subview: true
+  type: sections
+  header:
+    badges_position: bottom
+  max_columns: 3
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Climate
+      icon: mdi:home-thermometer
+      tap_action:
+        action: navigate
+        navigation_path: /climate?historyBack=1
+    - type: tile
+      entity: climate.panasonic_ac_panasonic_ac
+      features:
+      - type: target-temperature
+    - type: tile
+      entity: fan.bedroom_fan_2
+  - type: grid
+    cards:
+    - type: heading
+      heading: Media players
+      icon: mdi:multimedia
+      tap_action:
+        action: navigate
+        navigation_path: media-players?historyBack=1
+    - type: tile
+      entity: media_player.spotify_pramod
+  - type: grid
+    column_span: 3
+    cards:
+    - type: heading
+      heading_style: subtitle
+      heading: ''
+  - type: grid
+    cards:
+    - type: heading
+      heading: bedroom
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/3149ac35b28c877e6d944b45919eaaa5
+      badges: []
+    - type: tile
+      entity: switch.bedroom_tubelight
+      name:
+        type: entity
+    - type: tile
+      entity: switch.bedroom_led_bulb_2
+      name:
+        type: entity
+    - type: tile
+      entity: switch.bedroom_balcony
+      name:
+        type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Spotcast Pramod
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/daa52d8e2193c921d3d6d7ed31ccc693
+      badges: []
+    - type: tile
+      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_devices
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_profile
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_playlists
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_liked_songs
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_followers
+      name:
+        type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: PANASONIC AC
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/5e93afa4c64f21a11a6f2132e090afb1
+      badges: []
+    - type: tile
+      entity: sensor.panasonic_ac_monthly_power_consumption_panasonic_ac
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.panasonic_ac_daily_power_consumption_panasonic_ac
+      name:
+        type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Others
+      badges: []
+    - type: tile
+      entity: script.play_bedroom_track
+      name:
+        type: entity
+    - type: tile
+      entity: switch.white_noise
+      name:
+        type: entity
+  badges: []
+- title: Media players
+  path: media-players
+  subview: true
+  icon: mdi:multimedia
+  type: sections
+  max_columns: 2
+  sections:
+  - type: grid
+    column_span: 2
+    cards:
+    - type: heading
+      heading: Areas
+    - heading_style: subtitle
+      type: heading
+      heading: Bedroom
+      tap_action:
+        action: navigate
+        navigation_path: areas-bedroom
+    - type: media-control
+      entity: media_player.spotify_pramod
+  - type: grid
+    column_span: 2
+    cards:
+    - type: heading
+      heading: Other media players
+    - type: media-control
+      entity: media_player.sonalis_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+    - type: media-control
+      entity: media_player.iphone_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+    - type: media-control
+      entity: media_player.xero_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+    - type: media-control
+      entity: media_player.realme_x_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+    - type: media-control
+      entity: media_player.pramods_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+- title: Devices
+  path: other-devices
+  subview: true
+  icon: mdi:devices
+  type: sections
+  header:
+    badges_position: bottom
+  max_columns: 3
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Forecast
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/88a530196ad892d7dd773a8c8699a487
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: 88a530196ad892d7dd773a8c8699a487
+    - type: entities
+      entities:
+      - entity: weather.forecast_home
+        name:
+          type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Bedroom
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/5e66f8e5ef4af6c02f524920d47d61ff
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: 5e66f8e5ef4af6c02f524920d47d61ff
+    - type: entities
+      entities:
+      - entity: switch.bedroom_tube_light
+        name:
+          type: entity
+      - entity: switch.bedroom_led_bulb
+        name:
+          type: entity
+      - entity: switch.bedroom_balcony_lamp
+        name:
+          type: entity
+      - entity: fan.bedroom_fan
+        name:
+          type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: MasterBedroom
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/365cb72f0b029e33e4e805a2d94b41d6
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: 365cb72f0b029e33e4e805a2d94b41d6
+    - type: entities
+      entities:
+      - entity: switch.masterbedroom_tubelight
+        name:
+          type: entity
+      - entity: switch.masterbedroom_dimmable_light
+        name:
+          type: entity
+      - entity: switch.masterbedroom_led_bulb
+        name:
+          type: entity
+      - entity: fan.masterbedroom_fan
+        name:
+          type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Bulb wash basin
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/eef6fb5d1e33dc1e8731a168cdbccb06
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: eef6fb5d1e33dc1e8731a168cdbccb06
+    - type: entities
+      entities:
+      - entity: light.bulb_wash_basin
+        name:
+          type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Bulb
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/6c5abc66da6a5b126bd69ca7d2d0ef23
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: 6c5abc66da6a5b126bd69ca7d2d0ef23
+    - type: entities
+      entities:
+      - entity: light.bulb
+        name:
+          type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Homelab Healthcheck
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/7cea6749f5a2382ebf9f667e8b89ff9a
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: 7cea6749f5a2382ebf9f667e8b89ff9a
+    - type: entities
+      entities:
+      - entity: binary_sensor.homelab_healthcheck_homelab_docker_containers
+        name:
+          type: entity
+      - entity: binary_sensor.homelab_healthcheck_homelab_systemd_units
+        name:
+          type: entity
+      - entity: binary_sensor.homelab_healthcheck_homelab_zfs_pool
+        name:
+          type: entity
+      - entity: binary_sensor.homelab_healthcheck_homelab_overall_status
+        name:
+          type: entity
+      - entity: binary_sensor.homelab_healthcheck_homelab_spotifyd
+        name:
+          type: entity
+      - entity: binary_sensor.homelab_healthcheck_homelab_power_watchdog
+        name:
+          type: entity
+      - entity: binary_sensor.homelab_healthcheck_homelab_spotifyd_connect_advertising
+        name:
+          type: entity
+      - entity: binary_sensor.homelab_healthcheck_homelab_miraie_ac
+        name:
+          type: entity
+      - entity: sensor.homelab_healthcheck_homelab_disk_usage_root
+        name:
+          type: entity
+      - entity: sensor.homelab_healthcheck_homelab_disk_usage_datapool
+        name:
+          type: entity
+      - entity: sensor.homelab_healthcheck_vaultwarden_backup_age
+        name:
+          type: entity
+      - entity: sensor.homelab_healthcheck_home_assistant_backup_age
+        name:
+          type: entity
+      - entity: sensor.homelab_healthcheck_homelab_last_healthcheck
+        name:
+          type: entity
+      - entity: sensor.homelab_healthcheck_spotifyd_restarts_24h
+        name:
+          type: entity
+      - entity: sensor.homelab_healthcheck_power_watchdog_down_duration
+        name:
+          type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Spotcast (Pramod) - Sonali’s MacBook Pro
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/52e4e905cec1acfc1dbfae2729334517
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: 52e4e905cec1acfc1dbfae2729334517
+    - type: entities
+      entities:
+      - entity: media_player.sonalis_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+        name:
+          type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Spotcast (Pramod) - iPhone
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/76f1d1b9eaf7b793f97da72021621deb
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: 76f1d1b9eaf7b793f97da72021621deb
+    - type: entities
+      entities:
+      - entity: media_player.iphone_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+        name:
+          type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Spotcast (Pramod) - xero
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/32d991ef4dccd7f1afe7fd843e9f70fc
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: 32d991ef4dccd7f1afe7fd843e9f70fc
+    - type: entities
+      entities:
+      - entity: media_player.xero_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+        name:
+          type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Spotcast (Pramod) - realme X
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/5eb7f8ecbe467ce149786ea6c0ba0c05
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: 5eb7f8ecbe467ce149786ea6c0ba0c05
+    - type: entities
+      entities:
+      - entity: media_player.realme_x_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+        name:
+          type: entity
+  - type: grid
+    cards:
+    - type: heading
+      heading: Spotcast (Pramod) - Pramod’s MacBook Pro
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/3628cab867e221abe3be4978349f8602
+      badges:
+      - type: button
+        icon: mdi:home-plus
+        text: Assign area
+        tap_action:
+          action: fire-dom-event
+          home_panel:
+            type: assign_area
+            device_id: 3628cab867e221abe3be4978349f8602
+    - type: entities
+      entities:
+      - entity: media_player.pramods_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+        name:
+          type: entity

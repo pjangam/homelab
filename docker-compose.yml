@@ -145,6 +145,8 @@ services:
     image: "ghcr.io/home-assistant/home-assistant:stable"
     volumes:
       - ./HOMEASSISTANT_CONFIG:/config
+      # YAML-mode dashboards, tracked in git (projects/ha-dashboard/)
+      - ./projects/ha-dashboard/dashboards:/config/dashboards:ro
       - /etc/localtime:/etc/localtime:ro
       - /run/dbus:/run/dbus:ro
     restart: unless-stopped

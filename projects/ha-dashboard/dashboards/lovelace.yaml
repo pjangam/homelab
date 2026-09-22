@@ -1,0 +1,14 @@
+# Included from HOMEASSISTANT_CONFIG/configuration.yaml as `lovelace: !include
+# dashboards/lovelace.yaml`. This folder is bind-mounted read-only into the HA
+# container at /config/dashboards (docker-compose.yml), so the dashboards are
+# tracked here rather than in the gitignored .storage/. Adding or renaming a
+# dashboard needs an HA restart; editing a dashboard's own YAML only needs a
+# refresh in the browser.
+dashboards:
+  dashboard-home:
+    mode: yaml
+    title: Home
+    icon: mdi:home-outline
+    show_in_sidebar: true
+    require_admin: false
+    filename: dashboards/home.yaml
