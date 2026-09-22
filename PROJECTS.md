@@ -29,7 +29,9 @@ qty | item | est | note
 - **Ruled out 2026-09-16:** a stale global nameserver in the Tailscale admin console. `tailscale dns status` on both xero and the Mac shows `Resolvers: 100.70.215.25` only, with no trace of the bad pair.
 - Still open as suspects: a second DHCP server on the LAN (the TP-Link extender under "Not yet inventoried" is the obvious candidate - `192.168.0.2`/`192.169.0.2` reads exactly like hand-typed DNS fields with a 168→169 fat-finger), a stale lease carried over from another network, or an app writing `State:` DNS directly.
 
-**Occurrences:** 2026-08-28 (last clean query 20:47, found and fixed 09-07) · 2026-09-10 · 2026-09-16.
+**Occurrences:** 2026-08-28 (last clean query 20:47, found and fixed 09-07) · 2026-09-10 · 2026-09-16 · 2026-09-22.
+
+**2026-09-22 added nothing new:** same pair on en0, DHCP again offering `192.168.1.123`, no manual override on any service, and `fix_macbook_dns.sh` step 3 again the repair. The saved output was from `diagnose_macbook_dns.sh` and the fix only, so it shows *what* the resolver held, not *who* wrote it. One detail worth keeping: every live test in the diagnose run answered, the system resolver included - the resolver cache was still serving names, which is how the break stays hidden until an uncached name hangs. The Mac reports itself to Tailscale as `sonalis-macbook-pro`, not either `pramods-macbook-pro*` entry - confirm which physical Mac that is before assuming the recorder or clone is on it.
 
 **The blocker is that the fix is run before the evidence is collected.** `tools/network/mac-dns-recorder.sh` was written on 2026-09-10 for exactly this - it polls every 20s, snapshots only on change, and captures `Setup:` vs `State:` ownership, the Wi-Fi network and location, the DHCP offer, per-resolver reachability, and any VPN client or tunnel. **It has never been installed on the Mac.** The Mac's copies are scp'd, not a clone, so committing it here did nothing there.
 
