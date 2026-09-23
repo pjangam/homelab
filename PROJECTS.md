@@ -273,6 +273,41 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 ## 💡 Backlog ideas
 
+### Move the Airtel router to a central spot (retire the Wi-Fi extender)
+**Why:** the router sits where Airtel's fibre drop enters the house, so the far rooms depend on the TP-Link extender. That includes xero, which reaches the router only through the extender's 2.4GHz Wi-Fi backhaul. A central router could cover the house on its own and give xero a short, direct link. **Needs outside help:** Airtel has to re-route its fibre drop, or it has to be extended inside the house, and they may charge. Parked 2026-09-23.
+**Open questions:**
+- Where is central, and does the fibre drop reach it?
+- The router's UPS has to move with it.
+- Does a central router reach xero's room well without the extender?
+
+**If it works:**
+- The extender and its failure mode go away.
+- `watchdog_power.sh` loses its outage signal, because the extender is what drops. Do the ping change first; see the notes.
+
+**Notes:** `docs/home-network-uplink-options.md`, which covers all the options, costs and trade-offs, so none of it has to be worked out again.
+
+### Fibre or Cat6 from the router to the desk
+**Why:** a real cable from the Airtel router to xero's desk replaces the extender's 2.4GHz Wi-Fi hop. It also keeps xero, its speaker and its screen where they are. **Needs outside help** (an electrician and/or a local FTTH technician). Parked 2026-09-23.
+
+**The route:** an existing conduit that already carries 230V mains wiring and has many bends.
+
+**The two options (full detail in `docs/home-network-uplink-options.md`):**
+- **Fibre with a BiDi media converter pair,** ~₹3,500-6,500:
+  - pull bare G.657A2 fibre, then have an FTTH technician fit SC plugs
+  - no electrical path, no surge path, an easier pull
+  - with the xero-side converter on plain mains, `watchdog_power.sh` keeps working unchanged
+- **Cat6,** ~₹1,500-3,000:
+  - works fine in practice
+  - realistic worst case is a network port killed by a surge (add an Ethernet surge protector)
+  - the power watchdog needs the ping change
+  - shielded Cat6 is ruled out
+
+**First step:** have the electrician check how full the conduit is and the state of the old wiring, then push a pull cord through. Pull nothing through a packed conduit or past brittle insulation.
+
+**Unlocks:**
+- per-device data-usage monitoring with xero as the gateway (an OpenWrt router with nlbwmon remains the better way)
+- faster and more reliable Immich, backups and Tailscale access
+
 ### Miraie AC self-healing
 **Why:** Readme documents a known paper cut - "if entity shows Unavailable, turn the AC on/off physically to trigger a state update." Same shape of problem as the Tinxy watchdog (auto-recover after a sustained bad state) but for the Miraie AC MQTT integration.
 **State:** auto-fix live from 2026-09-15 (see below); 2026-09-11 sharpened what it would have to do. That evening the entity sat `unavailable` while the bridge was provably fine - both brokers connected, DNS clean, no errors - because the indoor unit had stopped talking to the MirAIe cloud. Three restarts reported success and fixed nothing. So "self-healing" here cannot mean "restart Node-RED harder"; the only recovery for that failure is physical, and the useful automation is to *tell the difference* and say which one it is.
