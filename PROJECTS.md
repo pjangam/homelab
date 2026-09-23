@@ -17,27 +17,32 @@ qty | item | est | note
 
 ## 🟢 Active
 
-### MacBook DNS keeps breaking the same way - root cause still unknown
+### MacBook DNS keeps breaking - root cause found (OpenVPN Connect); cure unproven
 
-**Why:** the Mac's resolver has broken three times now with an identical signature, and each repair has destroyed the evidence before anyone could say what causes it. Between breaks the Mac is silently unfiltered - the 2026-08-28 occurrence went unnoticed for 10 days.
+**Why:** the Mac's resolver broke five times with an identical signature, and each repair destroyed the evidence before anyone could say what caused it. Between breaks the Mac is silently unfiltered - the 2026-08-28 occurrence went unnoticed for 10 days.
 
 **The signature, every time:** `en0` resolves against `192.168.0.2` + `192.169.0.2`. Neither is on this LAN (192.168.1.0/24) and the second is a typo landing in publicly routable space, so queries *hang* rather than fail fast - which is why it reads as "the internet is slow", not "DNS is down".
 
-**What is already known:**
-- `networksetup -getdnsservers` shows **no** manual override, and DHCP is correctly offering `192.168.1.123` at the time. So the bad pair lives at the runtime (`State:`) layer, not the persistent (`Setup:`) one - something writes it *after* the lease is applied.
-- The repair that actually works is step 3 of `fix_macbook_dns.sh`, the `tailscale set --accept-dns` toggle, which makes tailscaled rewrite the resolver config. Clearing the Wi-Fi override (step 1) is a no-op, because there is never anything there to clear.
-- **Ruled out 2026-09-16:** a stale global nameserver in the Tailscale admin console. `tailscale dns status` on both xero and the Mac shows `Resolvers: 100.70.215.25` only, with no trace of the bad pair.
-- Still open as suspects: a second DHCP server on the LAN (the TP-Link extender under "Not yet inventoried" is the obvious candidate - `192.168.0.2`/`192.169.0.2` reads exactly like hand-typed DNS fields with a 168→169 fat-finger), a stale lease carried over from another network, or an app writing `State:` DNS directly.
+**Occurrences:** 2026-08-28 (last clean query 20:47, found and fixed 09-07) - 2026-09-10 - 2026-09-16 - 2026-09-22 - 2026-09-22 19:56 (the one the recorder caught, noticed 2026-09-23).
 
-**Occurrences:** 2026-08-28 (last clean query 20:47, found and fixed 09-07) · 2026-09-10 · 2026-09-16 · 2026-09-22.
+**Root cause, 2026-09-23: OpenVPN Connect writes the pair into the persistent `Setup:` layer and never restores it.** Full write-up in `docs/incidents/2026-09-23-mac-dns-openvpn-connect-left-stale-servers.md`. The Wi-Fi service's `Setup:.../DNS` dictionary holds `ServerAddresses = 192.168.0.2, 192.169.0.2` alongside three `OpenVPNConnectOrig*` keys set to the sentinel `OpenVPNConnectDeleteValue` - OpenVPN Connect's own note that the dictionary was empty before it took it over and that the keys should be deleted on restore. It wrote, and never restored.
 
-**2026-09-22 added nothing new:** same pair on en0, DHCP again offering `192.168.1.123`, no manual override on any service, and `fix_macbook_dns.sh` step 3 again the repair. The saved output was from `diagnose_macbook_dns.sh` and the fix only, so it shows *what* the resolver held, not *who* wrote it. One detail worth keeping: every live test in the diagnose run answered, the system resolver included - the resolver cache was still serving names, which is how the break stays hidden until an uncached name hangs. **The Mac that breaks is `sonalis-macbook-pro` - the employer-owned M2**, the one clawlight calls `mac` (confirmed 2026-09-22). That makes its **MDM** a first-rank suspect, above the extender: a managed Mac can have DNS pushed by a configuration profile or written into `State:` by a corporate network/security agent, and either would explain a pair that no DHCP lease or manual setting contains. `find_mac_stale_dns.sh` already sweeps configuration profiles and VPN configs. It has the repo clone (clawlight is deployed from it), so `git pull` there brings the tools. Installing the recorder on it is the user's call - it is work hardware, and personal services stay off it.
+**Two things this overturns, both of which cost a month:**
+- **The layer was wrong.** Every earlier round concluded the pair lives in `State:`, not `Setup:`, on the strength of `networksetup -getdnsservers` reporting no override. `networksetup -getdnsservers Wi-Fi` *still* answers "There aren't any DNS Servers set on Wi-Fi" while `scutil` shows that dictionary populated. The two disagree; the one that was trusted is the wrong one. **Check DNS ownership with `scutil`, never `networksetup`.**
+- **The repair hid it.** `fix_macbook_dns.sh` step 3's `tailscale set --accept-dns` toggle makes tailscaled rewrite the resolver config so the pair stops being *used*, but never clears the `Setup:` key - so it survives every repair. Step 1, "clear the Wi-Fi override", was logged as a no-op four times because it asks `networksetup`, which cannot see it.
 
-**The blocker is that the fix is run before the evidence is collected.** `tools/network/mac-dns-recorder.sh` was written on 2026-09-10 for exactly this - it polls every 20s, snapshots only on change, and captures `Setup:` vs `State:` ownership, the Wi-Fi network and location, the DHCP offer, per-resolver reachability, and any VPN client or tunnel. **Installed on the M2 on 2026-09-22 at 13:55 IST** (pid 41238, polling every 20s), from the clone via `setup-mac-dns-recorder.sh`. It runs from `~/code/personal/scripts/`, which that script fills by scp from xero - re-run it to update the recorder, a `git pull` alone does not.
+Ruled out along the way and now moot: a stale global nameserver in the Tailscale admin console (2026-09-16), a second DHCP server on the TP-Link extender, a stale lease. MDM was close - this is corporate software on a managed Mac - but it is the VPN client, not a configuration profile.
 
-**Next step:** at the next break, run `~/code/personal/scripts/mac-dns-recorder.sh --timeline` on the M2 **before** `fix_macbook_dns.sh`, and read the snapshot where `192.168.0.2` first appears for who owns it. Meanwhile, `find_mac_stale_dns.sh --logs` on the M2 may still find today's writer in the unified log while it lasts.
+**The 192.169 typo is upstream.** It is whatever the corporate OpenVPN profile pushes, so the fat-finger is in that profile or the server config behind it. Every client on that VPN is resolving against a publicly routable address that is not theirs - worth reporting to whoever maintains it.
 
----
+**Left to do:**
+- **Apply the repair** (needs sudo on the work Mac, so it is the user's call): `sudo networksetup -setdnsservers Wi-Fi empty`, then verify with `scutil <<< "show Setup:/Network/Service/A02B9918-F5FF-4C22-ADC2-D8052BE73543/DNS"` rather than `networksetup`.
+- **Prove whether it is a cure.** It is a repair, not a fix - the next OpenVPN session can write it again. `tools/network/mac-dns-recorder.sh` stays running (pid 41238 as of 2026-09-23); the next snapshot tells us whether a connect or a disconnect leaves it behind, and whether anything can be done on the client side.
+- **Fix the tooling that lied.** `diagnose_macbook_dns.sh` and `fix_macbook_dns.sh` both lean on `networksetup`; step 1 of the fix should clear the `Setup:` key via `scutil`/`networksetup -setdnsservers ... empty` and the diagnose script should report the `Setup:` dictionary verbatim, `OpenVPNConnectOrig*` keys included.
+
+**The recorder is what cracked it.** `tools/network/mac-dns-recorder.sh` polls every 20s and snapshots only on change, capturing `Setup:` vs `State:` ownership, the network and location, the DHCP offer, per-resolver reachability and any VPN client or tunnel. Installed on the M2 2026-09-22 13:55 IST from the clone via `setup-mac-dns-recorder.sh`; the break it caught began six hours later. It runs from `~/code/personal/scripts/`, which that script fills by scp from xero - re-run it to update the recorder, a `git pull` alone does not. Its log lives at `~/Library/Logs/homelab/dns-recorder/snapshots.log` on the M2.
+
+**Knock-on worth knowing:** while DNS is broken (and Tailscale stopped), the M2 cannot resolve `xero.<tailnet>`, so every clawlight hook on it silently reports nowhere - `set-status.sh` swallows network errors by design. A clawlight colour that does not match what the Mac is doing is a symptom of this; that is how the 5th occurrence was noticed.
 
 ### ESP32 UPS LED monitor
 **Why:** `watchdog_power.sh` (below) currently guesses "90 minutes on battery is probably safe" before shutting down cleanly. The RouterUPS has 4 status LEDs (plug=mains, battery-full=on-battery-ok, lightning=charging, battery-low=critical) - reading the actual battery-low LED would replace the time guess with the UPS's own real signal.
