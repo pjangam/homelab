@@ -30,6 +30,13 @@ qty | item | est | note
 
 So HA and the buttons stay as they are. The cutover is simply which machine's bridge is subscribed to `whitenoise/set`. **Never run both bridges at once:** they share one discovery `unique_id` and would both play. The only HA edit is Spotify: `play_bedroom_track` in `scripts.yaml` targets xero's spotcast entity (`media_player.xero_..._spotcast`), and a new Connect device gets a new entity.
 
+**Progress (2026-09-23):**
+- **Step 1:** done, except spotifyd. The upstream aarch64 binary needs OpenSSL 1.1, which trixie does not have.
+  - Cross-building it on xero crashed xero; see `docs/incidents/2026-09-23-xero-kernel-oops-during-rust-build.md`.
+  - It is now built on the Pi itself with `projects/spotifyd/build_spotifyd_on_pi.sh`: one job at a time, LTO off, 2-3h.
+- **Step 2:** done. `projects/white-noise/deploy_audio_pi.sh` installs the four units disabled under `~/homelab` on the Pi.
+- **White noise on the Pi:** tested through the 3.5mm jack. It starts, holds 59% and stops cleanly. The bridges were not started, since they would clash with xero's.
+
 **Plan:**
 1. **Packages on the Pi.**
    - `sudo apt install sox playerctl`.
