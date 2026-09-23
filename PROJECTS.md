@@ -41,6 +41,22 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
 - **Step 2:** done. `projects/white-noise/deploy_audio_pi.sh` installs the four units disabled under `~/homelab` on the Pi.
 - **White noise on the Pi:** tested through the 3.5mm jack. It starts, holds 59% and stops cleanly. The bridges were not started, since they would clash with xero's.
 
+**Next session (user has the speaker ready):**
+1. Plug the USB speaker into the Pi and run `projects/white-noise/deploy_audio_pi.sh usb`.
+2. Test on the Pi alone:
+   - `systemctl --user start white-noise`: level and fade
+   - play to `raspberrypi` from the phone
+   - `playerctl -p spotifyd pause` from the Pi
+   - `vcgencmd get_throttled` after a while
+3. Cutover:
+   - xero: `systemctl --user disable --now white-noise-mqtt volume-mqtt spotifyd`, and comment out the `watchdog_spotifyd.sh` cron line
+   - Pi: `systemctl --user enable --now white-noise-mqtt volume-mqtt spotifyd`
+4. HA:
+   - point `play_bedroom_track` at the new spotcast entity for `raspberrypi`
+   - test the switch, both GPIO buttons, the volume slider and white-noise-pauses-Spotify
+
+spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It was started by hand, so a Pi reboot stops it.
+
 **Plan:**
 1. **Packages on the Pi.**
    - `sudo apt install sox playerctl`.
