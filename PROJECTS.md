@@ -39,21 +39,21 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
    - bridges: broker from `MQTT_HOST` (default `localhost`)
    - white noise and volume: ALSA card and control from env, instead of the hardcoded `-c 1 Speaker` / `Master`
    - `wait_for_network.sh`: interface as a parameter (`wlan0` on the Pi)
-   - new `projects/white-noise/deploy_audio_pi.sh`: copies the scripts, units and config (`device_name` `bedroom`) to the Pi and installs the user units **disabled**
+   - new `projects/white-noise/deploy_audio_pi.sh`: copies the scripts, units and config (`device_name` `raspberrypi`, chosen by the user 2026-09-23 as the name they will recognise) to the Pi and installs the user units **disabled**
 3. **Test on the Pi alongside the live xero setup.**
    - Use earphones in the Pi's 3.5mm jack, with the Pi's bridges not started.
    - `systemctl --user start white-noise`: check the fade in, fade out and volume ceiling.
-   - Start spotifyd and play to `bedroom` from the phone.
+   - Start spotifyd and play to `raspberrypi` from the phone.
    - `test_white_noise_pauses_spotify.sh`.
 4. **Cutover (one sitting).**
    - On xero: `systemctl --user disable --now white-noise-mqtt volume-mqtt spotifyd`, and comment out the `watchdog_spotifyd.sh` cron line.
    - Move the USB speaker to the Pi.
    - On the Pi: enable the three units.
-   - Pair `bedroom` once from the Spotify app, then point `play_bedroom_track` at the new spotcast entity (sudo, the file is root-owned).
+   - Pair `raspberrypi` once from the Spotify app, then point `play_bedroom_track` at the new spotcast entity (sudo, the file is root-owned).
    - Verify: HA switch on/off, both GPIO buttons, the volume slider, the Play Bedroom Track script, and `vcgencmd get_throttled` after an hour of playing, since the speaker now draws from the Pi's weak supply.
 5. **Monitoring.**
    - Move `watchdog_spotifyd.sh` to the Pi's cron.
-   - Point xero's `check_spotifyd_advertising.sh`/dashboard tile at `bedroom`. It is avahi over the LAN, so it can watch the Pi from xero.
+   - Point xero's `check_spotifyd_advertising.sh`/dashboard tile at `raspberrypi`. It is avahi over the LAN, so it can watch the Pi from xero.
    - Have `healthcheck.sh` alarm on the retained `whitenoise/available`/`volume/available` going `offline`, since its systemd --user check only sees xero.
 6. **After a soak of about 2 weeks.**
    - Remove the units and packages from xero.
