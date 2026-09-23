@@ -11,7 +11,8 @@ import time
 
 import paho.mqtt.client as mqtt
 
-BROKER = "localhost"
+# MQTT_HOST is set where the bridge runs off the broker's own host (the wol Pi).
+BROKER = os.environ.get("MQTT_HOST", "localhost")
 PORT = 1883
 
 UNIQUE_ID = "white_noise_switch"

@@ -3,14 +3,19 @@ Description=Brown Noise Player
 After=sound.target
 
 [Service]
-ExecStartPre=/usr/bin/amixer -c 1 sset Speaker 59%
+# The mixer the fade and the 59% ceiling act on. These are xero's USB speaker;
+# the wol Pi overrides them in white-noise.service.d/host.conf. systemd fills
+# in the braced ${ALSA_CARD}/${ALSA_CONTROL} even inside the bash -c string
+# below; the unbraced $v there is left alone for bash.
+Environment=ALSA_CARD=1 ALSA_CONTROL=Speaker
+ExecStartPre=/usr/bin/amixer -c ${ALSA_CARD} sset ${ALSA_CONTROL} 59%
 # Pause Spotify, so starting white noise never plays over music. The `-` keeps
 # a start from failing when there is nothing to pause: spotifyd only publishes
 # its MPRIS player while a Connect session is active, and otherwise playerctl
 # logs "No players found" - expected, not a fault.
 ExecStartPre=-/usr/bin/playerctl -p spotifyd pause
 ExecStart=/usr/bin/play -n -q synth brownnoise fade t 60
-ExecStop=/bin/bash -c 'for v in 45 32 18 5; do amixer -c 1 sset Speaker "$v%" >/dev/null; sleep 0.3; done; kill $MAINPID 2>/dev/null; sleep 0.3; amixer -c 1 sset Speaker 59% >/dev/null'
+ExecStop=/bin/bash -c 'for v in 45 32 18 5; do amixer -c ${ALSA_CARD} sset ${ALSA_CONTROL} "$v%" >/dev/null; sleep 0.3; done; kill $MAINPID 2>/dev/null; sleep 0.3; amixer -c ${ALSA_CARD} sset ${ALSA_CONTROL} 59% >/dev/null'
 Restart=on-failure
 RestartSec=3
 

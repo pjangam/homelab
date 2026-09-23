@@ -12,7 +12,8 @@ import time
 
 import paho.mqtt.client as mqtt
 
-BROKER = "localhost"
+# MQTT_HOST is set where the bridge runs off the broker's own host (the wol Pi).
+BROKER = os.environ.get("MQTT_HOST", "localhost")
 PORT = 1883
 
 UNIQUE_ID = "server_volume"
@@ -23,6 +24,12 @@ AVAILABILITY_TOPIC = f"{NODE}/available"
 DISCOVERY_TOPIC = f"homeassistant/number/{UNIQUE_ID}/config"
 
 PERCENT_RE = re.compile(r"\[(\d+)%\]")
+
+# Which mixer the slider drives. Defaults are xero's (default card, Master);
+# the wol Pi sets VOLUME_CARD/VOLUME_CONTROL in a systemd drop-in, because its
+# default ALSA device is PipeWire and the speaker's own control is not Master.
+AMIXER = ["amixer"] + (["-c", os.environ["VOLUME_CARD"]] if os.environ.get("VOLUME_CARD") else [])
+CONTROL = os.environ.get("VOLUME_CONTROL", "Master")
 
 DISCOVERY_PAYLOAD = {
     "name": "Server Volume",
@@ -42,7 +49,7 @@ DISCOVERY_PAYLOAD = {
 
 def get_volume():
     r = subprocess.run(
-        ["amixer", "sget", "Master"], capture_output=True, text=True, check=False
+        [*AMIXER, "sget", CONTROL], capture_output=True, text=True, check=False
     )
     m = PERCENT_RE.search(r.stdout)
     return int(m.group(1)) if m else None
@@ -50,7 +57,7 @@ def get_volume():
 
 def set_volume(pct):
     pct = max(0, min(100, pct))
-    subprocess.run(["amixer", "sset", "Master", f"{pct}%"], check=False)
+    subprocess.run([*AMIXER, "sset", CONTROL, f"{pct}%"], check=False)
 
 
 def publish_state(client):
