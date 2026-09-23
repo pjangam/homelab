@@ -17,7 +17,58 @@ qty | item | est | note
 
 ## 🟢 Active
 
+### Move white noise and spotifyd from xero to the wol Pi
+
+**Why:** xero's only link to the Airtel router is the TP-Link extender, whose backhaul is 2.4GHz Wi-Fi. Moving xero onto a cable at the router would give it a real uplink, and would allow per-device data-usage monitoring later. The one thing tying xero to its current room is the USB speaker (ALSA card 1, `USB Audio Device`) that plays white noise and serves Spotify Connect. Move the audio to the Pi and xero is free to move. Decided 2026-09-23. **Keep everything installed on xero** (units disabled, not removed) until the Pi has run smoothly for a while.
+
+**Pi as found (2026-09-23):** Pi 3B, arm64 trixie, ~400MB RAM available, ~95% idle, `get_throttled=0x0`. On `wlan0`, not `eth0`. PipeWire runs in the desktop session. `Linger=no`. No repo clone: files reach it through the `deploy_*_pi.sh` scp scripts. `sox` is in apt; spotifyd is not. xero runs spotifyd 0.4.2 from `~/.local/bin`.
+
+**Triggers need no rewiring, just a switch of which machine answers MQTT.** Everything goes through MQTT:
+- **HA switch:** `switch.white_noise` publishes `whitenoise/set`.
+- **GPIO buttons:** the start/stop buttons already publish `white_noise_buttons/*/pressed` to HA, and HA's automations flip that same switch.
+- **Night auto-off:** flips the same switch too.
+
+So HA and the buttons stay as they are. The cutover is simply which machine's bridge is subscribed to `whitenoise/set`. **Never run both bridges at once:** they share one discovery `unique_id` and would both play. The only HA edit is Spotify: `play_bedroom_track` in `scripts.yaml` targets xero's spotcast entity (`media_player.xero_..._spotcast`), and a new Connect device gets a new entity.
+
+**Plan:**
+1. **Packages on the Pi.**
+   - `sudo apt install sox playerctl`.
+   - spotifyd: the 0.4.2 `aarch64` release binary into `~/.local/bin`, the same version as xero.
+   - `sudo loginctl enable-linger pramod`, so user units survive with no one logged in. This is the xero white-noise lesson, see memory.
+2. **Make the units portable** (repo change; xero's behaviour must not change):
+   - bridges: broker from `MQTT_HOST` (default `localhost`)
+   - white noise and volume: ALSA card and control from env, instead of the hardcoded `-c 1 Speaker` / `Master`
+   - `wait_for_network.sh`: interface as a parameter (`wlan0` on the Pi)
+   - new `projects/white-noise/deploy_audio_pi.sh`: copies the scripts, units and config (`device_name` `bedroom`) to the Pi and installs the user units **disabled**
+3. **Test on the Pi alongside the live xero setup.**
+   - Use earphones in the Pi's 3.5mm jack, with the Pi's bridges not started.
+   - `systemctl --user start white-noise`: check the fade in, fade out and volume ceiling.
+   - Start spotifyd and play to `bedroom` from the phone.
+   - `test_white_noise_pauses_spotify.sh`.
+4. **Cutover (one sitting).**
+   - On xero: `systemctl --user disable --now white-noise-mqtt volume-mqtt spotifyd`, and comment out the `watchdog_spotifyd.sh` cron line.
+   - Move the USB speaker to the Pi.
+   - On the Pi: enable the three units.
+   - Pair `bedroom` once from the Spotify app, then point `play_bedroom_track` at the new spotcast entity (sudo, the file is root-owned).
+   - Verify: HA switch on/off, both GPIO buttons, the volume slider, the Play Bedroom Track script, and `vcgencmd get_throttled` after an hour of playing, since the speaker now draws from the Pi's weak supply.
+5. **Monitoring.**
+   - Move `watchdog_spotifyd.sh` to the Pi's cron.
+   - Point xero's `check_spotifyd_advertising.sh`/dashboard tile at `bedroom`. It is avahi over the LAN, so it can watch the Pi from xero.
+   - Have `healthcheck.sh` alarm on the retained `whitenoise/available`/`volume/available` going `offline`, since its systemd --user check only sees xero.
+6. **After a soak of about 2 weeks.**
+   - Remove the units and packages from xero.
+   - Update `docs/hardware.md` (both entries), `endpoints.toml` (the Connect device and bridge topics now live on the Pi) and `white_noise_buttons_setup.md`.
+   - Then move xero to the router, after the power-watchdog ping change below.
+
+**Rollback at any point:** disable the Pi units, re-enable xero's, move the speaker back and revert the `scripts.yaml` entity.
+
+**Known costs:**
+- **Power cuts:** white noise and Spotify now stop during a power cut, because the Pi has no UPS. "Move WoL to an ESP32, put the Pi on the UPS" in the backlog would undo that, but it would also break the ping-based outage signal below.
+- **The Pi's supply:** its known undervoltage problem gets a new load in the USB speaker. The 3.5mm jack avoids it if the speaker has an AUX input.
+
+**Before xero itself moves: the power watchdog needs a new signal.** `watchdog_power.sh` infers a mains outage from `enp1s0` losing carrier, which works only because the extender is not on a UPS. Plugged into the Airtel router, which has its own UPS, the carrier never drops and xero would run its battery flat. Fix: keep the carrier check and add "the wol Pi **and** the extender both stop answering pings for N checks". Requiring both avoids false alarms from the Pi's flaky supply. The extender needs a pinned IP first.
 ### MacBook DNS keeps breaking - root cause found (OpenVPN Connect); cure unproven
+>>>>>>> f6ef144 (Plan: move white noise and spotifyd from xero to the wol Pi)
 
 **Why:** the Mac's resolver broke five times with an identical signature, and each repair destroyed the evidence before anyone could say what caused it. Between breaks the Mac is silently unfiltered - the 2026-08-28 occurrence went unnoticed for 10 days.
 
