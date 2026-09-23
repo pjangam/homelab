@@ -6,12 +6,15 @@
 # Cloudflare PoP pulled ~38 Mbps. A router restart did nothing, because the
 # problem was never the local link.
 #
-# NOTE: the domestic-vs-international framing this script was first written
-# around turned out to be wrong. Two Netflix OCAs in Mumbai one millisecond
-# apart differed 4.6x (27.7 vs 6.0 Mbps), so throughput here is path-dependent,
-# not distance-dependent. The targets below are still a useful spread, but read
-# them as "which paths are healthy", not "how far away is it". Upload is
-# unaffected throughout - that asymmetry is the real signal.
+# READ THE RESULTS CAREFULLY. This script samples each target once, in
+# sequence. On 2026-09-23 that produced a table which looked like clean path
+# dependence and was not: re-running 40 minutes later inverted the ranking
+# completely, because capacity on this link swings 3-36 Mbps over minutes. A
+# sequential table on an unstable link measures *when* each sample was taken.
+# So compare the two Cloudflare samples below first - if they disagree, the
+# link is fluctuating and the middle rows cannot be compared to each other at
+# all. Upload (not measured here) stayed at 35-40 Mbps throughout; that
+# asymmetry is the one stable signal.
 # See docs/incidents/2026-09-23-airtel-inbound-throughput-path-dependent.md
 #
 # Usage: tools/network/speedcheck.sh [seconds_per_target]   (default 12)
@@ -42,10 +45,13 @@ curl -sS --max-time 10 https://speed.cloudflare.com/cdn-cgi/trace 2>/dev/null \
 
 echo
 echo "== Throughput (${CAP}s per target) =="
-row "domestic  (Cloudflare edge)"  "https://speed.cloudflare.com/__down?bytes=50000000"
+# Cloudflare is sampled twice, first and last, purely to expose drift across
+# the run. If these two disagree, treat the rows between them as untrustworthy.
+row "domestic  (Cloudflare edge) [1st]"  "https://speed.cloudflare.com/__down?bytes=50000000"
 row "intl US   (Hetzner Ashburn)"  "https://ash-speed.hetzner.com/100MB.bin"
 row "intl DE   (Hetzner Falkenst)" "https://fsn1-speed.hetzner.com/100MB.bin"
 row "intl SG   (Hetzner Singapore)" "https://sin-speed.hetzner.com/100MB.bin"
+row "domestic  (Cloudflare edge) [2nd]"  "https://speed.cloudflare.com/__down?bytes=50000000"
 
 echo
 echo "== DNS (fresh names, no cache) =="

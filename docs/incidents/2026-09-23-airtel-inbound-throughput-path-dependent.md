@@ -1,4 +1,11 @@
-# Airtel: download throughput is path-dependent, upload is not
+# Airtel: download throughput is unstable, upload is not
+
+> **Retraction, later the same night.** This was first written as
+> "path-dependent, upload is not", concluding that one congested peering path
+> explained everything. **That conclusion does not hold** - see
+> "What broke the path-dependence conclusion" below. The title and the finding
+> have been corrected; the original reasoning is kept because the way it failed
+> is the useful part.
 
 **Date:** 2026-09-23
 **Symptom:** fast.com reported 1.9 Mbps while the line felt usable. Two router
@@ -111,6 +118,56 @@ That absence is evidence: a nationwide transit fault would be loud. It points
 at something closer to this connection - local backhaul, the BNG, or one
 congested peering port - which is consistent with the single-outlier finding
 above.
+
+## What broke the path-dependence conclusion
+
+Re-measuring the same targets ~40 minutes later inverted the ranking entirely:
+
+| Target                      | First pass | 40 min later |
+|-----------------------------|-----------:|-------------:|
+| Cloudflare Mumbai           | 34.7 Mbps  | **3.0 Mbps** |
+| Netflix OCA Pune (Airtel)   | 34.6 Mbps  | **0.9 Mbps** |
+| Netflix OCA Mumbai (Airtel) | 27.6 Mbps  | 6.1 Mbps     |
+| Netflix OCA Mumbai IX       |  6.0 Mbps  | **27.9**     |
+| Netflix OCA Mumbai IX       | 27.7 Mbps  | 32.0 Mbps    |
+| Netflix OCA Delhi IX        | 13.4 Mbps  | 12.9 Mbps    |
+
+The two "healthy" paths became the worst; the 6.0 Mbps outlier the whole
+conclusion rested on became 27.9. **The first table was measured sequentially,
+one 10-second sample per target over several minutes.** When capacity swings
+3-36 Mbps on a timescale of minutes, a sequential table measures *when* each
+sample was taken, not *where* it went. It was read as path dependence; it was
+the clock.
+
+Measuring concurrently does not rescue it either. All targets started in the
+same 12-second window gave Cloudflare 35.8 Mbps, Hetzner DE 0.5, Pune OCA 0.0 -
+**total 36.3 Mbps**, i.e. the line rate. That only shows one flow outcompeting
+the others for a shared bottleneck, which is true of any saturated link.
+
+**Methodological note for next time:** to compare paths on a link whose
+capacity is itself unstable, neither sequential nor concurrent single samples
+work. Interleave repeated short samples per target over a long run and compare
+distributions, or measure each target against a same-moment control.
+
+## What actually survives
+
+- The line does **~36 Mbps aggregate download** when anything can use it, and
+  **35-40 Mbps upload**, measured repeatedly and stable.
+- **Download throughput to a fixed target is unstable over minutes** -
+  Cloudflare Mumbai read 34.7, then 3.0, then 35.8 Mbps inside an hour with no
+  change at this end. Upload never moved.
+- **Loss under load on long paths**: 0% idle, 12.5% while pulling from Hetzner
+  DE. Domestic 0-3.3%.
+- **Airtel mobile shows it too.** On AS45609 (a separate access network from
+  this line's AS24560): 7.33 Mbps on speedtest.net against 330 kbps on
+  fast.com, the same disagreement at greater extremity. Both networks share the
+  AS9498 backbone, so this points away from the local line and towards
+  something shared - though mobile results carry their own confounders (signal,
+  cell load, plan quota) and one sample is not proof.
+- Everything above was measured between roughly 21:00 and 00:45 IST and got
+  worse across that window, so **time-of-day is unseparated from everything
+  else**. A morning run is the cheapest way to cut that variable out, and was
+  not yet done.
 
 ## Reproducing
 

@@ -75,7 +75,7 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
 
 **Before xero itself moves: the power watchdog needs a new signal.** `watchdog_power.sh` infers a mains outage from `enp1s0` losing carrier, which works only because the extender is not on a UPS. Plugged into the Airtel router, which has its own UPS, the carrier never drops and xero would run its battery flat. Fix: keep the carrier check and add "the wol Pi **and** the extender both stop answering pings for N checks". Requiring both avoids false alarms from the Pi's flaky supply. The extender needs a pinned IP first.
 
-### Airtel: download throughput is path-dependent, upload is not - not yet reported
+### Airtel: download throughput is unstable, upload is not - not yet reported
 
 **Why:** fast.com read 1.9 Mbps on 2026-09-23 while the line still felt usable, and two router restarts changed nothing. Measuring it properly found something narrower and odder than "the internet is slow". Full write-up in `docs/incidents/2026-09-23-airtel-inbound-throughput-path-dependent.md`.
 
@@ -83,7 +83,7 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
 
 **The three findings, in order of how much they constrain the cause:**
 - **Inbound only.** The Patna speedtest server gave 15.9 Mbps down against 40.6 Mbps up - same host, same 89 ms RTT, same moment. Equal RTT in both directions rules out window-size and bandwidth-delay explanations entirely.
-- **Path-dependent, not distance-dependent.** Two Netflix OCAs in Mumbai one millisecond apart differ 4.6x (27.7 vs 6.0 Mbps), and the 9 ms target is the lowest-latency host measured all session. Anything shaped like "the farther it is the slower it gets" is contradicted by that row.
+- **Unstable over minutes, which is what the path-dependence claim turned out to be.** Cloudflare Mumbai read 34.7, then 3.0, then 35.8 Mbps inside an hour with nothing changed at this end. An earlier version of this entry concluded "one congested peering path" from a table of *sequential* samples; re-measuring inverted the ranking completely. **Retracted** - see the write-up. Upload never moved throughout.
 - **Loss only under load.** 0% idle and 12.5% while downloading on the Hetzner DE path; 0-3.3% domestic. Every idle ping looked clean all session, which is why it kept reading as "slow" rather than "lossy".
 
 Together: congestion or capacity exhaustion on *particular inbound paths* into Airtel - different peering ports, IX links or transit hit differently - not one saturated pipe and not a shaper.
