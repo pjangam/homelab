@@ -67,8 +67,8 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
 - **The Pi's supply:** its known undervoltage problem gets a new load in the USB speaker. The 3.5mm jack avoids it if the speaker has an AUX input.
 
 **Before xero itself moves: the power watchdog needs a new signal.** `watchdog_power.sh` infers a mains outage from `enp1s0` losing carrier, which works only because the extender is not on a UPS. Plugged into the Airtel router, which has its own UPS, the carrier never drops and xero would run its battery flat. Fix: keep the carrier check and add "the wol Pi **and** the extender both stop answering pings for N checks". Requiring both avoids false alarms from the Pi's flaky supply. The extender needs a pinned IP first.
+
 ### MacBook DNS keeps breaking - root cause found (OpenVPN Connect); cure unproven
->>>>>>> f6ef144 (Plan: move white noise and spotifyd from xero to the wol Pi)
 
 **Why:** the Mac's resolver broke five times with an identical signature, and each repair destroyed the evidence before anyone could say what caused it. Between breaks the Mac is silently unfiltered - the 2026-08-28 occurrence went unnoticed for 10 days.
 
