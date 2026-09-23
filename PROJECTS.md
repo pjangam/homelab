@@ -33,7 +33,8 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
 **Progress (2026-09-23):**
 - **Step 1:** done, except spotifyd. The upstream aarch64 binary needs OpenSSL 1.1, which trixie does not have.
   - Cross-building it on xero crashed xero; see `docs/incidents/2026-09-23-xero-kernel-oops-during-rust-build.md`.
-  - It is now built on the Pi itself with `projects/spotifyd/build_spotifyd_on_pi.sh`: one job at a time, LTO off, 2-3h.
+  - It is now built on the Pi itself with `projects/spotifyd/build_spotifyd_on_pi.sh`: one job at a time, LTO off. **Built 2026-09-24 in 93min** (swap peaked ~540MB, never throttled). The result is 0.4.2 linked to `libssl.so.3`, with MPRIS. So the raspotify fallback was not needed.
+  - Started by hand on the Pi (unit still disabled), it advertises `raspberrypi` over zeroconf, visible from xero's `avahi-browse`.
 - **Fallback if the build fails:** decided 2026-09-24, **don't retry, use raspotify.**
   - `projects/spotifyd/install_raspotify_pi.sh` installs raspotify's librespot and disables the package's own system service. librespot then runs as a user unit named `raspberrypi`.
   - librespot has no MPRIS, so pausing Spotify before white noise moves to an HA automation.
