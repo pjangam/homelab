@@ -34,6 +34,9 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
 - **Step 1:** done, except spotifyd. The upstream aarch64 binary needs OpenSSL 1.1, which trixie does not have.
   - Cross-building it on xero crashed xero; see `docs/incidents/2026-09-23-xero-kernel-oops-during-rust-build.md`.
   - It is now built on the Pi itself with `projects/spotifyd/build_spotifyd_on_pi.sh`: one job at a time, LTO off, 2-3h.
+- **Fallback if the build fails:** decided 2026-09-24, **don't retry, use raspotify.**
+  - `projects/spotifyd/install_raspotify_pi.sh` installs raspotify's librespot and disables the package's own system service. librespot then runs as a user unit named `raspberrypi`.
+  - librespot has no MPRIS, so pausing Spotify before white noise moves to an HA automation.
 - **Step 2:** done. `projects/white-noise/deploy_audio_pi.sh` installs the four units disabled under `~/homelab` on the Pi.
 - **White noise on the Pi:** tested through the 3.5mm jack. It starts, holds 59% and stops cleanly. The bridges were not started, since they would clash with xero's.
 
