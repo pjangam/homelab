@@ -60,6 +60,58 @@ healthy path and reads 35 Mbps.
 The disagreement is the diagnostic signal. A single number would have hidden
 the whole effect.
 
+## Where this connection actually is, and which Airtel it is
+
+`122.170.192.33` is **AS24560** (`AIRTELBROADBAND-AS-AP`, Bharti Airtel
+Telemedia Services - the fixed-line arm), geolocated to **Pune**. Two things
+follow:
+
+- **The OCA table is mostly distance after all.** Pune 18 ms / 34.6 Mbps,
+  Mumbai ~19 ms / 27.6, Delhi 78 ms / 13.4. The real anomaly is narrower than
+  "path-dependent": it is the *single* Mumbai IX cache at 9 ms giving 6.0 Mbps
+  while its neighbour at 10 ms gives 27.7. One congested peering path, not a
+  broad fault - which is also what a cable cut would *not* look like.
+- **Speedtest's server list was junk.** Patna is ~1,400 km from Pune, so its
+  "nearest server" numbers (10.6-15.9 Mbps) were a long domestic haul, not a
+  local baseline. The domestic baseline is the ~35 Mbps Cloudflare/Pune figure.
+
+The ASNs worth knowing when escalating:
+
+```
+AS24560  AIRTELBROADBAND-AS-AP  Telemedia Services   <- this line
+AS45609  BHARTI-MOBILITY-AS-AP  mobile / GPRS        <- an Airtel phone
+AS9498   BBIL-AP                Airtel backbone      <- shared international transit
+```
+
+Broadband and mobile are separate access networks under separate ASNs sharing
+the AS9498 backbone, so **tethering to an Airtel phone and re-running
+`speedcheck.sh` splits the diagnosis**: mobile also degraded implicates AS9498's
+backbone/transit (Airtel-wide, network team); mobile clean implicates AS24560's
+access or backhaul locally (a line ticket).
+
+## Has anyone else reported this?
+
+The signature is documented, but nothing current matches:
+
+- A TechEnclave thread on Airtel Xstream peering describes it closely -
+  international downloads falling 30-32 -> 6-7 Mbps with India-hosted servers
+  unaffected (Jan 2022, recurring Mar 2023). One March 2023 post is nearly
+  verbatim this case: *"anything outside of India gives me <1mbps download, but
+  still shows 100mbps upload"*.
+  <https://techenclave.com/t/airtel-xstream-fiber-peering-issue/254934>
+- Anurag Bhatia documented a real national-scale instance: from 2026-01-28
+  20:08 IST the MENA submarine cable failed, Airtel AS9498 rerouted India-EU
+  via Singapore and the US, latency past 320 ms, 20-80% loss on individual
+  hops, Arelion's EU route learning for AS9498 down 7,000 prefixes. Repaired
+  2026-03-13. <https://anuragbhatia.com/post/2026/01/eu-india-routing-issues/>
+- **Nothing current.** His AS9498 posts since May 2026 are about RPKI and
+  AS_PATH filters, not capacity; outage trackers show no Airtel spike.
+
+That absence is evidence: a nationwide transit fault would be loud. It points
+at something closer to this connection - local backhaul, the BNG, or one
+congested peering port - which is consistent with the single-outlier finding
+above.
+
 ## Reproducing
 
 `tools/network/speedcheck.sh [seconds_per_target]` runs the comparison: link
