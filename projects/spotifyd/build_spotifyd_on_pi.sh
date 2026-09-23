@@ -20,7 +20,9 @@
 # carries on after this script's ssh session ends. Asks for the Pi's sudo
 # password once, for the apt install only.
 #
-# Follow it:  ssh pramod@192.168.1.124 journalctl --user -fu spotifyd-build
+# Follow it:  ssh pramod@192.168.1.124 journalctl --user-unit spotifyd-build -f
+# (--user-unit, not --user -u: the Pi's journal is volatile with no per-user
+# files, so a user unit's output lands in the system journal.)
 set -euo pipefail
 
 PI="pramod@192.168.1.124"
@@ -65,6 +67,6 @@ systemd-run --user --unit=spotifyd-build --nice=10 \
   '
 echo
 echo "Build running as spotifyd-build. You can close this session."
-echo "Follow:  journalctl --user -fu spotifyd-build"
+echo "Follow:  journalctl --user-unit spotifyd-build -f"
 REMOTE
 )"
