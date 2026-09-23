@@ -75,6 +75,28 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
 
 **Before xero itself moves: the power watchdog needs a new signal.** `watchdog_power.sh` infers a mains outage from `enp1s0` losing carrier, which works only because the extender is not on a UPS. Plugged into the Airtel router, which has its own UPS, the carrier never drops and xero would run its battery flat. Fix: keep the carrier check and add "the wol Pi **and** the extender both stop answering pings for N checks". Requiring both avoids false alarms from the Pi's flaky supply. The extender needs a pinned IP first.
 
+### Airtel: download throughput is path-dependent, upload is not - not yet reported
+
+**Why:** fast.com read 1.9 Mbps on 2026-09-23 while the line still felt usable, and two router restarts changed nothing. Measuring it properly found something narrower and odder than "the internet is slow". Full write-up in `docs/incidents/2026-09-23-airtel-inbound-throughput-path-dependent.md`.
+
+**What it is not:** not the local link (upload ran 34.8-40.6 Mbps over the same 2.4GHz Wi-Fi throughout - Wi-Fi carrying 40 Mbps up is not what caps 10 Mbps down), not the router, not the plan, and **not distance or international transit** - that was the working theory for most of the session and the evidence killed it.
+
+**The three findings, in order of how much they constrain the cause:**
+- **Inbound only.** The Patna speedtest server gave 15.9 Mbps down against 40.6 Mbps up - same host, same 89 ms RTT, same moment. Equal RTT in both directions rules out window-size and bandwidth-delay explanations entirely.
+- **Path-dependent, not distance-dependent.** Two Netflix OCAs in Mumbai one millisecond apart differ 4.6x (27.7 vs 6.0 Mbps), and the 9 ms target is the lowest-latency host measured all session. Anything shaped like "the farther it is the slower it gets" is contradicted by that row.
+- **Loss only under load.** 0% idle and 12.5% while downloading on the Hetzner DE path; 0-3.3% domestic. Every idle ping looked clean all session, which is why it kept reading as "slow" rather than "lossy".
+
+Together: congestion or capacity exhaustion on *particular inbound paths* into Airtel - different peering ports, IX links or transit hit differently - not one saturated pipe and not a shaper.
+
+**Why the speed tests disagreed** (the thing that made this visible at all): neither measures "the internet", each measures one path to one server, and here paths differ by 6x. speedtest.net offered nothing nearer than Patna (~1000 km) because Airtel's geolocation of the IP places the connection far from where it is; Cloudflare terminates at a healthy Mumbai PoP and reads 35 Mbps. The disagreement is the signal - a single number hides the whole effect.
+
+**Left to do:**
+- **Report it to Airtel.** Frame it as inbound-only congestion on specific paths, including domestically-peered ones, with upload at full rate - *not* "my internet is slow", which invites a domestic test that reads 35 Mbps and closes the ticket. Ticket wording and the supporting numbers are in the incident write-up.
+- **Re-measure before and after any claimed fix** with `tools/network/speedcheck.sh [seconds_per_target]`: link and PoP, four throughput targets, DNS timing, idle-vs-loaded loss, traceroute.
+- **Worth knowing whether it is time-of-day.** Everything above was measured in one afternoon/evening; the international numbers got visibly worse across the session (Hetzner DE 4.0 -> 0.9 Mbps). A morning run would say whether this is peak-hour congestion, which changes what Airtel can be asked for.
+
+**Do not confuse this with the MacBook DNS entry below.** That one also presents as "the internet is slow" and they overlapped on 2026-09-23. They are unrelated: DNS made *name lookups* take ~600 ms on the M2 only; this affects *throughput* on every device.
+
 ### MacBook DNS keeps breaking - root cause found (OpenVPN Connect); cure unproven
 
 **Why:** the Mac's resolver broke five times with an identical signature, and each repair destroyed the evidence before anyone could say what caused it. Between breaks the Mac is silently unfiltered - the 2026-08-28 occurrence went unnoticed for 10 days.
@@ -96,6 +118,8 @@ Ruled out along the way and now moot: a stale global nameserver in the Tailscale
 **Left to do:**
 - **Apply the repair** (needs sudo on the work Mac, so it is the user's call): `sudo networksetup -setdnsservers Wi-Fi empty`, then verify with `scutil <<< "show Setup:/Network/Service/A02B9918-F5FF-4C22-ADC2-D8052BE73543/DNS"` rather than `networksetup`.
 - **Prove whether it is a cure.** It is a repair, not a fix - the next OpenVPN session can write it again. `tools/network/mac-dns-recorder.sh` stays running (pid 41238 as of 2026-09-23); the next snapshot tells us whether a connect or a disconnect leaves it behind, and whether anything can be done on the client side.
+- **One disconnect restored cleanly (2026-09-23).** A router restart dropped the corporate tunnel mid-session; `utun18` lost its address and the `Setup:.../DNS` dictionary was left genuinely empty (`<dictionary> { }`), with the bad pair gone and the resolver back to `192.168.1.123` on `en0`. So it is **not** every disconnect that strands the servers - which narrows what the recorder should be looking for to whatever is different about the ones that do.
+- **The typo'd second server is dead even while connected.** `dig @192.169.0.2` times out with the VPN *up*, despite OpenVPN pushing an explicit `/32` route for it into the tunnel. So the pair is half-broken whenever the VPN runs, not only after a disconnect: every query that falls to the second server eats a full timeout. That is a second, quieter source of the same "slow" symptom.
 - **Fix the tooling that lied.** `diagnose_macbook_dns.sh` and `fix_macbook_dns.sh` both lean on `networksetup`; step 1 of the fix should clear the `Setup:` key via `scutil`/`networksetup -setdnsservers ... empty` and the diagnose script should report the `Setup:` dictionary verbatim, `OpenVPNConnectOrig*` keys included.
 
 **The recorder is what cracked it.** `tools/network/mac-dns-recorder.sh` polls every 20s and snapshots only on change, capturing `Setup:` vs `State:` ownership, the network and location, the DHCP offer, per-resolver reachability and any VPN client or tunnel. Installed on the M2 2026-09-22 13:55 IST from the clone via `setup-mac-dns-recorder.sh`; the break it caught began six hours later. It runs from `~/code/personal/scripts/`, which that script fills by scp from xero - re-run it to update the recorder, a `git pull` alone does not. Its log lives at `~/Library/Logs/homelab/dns-recorder/snapshots.log` on the M2.

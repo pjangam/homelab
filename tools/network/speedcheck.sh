@@ -4,8 +4,15 @@
 #
 # Written 2026-09-23, when fast.com showed 1.9 Mbps while an in-country
 # Cloudflare PoP pulled ~38 Mbps. A router restart did nothing, because the
-# problem was never the local link. Re-run this before and after talking to the
-# ISP - the domestic/international gap is the whole argument.
+# problem was never the local link.
+#
+# NOTE: the domestic-vs-international framing this script was first written
+# around turned out to be wrong. Two Netflix OCAs in Mumbai one millisecond
+# apart differed 4.6x (27.7 vs 6.0 Mbps), so throughput here is path-dependent,
+# not distance-dependent. The targets below are still a useful spread, but read
+# them as "which paths are healthy", not "how far away is it". Upload is
+# unaffected throughout - that asymmetry is the real signal.
+# See docs/incidents/2026-09-23-airtel-inbound-throughput-path-dependent.md
 #
 # Usage: tools/network/speedcheck.sh [seconds_per_target]   (default 12)
 
@@ -54,10 +61,10 @@ printf '  %-34s %8s ms\n' "system resolver (mDNSResponder)" "${sys:-?}"
 
 echo
 echo "== Loss under load =="
-# The decisive test, 2026-09-23: Airtel showed 0% loss idle and 12.5% loss on
-# the international path *while downloading*. Loss only appears once the
-# inbound pipe is actually loaded, which is why idle pings always looked clean
-# and why "restart the router" never changed anything.
+# 2026-09-23: Airtel showed 0% loss idle and 12.5% loss on the Hetzner DE path
+# *while downloading*. Loss only appears once the inbound pipe is actually
+# loaded, which is why idle pings always looked clean and why "restart the
+# router" never changed anything.
 loadtest() {  # label host url
   local label="$1" host="$2" url="$3" idle busy
   idle=$(ping -c 12 -i 0.3 "$host" 2>/dev/null | awk -F'%' '/packet loss/{print $1}' | awk '{print $NF}')

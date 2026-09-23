@@ -96,6 +96,32 @@ This is a repair, not a cure - the next OpenVPN session can write it again.
 Leave `tools/network/mac-dns-recorder.sh` running to confirm whether it does,
 and whether it is a connect or a disconnect that leaves it behind.
 
+## Later the same day
+
+**The typo'd server is dead even while the VPN is connected.** OpenVPN pushes
+explicit `/32` routes for both DNS servers into the tunnel
+(`192.168.0.2/32` and `192.169.0.2/32` via `172.27.240.1` on `utun18`), so
+packets to `192.169.0.2` do go somewhere - nothing answers. `dig @192.168.0.2`
+returns in ~300 ms; `dig @192.169.0.2` times out. The pair is therefore
+half-broken *whenever the VPN runs*, not only after a disconnect, and every
+lookup that falls to the second server eats a full timeout. Measured effect:
+fresh system lookups took ~600 ms with the tunnel up versus ~80 ms without it.
+
+**Not every disconnect strands the servers.** A router restart dropped the
+tunnel mid-session; `utun18` lost its address and the `Setup:` dictionary was
+left genuinely empty (`<dictionary> { }`), the bad pair gone, the resolver back
+to `192.168.1.123` on `en0`. So the failure is conditional on something about
+*how* the session ends, which is the thing the recorder should now be aimed at.
+
+**The tunnel is split, not full.** The default route stays on `en0` via the
+home gateway; only `10.0.0.0/16`, `10.80.0.0/15`, `172.27.224.0/20`,
+`172.27.240.0/20`, `192.168.0.0/15` and the two DNS `/32`s go into `utun18`.
+So the corporate resolver sees every name looked up while connected, but the
+traffic itself does not traverse the tunnel. Worth noting that the pushed
+`192.168.0.0/15` covers the whole home range in principle and only misses
+because the on-link `192.168.1.0/24` route is more specific - anything moved to
+`192.168.0.x` would silently disappear into the corporate tunnel.
+
 ## Side effect worth knowing
 
 While DNS is broken and Tailscale is stopped, this Mac cannot resolve
