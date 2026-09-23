@@ -35,6 +35,11 @@ floating on top of everything else via the browser's native Picture-in-Picture.
   still be running at `Stop`, so any such child left is a background one. Then
   it reports `shells` instead of `waiting` - **amber**, never a push. Claude is
   re-invoked when the shell finishes, and that turn's own `Stop` re-checks.
+  The same check covers the **idle nudge**: about 60s after a turn ends,
+  Claude Code sends a `Notification` ("Claude is waiting for your input").
+  With the session's own shells still running, that stays `shells` too.
+  Before 2026-09-24 it turned the light red, and could push, a minute into
+  every long background job. A permission prompt is still red.
   Two edges: a turn you interrupt (Esc) with a shell still running shows amber
   though it is waiting on you, and between a shell finishing and Claude's
   reply it can read amber for a few seconds. The Pi LED shows `shells` as

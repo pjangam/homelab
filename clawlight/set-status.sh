@@ -101,9 +101,21 @@ background_shells() {
 
 # A turn that ends with its own shells still running is not waiting on you:
 # Claude is re-invoked when they finish. Report that as its own state (amber)
-# rather than red. Only `Stop` can mean this - `input_needed` is a real prompt.
+# rather than red. That covers `Stop`, and also the idle nudge: ~60s after a
+# turn ends Claude Code sends a `Notification` ("Claude is waiting for your
+# input"), which would otherwise flip an amber session to red - and push - while
+# its build was still running. Any other `input_needed` (a permission prompt)
+# is a real prompt and stays red.
 # CLAWLIGHT_BACKGROUND_SHELLS overrides the count, for the tests.
-if [ "$state" = "waiting" ] && [ "${CLAWLIGHT_BACKGROUND_SHELLS:-$(background_shells)}" -gt 0 ] 2>/dev/null; then
+idle_nudge=false
+if [ "$state" = "input_needed" ] && printf '%s' "$hook_input" | jq -e '
+     .hook_event_name == "Notification"
+     and (.notification_type == "idle_prompt"
+          or ((.message // "") | test("waiting for your input"; "i")))' >/dev/null 2>&1; then
+  idle_nudge=true
+fi
+if { [ "$state" = "waiting" ] || [ "$idle_nudge" = true ]; } \
+   && [ "${CLAWLIGHT_BACKGROUND_SHELLS:-$(background_shells)}" -gt 0 ] 2>/dev/null; then
   state="shells"
 fi
 

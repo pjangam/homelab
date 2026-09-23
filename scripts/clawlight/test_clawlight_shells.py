@@ -49,17 +49,18 @@ env = {
     "CLAWLIGHT_IGNORE_DIR": str(tmp / "ignore"),
 }
 env.pop("CLAWLIGHT_BACKGROUND_SHELLS", None)
-hook = f'echo \'{{"session_id":"t"}}\' | /bin/sh -c "{SET_STATUS} $STATE"'
+hook = f'printf %s "$PAYLOAD" | /bin/sh -c "{SET_STATUS} $STATE"'
 background = '( exec -a "zsh -c source /h/.claude/shell-snapshots/snapshot-zsh-1.sh && eval sleep" sleep 30 ) & sleep 0.3; '
 
 failures = 0
 
 
-def run(desc, script, state, want):
+def run(desc, script, state, want, payload=None):
     global failures
     reports.clear()
+    payload = json.dumps({"session_id": "t", **(payload or {})})
     subprocess.run([fake_claude, "-c", script + hook + "; kill $(jobs -p) 2>/dev/null; true"],
-                   env={**env, "STATE": state}, timeout=30, check=False)
+                   env={**env, "STATE": state, "PAYLOAD": payload}, timeout=30, check=False)
     got = reports[-1]["state"] if reports else None
     ok = got == want
     print(f"{'PASS' if ok else 'FAIL'}  {desc}")
@@ -72,6 +73,20 @@ run("Stop with no background shell is waiting", "", "waiting", "waiting")
 run("Stop with a background shell running is shells", background, "waiting", "shells")
 run("a real prompt stays input_needed even with a shell running", background, "input_needed", "input_needed")
 run("an unrelated child process is not a shell", "sleep 30 & sleep 0.3; ", "waiting", "waiting")
+
+# The idle nudge Claude Code sends ~60s after a turn ends. With the session's
+# own shell still running it is not waiting on you, so it must not turn red.
+IDLE = {"hook_event_name": "Notification", "notification_type": "idle_prompt",
+        "message": "Claude is waiting for your input"}
+IDLE_BY_MESSAGE = {"hook_event_name": "Notification", "message": "Claude is waiting for your input"}
+PERMISSION = {"hook_event_name": "Notification", "notification_type": "permission_prompt",
+              "message": "Claude needs your permission to use Bash"}
+run("idle nudge with a background shell running is shells", background, "input_needed", "shells", IDLE)
+run("idle nudge recognised by its message alone", background, "input_needed", "shells", IDLE_BY_MESSAGE)
+run("idle nudge with no background shell stays input_needed", "", "input_needed", "input_needed", IDLE)
+run("a permission Notification stays input_needed with a shell running", background, "input_needed", "input_needed", PERMISSION)
+run("PermissionRequest stays input_needed with a shell running", background, "input_needed", "input_needed",
+    {"hook_event_name": "PermissionRequest"})
 
 shutil.rmtree(tmp)
 print()
