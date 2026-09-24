@@ -71,12 +71,18 @@ grep -q "^Environment=ALSA_CARD=$CARD ALSA_CONTROL=$CONTROL WHITE_NOISE_LEVEL=$L
 printf '[Service]\nEnvironment=VOLUME_CARD=%s VOLUME_CONTROL=%s VOLUME_MAX=%s\n' "$CARD" "$CONTROL" "$MAX" \
   > "$stage/units/volume-mqtt-host.conf"
 
-# xero's spotifyd.conf with the Pi's own Connect name. Credential lines are
-# dropped: 0.4 authenticates through zeroconf from the phone and caches it.
+# xero's spotifyd.conf with the Pi's own Connect name and sound card. Credential
+# lines are dropped: 0.4 authenticates through zeroconf from the phone and
+# caches it. The card has to be named: the Pi has no ~/.asoundrc, so "default"
+# is card 0, HDMI - Spotify played silently there on 2026-09-24. (White noise
+# only reaches the jack because ALSA also reads its unit's ALSA_CARD.)
 grep -v -i -E '^\s*(password|password_cmd|use_keyring)\s*=' "$HOME/.config/spotifyd/spotifyd.conf" \
-  | sed -E 's/^(\s*device_name\s*=).*/\1 "raspberrypi"/' > "$stage/spotifyd/spotifyd.conf"
+  | sed -E -e 's/^(\s*device_name\s*=).*/\1 "raspberrypi"/' \
+           -e "s/^(\\s*device\\s*=).*/\\1 \"default:CARD=$CARD\"/" > "$stage/spotifyd/spotifyd.conf"
 grep -q '^device_name = "raspberrypi"' "$stage/spotifyd/spotifyd.conf" \
   || { echo "device_name did not get rewritten - check spotifyd.conf" >&2; exit 1; }
+grep -q "^device = \"default:CARD=$CARD\"" "$stage/spotifyd/spotifyd.conf" \
+  || { echo "device did not get rewritten - check spotifyd.conf" >&2; exit 1; }
 
 ssh "$PI" 'rm -rf ~/.deploy-audio && mkdir -p ~/.deploy-audio'
 scp -q -r "$stage"/. "$PI:.deploy-audio/"
