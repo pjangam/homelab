@@ -59,7 +59,7 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 
 **Speaker on the Pi: volume needs recalibrating (user, 2026-09-24).** On the Pi (card 1, control `PCM`) the same percentage is quieter than on xero (`Speaker`), and the speaker distorts above 97%. So the numbers carried over from xero no longer mean the same loudness:
 - the 59% start level and the fade steps (45/32/18/5) are hardcoded in `white-noise.service`, and the HA volume slider allows up to 100%
-- re-pick them against a decibel meter (a phone SPL app at the bed is enough): measure xero's current 59% before the speaker moves, then find the `PCM` % on the Pi that gives the same dB
+- re-pick them against a decibel meter (a phone SPL app at the bed is enough). **Target: ~67 dB at the bed**, which is what xero's 59% measured on 2026-09-24. Find the `PCM` % on the Pi that gives the same reading
 - make the start level and fade steps per-host, like `ALSA_CARD`/`ALSA_CONTROL` in the drop-in `deploy_audio_pi.sh` writes, so xero's behaviour does not change
 - cap `volume-mqtt.py`'s slider below the distortion point on the Pi (at most ~95%)
 
