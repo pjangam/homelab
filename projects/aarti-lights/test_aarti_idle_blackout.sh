@@ -84,7 +84,37 @@ print("ok")
 PY
 }
 
+# Switching WLED on restarts the idle clock (2026-09-24): a light turned on
+# into a quiet room must show the resting glow, not go straight back to black.
+power_on() {
+  python3 - "$HERE" <<'PY'
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("render", sys.argv[1] + "/aarti-render.py")
+r = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(r)
+
+pw = object.__new__(r.PowerWatch)   # skip __init__: no poll thread, no network
+pw.on, pw.on_since = True, 0.0
+pw.saw(True, now=100.0)
+assert pw.on_since == 0.0, "on->on is not a switch"
+pw.saw(False, now=200.0)
+assert pw.on_since == 0.0 and not pw.on, "on->off is not a switch-on"
+pw.saw(True, now=300.0)
+assert pw.on_since == 300.0, f"off->on should stamp 300, got {pw.on_since}"
+pw.saw(True, now=400.0)
+assert pw.on_since == 300.0, "staying on must not keep restamping"
+
+# Render-loop arithmetic: last sound long ago, switched on 1s ago -> lit.
+last_sound = max(0.0, pw.on_since)
+assert r.idle_floor(301.0 - last_sound) == r.IDLE, "glow right after switch-on"
+assert r.idle_floor(300.0 + r.IDLE_TIMEOUT_S + r.IDLE_FADE_S - last_sound) == 0.0, \
+    "still goes dark after a full silence following the switch-on"
+print("ok")
+PY
+}
+
 check "idle floor fades to true black and a sound relights it" py
+check "switching WLED on restarts the idle clock" power_on
 
 echo
 echo "$pass passed, $fail failed"

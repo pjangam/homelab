@@ -256,12 +256,19 @@ class PowerWatch:
 
     Polled on a thread because an HTTP round-trip inside the 40fps render loop
     would stutter it.
+
+    `on_since` is when it last went from off to on. Switching the light on is
+    itself a sign someone is there, so the render loop treats it as a sound and
+    restarts the idle clock. Without that, a light switched on from Home
+    Assistant into a room that had been quiet for 20s went dark again as soon
+    as the next poll saw it on (2026-09-24).
     """
 
     def __init__(self, host, period=2.0):
         self.url = f"http://{host}/json/state"
         self.period = period
         self.on = True          # assume on until told otherwise
+        self.on_since = 0.0     # last off->on switch; 0 = never seen one
         self.reachable = True
         threading.Thread(target=self._loop, daemon=True).start()
 
@@ -269,13 +276,19 @@ class PowerWatch:
         while True:
             try:
                 with urllib.request.urlopen(self.url, timeout=1.5) as r:
-                    self.on = bool(json.load(r).get("on", True))
+                    self.saw(bool(json.load(r).get("on", True)))
                 self.reachable = True
             except Exception:
                 # Unreachable is not the same as off. Keep rendering: a brief
                 # network blip should not blank the decoration mid-aarti.
                 self.reachable = False
             time.sleep(self.period)
+
+    def saw(self, on, now=None):
+        """Record one poll's power state, stamping an off->on switch."""
+        if on and not self.on:
+            self.on_since = time.time() if now is None else now
+        self.on = on
 
 
 def main():
@@ -366,6 +379,8 @@ def main():
 
             if now >= next_frame:
                 dt = 1.0 / FPS
+                if power is not None:
+                    last_sound = max(last_sound, power.on_since)
                 quiet_for = now - last_sound
                 floor = idle_floor(quiet_for, a.idle_timeout)
                 if floor <= 0.0 and not dark:
