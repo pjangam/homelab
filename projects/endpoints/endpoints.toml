@@ -250,9 +250,18 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   port = 22
   url = "ssh://192.168.1.124"
   connect = "ssh 192.168.1.124"
-  desc = "The Pi. Node-RED, the GPIO buttons, the clawlight LED, and the WoL sender."
-  who = "Hands, and xero's renew_miraie_login.sh."
+  desc = "The Pi. Node-RED, the GPIO buttons, the clawlight LED, white noise and Spotify Connect, and the WoL sender."
+  who = "Hands, and xero's renew_miraie_login.sh and deploy_audio_pi.sh."
   note = "Key-only - password auth is off, and rpcbind is disabled."
+
+  [[group.endpoint]]
+  name = "Spotify Connect - raspberrypi"
+  proto = "udp"
+  host = "192.168.1.124"
+  connect = "avahi-browse -pt _spotify-connect._tcp   (look for raspberrypi)"
+  desc = "spotifyd on the wol Pi, advertised over mDNS as a Connect device; plays through the Pi's 3.5mm jack. Moved from xero (where it was 'xero') 2026-09-24."
+  who = "Phones picking a speaker in the Spotify app, and HA's play_bedroom_track through its spotcast entity."
+  note = "Only shows up in spotcast after a phone has played to it once. Running but not advertising is the known failure; check_spotifyd_advertising.sh looks for it."
 
 [[group]]
 name = "Not services at all"

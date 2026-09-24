@@ -50,8 +50,7 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
    - `vcgencmd get_throttled` after a while
 3. Cutover, **white noise done 2026-09-24:** xero's `white-noise`, `white-noise-mqtt` and `volume-mqtt` are disabled (installed, for rollback); the Pi's two bridges are enabled. No HA edit was needed. Checked: `whitenoise/set` ON/OFF (what the HA switch sends) starts and stops it on the Pi with the fade, both bridges `online`, the slider's discovery `max` is 93. White noise was left playing on the Pi, as it was on xero.
    - **Still to check by hand:** both GPIO buttons and the HA volume slider.
-   - **Still on xero: spotifyd.** Until it moves, starting white noise no longer pauses Spotify (the Pi's `playerctl` only sees the Pi's spotifyd), and the HA volume slider drives the Pi's jack, not xero's `Master`.
-   - Remaining: xero `systemctl --user disable --now spotifyd` and comment out the `watchdog_spotifyd.sh` cron line; Pi `systemctl --user enable --now spotifyd`
+   - **spotifyd done 2026-09-24:** xero's disabled and its `watchdog_spotifyd.sh` cron line commented out; the Pi's enabled, and `raspberrypi` is advertised (seen from xero's `avahi-browse`). xero's health check now reads spotifyd as "not applicable" (exit 2), so it stays green but watches nothing until step 5.
 4. HA:
    - point `play_bedroom_track` at the new spotcast entity for `raspberrypi`
    - test white-noise-pauses-Spotify
