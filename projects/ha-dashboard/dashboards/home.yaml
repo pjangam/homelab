@@ -271,12 +271,39 @@ views:
       min: 2
 - title: Living Room
   path: areas-living_room
-  subview: true
+  subview: false
   type: sections
   header:
     badges_position: bottom
   max_columns: 3
   sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Living Room
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/17bd8c7bd0fa85e5f92976d7e5b332d2
+      badges: []
+    - type: tile
+      entity: switch.living_room_tubelight
+      name:
+        type: entity
+    - type: tile
+      entity: switch.living_room_shelf_led
+      name:
+        type: entity
+    - type: tile
+      entity: switch.living_room_blank
+      name:
+        type: entity
+      visibility:
+      - condition: not
+        conditions: []
+    - type: tile
+      entity: fan.living_room_fan
+      name: Fan
+    column_span: 4
   - type: grid
     cards:
     - type: heading
@@ -351,63 +378,101 @@ views:
       entity: light.wled_segment_2
       features:
       - type: light-brightness
+    column_span: 4
+  badges: []
+- title: Bedroom
+  path: areas-bedroom
+  subview: false
+  type: sections
+  header:
+    badges_position: bottom
+  max_columns: 3
+  sections:
   - type: grid
     cards:
     - type: heading
-      heading: Climate
-      icon: mdi:home-thermometer
+      heading: bedroom
       tap_action:
         action: navigate
-        navigation_path: /climate?historyBack=1
-    - type: tile
-      entity: fan.living_room_fan
-      name: Fan
-  - type: grid
-    column_span: 3
-    cards:
-    - type: heading
-      heading_style: subtitle
-      heading: ''
-  - type: grid
-    cards:
-    - type: heading
-      heading: Living Room
-      tap_action:
-        action: navigate
-        navigation_path: /config/devices/device/17bd8c7bd0fa85e5f92976d7e5b332d2
+        navigation_path: /config/devices/device/3149ac35b28c877e6d944b45919eaaa5
       badges: []
     - type: tile
-      entity: switch.living_room_tubelight
+      entity: switch.bedroom_tubelight
       name:
         type: entity
     - type: tile
-      entity: switch.living_room_shelf_led
+      entity: switch.bedroom_led_bulb_2
       name:
         type: entity
     - type: tile
-      entity: switch.living_room_blank
+      entity: fan.bedroom_fan_2
+    - type: tile
+      entity: switch.bedroom_balcony
+      name:
+        type: entity
+    - type: tile
+      entity: climate.panasonic_ac_panasonic_ac
+      features:
+      - type: target-temperature
+    - type: tile
+      entity: switch.white_noise
+      name:
+        type: entity
+    column_span: 4
+  - type: grid
+    cards:
+    - type: tile
+      entity: media_player.spotify_pramod
+    - type: tile
+      entity: script.play_bedroom_track
+      name:
+        type: entity
+    - type: heading
+      heading: Spotcast Pramod
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/daa52d8e2193c921d3d6d7ed31ccc693
+      badges: []
+    - type: tile
+      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_devices
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_profile
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_playlists
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_liked_songs
+      name:
+        type: entity
+    - type: tile
+      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_followers
       name:
         type: entity
   - type: grid
     cards:
     - type: heading
-      heading: WLED
+      heading: PANASONIC AC
       tap_action:
         action: navigate
-        navigation_path: /config/devices/device/cfccff4406a5b20cf364ba04f6956e50
+        navigation_path: /config/devices/device/5e93afa4c64f21a11a6f2132e090afb1
       badges: []
     - type: tile
-      entity: select.wled_playlist
+      entity: sensor.panasonic_ac_monthly_power_consumption_panasonic_ac
       name:
         type: entity
     - type: tile
-      entity: select.wled_preset
+      entity: sensor.panasonic_ac_daily_power_consumption_panasonic_ac
       name:
         type: entity
   badges: []
 - title: Kitchen
   path: areas-kitchen
-  subview: true
+  subview: false
   type: sections
   header:
     badges_position: bottom
@@ -484,125 +549,9 @@ views:
       name:
         type: entity
   badges: []
-- title: Bedroom
-  path: areas-bedroom
-  subview: true
-  type: sections
-  header:
-    badges_position: bottom
-  max_columns: 3
-  sections:
-  - type: grid
-    cards:
-    - type: heading
-      heading: Climate
-      icon: mdi:home-thermometer
-      tap_action:
-        action: navigate
-        navigation_path: /climate?historyBack=1
-    - type: tile
-      entity: climate.panasonic_ac_panasonic_ac
-      features:
-      - type: target-temperature
-    - type: tile
-      entity: fan.bedroom_fan_2
-  - type: grid
-    cards:
-    - type: heading
-      heading: Media players
-      icon: mdi:multimedia
-      tap_action:
-        action: navigate
-        navigation_path: media-players?historyBack=1
-    - type: tile
-      entity: media_player.spotify_pramod
-  - type: grid
-    column_span: 3
-    cards:
-    - type: heading
-      heading_style: subtitle
-      heading: ''
-  - type: grid
-    cards:
-    - type: heading
-      heading: bedroom
-      tap_action:
-        action: navigate
-        navigation_path: /config/devices/device/3149ac35b28c877e6d944b45919eaaa5
-      badges: []
-    - type: tile
-      entity: switch.bedroom_tubelight
-      name:
-        type: entity
-    - type: tile
-      entity: switch.bedroom_led_bulb_2
-      name:
-        type: entity
-    - type: tile
-      entity: switch.bedroom_balcony
-      name:
-        type: entity
-  - type: grid
-    cards:
-    - type: heading
-      heading: Spotcast Pramod
-      tap_action:
-        action: navigate
-        navigation_path: /config/devices/device/daa52d8e2193c921d3d6d7ed31ccc693
-      badges: []
-    - type: tile
-      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_devices
-      name:
-        type: entity
-    - type: tile
-      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_profile
-      name:
-        type: entity
-    - type: tile
-      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_playlists
-      name:
-        type: entity
-    - type: tile
-      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_liked_songs
-      name:
-        type: entity
-    - type: tile
-      entity: sensor.spotcast_t2ri8v1ku89v8s2ci4d6vrfv2_spotify_followers
-      name:
-        type: entity
-  - type: grid
-    cards:
-    - type: heading
-      heading: PANASONIC AC
-      tap_action:
-        action: navigate
-        navigation_path: /config/devices/device/5e93afa4c64f21a11a6f2132e090afb1
-      badges: []
-    - type: tile
-      entity: sensor.panasonic_ac_monthly_power_consumption_panasonic_ac
-      name:
-        type: entity
-    - type: tile
-      entity: sensor.panasonic_ac_daily_power_consumption_panasonic_ac
-      name:
-        type: entity
-  - type: grid
-    cards:
-    - type: heading
-      heading: Others
-      badges: []
-    - type: tile
-      entity: script.play_bedroom_track
-      name:
-        type: entity
-    - type: tile
-      entity: switch.white_noise
-      name:
-        type: entity
-  badges: []
 - title: Media players
   path: media-players
-  subview: true
+  subview: false
   icon: mdi:multimedia
   type: sections
   max_columns: 2
@@ -637,7 +586,7 @@ views:
       entity: media_player.pramods_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
 - title: Devices
   path: other-devices
-  subview: true
+  subview: false
   icon: mdi:devices
   type: sections
   header:
