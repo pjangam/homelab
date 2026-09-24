@@ -414,12 +414,30 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Why:** long-standing idea - open/close curtains from HA (and on a schedule/scene) instead of by hand. Noted 2026-09-04.
 **State:** not started. **Wanted: a clip-on "curtain robot" that sits on the existing rod** - no new track, no wiring, battery-powered. Reference product (user, 2026-09-25): [SwitchBot Curtain, Rod 2.0 version on Amazon.in](https://www.amazon.in/dp/B0FLQ46BQW). **Stuck between two bad options:** readymade robots are expensive, and a DIY build is difficult for this kind of curtain.
 - **The curtains are fabric on a rod with rings.** That is exactly what the "Rod" variant of these robots is for: it rides on the rod and pushes the rings along. The listing notes it does **not** fit square rods, so check the rod's shape and diameter first.
-- **Price is the blocker.** That listing is ₹8,199 **per motor**, from a reseller (brand shown as "Generic", 3 reviews). This looks like the same import markup found for Flic and Shelly in India. **A centre-opening pair needs one motor per panel**, so a single window costs about ₹16k.
+- **Price is the blocker.** That listing is ₹8,199 **per motor**, from a reseller (brand shown as "Generic", 3 reviews). This looks like the same import markup found for Flic and Shelly in India.
+- **One-side opening, decided 2026-09-25.** Each curtain opens to one side as a single panel, not from the middle. So it is **one motor per window**, not two. The whole curtain rides on one robot, so check its weight against the motor's rating (SwitchBot quotes ~8kg max).
 - **HA fit is good without SwitchBot's hub or cloud.** The robot talks Bluetooth LE (the listing says "Wi-Fi", but Wi-Fi only comes through SwitchBot's own Hub). HA's built-in SwitchBot integration controls it locally over BLE. It needs either Bluetooth on xero or an ESP32 running ESPHome's `bluetooth_proxy` near the window (~₹500, a spare dev board will do).
 - **Same form factor, other radios:** Aqara Curtain Driver E1 Rod (~US$100, Zigbee) and generic Tuya Zigbee rod robots (~US$60). These are only cheaper if a Zigbee coordinator gets bought anyway, for example for the "In-house smart switch to replace Tinxy" or door sensor projects. Otherwise BLE is the simpler route.
 - **DIY is not the plan.** A friction drive on a ring rod is fiddly to make reliable. That is the "difficult" half of the reason this is parked.
 
-**Next step:** parked on price. Before buying: measure rod diameter and shape, count windows and panels (which gives the number of motors), and check whether SwitchBot or an authorised Indian seller lists the Rod 2.0 cheaper than this reseller, or wait for a sale. Also check whether xero has working Bluetooth; if not, budget the ESP32 proxy.
+```parts
+qty | item | est | note
+1 | Clip-on rod curtain robot (SwitchBot Curtain Rod 2.0 class), per window | 6000-8200 | online - ₹8,199 is the reseller listing; an authorised seller or a sale may be lower. Tuya/Aqara rod robots are the cheaper alternative if Zigbee happens anyway
+1 | ESP32 dev board with USB, as ESPHome Bluetooth proxy | 0-600 | local - only if xero's Bluetooth cannot reach the window; a spare board costs nothing
+1 | 5V USB charger + cable for the proxy | 0-300 | household - likely already on hand
+```
+
+**Budget: about ₹6,000-8,200 per window** for the motor, plus ₹0-900 once for the Bluetooth proxy. The window count, still to be taken, multiplies the motor line. Ready-made, not DIY: a DIY friction drive would be ₹1,500-2,500 in parts but a hard build.
+
+**Time: about 2-3 hours for the first window, then about 30 minutes for each extra one.**
+- **Bluetooth path to HA - 0.5-1.5h.** Check xero's Bluetooth first. If it cannot reach, flash a spare ESP32 with `bluetooth_proxy` and plug it in near the window.
+- **Mount and calibrate - 0.5h.** Clip it onto the rod and set the open and closed ends in SwitchBot's app once. After that, HA drives it locally.
+- **HA - 1h.** Add the SwitchBot integration, then set up open/close automations (sunrise, bedtime) and a dashboard tile.
+- Charging is the ongoing cost: the battery lasts months, so plan a USB top-up. The optional SwitchBot solar panel removes that job.
+
+**Difficulty: easy.** Everything is off the shelf and HA supports it natively. The only real risk is fit (rod shape, ring clearance, curtain weight), which is why measuring comes first. DIY would be hard, and is not the plan.
+
+**Next step:** parked on price. Before buying: measure rod diameter and shape, count windows (one motor each), weigh or estimate each curtain, and check whether SwitchBot or an authorised Indian seller lists the Rod 2.0 cheaper than this reseller, or wait for a sale. Also check whether xero has working Bluetooth; if not, budget the ESP32 proxy.
 
 ### Door open/close and lock status (main, safety, balcony)
 **Why:** nothing in HA currently knows whether any door in the house is shut. The everyday want is "was the balcony door left open with the AC running" and "is the main door still standing open" and "did anyone actually lock the front door"; the later want is an alert if the front door opens while nobody is home. Noted 2026-09-12. Everything downstream already exists - Mosquitto, HA, and the self-hosted ntfy push path built for clawlight - so this project is only about getting three binary states into MQTT honestly.
