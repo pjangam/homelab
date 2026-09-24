@@ -42,7 +42,7 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
 - **White noise on the Pi:** tested through the 3.5mm jack. It starts, holds 59% and stops cleanly. The bridges were not started, since they would clash with xero's.
 
 **Next session (user has the speaker ready):**
-1. Plug the USB speaker into the Pi and run `projects/white-noise/deploy_audio_pi.sh usb`.
+1. ~~Plug the USB speaker into the Pi and run `deploy_audio_pi.sh usb`.~~ Done differently 2026-09-24: the speaker is on the Pi's 3.5mm jack, deployed with `headphones` and calibrated (below).
 2. Test on the Pi alone:
    - `systemctl --user start white-noise`: level and fade
    - play to `raspberrypi` from the phone
@@ -57,11 +57,10 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
 
 spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It was started by hand, so a Pi reboot stops it.
 
-**Speaker on the Pi: volume needs recalibrating (user, 2026-09-24).** On the Pi (card 1, control `PCM`) the same percentage is quieter than on xero (`Speaker`), and the speaker distorts above 97%. So the numbers carried over from xero no longer mean the same loudness:
-- the 59% start level and the fade steps (45/32/18/5) are hardcoded in `white-noise.service`, and the HA volume slider allows up to 100%
-- re-pick them against a decibel meter (a phone SPL app at the bed is enough). **Target: ~67 dB at the bed**, which is what xero's 59% measured on 2026-09-24. Find the `PCM` % on the Pi that gives the same reading
-- make the start level and fade steps per-host, like `ALSA_CARD`/`ALSA_CONTROL` in the drop-in `deploy_audio_pi.sh` writes, so xero's behaviour does not change
-- cap `volume-mqtt.py`'s slider below the distortion point on the Pi (at most ~95%)
+**Speaker on the Pi: volume recalibrated (2026-09-24).** The speaker is on the Pi's **3.5mm jack** (card 1 `Headphones`, control `PCM`) through its AUX input, not on USB, so `deploy_audio_pi.sh headphones` is the mode to use. The same % is quieter there than on xero (`Speaker`), and the jack's control goes above 0 dB, so it clips past ~97%: the "breaking" was the Pi, not the speaker.
+- Measured at the bed: xero at 59% is ~67 dB; the Pi at 95% matches it. The user capped the Pi at **93%** (-3.45 dB, so ~65 dB).
+- Level, fade-out steps and slider top are now per-host settings (`WHITE_NOISE_LEVEL`, `WHITE_NOISE_FADE`, `VOLUME_MAX`), set by `deploy_audio_pi.sh`. xero keeps 59% / 45 32 18 5 / 100 and its installed unit was updated with no change in behaviour.
+- The Pi: level 93, slider max 93, fade out 82 71 58 45 (~12 dB apart, since the jack's % is linear in dB). Tested on the Pi: it starts at 93%, steps down through the four and resets to 93%. The fade in is sox's own 60s ramp and needed no change.
 
 **Plan:**
 1. **Packages on the Pi.**

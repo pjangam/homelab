@@ -30,6 +30,9 @@ PERCENT_RE = re.compile(r"\[(\d+)%\]")
 # default ALSA device is PipeWire and the speaker's own control is not Master.
 AMIXER = ["amixer"] + (["-c", os.environ["VOLUME_CARD"]] if os.environ.get("VOLUME_CARD") else [])
 CONTROL = os.environ.get("VOLUME_CONTROL", "Master")
+# The slider's top. The Pi's 3.5mm jack goes above 0 dB and clips past ~97%,
+# so deploy_audio_pi.sh caps it at 93 there.
+MAX = int(os.environ.get("VOLUME_MAX", "100"))
 
 DISCOVERY_PAYLOAD = {
     "name": "Server Volume",
@@ -40,7 +43,7 @@ DISCOVERY_PAYLOAD = {
     "state_topic": STATE_TOPIC,
     "availability_topic": AVAILABILITY_TOPIC,
     "min": 0,
-    "max": 100,
+    "max": MAX,
     "step": 1,
     "unit_of_measurement": "%",
     "mode": "slider",
@@ -56,7 +59,7 @@ def get_volume():
 
 
 def set_volume(pct):
-    pct = max(0, min(100, pct))
+    pct = max(0, min(MAX, pct))
     subprocess.run([*AMIXER, "sset", CONTROL, f"{pct}%"], check=False)
 
 

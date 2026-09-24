@@ -7,9 +7,18 @@
 #
 #   deploy_audio_pi.sh [headphones|usb]
 #
-#   headphones (default) - the Pi's 3.5mm jack, for testing alongside xero
-#   usb                  - the USB speaker moved over from xero (C-Media
+#   headphones (default) - the Pi's 3.5mm jack, which is where the speaker's
+#                          AUX input is plugged in
+#   usb                  - the USB speaker's own sound card (C-Media
 #                          "USB Audio Device", ALSA id "Device")
+#
+# LEVEL is the white-noise volume, FADE the stop fade's steps and MAX the HA
+# slider's top. On the jack, 95% matched xero's ~67 dB at the bed (measured
+# 2026-09-24), but the jack goes above 0 dB and clips past ~97%, so the user
+# capped it at 93% (-3.45 dB, so ~65 dB). The jack's % is linear in dB
+# (-102.39 to +4), so the fade steps are ~12 dB apart: -15, -27, -41, -54 dB.
+# sox's 60s fade in needs no steps: it ramps up to whatever the mixer is at.
+# usb keeps xero's values, since it is the same speaker and control.
 #
 # The Pi has no repo clone, so the files are laid out under ~/homelab with
 # the same relative paths as the repo, and the units' /home/pramod/code/homelab
@@ -19,8 +28,8 @@ set -euo pipefail
 
 MODE="${1:-headphones}"
 case "$MODE" in
-  headphones) CARD=Headphones; CONTROL=PCM ;;
-  usb)        CARD=Device;     CONTROL=Speaker ;;
+  headphones) CARD=Headphones; CONTROL=PCM;     LEVEL=93; FADE="82 71 58 45"; MAX=93 ;;
+  usb)        CARD=Device;     CONTROL=Speaker; LEVEL=59; FADE="45 32 18 5"; MAX=100 ;;
   *) echo "usage: $0 [headphones|usb]" >&2; exit 2 ;;
 esac
 
@@ -46,10 +55,10 @@ done
 sed "s|/home/pramod/code/homelab|$PI_ROOT|g" "$REPO/projects/spotifyd/spotifyd.service" \
   > "$stage/units/spotifyd.service"
 
-# Which mixer the fade, the 59% ceiling and the HA volume slider act on.
-printf '[Service]\nEnvironment=ALSA_CARD=%s ALSA_CONTROL=%s\n' "$CARD" "$CONTROL" \
-  > "$stage/units/white-noise-host.conf"
-printf '[Service]\nEnvironment=VOLUME_CARD=%s VOLUME_CONTROL=%s\n' "$CARD" "$CONTROL" \
+# Which mixer the fade, the level and the HA volume slider act on, and how far.
+printf '[Service]\nEnvironment=ALSA_CARD=%s ALSA_CONTROL=%s WHITE_NOISE_LEVEL=%s\nEnvironment="WHITE_NOISE_FADE=%s"\n' \
+  "$CARD" "$CONTROL" "$LEVEL" "$FADE" > "$stage/units/white-noise-host.conf"
+printf '[Service]\nEnvironment=VOLUME_CARD=%s VOLUME_CONTROL=%s VOLUME_MAX=%s\n' "$CARD" "$CONTROL" "$MAX" \
   > "$stage/units/volume-mqtt-host.conf"
 
 # xero's spotifyd.conf with the Pi's own Connect name. Credential lines are
