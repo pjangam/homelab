@@ -102,7 +102,7 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   host = "ha.{tailnet}"
   port = 443
   url = "https://ha.{tailnet}/dashboard-home"
-  desc = "The curated dashboard: only what gets acted on (bedroom, living room, aarti lights, music). YAML mode, tracked in git (projects/ha-dashboard/dashboards/home.yaml)."
+  desc = "A YAML-mode copy of Overview, tracked in git (projects/ha-dashboard/dashboards/home.yaml) - the one to curate."
   note = "Read-only in the UI by design: edit the file and refresh. Overview itself stays auto-generated at /home."
 
   [[group.endpoint]]
