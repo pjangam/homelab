@@ -1,0 +1,873 @@
+<title>Curtain Cord-Loop Drive</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper:   #eaeef2;
+    --surface: #ffffff;
+    --sunk:    #dfe5ea;
+    --ink:     #15202b;
+    --muted:   #566676;
+    --line:    #c6d0d9;
+    --w5v:     #bf3327;
+    --w33:     #6d4aa8;
+    --wgnd:    #2b3a47;
+    --wdata:   #a3760e;
+    --warn:    #9a4a10;
+    --ok:      #2f6b4f;
+    --metal:   #8795a3;
+    --cord:    #a3337c;
+    --fabric:  #e4dccd;
+    --fabline: #cbbfa8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper:   #101822;
+      --surface: #17212c;
+      --sunk:    #0b1219;
+      --ink:     #e4ebf1;
+      --muted:   #93a5b6;
+      --line:    #2c3b4a;
+      --w5v:     #ee6155;
+      --w33:     #b292e8;
+      --wgnd:    #93a9bd;
+      --wdata:   #e3a92c;
+      --warn:    #e79a4e;
+      --ok:      #62c093;
+      --metal:   #6d7f91;
+      --cord:    #e77dbf;
+      --fabric:  #2a2a2b;
+      --fabline: #474238;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper:   #101822;
+    --surface: #17212c;
+    --sunk:    #0b1219;
+    --ink:     #e4ebf1;
+    --muted:   #93a5b6;
+    --line:    #2c3b4a;
+    --w5v:     #ee6155;
+    --w33:     #b292e8;
+    --wgnd:    #93a9bd;
+    --wdata:   #e3a92c;
+    --warn:    #e79a4e;
+    --ok:      #62c093;
+    --metal:   #6d7f91;
+    --cord:    #e77dbf;
+    --fabric:  #2a2a2b;
+    --fabline: #474238;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .wrap { max-width: 820px; margin: 0 auto; padding-inline: 16px; padding-block: 40px 64px; }
+
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 18px; margin-bottom: 32px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 10px;
+  }
+
+  h1 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif; font-weight: 700;
+    font-size: clamp(30px, 6vw, 42px); line-height: 1.08; letter-spacing: -0.01em;
+    margin: 0 0 12px; text-wrap: balance;
+  }
+
+  .standfirst { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  h2 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif; font-weight: 700;
+    font-size: 23px; margin: 44px 0 6px; letter-spacing: -0.005em; text-wrap: balance;
+  }
+
+  h3 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif; font-weight: 600;
+    font-size: 17px; margin: 26px 0 4px;
+  }
+
+  p { max-width: 65ch; }
+  figure { margin: 22px 0 8px; }
+
+  .scroller { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); padding: 10px; }
+  .scroller svg { display: block; min-width: 760px; width: 100%; height: auto; }
+  .scroller.wide svg { min-width: 760px; }
+
+  figcaption { font-size: 14px; color: var(--muted); margin-top: 10px; max-width: 65ch; }
+
+  code, .mono { font-family: "IBM Plex Mono", monospace; font-size: 0.92em; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 15px; margin-top: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--ink);
+  }
+  td:first-child { font-family: "IBM Plex Mono", monospace; white-space: nowrap; }
+  .tablewrap { overflow-x: auto; }
+
+  .callout { border-left: 3px solid var(--warn); padding: 2px 0 2px 16px; margin: 22px 0; }
+  .callout p { margin: 0; }
+  .callout .label {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--warn); display: block; margin-bottom: 3px;
+  }
+  .callout.ok { border-left-color: var(--ok); }
+  .callout.ok .label { color: var(--ok); }
+
+  ol.checks { padding-left: 0; list-style: none; counter-reset: c; margin: 16px 0 0; }
+  ol.checks li {
+    counter-increment: c; display: grid; grid-template-columns: 30px 1fr; gap: 12px;
+    padding: 11px 0; border-bottom: 1px solid var(--line); max-width: 68ch;
+  }
+  ol.checks li::before {
+    content: counter(c); font-family: "IBM Plex Mono", monospace; font-size: 13px;
+    color: var(--muted); padding-top: 2px;
+  }
+  ol.checks li > div { min-width: 0; }
+  ol.checks strong { font-weight: 600; }
+
+  .settings { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .pill {
+    border: 1px solid var(--line); background: var(--sunk); padding: 7px 13px;
+    font-family: "IBM Plex Mono", monospace; font-size: 13px; font-variant-numeric: tabular-nums;
+  }
+  .pill b { font-weight: 400; color: var(--muted); }
+
+  footer { margin-top: 52px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+
+  /* SVG text roles */
+  .st  { font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif; font-weight: 700; font-size: 15px; fill: var(--ink); }
+  .sn  { font-family: "IBM Plex Sans", sans-serif; font-weight: 600; font-size: 13px; fill: var(--ink); }
+  .sl  { font-family: "IBM Plex Mono", monospace; font-size: 11px; fill: var(--muted); }
+  .sli { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 500; fill: var(--ink); }
+  .ss  { font-family: "IBM Plex Mono", monospace; font-size: 10px; fill: var(--muted); }
+  .sc  { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 500; fill: var(--cord); }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Remote controlled curtains &middot; DIY option, proposal 2026-09-25</p>
+    <h1>Curtain Cord-Loop Drive</h1>
+    <p class="standfirst">A geared motor at the stack end of the existing rod turns a closed cord loop, and one clamp ties the curtain's lead ring to the top run of that loop. Every other ring stays free and follows the fabric. The design only works if nothing else touches the cord. The loop has to run behind and below the rings, hooks and rod brackets with room to spare, because a cord that rubs one ring drags the whole curtain.</p>
+  </header>
+
+  <div class="callout">
+    <p><span class="label">Proposal, nothing bought</span>Part sizes on this page are suggestions: a 12V geared DC motor of the JGA25-370 class at about 60&ndash;100 RPM, a 20&nbsp;mm drive pulley, a non-stretch braided cord and two lever microswitches. None of them has been measured against the real rod yet. The PROJECTS.md entry still recommends a clip-on rod robot and calls DIY "not the plan". This page draws the DIY option so the two can be compared.</p>
+  </div>
+
+  <h2>The whole drive, from the front</h2>
+  <p>Looking at the window from the room, with the curtain half closed. It opens to one side only. The fabric stacks at the left, next to the motor, and the idler sits at the far right end.</p>
+
+  <figure>
+    <div class="scroller wide">
+      <svg viewBox="0 0 1040 612" role="img" aria-label="Front view of the cord-loop curtain drive. A round rod on two wall brackets carries ten rings. Each ring hangs the single curtain panel from a hook. Below and behind the rod, a closed cord loop runs from a drive pulley at the left end to an idler pulley at the right end, giving a top run and a bottom run. A 12 volt geared motor sits behind the drive pulley on an L-bracket, with the controller box below it. The idler pulley is mounted in a slot and a spring pulls it to the right to keep the cord taut. Only the lead ring, at the curtain's free right-hand edge, is clamped to the top run by a short arm. The hooks of the other rings pass in front of the cord without touching it. Turning the drive pulley clockwise moves the top run and the lead ring right, which closes the curtain. The bottom run moves left. Reversing the motor opens it. An open limit switch sits where the lead ring stops when the curtain is fully stacked. A closed limit switch sits near the right bracket, where the lead ring stops when fully closed.">
+        <defs>
+          <marker id="f1i" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--ink)"></polygon>
+          </marker>
+          <marker id="f1c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--cord)"></polygon>
+          </marker>
+        </defs>
+
+        <!-- fabric (drawn first, everything else sits in front) -->
+        <rect x="222" y="270" width="412" height="270" fill="var(--fabric)" stroke="var(--fabline)" stroke-width="1.5"></rect>
+        <g stroke="var(--fabline)" stroke-width="1.2">
+          <line x1="274" y1="270" x2="274" y2="540"></line>
+          <line x1="318" y1="270" x2="318" y2="540"></line>
+          <line x1="362" y1="270" x2="362" y2="540"></line>
+          <line x1="406" y1="270" x2="406" y2="540"></line>
+          <line x1="450" y1="270" x2="450" y2="540"></line>
+          <line x1="494" y1="270" x2="494" y2="540"></line>
+          <line x1="538" y1="270" x2="538" y2="540"></line>
+          <line x1="582" y1="270" x2="582" y2="540"></line>
+        </g>
+        <text x="428" y="430" text-anchor="middle" class="sn">curtain, one panel</text>
+
+        <!-- motor L-bracket plate with drive pulley -->
+        <rect x="82" y="140" width="76" height="100" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <circle cx="120" cy="195" r="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="120" cy="195" r="3" fill="var(--ink)"></circle>
+        <path d="M98,181 A26,26 0 0 1 142,181" fill="none" stroke="var(--ink)" stroke-width="1.8" marker-end="url(#f1i)"></path>
+        <text x="120" y="130" text-anchor="middle" class="sli">CW = close</text>
+        <text x="120" y="258" text-anchor="middle" class="sn">drive pulley</text>
+        <text x="120" y="273" text-anchor="middle" class="sl">geared motor behind,</text>
+        <text x="120" y="287" text-anchor="middle" class="sl">on an L-bracket</text>
+
+        <!-- controller -->
+        <rect x="40" y="316" width="140" height="44" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <text x="110" y="343" text-anchor="middle" class="sn">controller</text>
+
+        <!-- idler plate, slot, spring -->
+        <rect x="922" y="165" width="106" height="60" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <rect x="940" y="191" width="46" height="8" rx="4" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.2"></rect>
+        <circle cx="950" cy="195" r="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <line x1="950" y1="195" x2="984" y2="195" stroke="var(--ink)" stroke-width="2"></line>
+        <polyline points="984,195 988,187 994,203 1000,187 1006,203 1010,195" fill="none" stroke="var(--ink)" stroke-width="1.6"></polyline>
+        <rect x="1010" y="181" width="8" height="28" fill="var(--ink)"></rect>
+        <circle cx="950" cy="195" r="3" fill="var(--ink)"></circle>
+        <text x="975" y="246" text-anchor="middle" class="sn">idler pulley</text>
+        <text x="975" y="262" text-anchor="middle" class="sli">spring tensioner</text>
+        <text x="975" y="276" text-anchor="middle" class="ss">slides in slot</text>
+
+        <!-- cord loop -->
+        <path d="M120,177 H950 A18,18 0 0 1 950,213 H120 A18,18 0 0 1 120,177 Z" fill="none" stroke="var(--cord)" stroke-width="3"></path>
+
+        <!-- rod, finials, brackets -->
+        <line x1="170" y1="110" x2="900" y2="110" stroke="var(--metal)" stroke-width="8" stroke-linecap="round"></line>
+        <circle cx="164" cy="110" r="8" fill="var(--metal)"></circle>
+        <circle cx="906" cy="110" r="8" fill="var(--metal)"></circle>
+        <rect x="186" y="58" width="28" height="8" fill="var(--ink)"></rect>
+        <rect x="193" y="66" width="14" height="40" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <rect x="866" y="58" width="28" height="8" fill="var(--ink)"></rect>
+        <rect x="873" y="66" width="14" height="40" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <text x="200" y="50" text-anchor="middle" class="sl">rod bracket</text>
+        <text x="740" y="98" text-anchor="middle" class="sl">curtain rod</text>
+
+        <!-- free rings and their hooks (hooks pass in front of the cord) -->
+        <g stroke="var(--muted)" stroke-width="1.3">
+          <line x1="230" y1="121" x2="230" y2="270"></line>
+          <line x1="274" y1="121" x2="274" y2="270"></line>
+          <line x1="318" y1="121" x2="318" y2="270"></line>
+          <line x1="362" y1="121" x2="362" y2="270"></line>
+          <line x1="406" y1="121" x2="406" y2="270"></line>
+          <line x1="450" y1="121" x2="450" y2="270"></line>
+          <line x1="494" y1="121" x2="494" y2="270"></line>
+          <line x1="538" y1="121" x2="538" y2="270"></line>
+          <line x1="582" y1="121" x2="582" y2="270"></line>
+          <line x1="626" y1="121" x2="626" y2="270"></line>
+        </g>
+        <g fill="none" stroke="var(--ink)" stroke-width="2.5">
+          <circle cx="230" cy="110" r="11"></circle>
+          <circle cx="274" cy="110" r="11"></circle>
+          <circle cx="318" cy="110" r="11"></circle>
+          <circle cx="362" cy="110" r="11"></circle>
+          <circle cx="406" cy="110" r="11"></circle>
+          <circle cx="450" cy="110" r="11"></circle>
+          <circle cx="494" cy="110" r="11"></circle>
+          <circle cx="538" cy="110" r="11"></circle>
+          <circle cx="582" cy="110" r="11"></circle>
+        </g>
+        <text x="230" y="88" class="sl">rings slide free</text>
+
+        <!-- lead ring, clamped to the top run -->
+        <circle cx="626" cy="110" r="11" fill="none" stroke="var(--cord)" stroke-width="3"></circle>
+        <polyline points="633,119 642,128 642,177" fill="none" stroke="var(--cord)" stroke-width="3"></polyline>
+        <circle cx="642" cy="177" r="6" fill="var(--cord)"></circle>
+        <text x="634" y="74" text-anchor="middle" class="sn">lead ring</text>
+        <text x="634" y="90" text-anchor="middle" class="sc">clamped to top run</text>
+
+        <!-- lead ring at full close (ghost) -->
+        <circle cx="826" cy="110" r="11" fill="none" stroke="var(--cord)" stroke-width="2" stroke-dasharray="4 3"></circle>
+        <polyline points="833,119 842,128 842,177" fill="none" stroke="var(--cord)" stroke-width="2" stroke-dasharray="4 3"></polyline>
+        <circle cx="842" cy="177" r="5" fill="var(--surface)" stroke="var(--cord)" stroke-width="2"></circle>
+        <text x="842" y="242" text-anchor="middle" class="ss">lead ring, closed</text>
+
+        <!-- open limit switch (behind the stack, at cord depth) -->
+        <rect x="372" y="140" width="20" height="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <line x1="392" y1="152" x2="401" y2="164" stroke="var(--ink)" stroke-width="1.5"></line>
+        <circle cx="401" cy="165" r="2.5" fill="var(--ink)"></circle>
+        <line x1="382" y1="76" x2="382" y2="137" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"></line>
+        <text x="382" y="70" text-anchor="middle" class="sli">open limit</text>
+
+        <!-- closed limit switch -->
+        <rect x="856" y="140" width="20" height="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <line x1="856" y1="152" x2="847" y2="164" stroke="var(--ink)" stroke-width="1.5"></line>
+        <circle cx="847" cy="165" r="2.5" fill="var(--ink)"></circle>
+        <text x="884" y="152" class="sli">closed limit</text>
+
+        <!-- cord run directions while closing -->
+        <line x1="680" y1="168" x2="760" y2="168" stroke="var(--cord)" stroke-width="2" marker-end="url(#f1c)"></line>
+        <text x="720" y="160" text-anchor="middle" class="sc">top run</text>
+        <line x1="760" y1="224" x2="680" y2="224" stroke="var(--cord)" stroke-width="2" marker-end="url(#f1c)"></line>
+        <text x="720" y="242" text-anchor="middle" class="sc">bottom run</text>
+
+        <!-- open / close -->
+        <line x1="612" y1="306" x2="520" y2="306" stroke="var(--ink)" stroke-width="2.2" marker-end="url(#f1i)"></line>
+        <text x="566" y="296" text-anchor="middle" class="sli">open</text>
+        <line x1="656" y1="306" x2="752" y2="306" stroke="var(--ink)" stroke-width="2.2" marker-end="url(#f1i)"></line>
+        <text x="704" y="296" text-anchor="middle" class="sli">close</text>
+
+        <text x="222" y="560" class="sl">stack side &middot; motor end</text>
+        <text x="634" y="560" text-anchor="end" class="sl">free edge</text>
+
+        <!-- legend -->
+        <circle cx="34" cy="592" r="5" fill="var(--cord)"></circle>
+        <text x="46" y="596" class="sl">filled dot = gripped</text>
+        <line x1="196" y1="586" x2="212" y2="598" stroke="var(--muted)" stroke-width="1.5"></line>
+        <line x1="196" y1="598" x2="212" y2="586" stroke="var(--muted)" stroke-width="1.5"></line>
+        <text x="222" y="596" class="sl">plain crossing = not touching</text>
+        <line x1="440" y1="592" x2="472" y2="592" stroke="var(--ink)" stroke-width="2" marker-end="url(#f1i)"></line>
+        <text x="482" y="596" class="sl">arrow = direction of travel</text>
+        <circle cx="700" cy="592" r="7" fill="none" stroke="var(--cord)" stroke-width="2" stroke-dasharray="4 3"></circle>
+        <text x="716" y="596" class="sl">dashed = where it stops, closed</text>
+      </svg>
+    </div>
+    <figcaption>The cord arrows show a close. Every arrow reverses to open. The hooks cross the cord in the drawing only. In the room they hang in front of it, nearer you, and the cord runs behind them toward the wall. The clamp arm on the lead ring is the only part that reaches back to the cord.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Part</th><th>Where</th><th>Why it matters</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>rod, brackets, rings</td>
+          <td>Existing, unchanged</td>
+          <td>The motor cannot fix a rod the rings stick on. A ring that catches when pushed by hand will stall the drive at the same spot.</td>
+        </tr>
+        <tr>
+          <td>drive pulley + motor</td>
+          <td>Stack end, on a new L-bracket outside the left rod bracket</td>
+          <td>12V geared DC, JGA25-370 class, ~60&ndash;100 RPM (proposal). It sits outside the rod bracket so the stacked fabric never reaches the pulley.</td>
+        </tr>
+        <tr>
+          <td>cord loop</td>
+          <td>Closed loop, behind and below the rod</td>
+          <td>Braided, non-stretch cord (proposal). A stretchy cord keeps the spring at the end of its slot and slips on the pulley. If a cord will not grip, a GT2 belt loop is the fallback.</td>
+        </tr>
+        <tr>
+          <td>idler + tensioner</td>
+          <td>Far end, on its own plate outside the right rod bracket</td>
+          <td>The idler rides in a slot and a spring pulls it outward. Tension is what makes the drive pulley grip the cord.</td>
+        </tr>
+        <tr>
+          <td>lead-ring clamp</td>
+          <td>An arm off the lead ring's eyelet, with a cord lock on the top run</td>
+          <td>The only mechanical tie between the drive and the curtain. It pulls the free edge to close and pushes it back to open. The fabric carries the pull to the other rings.</td>
+        </tr>
+        <tr>
+          <td>open / closed limit</td>
+          <td>Lever microswitches at each end of the lead ring's travel</td>
+          <td>They tell the controller where to stop. Without them the motor drives the lead ring into the bracket or crushes the stack (see <a href="#limits">end-of-travel switches</a>).</td>
+        </tr>
+        <tr>
+          <td>controller</td>
+          <td>Box on the wall beside the motor</td>
+          <td>Not detailed on this page. It drives the motor and reads the two switches.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>How it mounts</h2>
+  <p>Two views of the new hardware at each end of the rod. On the left, the motor end, looking along the rod from beyond its left end. Here the drawing plots distance from the wall across and height up. On the right, the idler end, seen from the front at a larger scale than the whole-drive drawing.</p>
+
+  <figure>
+    <div class="scroller wide">
+      <svg viewBox="0 0 1040 500" role="img" aria-label="Two mounting views. Left, the motor end seen along the rod. From the wall outward, the existing rod bracket runs out to the rod with a ring around it, and the fabric hangs from the ring's eyelet. A new L-bracket is screwed to the wall lower down. Its shelf carries the geared motor, with the shaft pointing back toward the wall. The drive pulley sits on the shaft end, about 40 millimetres from the wall, so the cord's top and bottom runs pass behind the rings and below the rod with at least 20 millimetres of clearance. The controller box is on the wall below. Right, the idler end seen from the front. The rod ends at its bracket, and the cord loop passes behind the rings' hooks to an idler pulley on a new wall plate. The idler's axle rides in a slot, and a spring from the axle to a fixed tab pulls it outward to keep the loop taut. The lead ring's arm grips the top run.">
+        <defs>
+          <marker id="f2d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--muted)"></polygon>
+          </marker>
+        </defs>
+
+        <!-- ============ LEFT: motor end, along the rod ============ -->
+        <text x="30" y="30" class="st">Motor end &middot; looking along the rod</text>
+
+        <!-- wall -->
+        <rect x="40" y="50" width="20" height="420" fill="var(--sunk)"></rect>
+        <line x1="60" y1="50" x2="60" y2="470" stroke="var(--ink)" stroke-width="2"></line>
+        <text x="70" y="486" class="sl">wall</text>
+
+        <!-- fabric (further along the rod, behind the motor in this view) -->
+        <polyline points="240,170 232,190 248,210 232,230 248,250 232,270 248,290 232,310 248,330 232,350 248,370 232,390 248,410 232,430 248,450 240,460" fill="none" stroke="var(--fabline)" stroke-width="4" stroke-linejoin="round"></polyline>
+        <text x="258" y="430" class="sl">fabric</text>
+
+        <!-- existing rod bracket -->
+        <rect x="60" y="76" width="8" height="60" fill="var(--ink)"></rect>
+        <rect x="68" y="100" width="150" height="10" fill="var(--metal)"></rect>
+        <text x="72" y="92" class="sl">rod bracket</text>
+
+        <!-- rod + ring + hook -->
+        <circle cx="240" cy="105" r="25" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"></circle>
+        <text x="240" y="109" text-anchor="middle" class="sli">rod</text>
+        <circle cx="240" cy="105" r="31" fill="none" stroke="var(--ink)" stroke-width="4"></circle>
+        <circle cx="240" cy="140" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <line x1="240" y1="144" x2="240" y2="170" stroke="var(--muted)" stroke-width="1.5"></line>
+        <text x="280" y="76" class="sl">ring</text>
+
+        <!-- clearance -->
+        <line x1="146" y1="180" x2="214" y2="133" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="3 2" marker-start="url(#f2d)" marker-end="url(#f2d)"></line>
+        <text x="70" y="150" class="sli">&ge;20 mm clear</text>
+
+        <!-- L-bracket: wall leg + shelf -->
+        <rect x="60" y="252" width="222" height="6" fill="var(--ink)"></rect>
+        <rect x="60" y="252" width="6" height="90" fill="var(--ink)"></rect>
+        <line x1="44" y1="276" x2="66" y2="276" stroke="var(--ink)" stroke-width="2"></line>
+        <line x1="44" y1="318" x2="66" y2="318" stroke="var(--ink)" stroke-width="2"></line>
+        <text x="150" y="276" text-anchor="middle" class="sli">new L-bracket</text>
+        <text x="150" y="290" text-anchor="middle" class="ss">screwed to the wall</text>
+
+        <!-- motor mount block, gearbox, motor can -->
+        <rect x="200" y="228" width="66" height="24" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <rect x="156" y="185" width="50" height="40" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"></rect>
+        <text x="181" y="209" text-anchor="middle" class="ss">gearbox</text>
+        <rect x="206" y="182" width="64" height="46" rx="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"></rect>
+        <text x="238" y="209" text-anchor="middle" class="ss">motor</text>
+        <text x="233" y="244" text-anchor="middle" class="ss">clamp</text>
+
+        <!-- shaft + drive pulley edge-on + cord runs -->
+        <line x1="146" y1="205" x2="156" y2="205" stroke="var(--ink)" stroke-width="3"></line>
+        <rect x="134" y="183" width="12" height="44" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <circle cx="140" cy="185" r="5" fill="var(--cord)"></circle>
+        <circle cx="140" cy="225" r="5" fill="var(--cord)"></circle>
+        <text x="128" y="189" text-anchor="end" class="sc">top run</text>
+        <text x="128" y="229" text-anchor="end" class="sc">bottom run</text>
+        <text x="140" y="245" text-anchor="middle" class="ss">drive pulley</text>
+
+        <!-- controller -->
+        <rect x="66" y="372" width="120" height="40" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <text x="126" y="397" text-anchor="middle" class="sn">controller</text>
+
+        <!-- divider -->
+        <line x1="530" y1="20" x2="530" y2="480" stroke="var(--line)" stroke-width="1"></line>
+
+        <!-- ============ RIGHT: idler end, from the front ============ -->
+        <text x="560" y="30" class="st">Idler end &middot; from the front</text>
+
+        <!-- fabric -->
+        <rect x="560" y="300" width="238" height="70" fill="var(--fabric)" stroke="var(--fabline)" stroke-width="1.5"></rect>
+        <line x1="640" y1="300" x2="640" y2="370" stroke="var(--fabline)" stroke-width="1.2"></line>
+        <line x1="720" y1="300" x2="720" y2="370" stroke="var(--fabline)" stroke-width="1.2"></line>
+
+        <!-- idler mount plate, slot -->
+        <rect x="900" y="150" width="120" height="90" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <rect x="918" y="190" width="56" height="10" rx="5" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.2"></rect>
+        <circle cx="930" cy="195" r="21" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+
+        <!-- cord -->
+        <path d="M560,171 H930 A24,24 0 0 1 930,219 H560" fill="none" stroke="var(--cord)" stroke-width="3"></path>
+        <text x="570" y="163" class="sc">top run</text>
+        <text x="570" y="237" class="sc">bottom run</text>
+
+        <!-- spring from axle to fixed tab -->
+        <line x1="930" y1="195" x2="972" y2="195" stroke="var(--ink)" stroke-width="2"></line>
+        <polyline points="972,195 976,186 982,204 988,186 994,204 1000,186 1004,195" fill="none" stroke="var(--ink)" stroke-width="1.6"></polyline>
+        <rect x="1004" y="180" width="8" height="30" fill="var(--ink)"></rect>
+        <circle cx="930" cy="195" r="4" fill="var(--ink)"></circle>
+        <text x="930" y="140" text-anchor="middle" class="sn">idler pulley</text>
+        <text x="960" y="258" text-anchor="middle" class="sli">new wall plate</text>
+        <text x="960" y="273" text-anchor="middle" class="ss">idler slides in slot</text>
+        <text x="960" y="287" text-anchor="middle" class="ss">spring pulls it right</text>
+
+        <!-- rod end + bracket -->
+        <line x1="560" y1="100" x2="880" y2="100" stroke="var(--metal)" stroke-width="8" stroke-linecap="round"></line>
+        <circle cx="888" cy="100" r="8" fill="var(--metal)"></circle>
+        <rect x="842" y="48" width="28" height="8" fill="var(--ink)"></rect>
+        <rect x="849" y="56" width="14" height="40" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <text x="856" y="40" text-anchor="middle" class="sl">rod bracket</text>
+
+        <!-- rings + hooks -->
+        <g stroke="var(--muted)" stroke-width="1.3">
+          <line x1="640" y1="111" x2="640" y2="300"></line>
+          <line x1="720" y1="111" x2="720" y2="300"></line>
+          <line x1="790" y1="111" x2="790" y2="300"></line>
+        </g>
+        <circle cx="640" cy="100" r="11" fill="none" stroke="var(--ink)" stroke-width="2.5"></circle>
+        <circle cx="720" cy="100" r="11" fill="none" stroke="var(--ink)" stroke-width="2.5"></circle>
+        <circle cx="790" cy="100" r="11" fill="none" stroke="var(--cord)" stroke-width="3"></circle>
+        <polyline points="797,109 806,118 806,171" fill="none" stroke="var(--cord)" stroke-width="3"></polyline>
+        <circle cx="806" cy="171" r="6" fill="var(--cord)"></circle>
+        <text x="782" y="72" text-anchor="middle" class="sc">lead ring, closed</text>
+
+        <!-- legend -->
+        <circle cx="566" cy="452" r="5" fill="var(--cord)"></circle>
+        <text x="578" y="456" class="sl">filled dot = gripped</text>
+        <line x1="736" y1="446" x2="752" y2="458" stroke="var(--muted)" stroke-width="1.5"></line>
+        <line x1="736" y1="458" x2="752" y2="446" stroke="var(--muted)" stroke-width="1.5"></line>
+        <text x="762" y="456" class="sl">plain crossing = not touching</text>
+      </svg>
+    </div>
+    <figcaption>The measurements are proposals to check against the real rod. The cord's plane sits about 40&nbsp;mm off the wall. That keeps it behind the rings and clear of the rod bracket's arm, which it passes underneath. The motor lies on the shelf with its shaft pointing back toward the wall. It sits beyond the end of the rod, so it never shares space with the rings. On the right, leave the idler about 30&nbsp;mm of slot to take up cord stretch.</figcaption>
+  </figure>
+
+  <div class="callout">
+    <p><span class="label">Measure the bracket before buying pulleys</span>The cord has to pass every rod bracket. A bracket arm can come off the wall at rod height with a base plate that reaches down, or a centre support can hang below the rod. Either can sit in the cord's path. The pulleys go outside the end brackets. A centre bracket on a long rod blocks the cord completely, and it also stops rings, so check the rod has none. If the arm only leaves 20&ndash;30&nbsp;mm below the rod, lower both pulleys rather than moving the cord forward into the rings.</p>
+  </div>
+
+  <h2>The lead ring clamp</h2>
+  <p>Only one ring touches the cord. The same end view for the lead ring and for any other ring shows the difference: the lead ring has an arm and a cord lock, and the others have nothing near the cord.</p>
+
+  <figure>
+    <div class="scroller wide">
+      <svg viewBox="0 0 1040 450" role="img" aria-label="Lead ring clamp, three views. First, the lead ring seen along the rod: an arm fixed to the ring's eyelet runs back toward the wall and down to the cord's top run, where a cord lock grips it. The bottom run passes free below. Second, any other ring seen the same way: no arm, and at least 20 millimetres of air between the ring and the cord plane. Third, a front close-up of four rings on the rod. Three ordinary rings hang their hooks in front of the cord, which passes behind them without touching. The fourth ring, at the free edge, is the lead ring, and its arm drops to a cord lock on the top run.">
+        <defs>
+          <marker id="f3d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--muted)"></polygon>
+          </marker>
+        </defs>
+
+        <!-- ============ A: lead ring, along the rod ============ -->
+        <text x="20" y="30" class="st">Lead ring &middot; along the rod</text>
+        <rect x="24" y="50" width="16" height="350" fill="var(--sunk)"></rect>
+        <line x1="40" y1="50" x2="40" y2="400" stroke="var(--ink)" stroke-width="2"></line>
+        <text x="46" y="416" class="sl">wall</text>
+
+        <polyline points="220,185 212,205 228,225 212,245 228,265 212,285 228,305 212,325 228,345 212,365 228,385 220,395" fill="none" stroke="var(--fabline)" stroke-width="4" stroke-linejoin="round"></polyline>
+        <text x="236" y="380" class="sl">fabric</text>
+
+        <circle cx="220" cy="110" r="22" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"></circle>
+        <text x="220" y="114" text-anchor="middle" class="sli">rod</text>
+        <circle cx="220" cy="110" r="29" fill="none" stroke="var(--cord)" stroke-width="4"></circle>
+        <line x1="220" y1="148" x2="220" y2="185" stroke="var(--muted)" stroke-width="1.5"></line>
+
+        <polyline points="215,146 124,146 124,198" fill="none" stroke="var(--ink)" stroke-width="3.5"></polyline>
+        <circle cx="220" cy="143" r="5" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <text x="116" y="172" text-anchor="end" class="sli">arm</text>
+        <text x="116" y="186" text-anchor="end" class="ss">from eyelet</text>
+
+        <rect x="98" y="198" width="26" height="26" rx="3" fill="var(--surface)" stroke="var(--cord)" stroke-width="3"></rect>
+        <circle cx="110" cy="211" r="6" fill="var(--cord)"></circle>
+        <text x="136" y="210" class="sc">cord lock</text>
+        <text x="136" y="224" class="sl">on top run</text>
+
+        <circle cx="110" cy="262" r="6" fill="none" stroke="var(--cord)" stroke-width="2.5"></circle>
+        <text x="136" y="262" class="sc">bottom run</text>
+        <text x="136" y="276" class="ss">passes free</text>
+
+        <!-- ============ B: any other ring ============ -->
+        <line x1="330" y1="20" x2="330" y2="420" stroke="var(--line)" stroke-width="1"></line>
+        <text x="350" y="30" class="st">Every other ring</text>
+        <rect x="364" y="50" width="16" height="350" fill="var(--sunk)"></rect>
+        <line x1="380" y1="50" x2="380" y2="400" stroke="var(--ink)" stroke-width="2"></line>
+        <text x="386" y="416" class="sl">wall</text>
+
+        <polyline points="560,185 552,205 568,225 552,245 568,265 552,285 568,305 552,325 568,345 552,365 568,385 560,395" fill="none" stroke="var(--fabline)" stroke-width="4" stroke-linejoin="round"></polyline>
+        <text x="576" y="380" class="sl">fabric</text>
+
+        <circle cx="560" cy="110" r="22" fill="var(--sunk)" stroke="var(--ink)" stroke-width="2"></circle>
+        <text x="560" y="114" text-anchor="middle" class="sli">rod</text>
+        <circle cx="560" cy="110" r="29" fill="none" stroke="var(--ink)" stroke-width="4"></circle>
+        <circle cx="560" cy="143" r="5" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <line x1="560" y1="148" x2="560" y2="185" stroke="var(--muted)" stroke-width="1.5"></line>
+
+        <circle cx="450" cy="211" r="6" fill="none" stroke="var(--cord)" stroke-width="2.5"></circle>
+        <circle cx="450" cy="262" r="6" fill="none" stroke="var(--cord)" stroke-width="2.5"></circle>
+        <text x="464" y="215" class="sc">top run</text>
+        <text x="464" y="266" class="sc">bottom run</text>
+
+        <line x1="450" y1="116" x2="450" y2="203" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"></line>
+        <line x1="452" y1="110" x2="529" y2="110" stroke="var(--muted)" stroke-width="1.2" marker-start="url(#f3d)" marker-end="url(#f3d)"></line>
+        <text x="490" y="100" text-anchor="middle" class="sli">&ge;20 mm</text>
+
+        <!-- ============ C: front close-up ============ -->
+        <line x1="670" y1="20" x2="670" y2="420" stroke="var(--line)" stroke-width="1"></line>
+        <text x="690" y="30" class="st">Front &middot; close up</text>
+
+        <rect x="700" y="320" width="262" height="72" fill="var(--fabric)" stroke="var(--fabline)" stroke-width="1.5"></rect>
+
+        <line x1="690" y1="210" x2="1030" y2="210" stroke="var(--cord)" stroke-width="3"></line>
+        <line x1="690" y1="262" x2="1030" y2="262" stroke="var(--cord)" stroke-width="3"></line>
+
+        <line x1="690" y1="110" x2="1030" y2="110" stroke="var(--metal)" stroke-width="8"></line>
+        <g stroke="var(--muted)" stroke-width="1.3">
+          <line x1="740" y1="122" x2="740" y2="320"></line>
+          <line x1="800" y1="122" x2="800" y2="320"></line>
+          <line x1="860" y1="122" x2="860" y2="320"></line>
+          <line x1="950" y1="122" x2="950" y2="320"></line>
+        </g>
+        <g fill="none" stroke="var(--ink)" stroke-width="2.5">
+          <circle cx="740" cy="110" r="12"></circle>
+          <circle cx="800" cy="110" r="12"></circle>
+          <circle cx="860" cy="110" r="12"></circle>
+        </g>
+        <circle cx="950" cy="110" r="12" fill="none" stroke="var(--cord)" stroke-width="3"></circle>
+        <polyline points="958,119 970,131 970,198" fill="none" stroke="var(--cord)" stroke-width="3"></polyline>
+        <rect x="958" y="198" width="24" height="24" rx="3" fill="var(--surface)" stroke="var(--cord)" stroke-width="3"></rect>
+        <circle cx="970" cy="210" r="5" fill="var(--cord)"></circle>
+        <text x="988" y="238" class="sc">lock</text>
+
+        <text x="720" y="86" class="sl">rings slide free</text>
+        <text x="1026" y="72" text-anchor="end" class="sn">lead ring</text>
+        <text x="1026" y="88" text-anchor="end" class="sl">the only one gripped</text>
+        <text x="700" y="410" class="sl">cord passes behind every other ring</text>
+
+        <!-- legend -->
+        <circle cx="26" cy="438" r="5" fill="var(--cord)"></circle>
+        <text x="38" y="442" class="sl">filled = gripped by the lock</text>
+        <circle cx="262" cy="438" r="5" fill="none" stroke="var(--cord)" stroke-width="2.5"></circle>
+        <text x="274" y="442" class="sl">hollow = cord passing free, seen end-on</text>
+        <line x1="600" y1="432" x2="616" y2="444" stroke="var(--muted)" stroke-width="1.5"></line>
+        <line x1="600" y1="444" x2="616" y2="432" stroke="var(--muted)" stroke-width="1.5"></line>
+        <text x="626" y="442" class="sl">plain crossing = not touching</text>
+      </svg>
+    </div>
+    <figcaption>The arm can be a bent strip of aluminium or stiff wire, screwed or zip-tied to the lead ring's eyelet so it cannot twist. The lock is a sprung cord lock or a small screw clamp. It must not slip under a full-curtain pull, and it has to be adjustable once to set where the curtain stops. Clamping the top run keeps the arm short, because that run is nearer the ring.</figcaption>
+  </figure>
+
+  <h2>How it moves</h2>
+  <p>The two runs of a loop always travel in opposite directions. Whichever run the lead ring is clamped to carries it. The other run just returns. The hollow diamond marks one point on the bottom run, so you can watch it move the other way.</p>
+
+  <figure>
+    <div class="scroller wide">
+      <svg viewBox="0 0 1040 496" role="img" aria-label="Three-step sequence from closed to open. Step one, closed: the lead ring is at the right end, the rings are spread evenly along the rod, and a mark on the bottom run sits near the left. Step two, opening: the motor turns the drive pulley anticlockwise, seen from the front. The top run moves left and carries the lead ring with it, and the fabric bunches toward the motor end. The bottom run moves right, carrying nothing, and its mark has moved right by the same distance. Step three, open: the lead ring has reached the stack at the left, the rings are bunched, and the bottom-run mark is far to the right.">
+        <defs>
+          <marker id="f4i" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--ink)"></polygon>
+          </marker>
+          <marker id="f4c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--cord)"></polygon>
+          </marker>
+        </defs>
+
+        <!-- ===== row 1: closed (B=0) ===== -->
+        <text x="20" y="62" class="st">1 &middot; closed</text>
+        <text x="20" y="78" class="sl">start</text>
+        <rect x="212" y="124" width="672" height="16" fill="var(--fabric)" stroke="var(--fabline)" stroke-width="1.2"></rect>
+        <circle cx="170" cy="100" r="12" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="930" cy="100" r="12" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <path d="M170,86 H930 A14,14 0 0 1 930,114 H170 A14,14 0 0 1 170,86 Z" fill="none" stroke="var(--cord)" stroke-width="2.5"></path>
+        <line x1="200" y1="50" x2="900" y2="50" stroke="var(--metal)" stroke-width="6" stroke-linecap="round"></line>
+        <g stroke="var(--muted)" stroke-width="1.1">
+          <line x1="220" y1="58" x2="220" y2="124"></line><line x1="280" y1="58" x2="280" y2="124"></line>
+          <line x1="340" y1="58" x2="340" y2="124"></line><line x1="400" y1="58" x2="400" y2="124"></line>
+          <line x1="460" y1="58" x2="460" y2="124"></line><line x1="520" y1="58" x2="520" y2="124"></line>
+          <line x1="580" y1="58" x2="580" y2="124"></line><line x1="640" y1="58" x2="640" y2="124"></line>
+          <line x1="700" y1="58" x2="700" y2="124"></line><line x1="760" y1="58" x2="760" y2="124"></line>
+          <line x1="820" y1="58" x2="820" y2="124"></line><line x1="880" y1="58" x2="880" y2="124"></line>
+        </g>
+        <g fill="none" stroke="var(--ink)" stroke-width="2">
+          <circle cx="220" cy="50" r="8"></circle><circle cx="280" cy="50" r="8"></circle>
+          <circle cx="340" cy="50" r="8"></circle><circle cx="400" cy="50" r="8"></circle>
+          <circle cx="460" cy="50" r="8"></circle><circle cx="520" cy="50" r="8"></circle>
+          <circle cx="580" cy="50" r="8"></circle><circle cx="640" cy="50" r="8"></circle>
+          <circle cx="700" cy="50" r="8"></circle><circle cx="760" cy="50" r="8"></circle>
+          <circle cx="820" cy="50" r="8"></circle>
+        </g>
+        <circle cx="880" cy="50" r="8" fill="none" stroke="var(--cord)" stroke-width="2.5"></circle>
+        <polyline points="886,56 892,62 892,86" fill="none" stroke="var(--cord)" stroke-width="2.5"></polyline>
+        <circle cx="892" cy="86" r="5" fill="var(--cord)"></circle>
+        <polygon points="300,107 307,114 300,121 293,114" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"></polygon>
+
+        <!-- ===== row 2: opening (B=150) ===== -->
+        <text x="20" y="212" class="st">2 &middot; opening</text>
+        <text x="20" y="228" class="sl">motor turns CCW</text>
+        <rect x="212" y="274" width="352" height="16" fill="var(--fabric)" stroke="var(--fabline)" stroke-width="1.2"></rect>
+        <circle cx="170" cy="250" r="12" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="930" cy="250" r="12" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <path d="M189,239 A22,22 0 0 0 151,239" fill="none" stroke="var(--ink)" stroke-width="1.8" marker-end="url(#f4i)"></path>
+        <path d="M170,236 H930 A14,14 0 0 1 930,264 H170 A14,14 0 0 1 170,236 Z" fill="none" stroke="var(--cord)" stroke-width="2.5"></path>
+        <line x1="200" y1="200" x2="900" y2="200" stroke="var(--metal)" stroke-width="6" stroke-linecap="round"></line>
+        <g stroke="var(--muted)" stroke-width="1.1">
+          <line x1="220" y1="208" x2="220" y2="274"></line><line x1="254" y1="208" x2="254" y2="274"></line>
+          <line x1="288" y1="208" x2="288" y2="274"></line><line x1="322" y1="208" x2="322" y2="274"></line>
+          <line x1="356" y1="208" x2="356" y2="274"></line><line x1="390" y1="208" x2="390" y2="274"></line>
+          <line x1="424" y1="208" x2="424" y2="274"></line><line x1="458" y1="208" x2="458" y2="274"></line>
+          <line x1="492" y1="208" x2="492" y2="274"></line><line x1="526" y1="208" x2="526" y2="274"></line>
+          <line x1="560" y1="208" x2="560" y2="274"></line>
+        </g>
+        <g fill="none" stroke="var(--ink)" stroke-width="2">
+          <circle cx="220" cy="200" r="8"></circle><circle cx="254" cy="200" r="8"></circle>
+          <circle cx="288" cy="200" r="8"></circle><circle cx="322" cy="200" r="8"></circle>
+          <circle cx="356" cy="200" r="8"></circle><circle cx="390" cy="200" r="8"></circle>
+          <circle cx="424" cy="200" r="8"></circle><circle cx="458" cy="200" r="8"></circle>
+          <circle cx="492" cy="200" r="8"></circle><circle cx="526" cy="200" r="8"></circle>
+        </g>
+        <circle cx="560" cy="200" r="8" fill="none" stroke="var(--cord)" stroke-width="2.5"></circle>
+        <polyline points="566,206 572,212 572,236" fill="none" stroke="var(--cord)" stroke-width="2.5"></polyline>
+        <circle cx="572" cy="236" r="5" fill="var(--cord)"></circle>
+        <polygon points="620,257 627,264 620,271 613,264" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"></polygon>
+        <line x1="780" y1="226" x2="680" y2="226" stroke="var(--cord)" stroke-width="2" marker-end="url(#f4c)"></line>
+        <text x="790" y="230" class="sc">top run carries the lead ring</text>
+        <line x1="680" y1="276" x2="780" y2="276" stroke="var(--cord)" stroke-width="2" marker-end="url(#f4c)"></line>
+        <text x="790" y="280" class="sc">bottom run returns empty</text>
+
+        <!-- ===== row 3: open (B=300) ===== -->
+        <text x="20" y="362" class="st">3 &middot; open</text>
+        <text x="20" y="378" class="sl">stops at open limit</text>
+        <rect x="212" y="424" width="192" height="16" fill="var(--fabric)" stroke="var(--fabline)" stroke-width="1.2"></rect>
+        <circle cx="170" cy="400" r="12" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="930" cy="400" r="12" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <path d="M170,386 H930 A14,14 0 0 1 930,414 H170 A14,14 0 0 1 170,386 Z" fill="none" stroke="var(--cord)" stroke-width="2.5"></path>
+        <line x1="200" y1="350" x2="900" y2="350" stroke="var(--metal)" stroke-width="6" stroke-linecap="round"></line>
+        <g stroke="var(--muted)" stroke-width="1.1">
+          <line x1="220" y1="358" x2="220" y2="424"></line><line x1="238" y1="358" x2="238" y2="424"></line>
+          <line x1="256" y1="358" x2="256" y2="424"></line><line x1="274" y1="358" x2="274" y2="424"></line>
+          <line x1="292" y1="358" x2="292" y2="424"></line><line x1="310" y1="358" x2="310" y2="424"></line>
+          <line x1="328" y1="358" x2="328" y2="424"></line><line x1="346" y1="358" x2="346" y2="424"></line>
+          <line x1="364" y1="358" x2="364" y2="424"></line><line x1="382" y1="358" x2="382" y2="424"></line>
+          <line x1="400" y1="358" x2="400" y2="424"></line>
+        </g>
+        <g fill="none" stroke="var(--ink)" stroke-width="2">
+          <circle cx="220" cy="350" r="8"></circle><circle cx="238" cy="350" r="8"></circle>
+          <circle cx="256" cy="350" r="8"></circle><circle cx="274" cy="350" r="8"></circle>
+          <circle cx="292" cy="350" r="8"></circle><circle cx="310" cy="350" r="8"></circle>
+          <circle cx="328" cy="350" r="8"></circle><circle cx="346" cy="350" r="8"></circle>
+          <circle cx="364" cy="350" r="8"></circle><circle cx="382" cy="350" r="8"></circle>
+        </g>
+        <circle cx="400" cy="350" r="8" fill="none" stroke="var(--cord)" stroke-width="2.5"></circle>
+        <polyline points="406,356 412,362 412,386" fill="none" stroke="var(--cord)" stroke-width="2.5"></polyline>
+        <circle cx="412" cy="386" r="5" fill="var(--cord)"></circle>
+        <polygon points="780,407 787,414 780,421 773,414" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"></polygon>
+
+        <!-- legend -->
+        <circle cx="26" cy="476" r="5" fill="var(--cord)"></circle>
+        <text x="38" y="480" class="sl">clamp on the top run</text>
+        <polygon points="200,469 207,476 200,483 193,476" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"></polygon>
+        <text x="214" y="480" class="sl">a mark on the bottom run</text>
+        <line x1="420" y1="476" x2="452" y2="476" stroke="var(--cord)" stroke-width="2" marker-end="url(#f4c)"></line>
+        <text x="462" y="480" class="sl">arrows = direction while opening; all reverse to close</text>
+      </svg>
+    </div>
+    <figcaption>The lead ring and the bottom-run mark travel the same distance in opposite directions: 480 units each in this drawing. That is why the direction of travel depends on which run is clamped. Clamp the bottom run and every arrow flips: counter-clockwise closes instead of opens. Nothing breaks, but the controller's open and close have to be swapped to match.</figcaption>
+  </figure>
+
+  <h2 id="limits">End-of-travel switches</h2>
+  <p>Two lever microswitches tell the controller the curtain is fully open or fully closed. Something on the moving side has to press each lever at the right moment. That can be the lead ring's own arm, or a bead crimped on the cord. Both layouts use the same parts. They differ in where the switches sit and how far their cables run.</p>
+
+  <figure>
+    <div class="scroller wide">
+      <svg viewBox="0 0 1040 478" role="img" aria-label="Two ways to trip the limit switches, both shown with the curtain closed. Option A: the lead ring's arm trips both. The closed limit switch sits near the right-hand rod bracket, and its lever touches the lead ring's arm when the curtain is fully closed. The open limit switch sits at the stack edge, behind the stacked rings at cord depth. A dashed outline shows the lead ring at its open position touching that lever. Option B: beads crimped on the cord, with both switches at the motor end. A bead on the bottom run rests against the closed limit switch below the bottom run near the drive pulley, because the bottom run moves left while closing. A second bead on the top run sits far to the right and reaches the open limit switch, mounted above the top run near the drive pulley, when the curtain is fully open.">
+        <defs>
+          <marker id="f5c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--cord)"></polygon>
+          </marker>
+        </defs>
+
+        <!-- ===== A: lead ring trips both (B=0) ===== -->
+        <text x="20" y="26" class="st">A &middot; the lead ring's arm trips both</text>
+        <circle cx="170" cy="120" r="17" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="930" cy="120" r="17" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <path d="M170,100 H930 A20,20 0 0 1 930,140 H170 A20,20 0 0 1 170,100 Z" fill="none" stroke="var(--cord)" stroke-width="2.5"></path>
+        <line x1="200" y1="60" x2="910" y2="60" stroke="var(--metal)" stroke-width="6" stroke-linecap="round"></line>
+        <g fill="none" stroke="var(--ink)" stroke-width="2">
+          <circle cx="230" cy="60" r="8"></circle><circle cx="290" cy="60" r="8"></circle>
+          <circle cx="350" cy="60" r="8"></circle><circle cx="410" cy="60" r="8"></circle>
+          <circle cx="470" cy="60" r="8"></circle><circle cx="530" cy="60" r="8"></circle>
+          <circle cx="590" cy="60" r="8"></circle><circle cx="650" cy="60" r="8"></circle>
+          <circle cx="710" cy="60" r="8"></circle><circle cx="770" cy="60" r="8"></circle>
+          <circle cx="830" cy="60" r="8"></circle>
+        </g>
+        <!-- lead ring now (closed) -->
+        <circle cx="880" cy="60" r="8" fill="none" stroke="var(--cord)" stroke-width="2.5"></circle>
+        <polyline points="886,66 892,72 892,100" fill="none" stroke="var(--cord)" stroke-width="2.5"></polyline>
+        <circle cx="892" cy="100" r="5" fill="var(--cord)"></circle>
+        <!-- closed limit -->
+        <rect x="902" y="72" width="22" height="14" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <line x1="902" y1="84" x2="896" y2="95" stroke="var(--ink)" stroke-width="1.5"></line>
+        <circle cx="896" cy="96" r="2.5" fill="var(--ink)"></circle>
+        <text x="932" y="84" class="sli">closed limit</text>
+        <!-- lead ring at open (ghost) -->
+        <circle cx="450" cy="60" r="8" fill="none" stroke="var(--cord)" stroke-width="2" stroke-dasharray="3 3"></circle>
+        <polyline points="456,66 462,72 462,100" fill="none" stroke="var(--cord)" stroke-width="2" stroke-dasharray="3 3"></polyline>
+        <circle cx="462" cy="100" r="4.5" fill="var(--surface)" stroke="var(--cord)" stroke-width="2"></circle>
+        <!-- open limit -->
+        <rect x="428" y="72" width="22" height="14" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <line x1="450" y1="84" x2="457" y2="95" stroke="var(--ink)" stroke-width="1.5"></line>
+        <circle cx="457" cy="96" r="2.5" fill="var(--ink)"></circle>
+        <text x="422" y="84" text-anchor="end" class="sli">open limit</text>
+        <text x="200" y="176" class="sl">closed limit at the far bracket &middot; open limit at the stack edge, behind the rings, at cord depth</text>
+        <text x="200" y="192" class="sl">one switch cable runs the length of the rod</text>
+
+        <line x1="20" y1="216" x2="1020" y2="216" stroke="var(--line)" stroke-width="1"></line>
+
+        <!-- ===== B: beads, both switches at the motor end (B=230) ===== -->
+        <text x="20" y="256" class="st">B &middot; beads on the cord, both switches at the motor end</text>
+        <circle cx="170" cy="350" r="17" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="930" cy="350" r="17" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <path d="M170,330 H930 A20,20 0 0 1 930,370 H170 A20,20 0 0 1 170,330 Z" fill="none" stroke="var(--cord)" stroke-width="2.5"></path>
+        <line x1="200" y1="290" x2="910" y2="290" stroke="var(--metal)" stroke-width="6" stroke-linecap="round"></line>
+        <g fill="none" stroke="var(--ink)" stroke-width="2">
+          <circle cx="230" cy="290" r="8"></circle><circle cx="290" cy="290" r="8"></circle>
+          <circle cx="350" cy="290" r="8"></circle><circle cx="410" cy="290" r="8"></circle>
+          <circle cx="470" cy="290" r="8"></circle><circle cx="530" cy="290" r="8"></circle>
+          <circle cx="590" cy="290" r="8"></circle><circle cx="650" cy="290" r="8"></circle>
+          <circle cx="710" cy="290" r="8"></circle><circle cx="770" cy="290" r="8"></circle>
+          <circle cx="830" cy="290" r="8"></circle>
+        </g>
+        <circle cx="880" cy="290" r="8" fill="none" stroke="var(--cord)" stroke-width="2.5"></circle>
+        <polyline points="886,296 892,302 892,330" fill="none" stroke="var(--cord)" stroke-width="2.5"></polyline>
+        <circle cx="892" cy="330" r="5" fill="var(--cord)"></circle>
+
+        <!-- open limit above the top run, lever toward the incoming bead -->
+        <rect x="296" y="302" width="22" height="14" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <line x1="298" y1="316" x2="318" y2="326" stroke="var(--ink)" stroke-width="1.5"></line>
+        <circle cx="319" cy="326" r="2.5" fill="var(--ink)"></circle>
+        <text x="326" y="314" class="sli">open limit</text>
+        <!-- top-run bead, closed position -->
+        <polygon points="755,322 763,330 755,338 747,330" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"></polygon>
+        <line x1="735" y1="318" x2="655" y2="318" stroke="var(--cord)" stroke-width="1.8" marker-end="url(#f5c)"></line>
+        <text x="755" y="356" text-anchor="middle" class="sl">top-run bead</text>
+
+        <!-- closed limit below the bottom run -->
+        <rect x="236" y="384" width="22" height="14" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <line x1="238" y1="384" x2="258" y2="374" stroke="var(--ink)" stroke-width="1.5"></line>
+        <circle cx="259" cy="374" r="2.5" fill="var(--ink)"></circle>
+        <text x="266" y="396" class="sli">closed limit</text>
+        <!-- bottom-run bead, resting on it -->
+        <polygon points="267,362 275,370 267,378 259,370" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"></polygon>
+        <text x="280" y="363" class="sl">bottom-run bead</text>
+
+        <text x="200" y="424" class="sl">both switches on the motor bracket &middot; short cables, nothing mounted along the rod</text>
+        <text x="200" y="440" class="sl">each bead is crimped once, where it trips its switch at that end of travel</text>
+
+        <!-- legend -->
+        <circle cx="26" cy="466" r="5" fill="var(--cord)"></circle>
+        <text x="38" y="470" class="sl">lead-ring clamp</text>
+        <polygon points="190,459 197,466 190,473 183,466" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"></polygon>
+        <text x="204" y="470" class="sl">bead on the cord</text>
+        <circle cx="362" cy="466" r="7" fill="none" stroke="var(--cord)" stroke-width="2" stroke-dasharray="3 3"></circle>
+        <text x="376" y="470" class="sl">dashed = lead ring when open</text>
+        <line x1="600" y1="466" x2="632" y2="466" stroke="var(--cord)" stroke-width="1.8" marker-end="url(#f5c)"></line>
+        <text x="642" y="470" class="sl">arrow = the bead's travel while opening</text>
+      </svg>
+    </div>
+    <figcaption>Both rows show the curtain closed. In B, the closing bottom run has just brought its bead to the closed limit. The top-run bead is one full travel away and reaches the open limit when the curtain is fully open. B keeps everything at the motor end, where the controller already is. A is easier to picture, but its open switch has to sit behind the stacked fabric.</figcaption>
+  </figure>
+
+  <div class="callout">
+    <p><span class="label">A missed switch is a stall</span>If a switch does not trip, the motor keeps pulling until something gives. That could be the cord lock slipping, the lead ring tearing out of the fabric or the idler plate pulling out of the wall. Give the controller a maximum run time a few seconds longer than one full travel (see the numbers below), so a missed switch costs a pause, not a ring. Set each switch so it clicks <em>before</em> the lead ring reaches the bracket or squeezes the stack, never at the moment of contact.</p>
+  </div>
+
+  <h2>The numbers, as proposals</h2>
+  <p>Travel speed is the drive pulley's circumference times its RPM. With a 20&nbsp;mm pulley, one turn moves the cord 63&nbsp;mm. The force figure is an estimate for sizing the motor, not a measurement: a 3&nbsp;kg curtain on rings with friction around 0.3 needs about 9&nbsp;N of pull. At the pulley's 10&nbsp;mm radius that is 0.09&nbsp;N&middot;m, about 0.9&nbsp;kg&middot;cm. Choose a motor rated for several times that, and weigh the real curtain first.</p>
+
+  <div class="settings">
+    <span class="pill"><b>pulley</b> &Oslash;20 mm</span>
+    <span class="pill"><b>motor</b> 60&ndash;100 RPM</span>
+    <span class="pill"><b>cord speed</b> 63&ndash;105 mm/s</span>
+    <span class="pill"><b>1.5 m travel</b> 14&ndash;24 s</span>
+    <span class="pill"><b>pull, 3 kg curtain</b> ~9 N</span>
+    <span class="pill"><b>torque at pulley</b> ~0.9 kg&middot;cm</span>
+  </div>
+
+  <p>If the cord slips and a GT2 belt loop replaces it, a 20-tooth GT2 pulley has a 12.7&nbsp;mm pitch diameter, so each turn moves 40&nbsp;mm. At 60&ndash;100 RPM that is 40&ndash;67&nbsp;mm/s, or 22&ndash;37&nbsp;s for 1.5&nbsp;m. The belt is slower, and it cannot slip.</p>
+
+  <div class="callout">
+    <p><span class="label">Slip at the drive pulley looks like a motor problem</span>A cord on a smooth pulley grips only through tension and wrap. Under a heavy curtain it slips: the motor turns, the pulley turns and the curtain stops halfway. Use a deep V-groove or a knurled pulley, and a spring strong enough to keep the idler off the end of its slot. If it still slips, give the cord a full extra turn around the drive pulley, or move to a GT2 belt. Check for slip first: mark the cord and the pulley with a pen and watch whether the marks separate.</p>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">A geared motor will not let the curtain be pulled by hand</span>A JGA25 gearbox resists being turned backward. Tugging the fabric loads the cord lock, the arm and the lead ring's stitching instead. Plan for that from the start. Either the cord lock is set to slip before the fabric tears, or the curtain is only ever moved through the controller.</p>
+  </div>
+
+  <h2>Check in this order</h2>
+  <p>Build and check the mechanics by hand before the motor ever turns. Each step tests one thing, so a failure points at one part.</p>
+  <ol class="checks">
+    <li><div><strong>Rings alone, by hand.</strong> Push the lead ring from end to end with one finger. The whole panel should follow smoothly and stack at the left. <strong>It catches at one spot</strong> = a rod joint, a burr or a centre bracket. Fix it now, or the motor will stall at the same spot.</div></li>
+    <li><div><strong>Loop on, nothing clamped.</strong> Turn the drive pulley by hand for a full lap of the cord. The cord should move around both pulleys, and the idler should sit near the middle of its slot. <strong>The idler sits at the end of the slot</strong> = the cord is too long, or it stretches; shorten it. <strong>The pulley turns under the cord</strong> = not enough tension or grip (see the slip callout).</div></li>
+    <li><div><strong>Clearance, still unclamped.</strong> Run the loop another lap while watching the hooks, the pleats at the stack end and both bracket arms. Nothing should touch the cord. <strong>A hook or bracket rubs</strong> = move the cord toward the wall or lower the pulleys. Do not move the cord toward the rings.</div></li>
+    <li><div><strong>Clamp the lead ring, drive by hand.</strong> Turn the drive pulley clockwise, seen from the front. The curtain should close. <strong>It opens instead</strong> = the lock is on the bottom run. That is fine if you note it, because the controller's directions then swap.</div></li>
+    <li><div><strong>Limit switches, by hand.</strong> Still turning the pulley by hand, go slowly to each end and listen. Each switch should click just before the lead ring meets the bracket or squeezes the stack. <strong>No click</strong> = move the switch or the bead toward the direction of travel. <strong>It clicks with a gap still showing</strong> = the curtain will stop short of fully closed; move it the other way.</div></li>
+    <li><div><strong>Only then the motor, in short bursts.</strong> One short run each way from the controller. Check the direction from step 4, and that each switch stops the motor. Then do one full open and close, and time it against the 14&ndash;24&nbsp;s estimate. <strong>Much slower, or it stops midway</strong> = slip or drag. Go back to step 1 or 2 rather than fitting a bigger motor.</div></li>
+  </ol>
+
+  <footer>
+    Proposal, 2026-09-25. Nothing is bought or built, and nothing has been measured against the real rod yet (diameter, bracket shape, ring clearance, curtain weight). The DIY cord-loop option is not yet in the "Remote controlled curtains" entry in <span class="mono">PROJECTS.md</span>, which still leans toward a clip-on rod robot. This page covers the mechanics only. The controller is one box here, and its wiring and firmware are not drawn. Page source: <span class="mono">projects/curtains/cord-loop.html</span>.
+  </footer>
+</div>
