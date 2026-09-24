@@ -5,9 +5,10 @@ git instead of the gitignored `HOMEASSISTANT_CONFIG/.storage/`, and a container
 rebuild restores them. The trade is deliberate: a YAML dashboard cannot be
 edited from the UI. Change the file, then refresh the browser.
 
-- `dashboards/home.yaml` - **Home** (`/dashboard-home`), a copy of Overview
-  taken 2026-09-22, to be curated down (see the PROJECTS.md entry "A clean HA
-  dashboard").
+- `dashboards/home.yaml` - **Home** (`/dashboard-home`), the curated
+  dashboard: only what gets acted on. First cut 2026-09-24; the verbatim copy
+  of Overview it replaced is commit b833b4d (see the PROJECTS.md entry "A
+  clean HA dashboard").
 - `dashboards/lovelace.yaml` - declares the dashboards. Adding, renaming or
   removing one here needs an HA restart; editing a dashboard's own file does not.
 
@@ -33,6 +34,15 @@ container and prints the fully expanded result as YAML:
 
 Re-dump and diff against `home.yaml` to see what Overview has picked up since
 (a new device, a new area) that Home has not.
+
+## What belongs on Home
+
+    projects/ha-dashboard/touched_entities.py
+
+Counts, per entity, the state changes a *user* made (app, dashboard, voice)
+over the recorder's window (10 days), read-only from `home-assistant_v2.db`.
+That list is what Home holds; re-run it to see what has drifted in or out.
+Physical buttons act through automations, so they count in the second column.
 
 ## Checking an edit
 

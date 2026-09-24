@@ -507,7 +507,7 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 ### A clean HA dashboard, next to Overview rather than instead of it
 **Why:** the default **Overview** is rigid and cluttered (noted 2026-09-19). It is auto-generated, so it lists *every* entity - including diagnostics and the stale Tinxy devices that made up ~60% of unavailable entities while tuning the watchdog - and it cannot be curated without giving up the thing that makes it useful.
 
-**State (2026-09-22): the YAML-mode copy exists, curation not started.** **Home** (`/dashboard-home`) is a verbatim copy of Overview in `projects/ha-dashboard/dashboards/home.yaml`, bind-mounted into HA and declared via `lovelace: !include dashboards/lovelace.yaml` - so steps 2 and 3 below were done in reverse: tracked YAML first, curation next, and every change is file-edit-and-refresh. It renders identically to Overview with no error cards (checked with `projects/ha-dashboard/shot_dashboard.sh`). HA is on **2026.9.3** (the recreate for the bind mount picked up the newer image). Details: `projects/ha-dashboard/README.md`.
+**State (2026-09-24): first curated cut is live.** **Home** (`/dashboard-home`, `projects/ha-dashboard/dashboards/home.yaml`) is now one sections view built from `projects/ha-dashboard/touched_entities.py`, which counts user-initiated state changes per entity from the recorder (10 days). It shows badges for healthcheck overall and the power watchdog; **Bedroom** (the sleeping/awake scenes, LED bulb, tubelight, fan, white noise, balcony, AC); **Living room** (fan, tubelight, shelf LED) plus the aarti lights (WLED, scripts on/off); and **Music** (Spotify, speaker volume, bedroom track). The area subviews, Spotcast diagnostics, system monitor tiles and the dead `light.wled_main`/`segment_*` entities are gone. Checked with `shot_dashboard.sh`: 0 error cards. The verbatim Overview copy is commit `b833b4d`. The wiring is unchanged since 2026-09-22 (bind mount + `lovelace: !include`, HA 2026.9.3); details are in `projects/ha-dashboard/README.md`.
 
 **Overview is not what this entry assumed (found 2026-09-22).** In this HA version Overview is the new **Home panel** (`/home`; `/lovelace` redirects there) - favorites, summaries and area cards - not the old list-every-entity original-states dashboard. It is built in the browser by nested strategies and stored nowhere, so `projects/ha-dashboard/dump_overview.sh` renders it in the Playwright container and dumps the expanded config. Re-run it and diff against `home.yaml` to see what Overview picked up since.
 
@@ -529,7 +529,7 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 
 **Intended, not just noted (2026-09-19):** this one is meant to get built, in a session of its own rather than here.
 
-**Next step:** **list the entities actually touched in a normal week** - that list *is* the dashboard, and it is the only input nobody else can supply - then cut `home.yaml` down to it (the area subviews are full of Spotcast diagnostics and dead Tinxy bulbs). Check each edit with `shot_dashboard.sh`.
+**Next step:** use it for a few days and adjust. Re-run `touched_entities.py` to catch drift. Then settle the two decisions below.
 
 Two decisions to settle while doing step 1: whether **Stats** stays a separate health view or folds into this one (two half-dashboards is the outcome to avoid), and which devices get it as their default, since that is per-device and the phone and desktop can differ.
 
