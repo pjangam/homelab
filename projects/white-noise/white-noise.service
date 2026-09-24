@@ -5,7 +5,7 @@ After=sound.target
 [Service]
 # The mixer the fade and the level act on, the level itself and the stop fade's
 # steps. These are xero's USB speaker, where 59% is ~67 dB at the bed (measured
-# 2026-09-24); the wol Pi overrides all four in white-noise.service.d/host.conf.
+# 2026-09-24); deploy_audio_pi.sh rewrites these two lines for the wol Pi.
 # systemd fills in the braced ${...} even inside the bash -c string below; the
 # unbraced $v there is left alone for bash.
 Environment=ALSA_CARD=1 ALSA_CONTROL=Speaker WHITE_NOISE_LEVEL=59

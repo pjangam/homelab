@@ -56,8 +56,17 @@ sed "s|/home/pramod/code/homelab|$PI_ROOT|g" "$REPO/projects/spotifyd/spotifyd.s
   > "$stage/units/spotifyd.service"
 
 # Which mixer the fade, the level and the HA volume slider act on, and how far.
-printf '[Service]\nEnvironment=ALSA_CARD=%s ALSA_CONTROL=%s WHITE_NOISE_LEVEL=%s\nEnvironment="WHITE_NOISE_FADE=%s"\n' \
-  "$CARD" "$CONTROL" "$LEVEL" "$FADE" > "$stage/units/white-noise-host.conf"
+# white-noise.service gets the Pi's values written into its own Environment
+# lines, so the unit file on the Pi reads what it does (no drop-in to miss).
+sed -i -E \
+  -e "s|^Environment=ALSA_CARD=.*|Environment=ALSA_CARD=$CARD ALSA_CONTROL=$CONTROL WHITE_NOISE_LEVEL=$LEVEL|" \
+  -e "s|^Environment=\"WHITE_NOISE_FADE=.*|Environment=\"WHITE_NOISE_FADE=$FADE\"|" \
+  -e "s|^# steps\. These are xero's .*|# steps. Written for the wol Pi by deploy_audio_pi.sh $MODE, which says why.|" \
+  -e "/^# 2026-09-24\); deploy_audio_pi\.sh rewrites/d" \
+  "$stage/units/white-noise.service"
+grep -q "^Environment=ALSA_CARD=$CARD ALSA_CONTROL=$CONTROL WHITE_NOISE_LEVEL=$LEVEL\$" "$stage/units/white-noise.service" \
+  && grep -q "^Environment=\"WHITE_NOISE_FADE=$FADE\"\$" "$stage/units/white-noise.service" \
+  || { echo "white-noise.service Environment lines did not get rewritten" >&2; exit 1; }
 printf '[Service]\nEnvironment=VOLUME_CARD=%s VOLUME_CONTROL=%s VOLUME_MAX=%s\n' "$CARD" "$CONTROL" "$MAX" \
   > "$stage/units/volume-mqtt-host.conf"
 
@@ -89,9 +98,10 @@ install -m 600 /dev/null "$env_file.new"
   echo "MQTT_HOST=$BROKER_IP"; } >> "$env_file.new"
 mv "$env_file.new" "$env_file"
 
-mkdir -p "$ud/white-noise.service.d" "$ud/volume-mqtt.service.d" ~/.config/spotifyd
+mkdir -p "$ud/volume-mqtt.service.d" ~/.config/spotifyd
 cp "$d/units/"*.service "$ud/"
-cp "$d/units/white-noise-host.conf" "$ud/white-noise.service.d/host.conf"
+# Older deploys put the white-noise values in a drop-in; they are in the unit now.
+rm -rf "$ud/white-noise.service.d"
 cp "$d/units/volume-mqtt-host.conf" "$ud/volume-mqtt.service.d/host.conf"
 cp "$d/spotifyd/spotifyd.conf" ~/.config/spotifyd/spotifyd.conf
 rm -rf "$d"
