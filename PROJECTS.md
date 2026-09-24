@@ -48,19 +48,21 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
    - play to `raspberrypi` from the phone
    - `playerctl -p spotifyd pause` from the Pi
    - `vcgencmd get_throttled` after a while
-3. Cutover:
-   - xero: `systemctl --user disable --now white-noise-mqtt volume-mqtt spotifyd`, and comment out the `watchdog_spotifyd.sh` cron line
-   - Pi: `systemctl --user enable --now white-noise-mqtt volume-mqtt spotifyd`
+3. Cutover, **white noise done 2026-09-24:** xero's `white-noise`, `white-noise-mqtt` and `volume-mqtt` are disabled (installed, for rollback); the Pi's two bridges are enabled. No HA edit was needed. Checked: `whitenoise/set` ON/OFF (what the HA switch sends) starts and stops it on the Pi with the fade, both bridges `online`, the slider's discovery `max` is 93. White noise was left playing on the Pi, as it was on xero.
+   - **Still to check by hand:** both GPIO buttons and the HA volume slider.
+   - **Still on xero: spotifyd.** Until it moves, starting white noise no longer pauses Spotify (the Pi's `playerctl` only sees the Pi's spotifyd), and the HA volume slider drives the Pi's jack, not xero's `Master`.
+   - Remaining: xero `systemctl --user disable --now spotifyd` and comment out the `watchdog_spotifyd.sh` cron line; Pi `systemctl --user enable --now spotifyd`
 4. HA:
    - point `play_bedroom_track` at the new spotcast entity for `raspberrypi`
-   - test the switch, both GPIO buttons, the volume slider and white-noise-pauses-Spotify
+   - test white-noise-pauses-Spotify
 
 spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It was started by hand, so a Pi reboot stops it.
 
 **Speaker on the Pi: volume recalibrated (2026-09-24).** The speaker is on the Pi's **3.5mm jack** (card 1 `Headphones`, control `PCM`) through its AUX input, not on USB, so `deploy_audio_pi.sh headphones` is the mode to use. The same % is quieter there than on xero (`Speaker`), and the jack's control goes above 0 dB, so it clips past ~97%: the "breaking" was the Pi, not the speaker.
-- Measured at the bed: xero at 59% is ~67 dB; the Pi at 95% matches it. The user capped the Pi at **93%** (-3.45 dB, so ~65 dB).
+- Measured at the bed: xero at 59% is ~67 dB; the Pi at 95% matches it. The user capped the slider at **93%** and settled on **91%** for white noise (-5.58 dB, so ~63 dB).
 - Level, fade-out steps and slider top are now per-host settings (`WHITE_NOISE_LEVEL`, `WHITE_NOISE_FADE`, `VOLUME_MAX`), set by `deploy_audio_pi.sh`. xero keeps 59% / 45 32 18 5 / 100 and its installed unit was updated with no change in behaviour.
-- The Pi: level 93, slider max 93, fade out 82 71 58 45 (~12 dB apart, since the jack's % is linear in dB). Tested on the Pi: it starts at 93%, steps down through the four and resets to 93%. The fade in is sox's own 60s ramp and needed no change.
+- The Pi: level 91, slider max 93, fade out 80 68 57 46 (~12 dB apart, since the jack's % is linear in dB). Tested on the Pi: it starts at 91%, steps down through the four and resets to 91%. The fade in is sox's own 60s ramp and needed no change.
+- `deploy_audio_pi.sh` writes the level and fade into the Pi's `white-noise.service` itself, so edit them there (the `headphones)` line), not on the Pi: a deploy overwrites the Pi's copy.
 
 **Plan:**
 1. **Packages on the Pi.**

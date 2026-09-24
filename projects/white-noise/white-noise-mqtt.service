@@ -6,6 +6,9 @@ Wants=network-online.target
 [Service]
 EnvironmentFile=/home/pramod/code/homelab/.env.mqtt
 ExecStart=%h/.local/bin/uv run --script /home/pramod/code/homelab/projects/white-noise/white-noise-mqtt.py
+# uv hands the SIGTERM of a normal stop back as exit 143; without this a
+# `systemctl stop` leaves the unit "failed", which healthcheck.sh alarms on.
+SuccessExitStatus=143
 Restart=on-failure
 RestartSec=3
 

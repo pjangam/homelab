@@ -190,11 +190,11 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
 
     [[group.endpoint.topic]]
     name = "whitenoise/set, /state, /available"
-    desc = "The white-noise switch on xero, bridged by white-noise-mqtt.service."
+    desc = "The white-noise switch, bridged by white-noise-mqtt.service on the wol Pi (moved from xero 2026-09-24)."
 
     [[group.endpoint.topic]]
     name = "volume/set, /state, /available"
-    desc = "Server volume as an HA number, bridged by volume-mqtt.service."
+    desc = "Server volume as an HA number: the Pi's 3.5mm jack, capped at 93%. Bridged by volume-mqtt.service on the wol Pi (moved from xero 2026-09-24)."
 
     [[group.endpoint.topic]]
     name = "homeassistant/#"

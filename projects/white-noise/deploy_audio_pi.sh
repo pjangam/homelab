@@ -15,8 +15,9 @@
 # LEVEL is the white-noise volume, FADE the stop fade's steps and MAX the HA
 # slider's top. On the jack, 95% matched xero's ~67 dB at the bed (measured
 # 2026-09-24), but the jack goes above 0 dB and clips past ~97%, so the user
-# capped it at 93% (-3.45 dB, so ~65 dB). The jack's % is linear in dB
-# (-102.39 to +4), so the fade steps are ~12 dB apart: -15, -27, -41, -54 dB.
+# capped the slider at 93% and settled on 91% (-5.58 dB, so ~63 dB) for white
+# noise. The jack's % is linear in dB (-102.39 to +4), so the fade steps are
+# ~12 dB apart: -17.6, -29.6, -41.6, -53.6 dB.
 # sox's 60s fade in needs no steps: it ramps up to whatever the mixer is at.
 # usb keeps xero's values, since it is the same speaker and control.
 #
@@ -28,7 +29,7 @@ set -euo pipefail
 
 MODE="${1:-headphones}"
 case "$MODE" in
-  headphones) CARD=Headphones; CONTROL=PCM;     LEVEL=93; FADE="82 71 58 45"; MAX=93 ;;
+  headphones) CARD=Headphones; CONTROL=PCM;     LEVEL=91; FADE="80 68 57 46"; MAX=93 ;;
   usb)        CARD=Device;     CONTROL=Speaker; LEVEL=59; FADE="45 32 18 5"; MAX=100 ;;
   *) echo "usage: $0 [headphones|usb]" >&2; exit 2 ;;
 esac
