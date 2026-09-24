@@ -1,7 +1,7 @@
-# Home - a YAML-mode copy of the auto-generated Overview (the Home panel),
-# dumped fully expanded by dump_overview.sh (first 2026-09-22, re-checked
-# identical 2026-09-24). Unlike Overview it does not pick up new devices by
-# itself: edit this file and refresh the page.
+# Home - tracked copy of the storage-mode (UI-editable) Home dashboard at
+# /dashboard-home. Started 2026-09-22 as a verbatim copy of Overview.
+# Edit in the HA UI, then `projects/ha-dashboard/ui_dashboard.py export` and
+# commit; `ui_dashboard.py restore` pushes this file back into HA.
 views:
 - icon: mdi:home
   path: overview

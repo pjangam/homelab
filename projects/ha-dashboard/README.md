@@ -1,23 +1,24 @@
-# HA dashboards in YAML
+# HA Home dashboard
 
-`dashboards/` holds Home Assistant dashboards in **YAML mode**, so they live in
-git instead of the gitignored `HOMEASSISTANT_CONFIG/.storage/`, and a container
-rebuild restores them. The trade is deliberate: a YAML dashboard cannot be
-edited from the UI. Change the file, then refresh the browser.
+**Home** (`/dashboard-home`) is a copy of Overview that can be edited in the
+HA UI (pencil, top right). It is a storage-mode dashboard, so HA keeps it in
+the gitignored `HOMEASSISTANT_CONFIG/.storage/`; `dashboards/home.yaml` is its
+tracked copy, kept in sync by `ui_dashboard.py` over the websocket API (no
+restart):
 
-- `dashboards/home.yaml` - **Home** (`/dashboard-home`), a copy of Overview
-  taken 2026-09-22, to be curated down (see the PROJECTS.md entry "A clean HA
-  dashboard").
-- `dashboards/lovelace.yaml` - declares the dashboards. Adding, renaming or
-  removing one here needs an HA restart; editing a dashboard's own file does not.
+    projects/ha-dashboard/ui_dashboard.py export   # after editing in the UI, then git diff + commit
+    projects/ha-dashboard/ui_dashboard.py restore  # push home.yaml back into HA (after a rebuild)
+    projects/ha-dashboard/ui_dashboard.py create   # recreate the dashboard from scratch
+
+It was YAML mode from 2026-09-22 to 2026-09-24, but a YAML-mode dashboard
+cannot be edited from the UI, which is the whole point of this one.
 
 ## How it is wired
 
 - `docker-compose.yml` bind-mounts `dashboards/` read-only at `/config/dashboards`.
-- `HOMEASSISTANT_CONFIG/configuration.yaml` (gitignored, root-owned, edit via
-  `docker exec homeassistant ...`) ends with
-  `lovelace: !include dashboards/lovelace.yaml`. If the mount is missing, that
-  include fails and HA starts without these dashboards.
+- `HOMEASSISTANT_CONFIG/configuration.yaml` (gitignored, root-owned) ends with
+  `lovelace: !include dashboards/lovelace.yaml`, which now declares no YAML
+  dashboards (`dashboards: {}`). Adding one there needs an HA restart.
 
 ## Overview is not stored anywhere
 
