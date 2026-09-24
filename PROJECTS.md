@@ -53,7 +53,7 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
    - **spotifyd done 2026-09-24:** xero's disabled and its `watchdog_spotifyd.sh` cron line commented out; the Pi's enabled, and `raspberrypi` is advertised (seen from xero's `avahi-browse`). xero's health check now reads spotifyd as "not applicable" (exit 2), so it stays green but watches nothing until step 5.
 4. HA:
    - ~~point `play_bedroom_track` at the new spotcast entity for `raspberrypi`~~ done 2026-09-25 (`media_player.raspberrypi_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast`, scripts reloaded). Phone to `raspberrypi` plays audibly through the jack (after naming the card in `spotifyd.conf`; `default` was HDMI).
-   - **Unverified:** one run of Play Bedroom Track from the API returned 200, but seconds later spotifyd had no MPRIS player (no session) and nothing was open on the jack. The user stopped testing there. Next time: run it from the HA app and see whether it plays.
+   - **Verified 2026-09-25** with the jack muted (`PCM` 0%, restored to 91% after): Play Bedroom Track through HA's API had spotifyd `Playing` a track from the playlist and the jack `RUNNING` within 2s. An earlier run that found no session seconds later was not reproduced.
    - test white-noise-pauses-Spotify
 
 spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It was started by hand, so a Pi reboot stops it.
