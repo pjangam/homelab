@@ -10,7 +10,9 @@ After=sound.target
 # unbraced $v there is left alone for bash.
 Environment=ALSA_CARD=1 ALSA_CONTROL=Speaker WHITE_NOISE_LEVEL=59
 Environment="WHITE_NOISE_FADE=45 32 18 5"
-ExecStartPre=/usr/bin/amixer -c ${ALSA_CARD} sset ${ALSA_CONTROL} ${WHITE_NOISE_LEVEL}%
+# unmute too: setting a level leaves a muted control muted, and on 2026-09-25
+# a jack muted by hand the night before made Spotify play silently.
+ExecStartPre=/usr/bin/amixer -c ${ALSA_CARD} sset ${ALSA_CONTROL} ${WHITE_NOISE_LEVEL}% unmute
 # Pause Spotify, so starting white noise never plays over music. The `-` keeps
 # a start from failing when there is nothing to pause: spotifyd only publishes
 # its MPRIS player while a Connect session is active, and otherwise playerctl

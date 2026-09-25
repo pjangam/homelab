@@ -55,6 +55,7 @@ So HA and the buttons stay as they are. The cutover is simply which machine's br
    - ~~point `play_bedroom_track` at the new spotcast entity for `raspberrypi`~~ done 2026-09-25 (`media_player.raspberrypi_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast`, scripts reloaded). Phone to `raspberrypi` plays audibly through the jack (after naming the card in `spotifyd.conf`; `default` was HDMI).
    - **Verified 2026-09-25** with the jack muted (`PCM` 0%, restored to 91% after): Play Bedroom Track through HA's API had spotifyd `Playing` a track from the playlist and the jack `RUNNING` within 2s. An earlier run that found no session seconds later was not reproduced.
    - test white-noise-pauses-Spotify
+   - **2026-09-25: Spotify silent on the Pi.** It was playing to the jack, but the jack was still muted from a test the night before; the HA slider had since set 93% without unmuting. Fixed so it cannot recur: the slider (`volume-mqtt.py`) and white noise's start now also `unmute`. Tested the slider by muting and sending `volume/set 93`.
 
 spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It was started by hand, so a Pi reboot stops it.
 

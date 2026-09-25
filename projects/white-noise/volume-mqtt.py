@@ -60,7 +60,9 @@ def get_volume():
 
 def set_volume(pct):
     pct = max(0, min(MAX, pct))
-    subprocess.run([*AMIXER, "sset", CONTROL, f"{pct}%"], check=False)
+    # unmute as well: a level alone leaves a muted control silent, so the slider
+    # would look like it works while nothing plays.
+    subprocess.run([*AMIXER, "sset", CONTROL, f"{pct}%", "unmute"], check=False)
 
 
 def publish_state(client):
