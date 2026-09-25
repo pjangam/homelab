@@ -1,0 +1,22 @@
+[Unit]
+Description=Clawlight - mirror the aggregate colour onto the aarti-lights WLED strip
+After=clawlight-server.service
+# Both drive the same strip, and aarti-lights' realtime UDP overrides anything
+# set over the JSON API. Conflicts= is symmetric: starting either stops the other.
+Conflicts=aarti-lights.service
+# No After=network-online.target: a silent no-op in a user unit (see
+# aarti-lights.service). The script retries every 2s until both ends answer.
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/pramod/code/homelab/clawlight/wled-mirror.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Not enabled at boot on purpose: aarti-lights.service is, and two enabled
+# units that conflict leave the winner up to startup order. Start by hand:
+#   systemctl --user start clawlight-wled-mirror.service
+[Install]
+WantedBy=default.target

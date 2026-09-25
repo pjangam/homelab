@@ -4,10 +4,10 @@
 Polls clawlight's /api/status on xero and, on every state change, sets the
 whole strip to one solid colour matching web/index.html's COLORS map.
 
-    python3 clawlight/wled-mirror.py            # runs until Ctrl-C
+    systemctl --user start clawlight-wled-mirror.service   # see README.md
 
-Stop aarti-lights.service first: while WLED is on, its realtime UDP stream
-overrides anything set over the JSON API. Restart it afterwards with
+The unit conflicts with aarti-lights.service: while WLED is on, its realtime UDP stream
+overrides anything set over the JSON API. Hand the strip back with
 `systemctl --user start aarti-lights.service`.
 
 CLAWLIGHT_URL and WLED_HOST override the defaults below.

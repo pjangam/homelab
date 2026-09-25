@@ -220,6 +220,24 @@ https://claude.ai/artifact/UDgsMP8uYK5FkHFydLMwP9). Pin choice is in
 `scripts/clawlight/test_clawlight_led.py` checks the pin output on gpiozero mock
 pins, no Pi or LED needed.
 
+## Mirroring onto the WLED strip
+
+`wled-mirror.py` sets the aarti-lights WLED strip (192.168.1.125) to a solid
+colour matching the clawlight state (same colours as the web page), polling
+`/api/status` every 2s. It runs as `clawlight-wled-mirror.service`:
+
+```bash
+cp systemd/user/clawlight-wled-mirror.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user start clawlight-wled-mirror.service   # stops aarti-lights
+systemctl --user start aarti-lights.service            # hands the strip back
+```
+
+The unit `Conflicts=` with `aarti-lights.service`, whose realtime UDP would
+otherwise override it, so starting either stops the other. It is not enabled
+at boot, since aarti-lights is. It turns WLED on at every state change, so
+after Home Assistant's 23:00 off the strip comes back on at the next change.
+
 ## Jumping to the console that needs you
 
 Clicking a session on the page switches that machine's terminal to the tmux
