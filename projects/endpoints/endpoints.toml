@@ -223,6 +223,16 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "The outage nobody diagnoses as DNS at first. If xero is down, name resolution is down with it."
 
   [[group.endpoint]]
+  name = "NTP (chrony)"
+  proto = "udp"
+  host = "192.168.1.123"
+  port = 123
+  connect = "sntp 192.168.1.123   (or ntpdate -q 192.168.1.123; on xero itself: chronyc tracking)"
+  desc = "Time for the LAN, from chrony on xero. Keeps answering from xero's RTC when the internet is down (local stratum 10)."
+  who = "The wol Pi, which has no RTC - it boots on its last saved time after a power cut and needs a server to correct it."
+  note = "Added 2026-09-28 after a power cut plus ISP outage left the Pi 15 minutes behind for 10 hours. Config and deploy: services/chrony/."
+
+  [[group.endpoint]]
   name = "phone-uploads (SMB)"
   proto = "smb"
   host = "192.168.1.123"
