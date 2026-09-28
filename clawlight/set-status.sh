@@ -17,6 +17,15 @@
 # see .env / Readme.md), e.g.:
 #   export CLAWLIGHT_SERVER_URL=https://xero.<your-tailnet-suffix>
 #
+# CLAWLIGHT_LAN_URL + CLAWLIGHT_HOME_GATEWAY_MAC optionally skip the tailnet
+# while at home, which is what keeps this machine on the light when Tailscale
+# stops. Reporting never needed Tailscale - server.py binds 0.0.0.0:8126 and
+# the tailnet URL is only Caddy in front of it - but a bare LAN IP is only
+# right on the home LAN, so it is used only while the default gateway's MAC
+# matches. See server-url.sh for the whole argument, e.g.:
+#   export CLAWLIGHT_LAN_URL=http://192.168.1.123:8126
+#   export CLAWLIGHT_HOME_GATEWAY_MAC=f8:c4:f3:e0:82:3f
+#
 # CLAWLIGHT_HOST_NAME overrides the reported host label (default: `hostname`,
 # which can be an ugly DHCP/cloud-provider name like
 # ip-192-168-1-101.ec2.internal) - set it in your shell profile for a friendly
@@ -38,7 +47,18 @@
 set -u
 
 state="${1:?usage: set-status.sh <active|waiting|input_needed|end>}"
-server_url="${CLAWLIGHT_SERVER_URL:-http://localhost:8126}"
+
+# Report to the LAN while at home, to the tailnet otherwise - server-url.sh
+# decides, and is shared with focus-agent.sh so the two cannot disagree.
+# Guarded rather than sourced outright: an old scp'd copy of this script with
+# no helper beside it must still report, not die on the hook path.
+CLAWLIGHT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -r "$CLAWLIGHT_DIR/server-url.sh" ]; then
+  . "$CLAWLIGHT_DIR/server-url.sh"
+  server_url="$(clawlight_server_url)"
+else
+  server_url="${CLAWLIGHT_SERVER_URL:-http://localhost:8126}"
+fi
 ignore_dir="${CLAWLIGHT_IGNORE_DIR:-$HOME/.claude/clawlight-ignore}"
 
 hook_input="$(cat)"
@@ -55,7 +75,12 @@ host="${CLAWLIGHT_HOST_NAME:-$(hostname)}"
 # socket matters, because a pane id (%N) is already unique across the whole
 # tmux server. Both are empty outside tmux, which just makes this session
 # non-focusable rather than breaking anything.
-tmux_socket="${TMUX%%,*}"
+# Defaulted before trimming, not trimmed directly: `set -u` makes a bare
+# ${TMUX%%,*} an "unbound variable" error outside tmux, which killed the script
+# on line 1 of the report - so a session started in a plain terminal reported
+# nothing at all, silently, rather than merely being non-focusable as intended.
+tmux_socket="${TMUX:-}"
+tmux_socket="${tmux_socket%%,*}"
 tmux_pane="${TMUX_PANE:-}"
 # The tmux session's name, for display only (e.g. `homelab:clock` on the Pi's
 # screensaver clock). A grouped session's own name carries a `-N` suffix, so
