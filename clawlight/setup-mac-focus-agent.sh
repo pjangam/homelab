@@ -56,6 +56,11 @@ command -v jq >/dev/null || die "jq not installed (brew install jq)"
 command -v tmux >/dev/null || die "tmux not installed (brew install tmux)"
 command -v curl >/dev/null || die "curl not installed"
 
+# For clawlight_server_url, so the URL this script reports is the one the agent
+# and the hooks will really use.
+[ -r "$CLAWLIGHT_DIR/server-url.sh" ] || die "no server-url.sh next to this script ($CLAWLIGHT_DIR) - stale clone?"
+. "$CLAWLIGHT_DIR/server-url.sh"
+
 say "clone:              $CLAWLIGHT_DIR"
 
 # --- 1. the existing hooks ---------------------------------------------------
@@ -67,9 +72,15 @@ old_paths="$(printf '%s\n' "$hook_cmds" | grep -o '[^ "]*set-status\.sh' | sort 
 # --- 2. reuse the hooks' own env, so the agent cannot disagree with them -----
 server_url="$(printf '%s\n' "$hook_cmds" | grep -o 'CLAWLIGHT_SERVER_URL=[^ ]*' | head -1 | cut -d= -f2-)"
 host_name="$(printf '%s\n' "$hook_cmds" | grep -o 'CLAWLIGHT_HOST_NAME=[^ ]*' | head -1 | cut -d= -f2-)"
+# The LAN shortcut too, or the agent would keep using the tailnet URL while the
+# hooks had already moved to the LAN - and a launchd agent has no shell profile
+# to pick these up from, so they have to be baked into the plist below.
+lan_url="$(printf '%s\n' "$hook_cmds" | grep -o 'CLAWLIGHT_LAN_URL=[^ ]*' | head -1 | cut -d= -f2-)"
+gateway_mac="$(printf '%s\n' "$hook_cmds" | grep -o 'CLAWLIGHT_HOME_GATEWAY_MAC=[^ ]*' | head -1 | cut -d= -f2-)"
 [ -n "$server_url" ] || die "no CLAWLIGHT_SERVER_URL in the hook commands in $SETTINGS - set it there first, it is what the agent and the hooks must agree on"
 [ -n "$host_name" ] || host_name="$(hostname)"
 say "server:             $server_url"
+[ -n "$lan_url" ] && say "lan shortcut:       $lan_url   (while gateway is ${gateway_mac:-unset})"
 say "host label:         $host_name   (must match what the hooks report)"
 
 # --- 3. point the hooks at the clone -----------------------------------------
@@ -162,6 +173,10 @@ else
   <dict>
     <key>CLAWLIGHT_SERVER_URL</key>
     <string>$server_url</string>
+    <key>CLAWLIGHT_LAN_URL</key>
+    <string>$lan_url</string>
+    <key>CLAWLIGHT_HOME_GATEWAY_MAC</key>
+    <string>$gateway_mac</string>
     <key>CLAWLIGHT_HOST_NAME</key>
     <string>$host_name</string>
     <key>CLAWLIGHT_FOCUS_APP</key>
@@ -216,4 +231,9 @@ if [ -n "$stale" ]; then
   say "The old scp'd copies are no longer used - delete them once those sessions are gone:"
   for f in $stale; do say "  rm $f"; done
 fi
-say "Check with:  curl -s $server_url/clawlight/api/status | jq '.sessions'"
+# The URL the agent actually picked, not the tailnet one it falls back to -
+# printing an unreachable URL as the way to check is how a working setup reads
+# as broken.
+check_url="$(CLAWLIGHT_SERVER_URL="$server_url" CLAWLIGHT_LAN_URL="$lan_url" \
+             CLAWLIGHT_HOME_GATEWAY_MAC="$gateway_mac" clawlight_server_url)"
+say "Check with:  curl -s $check_url/clawlight/api/status | jq '.sessions'"

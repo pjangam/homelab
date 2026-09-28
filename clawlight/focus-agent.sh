@@ -13,6 +13,12 @@
 # Environment (same variables set-status.sh already uses on this machine):
 #   CLAWLIGHT_SERVER_URL  - default http://localhost:8126; xero's tailnet URL
 #                           on any other machine.
+#   CLAWLIGHT_LAN_URL     - optional; used instead of the above while the
+#   CLAWLIGHT_HOME_GATEWAY_MAC  default gateway's MAC says we are on the home
+#                           LAN, so the agent keeps working when Tailscale is
+#                           stopped. Re-checked on every reconnect, because
+#                           this agent outlives any one network. See
+#                           server-url.sh.
 #   CLAWLIGHT_HOST_NAME   - this host's label as reported by set-status.sh.
 #                           MUST match, or requests route to a host that isn't
 #                           listening and the click does nothing.
@@ -27,7 +33,15 @@
 # unreachable by the server and never reach this script.
 set -u
 
-server_url="${CLAWLIGHT_SERVER_URL:-http://localhost:8126}"
+CLAWLIGHT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -r "$CLAWLIGHT_DIR/server-url.sh" ]; then
+  . "$CLAWLIGHT_DIR/server-url.sh"
+else
+  # Same guard as set-status.sh: a copy without the helper beside it degrades
+  # to the old single-URL behaviour rather than refusing to start.
+  clawlight_server_url() { printf '%s' "${CLAWLIGHT_SERVER_URL:-http://localhost:8126}"; }
+fi
+server_url="$(clawlight_server_url)"
 host="${CLAWLIGHT_HOST_NAME:-$(hostname)}"
 focus_app="${CLAWLIGHT_FOCUS_APP:-}"
 
@@ -237,6 +251,17 @@ raise_ssh_tab() {
 log "watching $server_url for host=$host"
 
 while :; do
+  # Re-picked per reconnect rather than once at start-up. This agent is
+  # long-lived and the machine it runs on gets carried out of the house, so a
+  # cached LAN URL would leave it retry-looping against whatever happens to
+  # hold that address on a foreign network - and announce_ssh_client below
+  # POSTs to the same URL.
+  new_url="$(clawlight_server_url)"
+  if [ "$new_url" != "$server_url" ]; then
+    server_url="$new_url"
+    log "watching $server_url for host=$host"
+  fi
+
   # --speed-limit/--speed-time trip on a connection that died without closing:
   # the server's keepalive comments keep the stream above 1 byte/sec, so
   # falling under that for 45s means the link is gone, not merely quiet.

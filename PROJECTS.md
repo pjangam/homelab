@@ -154,6 +154,8 @@ Ruled out along the way and now moot: a stale global nameserver in the Tailscale
 
 **Knock-on worth knowing:** while DNS is broken (and Tailscale stopped), the M2 cannot resolve `xero.<tailnet>`, so every clawlight hook on it silently reports nowhere - `set-status.sh` swallows network errors by design. A clawlight colour that does not match what the Mac is doing is a symptom of this; that is how the 5th occurrence was noticed.
 
+**Mitigated for clawlight specifically, 2026-09-28** (6th occurrence: Tailscale simply stopped, DNS itself was healthy, and *no* Mac session was on the light - noticed as a missing `travolutionary` session). Reporting never needed Tailscale: `server.py` binds `0.0.0.0:8126` and the tailnet URL is only Caddy in front of it, so the Mac's hooks can use `http://192.168.1.123:8126` while at home and fall back to the tailnet URL when away. "At home" is decided by the default gateway's MAC rather than the IP or a hostname - a bare LAN IP would post session ids and project paths to whatever holds `.123` on a cafe network, and a hostname would depend on the DNS that keeps breaking. See `clawlight/server-url.sh` and the README's "Reporting over the LAN". This narrows the blast radius of this bug; it does not fix the bug, and a Mac that is away from home still needs the tailnet up.
+
 ### ESP32 UPS LED monitor
 **Why:** `watchdog_power.sh` (below) currently guesses "90 minutes on battery is probably safe" before shutting down cleanly. The RouterUPS has 4 status LEDs (plug=mains, battery-full=on-battery-ok, lightning=charging, battery-low=critical) - reading the actual battery-low LED would replace the time guess with the UPS's own real signal.
 

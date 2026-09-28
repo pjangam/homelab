@@ -65,7 +65,7 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   url = "https://xero.{tailnet}/clawlight"
   desc = "Per-machine Claude session status light. Kept in Picture-in-Picture on the phone as an always-on-top light."
   who = "Claude Code hooks on every wired machine POST to /clawlight/api/report; the phone and the Pi LED read the state."
-  note = "systemd --user unit clawlight-server on xero, port 8126. Not a container."
+  note = "systemd --user unit clawlight-server on xero, port 8126. Not a container. Also on the LAN at http://192.168.1.123:8126/clawlight/ with no TLS - the server binds 0.0.0.0, so reporting works without Tailscale, and hooks can be pointed there with setup-clawlight-hooks.sh --lan-url."
 
   [[group.endpoint]]
   name = "clawlight focus stream"

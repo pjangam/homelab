@@ -131,7 +131,9 @@ Hooks are read when a session starts, so changes generally take effect on the
    alone, and is re-runnable: it strips the old set-status.sh hooks before
    writing, so a second run re-points paths rather than duplicating hooks.
    `--server` defaults to whatever the existing hooks already use, so a re-run
-   to rename the host needs only `--host`.
+   to rename the host needs only `--host`. On a machine that lives at home,
+   add `--lan-url` so reporting survives Tailscale being stopped - see
+   "Reporting over the LAN" below.
 
    **It checks the server is reachable before writing, and afterwards proves
    the report actually arrived** rather than saying "done". Both matter
@@ -170,8 +172,10 @@ Hooks are read when a session starts, so changes generally take effect on the
    the setup script only if `clawlight/` moves within the repo, since the
    hooks and plist hold its path.
    It reads `CLAWLIGHT_SERVER_URL`/`CLAWLIGHT_HOST_NAME` back out of the hook
-   commands rather than taking them again, so the agent can't end up
-   disagreeing with what the hooks report - the failure mode where clicks
+   commands (and `CLAWLIGHT_LAN_URL`/`CLAWLIGHT_HOME_GATEWAY_MAC` with them,
+   since a launchd agent has no shell profile to read them from) rather than
+   taking them again, so the agent can't end up disagreeing with what the
+   hooks report - the failure mode where clicks
    route to a host nobody is listening for. `clawlight/launchd/` holds the
    plist template if you'd rather do it by hand.
 
@@ -410,12 +414,71 @@ is dead weight once that session is gone - `~/.claude/clawlight-ignore` is
 worth emptying occasionally. `scripts/clawlight/test_clawlight_ignore.sh` exercises this
 against the running server using a throwaway session id.
 
+## Reporting over the LAN (when Tailscale is down)
+
+**Reporting never needed Tailscale.** `server.py` binds `0.0.0.0:8126`, so xero
+answers on the LAN directly; the tailnet URL is only Caddy terminating TLS in
+front of the same port. That matters because Tailscale on the M2 keeps
+stopping, and when it does `xero.<tailnet>` stops resolving and every hook on
+that machine reports nowhere - silently, because `set-status.sh` swallows
+network errors so a hiccup can never break a turn. The light simply stops
+mentioning the Mac (`PROJECTS.md`, the DNS entry's "knock-on worth knowing";
+seen again 2026-09-28, when a `travolutionary` session was missing and *no* Mac
+session was on the light at all).
+
+So a machine can be given a LAN shortcut that is used **only while it is
+actually at home**:
+
+```bash
+bash ~/code/homelab/clawlight/setup-clawlight-hooks.sh \
+     --lan-url http://192.168.1.123:8126
+```
+
+Run it at home: `--gateway-mac` defaults to whatever the default gateway's MAC
+is right then. `--gateway-mac none` retires the shortcut again.
+
+**Why a gateway MAC and not just the IP.** A bare LAN IP in the hooks is only
+correct on the home LAN. Elsewhere `192.168.1.123` is somebody else's machine,
+and the report payload carries the session id, the project path and the tmux
+session name - `192.168.1.0/24` is the most common home range there is, so an
+IP or subnet check would happily post all of that to a cafe router's `.123`.
+And when nothing holds the address the POST burns the full `curl -m 3`, ten
+hooks a turn, so every turn drags. The default gateway's MAC is the cheapest
+honest answer to "am I home": local, instant, no round trip, nothing leaked -
+and unlike a hostname it does not depend on DNS, which on this Mac is the very
+thing that keeps breaking (gating on a name would reintroduce the silent stop
+it is escaping). Anything unexpected - no gateway, a cold ARP cache, a MAC that
+does not match - falls back to the tailnet URL rather than guessing. Failing
+closed costs at most one dropped report, since the next hook event re-sends the
+state; failing open sends your project paths to a stranger.
+
+The decision lives in `server-url.sh`, sourced by both `set-status.sh` (per
+report) and `focus-agent.sh` (per reconnect - it is long-lived and the laptop
+gets carried out of the house, so a cached LAN URL would leave it retry-looping
+against a foreign network). Four variables, and with none of them set the
+behaviour is exactly as it was:
+
+| variable | meaning |
+| --- | --- |
+| `CLAWLIGHT_SERVER_URL` | the fallback, used away from home. `http://localhost:8126` by default, which is right on xero and wrong everywhere else |
+| `CLAWLIGHT_LAN_URL` | used instead, while at home |
+| `CLAWLIGHT_HOME_GATEWAY_MAC` | the router MAC that defines "at home". Both LAN variables are needed; a lone one is ignored |
+| `CLAWLIGHT_HOST_NAME` | unchanged - this machine's label on the light |
+
+`scripts/clawlight/test_clawlight_server_url.sh` covers it, including two
+end-to-end cases that run the real `set-status.sh` against a throwaway listener
+with a stubbed gateway, so a wrong choice fails rather than passing quietly.
+
+**This does not replace Tailscale.** Off the home LAN the fallback URL is used,
+so a machine that is away still needs the tailnet up to report at all.
+
 ## Viewing it
 
 Open on whatever device you want the light on:
 
 - Same tailnet: `https://xero.<your-tailnet-suffix>/clawlight/`
-- LAN only: `http://<xero-LAN-IP>:8126/`
+- LAN only: `http://<xero-LAN-IP>:8126/clawlight/` - the `/clawlight` prefix
+  is not optional, `server.py` 404s anything outside it even on the direct port.
 
 Click **Float** to pop it into Picture-in-Picture so it stays on top of other
 windows (desktop) or floats over other apps (iOS Safari).
