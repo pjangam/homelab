@@ -363,6 +363,10 @@ services:
       - /cache:size=256m,uid=1000,gid=1000
     volumes:
       - ${ALBUMS_LOCATION}/ojaswi-1st-birthday:/w:ro
+    # Internet-facing, so isolated: an internal network has no route to the
+    # LAN, the internet or the other containers - only the sidecar can reach it.
+    networks:
+      - albums-internal
     command:
       - "-v"
       - "/w:/:r:c,grid"
@@ -393,6 +397,11 @@ services:
     volumes:
       - albums-tailscale-state:/var/lib/tailscale
       - ./services/tailscale/albums:/config
+    # Not on the default network either: it needs the internet to reach
+    # Tailscale, but has no business next to vaultwarden, pihole and the rest.
+    networks:
+      - albums-internal
+      - albums-egress
     depends_on:
       - albums-gallery
 
@@ -438,3 +447,10 @@ volumes:
   caddy_data:
   caddy_config:
   ha-tailscale-state:
+
+networks:
+  # Public album (services/albums/README.md): the gallery lives only on
+  # albums-internal; the sidecar bridges it to albums-egress for Tailscale.
+  albums-internal:
+    internal: true
+  albums-egress:

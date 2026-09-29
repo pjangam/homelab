@@ -15,8 +15,8 @@ browser --https--> albums.<tailnet>.ts.net/<secret>/ --> albums-tailscale (Funne
 |---|---|
 | **Storage** | ZFS dataset `datapool/albums`, `copies=2`, `sync=always`, compression on. Same single-disk caveats as `phone-uploads` (see `services/samba/README.md`, Durability): two copies on one SSD, no snapshots, no offsite copy. The originals should also live somewhere else. |
 | **Upload** | SMB share `albums` (same `phoneupload` login as `phone-uploads`), read-write. Drop files into `ojaswi-1st-birthday/`. |
-| **Gallery** | `albums-gallery` container (copyparty), grid view, thumbnails incl. video, "download all" zip. Read-only: no write perms, album mounted `:ro`, non-root, read-only rootfs, cache in tmpfs (thumbnails regenerate after a restart). No published port. |
-| **Public URL** | `albums-tailscale` sidecar, Funnel on. Only `/<secret>/` is routed; everything else is a Tailscale 404. |
+| **Gallery** | `albums-gallery` container (copyparty), grid view, thumbnails incl. video, "download all" zip. Read-only: no write perms, album mounted `:ro`, non-root, read-only rootfs, cache in tmpfs (thumbnails regenerate after a restart). No published port. Network-isolated: only on the `internal` network `albums-internal`, so it cannot reach the LAN, the internet or other containers (verified 2026-09-29: HA, ntfy, vaultwarden, 1.1.1.1 all blocked). |
+| **Public URL** | `albums-tailscale` sidecar, Funnel on, on `albums-internal` + its own `albums-egress` (not the default network). Only `/<secret>/` is routed; everything else is a Tailscale 404. |
 | **Secret** | `OJASWI_ALBUM_PATH` in `.env`. The rendered `services/tailscale/albums/serve-config.json` contains it and is gitignored. |
 
 New files show up on refresh; there is no regenerate step.
