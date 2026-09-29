@@ -32,3 +32,6 @@ esp32/wol_on_boot/.pio/
 # render_endpoints.py, and carries the tailnet suffix that the TOML deliberately
 # leaves as a placeholder. Regenerate it, do not commit it.
 projects/endpoints/site/
+
+# Holds the secret album path - rendered from .env by services/albums/render_serve_config.sh
+services/tailscale/albums/serve-config.json

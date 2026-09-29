@@ -342,6 +342,59 @@ services:
     depends_on:
       - ntfy
 
+  # Ojaswi's 1st birthday album, public and read-only via Tailscale Funnel -
+  # see services/albums/README.md. Immich would be the real answer but is
+  # parked on RAM; copyparty is ~40MB. Hardened because it faces the internet:
+  # album mounted :ro, no write perms, non-root, read-only rootfs, and the
+  # config + thumbnail cache live in tmpfs so there is nothing it can persist.
+  # No published port - the only way in is the albums-tailscale sidecar, which
+  # forwards the secret path and nothing else (copyparty's own root would leak
+  # the volume list via /?tree, so it must never be reachable directly).
+  albums-gallery:
+    image: copyparty/ac
+    container_name: albums-gallery
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    mem_limit: 384m
+    tmpfs:
+      - /cfg:uid=1000,gid=1000
+      - /tmp:uid=1000,gid=1000
+      - /cache:size=256m,uid=1000,gid=1000
+    volumes:
+      - ${ALBUMS_LOCATION}/ojaswi-1st-birthday:/w:ro
+    command:
+      - "-v"
+      - "/w:/:r:c,grid"
+      # Links and assets carry the secret prefix; copyparty also accepts the
+      # path unprefixed, so it does not matter whether Tailscale strips it.
+      - "--rp-loc"
+      - "/${OJASWI_ALBUM_PATH}"
+      - "--hist"
+      - "/cache"
+      - "--no-robots"
+      # One core for thumbnails/ffmpeg, so a burst of family viewers cannot
+      # starve HA and the rest of xero's 4 cores.
+      - "--th-mt"
+      - "1"
+
+  # Public (Funnel) tailnet name for albums-gallery. Its serve-config.json holds
+  # the secret path, so it is gitignored and rendered from .env by
+  # services/albums/render_serve_config.sh.
+  albums-tailscale:
+    <<: *tailscale-sidecar
+    container_name: albums-tailscale
+    hostname: albums
+    environment:
+      <<: *tailscale-sidecar-env
+      TS_AUTHKEY: ${TS_AUTHKEY_ALBUMS}
+      TS_HOSTNAME: albums
+    volumes:
+      - albums-tailscale-state:/var/lib/tailscale
+      - ./services/tailscale/albums:/config
+    depends_on:
+      - albums-gallery
+
   samba:
     image: dperson/samba
     container_name: samba
@@ -358,12 +411,17 @@ services:
       GROUPID: 1000
     volumes:
       - ${PHONE_UPLOADS_LOCATION}:/share
+      - ${ALBUMS_LOCATION}:/albums
     command:
       - "-p"
       - "-u"
       - "${SAMBA_USER};${SAMBA_PASSWORD};1000;1000;1000"
       - "-s"
       - "phone-uploads;/share;yes;no;no;${SAMBA_USER};;;iPhone video drop zone"
+      # Upload side of the public albums (services/albums/README.md). Read-write
+      # here; albums-gallery serves each album read-only.
+      - "-s"
+      - "albums;/albums;yes;no;no;${SAMBA_USER};;;Photo albums shared via Funnel"
 
 volumes:
   # model-cache:  # immich-machine-learning — disabled
@@ -375,6 +433,7 @@ volumes:
   ntfy-cache:
   ntfy-auth:
   ntfy-tailscale-state:
+  albums-tailscale-state:
   caddy_data:
   caddy_config:
   ha-tailscale-state:

@@ -116,6 +116,15 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   note = "The container binds 127.0.0.1:8127 only - publishers on xero use loopback, and everything else comes in over the tailnet. NTFY_BASE_URL must match the URL typed into the phone app exactly or iOS instant delivery breaks."
 
   [[group.endpoint]]
+  name = "Photo album - Ojaswi's 1st birthday"
+  proto = "https"
+  host = "albums.{tailnet}"
+  port = 443
+  desc = "PUBLIC via Tailscale Funnel - no Tailscale needed to view. Read-only copyparty gallery (albums-gallery) of /datapool/albums/ojaswi-1st-birthday."
+  who = "Family, via a shared link. Nothing on the tailnet depends on it."
+  note = "No link here on purpose: the album path is the secret (OJASWI_ALBUM_PATH in .env); every other path on albums.{tailnet} is a 404. services/albums/README.md."
+
+  [[group.endpoint]]
   name = "Pi-hole admin"
   proto = "http"
   host = "192.168.1.123"
@@ -244,6 +253,17 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "Also reachable over the tailnet as smb://xero.{tailnet}/phone-uploads. Port 139 is published too, for older clients. The smb:// link opens Finder on a Mac and the Files app on iOS. Login and paths: services/samba/README.md."
 
   [[group.endpoint]]
+  name = "albums (SMB)"
+  proto = "smb"
+  host = "192.168.1.123"
+  port = 445
+  url = "smb://192.168.1.123/albums"
+  connect = "smb://192.168.1.123/albums"
+  desc = "Upload side of the public photo albums, on datapool/albums (copies=2). Same phoneupload login as phone-uploads."
+  who = "Whoever is adding photos to an album; albums-gallery serves each album folder read-only."
+  note = "Also smb://xero.{tailnet}/albums. services/albums/README.md."
+
+  [[group.endpoint]]
   name = "SSH - xero"
   proto = "ssh"
   host = "192.168.1.123"
@@ -337,3 +357,12 @@ blurb = "Three names, three different ways of getting a certificate. Worth knowi
   desc = "The ntfy-tailscale sidecar, proxying to the ntfy container over the compose network."
   who = "ntfy, and the phone's instant delivery."
   note = "Same self-renewing cert as ha. The sidecar must reach ntfy by the alias ntfy-server, not ntfy - that name resolves to the sidecar itself."
+
+  [[group.endpoint]]
+  name = "albums.{tailnet}"
+  proto = "https"
+  host = "albums.{tailnet}"
+  port = 443
+  desc = "The albums-tailscale sidecar, with Funnel ON - the only name here reachable from the public internet. Routes the one secret album path to albums-gallery."
+  who = "The public photo album."
+  note = "serve-config.json holds the secret, so it is gitignored and rendered by services/albums/render_serve_config.sh. Stop the sidecar to take the album offline."
