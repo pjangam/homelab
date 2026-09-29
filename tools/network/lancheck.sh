@@ -15,8 +15,17 @@
 #     that hop is capped at 100 Mb/s and always will be;
 #   - the extender's wireless backhaul shares the same congested 2.4 GHz air
 #     as the Mac, so both ends of the copy compete for one radio.
-# The Wi-Fi association is the only one of those that is cheap to fix: a 5 GHz
-# SSID was visible at -63 dBm at the time.
+#
+# DO NOT "just move the Mac to 5 GHz" to fix this. The obvious-looking fix is
+# not available here and this script used to recommend it, wrongly: the Airtel
+# router puts its 5 GHz SSID on a *separate LAN*, so a client associated to
+# 5 GHz cannot see 192.168.1.0/24 at all - xero included. Moving bands does
+# not make the copy faster, it makes the destination unreachable. The real fix
+# for the Mac's hop is the USB 10/100/1000 LAN adapter (it is already
+# configured as a network service, en9, so plugging it in is all it takes).
+# The 5 GHz numbers below are reported as information about the air, not as a
+# suggestion - which is why this script pings the host from the current
+# association rather than telling you to switch.
 #
 # Usage: tools/network/lancheck.sh [host] [megabytes_per_direction]
 #        defaults: 192.168.1.123 (xero), 32 MB
@@ -38,15 +47,21 @@ system_profiler SPAirPortDataType 2>/dev/null \
   | sed -n '/Current Network/,/^ *$/p' \
   | grep -iE "PHY Mode|Channel:|Signal|Transmit Rate" | head -4 | sed 's/^ */  /'
 route -n get "$HOST" 2>/dev/null | grep -E "interface|gateway" | sed 's/^ */  /'
-# A 5 GHz association is the cheap fix when the line above says 2GHz. macOS
-# redacts SSIDs here without Location permission, so report signal only - the
-# preferred-network list names the candidate.
+# Informational only. See the header: the 5 GHz SSID here is a different LAN,
+# so a better signal on it is not a better path to this host. macOS redacts
+# SSIDs without Location permission, so this is signal strength alone.
 best5=$(system_profiler SPAirPortDataType 2>/dev/null \
   | awk '/Channel: [0-9]+ \(5GHz/{c=1} c&&/Signal \/ Noise/{print $4; c=0}' \
   | sort -n | tail -1)
-echo "  best 5 GHz signal in range: ${best5:--} dBm"
-/usr/sbin/networksetup -listpreferredwirelessnetworks en0 2>/dev/null \
-  | grep -iE "5g|5ghz" | head -3 | sed 's/^[[:space:]]*/    known 5 GHz SSID: /'
+echo "  best 5 GHz signal in range: ${best5:--} dBm (different LAN - not a path to $HOST)"
+
+# The wired alternative, which does keep the host reachable. en9 is the Mac's
+# "USB 10/100/1000 LAN" service; it only exists as an interface when plugged in.
+if ifconfig en9 >/dev/null 2>&1; then
+  echo "  USB LAN adapter (en9): present, status $(ifconfig en9 | awk '/status:/{print $2}')"
+else
+  echo "  USB LAN adapter (en9): not plugged in - the one cheap fix for this hop"
+fi
 
 echo
 echo "== RTT and jitter to $HOST (same LAN: expect <5 ms, low stddev) =="
@@ -108,5 +123,8 @@ kill "$loadpid" 2>/dev/null; wait 2>/dev/null
 printf '  %-28s idle %4s%% loss   loaded %4s%% loss\n' "$HOST" "${idle:-?}" "${busy:-?}"
 
 echo
-echo "Copying a big file? Use rsync, not scp - scp restarts from zero after a"
-echo "stall, rsync resumes:  rsync -avP --append-verify FILE $HOST:~/Downloads/"
+echo "Copying a big file over this? Use queue_big_copy.sh, not scp - scp restarts"
+echo "from byte zero when the link drops, and on this path it drops:"
+echo "  tools/network/queue_big_copy.sh --host $HOST FILE..."
+echo "(--append-verify is not an option: macOS ships openrsync, which lacks it."
+echo " queue_big_copy.sh checksums both ends instead.)"
