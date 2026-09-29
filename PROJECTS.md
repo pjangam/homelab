@@ -17,11 +17,6 @@ qty | item | est | note
 
 ## 🟢 Active
 
-### Public photo album for Ojaswi's 1st birthday (Tailscale Funnel)
-**Why:** share the album with family who do not have Tailscale, without waiting for Immich (parked on RAM).
-**State (2026-09-29):** built, not yet live. `albums-gallery` (copyparty, read-only and hardened, ~40MB) behind an `albums-tailscale` sidecar with Funnel on, serving `datapool/albums/ojaswi-1st-birthday` (copies=2). New SMB share `albums` for uploading. Privacy is an unguessable path (`OJASWI_ALBUM_PATH` in `.env`); Tailscale routes only that path, because copyparty's own `/?tree` would list volumes. Tested locally: thumbnails incl. video, zip download, PUT 401, delete 403, root hidden. Details: `services/albums/README.md`.
-**Next step:** user-side setup in the README (sudo `zfs create datapool/albums`, Funnel in the tailnet policy, `TS_AUTHKEY_ALBUMS`), upload photos, `docker compose up -d albums-gallery albums-tailscale samba`, then check the public URL from a phone on mobile data. When Immich comes back, move the album to an Immich shared link and retire this.
-
 ### Move white noise and spotifyd from xero to the wol Pi
 
 **Why:** xero's only link to the Airtel router is the TP-Link extender, whose backhaul is 2.4GHz Wi-Fi. Moving xero onto a cable at the router would give it a real uplink, and would allow per-device data-usage monitoring later. The one thing tying xero to its current room is the USB speaker (ALSA card 1, `USB Audio Device`) that plays white noise and serves Spotify Connect. Move the audio to the Pi and xero is free to move. Decided 2026-09-23. **Keep everything installed on xero** (units disabled, not removed) until the Pi has run smoothly for a while.
@@ -800,6 +795,9 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 ---
 
 ## ✅ Done
+
+### Public photo album for Ojaswi's 1st birthday (Tailscale Funnel)
+Live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_ALBUM_PATH` in `.env`), viewable without Tailscale. `albums-gallery` (copyparty, read-only and hardened, ~40MB) behind the `albums-tailscale` sidecar with Funnel, serving `datapool/albums/ojaswi-1st-birthday` (copies=2); uploads go in through the new `albums` SMB share. Funnel is granted only to `tag:funnel` in the tailnet policy. Only the secret path is routed - copyparty's own `/?tree` would list volumes. `services/albums/check_public.sh` verified it over public DNS: album, thumbnails, and 404/401/403 for everything else. Setup gotchas (untagged auth key, restart after the grant): `services/albums/README.md`. When Immich comes back, move the album to an Immich shared link and retire this.
 
 ### LAN time server on xero, so the wol Pi's clock survives an ISP outage
 **Why:** on 2026-09-28 a power cut followed by an ISP outage left the wol Pi (and its screensaver clock) 15 minutes behind for about 10 hours. The Pi has no RTC: it boots on the time `systemd-timesyncd` last saved (04:31, but it actually booted at 04:46) and its only time sources were the internet pool, so nothing could correct it until the ISP came back at 14:54.

@@ -37,9 +37,27 @@ To take it offline: `docker compose stop albums-tailscale`.
 
 1. Dataset (needs sudo, from a real terminal):
    `sudo zfs create -o copies=2 -o sync=always -o compression=lz4 datapool/albums && sudo install -d -o pramod -g pramod /datapool/albums/ojaswi-1st-birthday && sudo chown pramod: /datapool/albums`
-2. Tailnet policy must allow Funnel for the node (`nodeAttrs` with `"attr": ["funnel"]` for `autogroup:member`; the default policy has it).
-3. Auth key from the admin console (Settings -> Keys) into `TS_AUTHKEY_ALBUMS` in `.env`.
+2. Tailnet policy: `tagOwners` `"tag:funnel": ["autogroup:admin"]` and `nodeAttrs` `{"target": ["tag:funnel"], "attr": ["funnel"]}`.
+3. Auth key from the admin console (Settings -> Keys), tagged `tag:funnel`, into `TS_AUTHKEY_ALBUMS` in `.env`.
 4. `services/albums/render_serve_config.sh && docker compose up -d albums-gallery albums-tailscale samba`
+5. `services/albums/check_public.sh` - resolves via public DNS and goes through
+   the Funnel relays; checks the album works and that /, `/?tree`, uploads and
+   deletes are refused.
+
+What actually happened on 2026-09-29, for next time:
+
+- **Funnel is granted by tag, not to every device.** The tailnet policy has
+  `tagOwners` `tag:funnel` (autogroup:admin) and `nodeAttrs`
+  `{"target": ["tag:funnel"], "attr": ["funnel"]}`, so only the `albums` node
+  can be public. The auth key came out untagged anyway; tagging the machine in
+  the admin console (Machines -> albums -> Edit ACL tags) fixed it live.
+- **"Funnel on" in `tailscale funnel status` proves nothing.** It shows the
+  config, not the grant. Check the node has the capability:
+  `docker exec albums-tailscale tailscale status --json` -> `Self.CapMap` must
+  contain `funnel`.
+- **After granting it, restart the sidecar.** It had announced ingress before
+  it held the capability, and no public DNS record appeared until
+  `docker compose restart albums-tailscale`; then it resolved within seconds.
 
 ## Upload bandwidth
 
