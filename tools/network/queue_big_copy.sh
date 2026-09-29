@@ -56,6 +56,28 @@ done
 
 log() { printf '%s  %s\n' "$(date '+%H:%M:%S')" "$*"; }
 
+# Quote a path for the *remote* shell. These filenames have spaces in them,
+# and a remote command is a string the far end re-parses, so anything built
+# by interpolation has to be quoted for that second parse as well as this one.
+rq() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
+
+remote_sha() {  # basename -> sha256, or empty if it could not be read
+  ssh -o BatchMode=yes "$HOST" "sha256sum $(rq "$DEST_ABS/$1")" 2>/dev/null \
+    | awk 'length($1)==64 {print $1}'   # NF>2: these filenames contain spaces
+}
+
+# Resolve the destination to an absolute path once, on the remote.
+# `~` is only expanded by a shell when it is unquoted, so "$DEST/$base" - which
+# must be quoted, because of the spaces - would send a literal ~ that matches
+# nothing. rsync's own remote path expands it; stat and sha256sum do not, and
+# a "file missing" from that is indistinguishable from a real one.
+DEST_ABS=$(ssh -o BatchMode=yes "$HOST" "cd $DEST && pwd" 2>/dev/null)
+if [ -z "$DEST_ABS" ]; then
+  log "cannot resolve $DEST on $HOST - is it reachable, and does the directory exist?"
+  exit 1
+fi
+[ "$DEST_ABS" = "$DEST" ] || log "destination $DEST on $HOST resolves to $DEST_ABS"
+
 if [ -n "$WAIT_PID" ]; then
   log "waiting for pid $WAIT_PID to finish before starting"
   while kill -0 "$WAIT_PID" 2>/dev/null; do sleep 15; done
@@ -69,7 +91,7 @@ for f in "$@"; do
   log "=== $base ($(awk -v b="$local_size" 'BEGIN{printf "%.2f", b/1e9}') GB) ==="
 
   # A partial from a previous attempt is a head start, not a problem.
-  already=$(ssh -o BatchMode=yes "$HOST" "stat -c %s \"$DEST/$base\" 2>/dev/null || echo 0" 2>/dev/null)
+  already=$(ssh -o BatchMode=yes "$HOST" "stat -c %s $(rq "$DEST_ABS/$base") 2>/dev/null || echo 0" 2>/dev/null)
   [ "${already:-0}" -gt 0 ] && \
     log "  $((already * 100 / local_size))% already there ($already bytes) - resuming"
 
@@ -97,20 +119,32 @@ for f in "$@"; do
 
   log "  verifying sha256 on both ends"
   want=$(shasum -a 256 "$f" | awk '{print $1}')
-  got=$(ssh -o BatchMode=yes "$HOST" "sha256sum \"$DEST/$base\"" 2>/dev/null | awk '{print $1}')
-  if [ -n "$got" ] && [ "$want" = "$got" ]; then
+  got=$(remote_sha "$base")
+
+  if [ "$want" = "$got" ]; then
     log "  OK  $base verified ($want)"
+    continue
+  fi
+
+  # "no hash came back" is not "the file is wrong". Deleting on that would
+  # destroy a perfectly good copy over an ssh hiccup or a bad path - which is
+  # exactly what an earlier version of this script nearly did to a complete
+  # 1.19 GB file. Only a hash that came back and disagreed justifies a delete.
+  if [ -z "$got" ]; then
+    log "  CANNOT VERIFY $base: no checksum came back from $HOST. Leaving the"
+    log "                 remote file alone; re-run to try again."
+    overall=1
     continue
   fi
 
   # A bad resume is the likely cause, so a second --append would rebuild the
   # same wrong file. Start the copy over from an empty destination.
-  log "  MISMATCH $base: local $want / remote ${got:-<none>} - recopying clean"
-  ssh -o BatchMode=yes "$HOST" "rm -f \"$DEST/$base\"" 2>/dev/null
+  log "  MISMATCH $base: local $want / remote $got - recopying clean"
+  ssh -o BatchMode=yes "$HOST" "rm -f $(rq "$DEST_ABS/$base")" 2>/dev/null
   if rsync -a --partial --inplace --timeout=300 $PROGRESS "$f" "$HOST:$DEST/"; then
-    got=$(ssh -o BatchMode=yes "$HOST" "sha256sum \"$DEST/$base\"" 2>/dev/null | awk '{print $1}')
+    got=$(remote_sha "$base")
   fi
-  if [ "$want" = "${got:-}" ]; then
+  if [ "$want" = "$got" ]; then
     log "  OK  $base verified after clean recopy ($want)"
   else
     log "  FAILED $base: still does not match after a clean recopy"
