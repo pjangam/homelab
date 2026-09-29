@@ -181,9 +181,15 @@ To re-enumerate the Netflix OCAs this connection is steered to:
 curl -s "https://api.fast.com/netflix/speedtest/v2?https=true&token=YXNkZmFzZGxmbnNkYWZoYXNkZmhrYWxm&urlCount=5"
 ```
 
-## Open
+## Closed 2026-09-29 - never reported to Airtel
 
-Reported to Airtel? Not yet as of writing. The useful framing is inbound-only
+Deliberately not raised. The line is usable and upload runs at full rate, and a
+ticket invites a domestic test that reads 35 Mbps and closes it. This is now
+recorded as a known property of the connection rather than open work; the
+PROJECTS.md entry sits under "Closed (not acting)".
+
+If it degrades enough to be worth a ticket, the framing is inbound-only
 congestion affecting specific paths including domestically-peered ones, with
-upload at full rate - not "my internet is slow", which invites a domestic test
-that will read 35 Mbps and close the ticket.
+upload at full rate - not "my internet is slow". Re-measure with
+`tools/network/speedcheck.sh` first, morning as well as evening, so the report
+carries current numbers.

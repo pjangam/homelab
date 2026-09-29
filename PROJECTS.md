@@ -2,7 +2,7 @@
 
 Working list of homelab projects and their state, so context survives across sessions instead of living only in chat history. Update this whenever a project's status changes — new project, next step decided, or something completed.
 
-Status: 🟢 active · 🟡 parked (revisit when it becomes a real problem, not proactively) · 💡 backlog idea (not started) · ✅ done
+Status: 🟢 active · 🟡 parked (revisit when it becomes a real problem, not proactively) · 💡 backlog idea (not started) · ✅ done · ⚪ closed, not acting (understood, decided against)
 
 **Parts lists:** a project that needs things bought carries a fenced ` ```parts ` block, one line per item:
 
@@ -102,28 +102,6 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 - **The Pi's supply:** its known undervoltage problem gets a new load in the USB speaker. The 3.5mm jack avoids it if the speaker has an AUX input.
 
 **Before xero itself moves: the power watchdog needs a new signal.** `watchdog_power.sh` infers a mains outage from `enp1s0` losing carrier, which works only because the extender is not on a UPS. Plugged into the Airtel router, which has its own UPS, the carrier never drops and xero would run its battery flat. Fix: keep the carrier check and add "the wol Pi **and** the extender both stop answering pings for N checks". Requiring both avoids false alarms from the Pi's flaky supply. The extender needs a pinned IP first.
-
-### Airtel: download throughput is unstable, upload is not - not yet reported
-
-**Why:** fast.com read 1.9 Mbps on 2026-09-23 while the line still felt usable, and two router restarts changed nothing. Measuring it properly found something narrower and odder than "the internet is slow". Full write-up in `docs/incidents/2026-09-23-airtel-inbound-throughput-path-dependent.md`.
-
-**What it is not:** not the local link (upload ran 34.8-40.6 Mbps over the same 2.4GHz Wi-Fi throughout - Wi-Fi carrying 40 Mbps up is not what caps 10 Mbps down), not the router, not the plan, and **not distance or international transit** - that was the working theory for most of the session and the evidence killed it.
-
-**The three findings, in order of how much they constrain the cause:**
-- **Inbound only.** The Patna speedtest server gave 15.9 Mbps down against 40.6 Mbps up - same host, same 89 ms RTT, same moment. Equal RTT in both directions rules out window-size and bandwidth-delay explanations entirely.
-- **Unstable over minutes, which is what the path-dependence claim turned out to be.** Cloudflare Mumbai read 34.7, then 3.0, then 35.8 Mbps inside an hour with nothing changed at this end. An earlier version of this entry concluded "one congested peering path" from a table of *sequential* samples; re-measuring inverted the ranking completely. **Retracted** - see the write-up. Upload never moved throughout.
-- **Loss only under load.** 0% idle and 12.5% while downloading on the Hetzner DE path; 0-3.3% domestic. Every idle ping looked clean all session, which is why it kept reading as "slow" rather than "lossy".
-
-Together: congestion or capacity exhaustion on *particular inbound paths* into Airtel - different peering ports, IX links or transit hit differently - not one saturated pipe and not a shaper.
-
-**Why the speed tests disagreed** (the thing that made this visible at all): neither measures "the internet", each measures one path to one server, and here paths differ by 6x. speedtest.net offered nothing nearer than Patna (~1000 km) because Airtel's geolocation of the IP places the connection far from where it is; Cloudflare terminates at a healthy Mumbai PoP and reads 35 Mbps. The disagreement is the signal - a single number hides the whole effect.
-
-**Left to do:**
-- **Report it to Airtel.** Frame it as inbound-only congestion on specific paths, including domestically-peered ones, with upload at full rate - *not* "my internet is slow", which invites a domestic test that reads 35 Mbps and closes the ticket. Ticket wording and the supporting numbers are in the incident write-up.
-- **Re-measure before and after any claimed fix** with `tools/network/speedcheck.sh [seconds_per_target]`: link and PoP, four throughput targets, DNS timing, idle-vs-loaded loss, traceroute.
-- **Worth knowing whether it is time-of-day.** Everything above was measured in one afternoon/evening; the international numbers got visibly worse across the session (Hetzner DE 4.0 -> 0.9 Mbps). A morning run would say whether this is peak-hour congestion, which changes what Airtel can be asked for.
-
-**Do not confuse this with the MacBook DNS entry below.** That one also presents as "the internet is slow" and they overlapped on 2026-09-23. They are unrelated: DNS made *name lookups* take ~600 ms on the M2 only; this affects *throughput* on every device.
 
 ### MacBook DNS keeps breaking - root cause found (OpenVPN Connect); cure unproven
 
@@ -791,6 +769,36 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Why:** the existing physical GPIO buttons (wol-sender Pi, see ✅ Done) prove the pattern - a button publishes an MQTT message, an HA automation fires a scene/script - but that only works for locations physically next to a host with GPIO. An ESP32/ESPHome-based remote would extend the same no-app physical-control idea (see "Physical GPIO buttons (wol-sender Pi)" in ✅ Done) to a standalone battery/USB device controllable from anywhere, not tied to the Pi's location - e.g. a bedside remote for white noise start/stop or Spotify play/pause/skip without opening the HA app.
 **State:** not started - the ESP32/ESPHome route was already flagged as the likely answer for "a button location that isn't next to an existing host" in the scene-buttons project (now done, that thread closed as not needed for household use); this generalizes that to Spotify/media control specifically.
 **Next step:** decide button layout/count needed (e.g. white noise on/off, Spotify play/pause/skip) and whether to build on ESPHome's native HA integration (least custom code, matches the existing MQTT-bridge pattern) or a fully custom firmware.
+
+---
+
+## ⚪ Closed (not acting)
+
+Understood and written up, with a deliberate decision not to act. Not "done" - nothing shipped - and not "parked" either: no trigger is being waited for.
+
+### Airtel: download throughput is unstable, upload is not - diagnosed, not reported
+
+**Why:** fast.com read 1.9 Mbps on 2026-09-23 while the line still felt usable, and two router restarts changed nothing. Measuring it properly found something narrower and odder than "the internet is slow". Full write-up in `docs/incidents/2026-09-23-airtel-inbound-throughput-path-dependent.md`.
+
+**What it is not:** not the local link (upload ran 34.8-40.6 Mbps over the same 2.4GHz Wi-Fi throughout - Wi-Fi carrying 40 Mbps up is not what caps 10 Mbps down), not the router, not the plan, and **not distance or international transit** - that was the working theory for most of the session and the evidence killed it.
+
+**The three findings, in order of how much they constrain the cause:**
+- **Inbound only.** The Patna speedtest server gave 15.9 Mbps down against 40.6 Mbps up - same host, same 89 ms RTT, same moment. Equal RTT in both directions rules out window-size and bandwidth-delay explanations entirely.
+- **Unstable over minutes, which is what the path-dependence claim turned out to be.** Cloudflare Mumbai read 34.7, then 3.0, then 35.8 Mbps inside an hour with nothing changed at this end. An earlier version of this entry concluded "one congested peering path" from a table of *sequential* samples; re-measuring inverted the ranking completely. **Retracted** - see the write-up. Upload never moved throughout.
+- **Loss only under load.** 0% idle and 12.5% while downloading on the Hetzner DE path; 0-3.3% domestic. Every idle ping looked clean all session, which is why it kept reading as "slow" rather than "lossy".
+
+Together: congestion or capacity exhaustion on *particular inbound paths* into Airtel - different peering ports, IX links or transit hit differently - not one saturated pipe and not a shaper.
+
+**Why the speed tests disagreed** (the thing that made this visible at all): neither measures "the internet", each measures one path to one server, and here paths differ by 6x. speedtest.net offered nothing nearer than Patna (~1000 km) because Airtel's geolocation of the IP places the connection far from where it is; Cloudflare terminates at a healthy Mumbai PoP and reads 35 Mbps. The disagreement is the signal - a single number hides the whole effect.
+
+**Closed 2026-09-29 without reporting it.** The line is usable, upload is at full rate, and the one action left - an Airtel ticket - is not worth the call: the domestic test an agent would run reads 35 Mbps and closes it. Nothing here is unfinished work; it is a known property of this connection, kept because the next "the internet is slow" will look exactly like it.
+
+**If it gets worse and a ticket becomes worth raising:**
+- **Frame it as inbound-only congestion on specific paths**, including domestically-peered ones, with upload at full rate - *not* "my internet is slow". Ticket wording and the supporting numbers are in the incident write-up.
+- **Re-measure first, and again after any claimed fix**, with `tools/network/speedcheck.sh [seconds_per_target]`: link and PoP, four throughput targets, DNS timing, idle-vs-loaded loss, traceroute.
+- **Measure in the morning too.** Everything above was measured in one afternoon/evening, and the international numbers got visibly worse across the session (Hetzner DE 4.0 -> 0.9 Mbps). A morning run would say whether this is peak-hour congestion, which changes what Airtel can be asked for.
+
+**Do not confuse this with the MacBook DNS entry.** That one also presents as "the internet is slow" and they overlapped on 2026-09-23. They are unrelated: DNS made *name lookups* take ~600 ms on the M2 only; this affects *throughput* on every device.
 
 ---
 

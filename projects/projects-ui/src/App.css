@@ -116,6 +116,7 @@ input[type='search'] {
 .status-section[data-status='parked'] h2 { border-color: #eab308; }
 .status-section[data-status='backlog-ideas'] h2 { border-color: #3b82f6; }
 .status-section[data-status='done'] h2 { border-color: var(--border); }
+.status-section[data-status='closed-not-acting'] h2 { border-color: var(--border); }
 
 .project-list {
   list-style: none;
