@@ -8,6 +8,11 @@
 # the output is committed; this one carries the secret path from .env, so the
 # output is gitignored.
 #
+# The proxy target repeats the secret on purpose: tailscale serve strips the
+# handler path before proxying, and copyparty only prefixes its asset links
+# (--rp-loc) when the request carries the prefix. Without it the page loads
+# but every .js/.css 404s ("cannot load util.js").
+#
 # ${TS_CERT_DOMAIN} is left intact on purpose - containerboot substitutes it.
 # AllowFunnel is keyed by host:port, never a plain bool (a bare bool crash-loops
 # the container - see PROJECTS.md, ntfy sidecar).
@@ -32,7 +37,7 @@ cat > "$out.tmp" <<EOF
     "\${TS_CERT_DOMAIN}:443": {
       "Handlers": {
         "/$secret/": {
-          "Proxy": "http://albums-gallery:3923"
+          "Proxy": "http://albums-gallery:3923/$secret/"
         }
       }
     }

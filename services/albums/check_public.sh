@@ -16,7 +16,7 @@ ip=$(dig +short @8.8.8.8 "$host" A | grep -E '^[0-9.]+$' | head -1)
 [[ -n "$ip" ]] || { echo "FAIL: $host has no public A record yet (new Funnel names take a few minutes)"; exit 1; }
 echo "public A record: $ip"
 
-code() { curl -s -o /dev/null -w '%{http_code}' --resolve "$host:443:$ip" "$@"; }
+code() { curl -s --max-time 30 -o /dev/null -w '%{http_code}' --resolve "$host:443:$ip" "$@"; }
 fails=0
 expect() {  # expect <label> <want> <got>
     if [[ "$3" == "$2" ]]; then echo "ok   $1: $3"; else echo "FAIL $1: got $3, want $2"; fails=$((fails+1)); fi
@@ -27,7 +27,13 @@ cp /datapool/phone-uploads/gauri-invitation.png "$album/$probe"
 trap 'rm -f "$album/$probe"' EXIT
 
 expect "album page"      200 "$(code -A 'Mozilla/5.0 (iPhone) Safari' "https://$host/$secret/")"
-expect "listing"         1   "$(curl -s --resolve "$host:443:$ip" "https://$host/$secret/?ls" | grep -c "$probe")"
+expect "listing"         1   "$(curl -s --max-time 30 --resolve "$host:443:$ip" "https://$host/$secret/?ls" | grep -c "$probe")"
+# The page's own JS/CSS must load too: a 200 on the HTML alone once hid a
+# page that was dead in every browser (links missing the secret prefix).
+page=$(curl -s --max-time 30 --resolve "$host:443:$ip" -A 'Mozilla/5.0 (iPhone) Safari' "https://$host/$secret/")
+for a in $(grep -o -E '(src|href)="/[^"]*\.(js|css)[^"]*"' <<<"$page" | cut -d'"' -f2); do
+    expect "asset ${a##*/}" 200 "$(code "https://$host$a")"
+done
 expect "thumbnail"       200 "$(code "https://$host/$secret/$probe?th=w")"
 expect "root /"          404 "$(code "https://$host/")"
 expect "/?tree"          404 "$(code "https://$host/?tree")"

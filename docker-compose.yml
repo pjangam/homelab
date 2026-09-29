@@ -366,8 +366,9 @@ services:
     command:
       - "-v"
       - "/w:/:r:c,grid"
-      # Links and assets carry the secret prefix; copyparty also accepts the
-      # path unprefixed, so it does not matter whether Tailscale strips it.
+      # Links and assets carry the secret prefix - but only when the request
+      # arrives WITH it. Tailscale serve strips the handler path, so the serve
+      # config's proxy target re-adds it (services/albums/render_serve_config.sh).
       - "--rp-loc"
       - "/${OJASWI_ALBUM_PATH}"
       - "--hist"
