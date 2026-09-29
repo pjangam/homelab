@@ -120,8 +120,8 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   proto = "https"
   host = "albums.{tailnet}"
   port = 443
-  desc = "PUBLIC via Tailscale Funnel - no Tailscale needed to view. Read-only copyparty gallery (albums-gallery) of /datapool/albums/ojaswi-1st-birthday."
-  who = "Family, via a shared link. Nothing on the tailnet depends on it."
+  desc = "PUBLIC via Tailscale Funnel - no Tailscale needed to view. copyparty gallery (albums-gallery) of /datapool/albums/ojaswi-1st-birthday; read-only for viewers, and <secret>/upload/ takes review-first family uploads (per-person logins)."
+  who = "Family, via a shared link; relatives with a login upload from their phones. Nothing on the tailnet depends on it."
   note = "No link here on purpose: the album path is the secret (OJASWI_ALBUM_PATH in .env); every other path on albums.{tailnet} is a 404. services/albums/README.md."
 
   [[group.endpoint]]

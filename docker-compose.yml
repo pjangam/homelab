@@ -342,14 +342,17 @@ services:
     depends_on:
       - ntfy
 
-  # Ojaswi's 1st birthday album, public and read-only via Tailscale Funnel -
-  # see services/albums/README.md. Immich would be the real answer but is
-  # parked on RAM; copyparty is ~40MB. Hardened because it faces the internet:
-  # album mounted :ro, no write perms, non-root, read-only rootfs, and the
-  # config + thumbnail cache live in tmpfs so there is nothing it can persist.
+  # Ojaswi's 1st birthday album, public via Tailscale Funnel - see
+  # services/albums/README.md. Immich would be the real answer but is parked
+  # on RAM; copyparty is ~50MB. Viewers are read-only; family members with a
+  # login (uploader.sh) can only ADD files to a hidden inbox, which reaches the
+  # album only via review.sh. Hardened because it faces the internet: album
+  # mounted :ro, non-root, read-only rootfs, config + thumbnail cache in tmpfs,
+  # upload hooks refuse anything that is not a real photo/video.
   # No published port - the only way in is the albums-tailscale sidecar, which
   # forwards the secret path and nothing else (copyparty's own root would leak
   # the volume list via /?tree, so it must never be reachable directly).
+  # Volumes, permissions and upload limits: services/albums/copyparty.conf.
   albums-gallery:
     image: copyparty/ac
     container_name: albums-gallery
@@ -363,25 +366,24 @@ services:
       - /cache:size=256m,uid=1000,gid=1000
     volumes:
       - ${ALBUMS_LOCATION}/ojaswi-1st-birthday:/w:ro
+      # The only writable path: the review-first upload inbox.
+      - ${ALBUMS_LOCATION}/_inbox/ojaswi-1st-birthday:/inbox
+      - ./services/albums/copyparty.conf:/cfg-albums-main/copyparty.conf:ro
+      # gitignored, holds the upload passwords; created by uploader.sh.
+      - ./services/albums/accounts.conf:/cfg-albums/accounts.conf:ro
+      - ./services/albums/hooks:/hooks:ro
     # Internet-facing, so isolated: an internal network has no route to the
     # LAN, the internet or the other containers - only the sidecar can reach it.
     networks:
       - albums-internal
     command:
-      - "-v"
-      - "/w:/:r:c,grid"
+      - "-c"
+      - "/cfg-albums-main/copyparty.conf"
       # Links and assets carry the secret prefix - but only when the request
       # arrives WITH it. Tailscale serve strips the handler path, so the serve
       # config's proxy target re-adds it (services/albums/render_serve_config.sh).
       - "--rp-loc"
       - "/${OJASWI_ALBUM_PATH}"
-      - "--hist"
-      - "/cache"
-      - "--no-robots"
-      # One core for thumbnails/ffmpeg, so a burst of family viewers cannot
-      # starve HA and the rest of xero's 4 cores.
-      - "--th-mt"
-      - "1"
 
   # Public (Funnel) tailnet name for albums-gallery. Its serve-config.json holds
   # the secret path, so it is gitignored and rendered from .env by

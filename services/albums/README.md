@@ -21,6 +21,29 @@ browser --https--> albums.<tailnet>.ts.net/<secret>/ --> albums-tailscale (Funne
 
 New files show up on refresh; there is no regenerate step.
 
+## Family uploads (review-first, since 2026-09-29)
+
+Relatives with a login can add photos from their phone at
+`https://albums.<tailnet>/<secret>/upload/` (log in with the password alone,
+then pick photos; uploads are chunked and resumable). Nothing they send is
+visible to anyone until approved.
+
+| | |
+|---|---|
+| **Logins** | `services/albums/uploader.sh add <name>` prints the upload link + password; `remove <name>` revokes one person; `list`. Stored in the gitignored `accounts.conf` (included by `copyparty.conf`). |
+| **Inbox** | `/datapool/albums/_inbox/ojaswi-1st-birthday` (same dataset, copies=2). Uploaders can only add: no listing, reading, deleting or overwriting (a clashing name is saved under a new name). Viewers never see it. Also visible over SMB as `albums/_inbox/`. |
+| **Review** | `services/albums/review.sh list` (with who sent what), `approve <file>... / --all` (moves into the album's `from-family/`), `reject <file>...`. |
+| **Refused** | anything not jpg/jpeg/png/heic/heif/webp/gif/mov/mp4/m4v/3gp (`hooks/pre_upload.py`); anything whose first bytes are not a real photo/video container, deleted after upload (`hooks/post_upload.py`); files under 1 KiB or over 4 GiB; uploads once datapool has under 50G free; more than 30G/day or 500 files/hour from one IP. |
+| **Log** | `_inbox/.upload-log.tsv`: time, login, client IP, file, size, ok/REJECTED. |
+| **No thumbnails in the inbox** | untrusted files are never decoded until approved. |
+| **Brute force** | copyparty bans an IP after 9 wrong passwords in an hour. It sees real client IPs (X-Forwarded-For from the sidecar, trusted only from the private network), so a ban hits the guesser, not the whole family. |
+
+Tests: `services/albums/check_uploads.sh` (throwaway login, 15 checks over the
+public route, cleans up after itself). Also verified once by hand with
+copyparty's own up2k client (`u2c.py`, the protocol the phone's browser uses):
+real photo accepted, fake rejected, approve made it public. Note u2c retries a
+rejected file forever - the log then shows the same REJECTED line repeating.
+
 ## Privacy model
 
 It is an unguessable link, like a Google Photos share link: anyone who has it
