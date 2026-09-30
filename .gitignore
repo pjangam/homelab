@@ -19,6 +19,11 @@ services/mosquitto/log/
 services/mosquitto/passwd
 client_secret*.json
 hardware.md
+# Encrypted copies of it too. hardware.md is ignored by exact name, so a
+# transport copy like hardware_20260930_123947.md.gpg was untracked but NOT
+# ignored - one `git add -A` from being committed. Found 2026-09-30.
+hardware*.md
+hardware*.md.gpg
 security_findings*.md
 command.txt
 __pycache__/
