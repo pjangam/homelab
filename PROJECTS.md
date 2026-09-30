@@ -2,6 +2,8 @@
 
 Working list of homelab projects and their state, so context survives across sessions instead of living only in chat history. Update this whenever a project's status changes — new project, next step decided, or something completed.
 
+**Priority:** every Active, Parked and Backlog entry carries a `**Priority:** P1` / `P2` / `P3` line of its own straight under its heading (P1 most urgent). The projects dashboard sorts each section P1 → P2 → P3 and can filter by priority. Done and Closed entries drop the line. Everything was set to P3 on 2026-09-30, when priorities were introduced.
+
 Status: 🟢 active · 🟡 parked (revisit when it becomes a real problem, not proactively) · 💡 backlog idea (not started) · ✅ done · ⚪ closed, not acting (understood, decided against)
 
 **Parts lists:** a project that needs things bought carries a fenced ` ```parts ` block, one line per item:
@@ -18,6 +20,7 @@ qty | item | est | note
 ## 🟢 Active
 
 ### Move white noise and spotifyd from xero to the wol Pi
+**Priority:** P3
 
 **Why:** xero's only link to the Airtel router is the TP-Link extender, whose backhaul is 2.4GHz Wi-Fi. Moving xero onto a cable at the router would give it a real uplink, and would allow per-device data-usage monitoring later. The one thing tying xero to its current room is the USB speaker (ALSA card 1, `USB Audio Device`) that plays white noise and serves Spotify Connect. Move the audio to the Pi and xero is free to move. Decided 2026-09-23. **Keep everything installed on xero** (units disabled, not removed) until the Pi has run smoothly for a while.
 
@@ -104,6 +107,7 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 **Before xero itself moves: the power watchdog needs a new signal.** `watchdog_power.sh` infers a mains outage from `enp1s0` losing carrier, which works only because the extender is not on a UPS. Plugged into the Airtel router, which has its own UPS, the carrier never drops and xero would run its battery flat. Fix: keep the carrier check and add "the wol Pi **and** the extender both stop answering pings for N checks". Requiring both avoids false alarms from the Pi's flaky supply. The extender needs a pinned IP first.
 
 ### MacBook DNS keeps breaking - root cause closed out (OpenVPN Connect, at connect); no client-side cure
+**Priority:** P3
 
 **Why:** the Mac's resolver broke six times with an identical signature, and each repair destroyed the evidence before anyone could say what caused it. Between breaks the Mac is silently unfiltered - the 2026-08-28 occurrence went unnoticed for 10 days.
 
@@ -164,6 +168,8 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 **Mitigated for clawlight specifically, 2026-09-28** (a *different* 2026-09-28 failure from the DNS one above, and the 6th time clawlight reported nowhere: Tailscale simply stopped, DNS itself was healthy, and *no* Mac session was on the light - noticed as a missing `travolutionary` session). Reporting never needed Tailscale: `server.py` binds `0.0.0.0:8126` and the tailnet URL is only Caddy in front of it, so the Mac's hooks can use `http://192.168.1.123:8126` while at home and fall back to the tailnet URL when away. "At home" is decided by the default gateway's MAC rather than the IP or a hostname - a bare LAN IP would post session ids and project paths to whatever holds `.123` on a cafe network, and a hostname would depend on the DNS that keeps breaking. See `clawlight/server-url.sh` and the README's "Reporting over the LAN". This narrows the blast radius of this bug; it does not fix the bug, and a Mac that is away from home still needs the tailnet up.
 
 ### ESP32 UPS LED monitor
+**Priority:** P3
+
 **Why:** `watchdog_power.sh` (below) currently guesses "90 minutes on battery is probably safe" before shutting down cleanly. The RouterUPS has 4 status LEDs (plug=mains, battery-full=on-battery-ok, lightning=charging, battery-low=critical) - reading the actual battery-low LED would replace the time guess with the UPS's own real signal.
 
 **State:** LED behavior mapped.
@@ -208,11 +214,15 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 **Next step:** open the UPS case (if possible) and inspect: enclosure fastening (screws/glue), LED wiring style (flying leads vs PCB-mounted), and PCB pad spacing if applicable. This inspection determines whether (D) is actually viable before any parts are bought or other options are pursued further.
 
 ### Check if server RAM is expandable
+**Priority:** P3
+
 **Why:** Immich re-enablement (parked below) is blocked specifically on 8GB RAM being insufficient with ML enabled, currently parked "at least a couple quarters" waiting for a full hardware upgrade due to the chip-price spike. If this Beelink Mini PC's RAM is actually expandable (a free/accessible SO-DIMM slot, not soldered), adding RAM alone could be a much cheaper and faster path back to Immich than waiting out the price spike for a whole new machine - but many ultra-compact fanless mini PCs in this class have soldered, non-expandable RAM, so this isn't guaranteed.
 **State:** **confirmed expandable (2026-08-21)** - opened the case. RAM is a removable SO-DIMM: 8GB DDR4 2666MHz. Also noted while inside: the boot SSD is a Biwin NP202 128GB.
 **Next step:** RAM being genuinely upgradeable reopens the cheaper-path option - price a second/replacement DDR4 2666MHz SO-DIMM (check whether the second slot is free for a straight add, or occupied meaning it'd need a swap to a larger single stick) and re-evaluate the Immich parking decision against that cost instead of waiting out the chip-price spike for a whole new machine. Separately, 128GB is small for a boot drive running 7+ containers - worth keeping an eye on free space, though not urgent unless it becomes one.
 
 ### Local Qwen (Ollama) delegation experiment
+**Priority:** P3
+
 **Why:** wanted to test routing trivial subagent tasks to a locally-hosted model (Qwen via Ollama) instead of Anthropic's cloud models, to see if cost/latency can be saved on simple work while keeping a cloud Claude model for anything nontrivial. Manual/semi-automatic invocation is an explicitly acceptable bar for a first pass, full auto-detection would be a bonus.
 **State:** researched thoroughly, nothing built yet.
 - **Key finding:** Claude Code (CLI or the Agent SDK library, which is Claude Code packaged as a library) validates model names against an Anthropic-only allowlist - there is no way, via `ANTHROPIC_BASE_URL`, agent-definition frontmatter, or any env var, to point the main session or a subagent at Ollama or any local model. That rules out the originally-envisioned approach entirely.
@@ -226,11 +236,15 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 **Next step:** on the Mac - install Ollama, `ollama pull qwen2.5:1.5b`, set `ANTHROPIC_API_KEY`, then `uv run tools/dev-shell/qwen_delegate_repl.py` (needs `uv`, or fall back to `pip install anthropic requests` and drop the `uv run --script` shebang). User will need to run and debug this themselves since it's on a different machine.
 
 ### Check RAM in Lenovo Flex
+**Priority:** P3
+
 **Why:** separate from the homelab server RAM check above - user's Lenovo Flex (personal laptop) has 2 RAM sticks, believed to be 16GB total, but unsure whether DDR3 or DDR4. Needs confirming to know what upgrade options (if any) exist.
 **State:** not checked yet.
 **Next step:** user to physically check the sticks (or pull exact specs via OS tooling) and report back exact capacity/type/speed, then evaluate whether replacing makes sense.
 
 ### Home power audit - smart/network devices + major appliances
+**Priority:** P3
+
 **Why:** triggered by a tangent while discussing whether a new WiFi button (Shelly) would raise the electricity bill - user wants to know the actual continuous background draw of always-on smart/network gear versus the usage-driven draw of major appliances, to know where money is actually going.
 **State:** first pass done (2026-08-22), estimated from specs/datasheets (no plug meter available - see caveat below).
 
@@ -254,6 +268,8 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 **Next step:** if precision matters, a cheap plug-in energy meter (or checking whether the Tinxy app/HA integration exposes real energy-monitoring data for whatever's wired behind the two Tinxy units) would replace the router/extender/xero/Pi estimates with real numbers cheaply. Fridge is the highest-value next target to actually measure, since it's likely the single biggest line item of everything in this audit.
 
 ### Clawlight jump-to-console from the iPhone (Termius -> ssh -> tmux attach)
+**Priority:** P3
+
 **Why:** clawlight's click-to-jump (see ✅ Done) only moves a terminal on a desk machine. From the phone, the red light says a session needs you, but you still have to open Termius, pick the right host, and find the right tmux session by hand. Nothing runs Claude on the iPhone itself. Every session is on xero or the MacBook inside tmux, so tapping the session on the page should open Termius, ssh to that host, and attach at that pane. Noted 2026-09-15.
 
 **State:** built on xero 2026-09-17, not yet tried from the phone. `clawlight/phone-attach.sh`, `/api/phone-jump` + `/api/phone-claim` in `server.py`, and an iOS-only tap path on the page. The unit and end-to-end tests pass (`scripts/clawlight/test_clawlight_phone_jump*`), and the server is restarted with it. The README's "Jumping to a console from the iPhone" section has the design and setup. Left:
@@ -282,16 +298,22 @@ The design notes as first written:
 ## 🟡 Parked
 
 ### ZFS mirror (real redundancy for datapool)
+**Priority:** P3
+
 **Why:** `datapool` is a single disk (`sda`, Kingston SA400 - budget SSD, no power-loss protection) with no mirror, despite the Readme claiming one exists. That false assumption is also why backup was skipped for this data. `copies=2` (done, see below) gives free self-healing for isolated corruption but not full-disk failure - only a real second disk fixes that.
 **State:** not started. Needs a physical second disk (same/larger than 894GB) and `zpool attach`.
 **Next step:** decide on and buy a second disk, whenever justified.
 
 ### Offsite backup for Immich photo data
+**Priority:** P3
+
 **Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no offsite copy - only the ZFS pool itself (single disk, see above) and the original Google Takeout zips on a separate local disk.
 **State:** reconsidered, not started. A naive rclone-to-Dropbox push (same pattern as Vaultwarden/HA) doesn't actually make sense here: the whole point of self-hosting Immich is avoiding paying for cloud photo storage, so continuously syncing the full photo set to cloud storage undermines that. If pursued, needs a different shape - compress/archive first, and use a cold-storage tier (e.g. S3 Glacier / Glacier Deep Archive) priced for rarely-accessed disaster-recovery data rather than active-sync storage, not a Dropbox-style always-on sync.
 **Next step:** none for now - needs the compress + cold-storage approach worked out before this is worth starting, not just "run rclone".
 
 ### Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement
+**Priority:** P3
+
 **Why:** currently uses Dropbox to keep sensitive personal documents (ID cards, tax documents, etc.) available across devices.
 
 Problems with that:
@@ -306,6 +328,8 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** none yet, not started.
 
 ### Immich re-enablement
+**Priority:** P3
+
 **Why:** ~13k photos already migrated from Google Takeout, but Immich is disabled - 8GB RAM isn't enough with ML enabled.
 **State:** **on hold indefinitely (2026-08-26)** - previously parked "at least a couple quarters" pending a hardware/RAM upgrade, now open-ended rather than time-boxed. Fastest partial fix (disable just `immich-machine-learning`, keep the server running without face/object search) was suggested but not applied, since the user wants it parked entirely for now.
 **Next step:** none for now - revisit whenever it becomes a real priority again, not on any schedule. **Before restarting it:** `datapool/immich-upload` has `copies=2` set but uses 31.1G for 31.7G of data (checked 2026-09-21), so the imported library is most likely stored only once - it predates the setting. Run `services/samba/rewrite_for_copies.sh /datapool/immich-upload` while Immich is still stopped (about 32G extra space, dd-based because block cloning makes cp/cat no-ops). Check `immich-db` as well. All 6 corrupted blocks found in `datapool` (see ZFS corruption entry in Done) are now fully resolved and verified clean via scrub (2026-07-31) - no longer a blocker whenever this resumes. 2 recovered videos (`VID_20170311_210204.mp4`, `VID_20170729_134921.mp4`) are sitting in `datapool/recovered-media/`, not yet re-uploaded since there's no Immich to upload them to yet.
@@ -335,6 +359,8 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 ## 💡 Backlog ideas
 
 ### Move the Airtel router to a central spot (retire the Wi-Fi extender)
+**Priority:** P3
+
 **Why:** the router sits where Airtel's fibre drop enters the house, so the far rooms depend on the TP-Link extender. That includes xero, which reaches the router only through the extender's 2.4GHz Wi-Fi backhaul. A central router could cover the house on its own and give xero a short, direct link. **Needs outside help:** Airtel has to re-route its fibre drop, or it has to be extended inside the house, and they may charge. Parked 2026-09-23.
 **Open questions:**
 - Where is central, and does the fibre drop reach it?
@@ -348,6 +374,8 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Notes:** `docs/home-network-uplink-options.md`, which covers all the options, costs and trade-offs, so none of it has to be worked out again.
 
 ### Fibre or Cat6 from the router to the desk
+**Priority:** P3
+
 **Why:** a real cable from the Airtel router to xero's desk replaces the extender's 2.4GHz Wi-Fi hop. It also keeps xero, its speaker and its screen where they are. **Needs outside help** (an electrician and/or a local FTTH technician). Parked 2026-09-23.
 
 **The route:** an existing conduit that already carries 230V mains wiring and has many bends.
@@ -370,6 +398,8 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 - faster and more reliable Immich, backups and Tailscale access
 
 ### Miraie AC self-healing
+**Priority:** P3
+
 **Why:** Readme documents a known paper cut - "if entity shows Unavailable, turn the AC on/off physically to trigger a state update." Same shape of problem as the Tinxy watchdog (auto-recover after a sustained bad state) but for the Miraie AC MQTT integration.
 **State:** auto-fix live from 2026-09-15 (see below); 2026-09-11 sharpened what it would have to do. That evening the entity sat `unavailable` while the bridge was provably fine - both brokers connected, DNS clean, no errors - because the indoor unit had stopped talking to the MirAIe cloud. Three restarts reported success and fixed nothing. So "self-healing" here cannot mean "restart Node-RED harder"; the only recovery for that failure is physical, and the useful automation is to *tell the difference* and say which one it is.
 - `projects/miraie-ac/fix_miraie_ac.sh` now does the telling: it subscribes to `miraie-ac/#` before restarting (everything there is retain=false and published only on reconnect, so a subscriber started afterwards sees nothing), then reads the unit's `availability` off the reconnect. Exit 2 means the bridge is fine and the unit is not there.
@@ -383,21 +413,29 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** HA restarts are the remaining hole. No discovery config is retained on Mosquitto, and an HA restart does not make Node-RED reconnect, so the entity stays down until something restarts node-red (today that is the healthcheck auto-fix, 15-30min later). Candidate: react to HA's `homeassistant/status` = `online` birth message by restarting node-red (or running `fix_miraie_ac.sh --force`) from xero. **Parked 2026-09-15 by choice:** the healthcheck auto-fix is good enough for now. Build the listener only if HA restarts keep costing AC control. The signal is `autofixes_24h`/`last_autofix` on the MirAIe tile lining up with HA restarts.
 
 ### Tinxy: remove stale/decommissioned devices from account
+**Priority:** P3
+
 **Why:** some Tinxy devices are old/decommissioned and will always show offline, which is just noise (they made up ~60% of registered entities being unavailable even in the healthy baseline, discovered while tuning the watchdog's detection threshold below).
 **State:** not started, explicitly not urgent.
 **Next step:** remove the stale/unused devices from the Tinxy account so only in-use devices show up in HACS.
 
 ### Backup restore drill
+**Priority:** P3
+
 **Why:** Vaultwarden and HA config are backed up daily to Dropbox via rclone, but the restore path has never actually been tested - only that the upload step succeeds. "Untested backups aren't backups."
 **State:** not started, explicitly for later.
 **Next step:** pull a recent backup down and actually restore it (to a scratch/test location, not overwriting production) to confirm it works when needed.
 
 ### Shopping list display (touchscreen e-ink)
+**Priority:** P3
+
 **Why:** an always-visible, low-power household shopping list mounted somewhere shared (e.g. kitchen) - anyone can add/check off items via touch without opening an app. E-ink specifically for the always-on, no-glow, negligible-power display characteristics (fits the same "no app needed" philosophy as the physical GPIO buttons).
 **State:** idea only - had been in mind but never written down anywhere until now (2026-09-02). No hardware chosen, no research done yet.
 **Next step:** research touchscreen e-ink modules (existing all-in-one boards like Inkplate, vs. a bare e-ink panel + separate touch overlay + driving MCU) and how list state would sync back to HA/a shared list source.
 
 ### Automatic plant watering (balcony)
+**Priority:** P3
+
 **Why:** long-standing idea (predates this list) - water the balcony plants automatically instead of by hand. Noted 2026-09-04.
 **State:** not started. **Blocked on plumbing, not electronics** - which is why it never got built despite being wanted from the start.
 - **The actuation half is already mostly solved with hardware on hand:** a spare Tinxy valve can be opened/closed from its electric switch or Tinxy's remote API, and a reservoir already exists in the bathroom.
@@ -413,6 +451,8 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** none - parked on the wall/pipe work. Revisit if that construction happens anyway for another reason, or if a balcony-sited reservoir turns out to be acceptable.
 
 ### Pigeon deterrent - motion-triggered sprinkler (balcony railing/parapet)
+**Priority:** P3
+
 **Why:** pigeons roost on the balcony railing/parapet. Original idea was image recognition + sprinkler. Noted 2026-09-04.
 **State:** not started.
 - **Image recognition ruled out on `xero`** - Celeron N5105, no GPU, 8GB RAM with Immich's ML already disabled for exactly this reason, and a history of memory-pressure lockups. Continuous object detection there would put the whole homelab at risk. Real CV would need dedicated hardware (Pi 5 + Hailo hat, or a Coral TPU), roughly a Rs 15-25k project - not a weekend build.
@@ -422,6 +462,8 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** none - gated on the same balcony water supply as the watering project, and on the runoff question.
 
 ### Remote controlled curtains
+**Priority:** P3
+
 **Why:** long-standing idea - open/close curtains from HA (and on a schedule/scene) instead of by hand. Noted 2026-09-04.
 **State:** not started. **Wanted: a clip-on "curtain robot" that sits on the existing rod** - no new track, no wiring, battery-powered. Reference product (user, 2026-09-25): [SwitchBot Curtain, Rod 2.0 version on Amazon.in](https://www.amazon.in/dp/B0FLQ46BQW). **Stuck between two bad options:** readymade robots are expensive, and a DIY build is difficult for this kind of curtain.
 - **The curtains are fabric on a rod with rings.** That is exactly what the "Rod" variant of these robots is for: it rides on the rod and pushes the rings along. The listing notes it does **not** fit square rods, so check the rod's shape and diameter first.
@@ -477,6 +519,8 @@ The window count, still to be taken, multiplies either one.
 **Next step:** parked on price. Before buying: measure rod diameter and shape, count windows (one motor each), weigh or estimate each curtain, and check whether SwitchBot or an authorised Indian seller lists the Rod 2.0 cheaper than this reseller, or wait for a sale. Also check whether xero has working Bluetooth; if not, budget the ESP32 proxy.
 
 ### Door open/close and lock status (main, safety, balcony)
+**Priority:** P3
+
 **Why:** nothing in HA currently knows whether any door in the house is shut. The everyday want is "was the balcony door left open with the AC running" and "is the main door still standing open" and "did anyone actually lock the front door"; the later want is an alert if the front door opens while nobody is home. Noted 2026-09-12. Everything downstream already exists - Mosquitto, HA, and the self-hosted ntfy push path built for clawlight - so this project is only about getting three binary states into MQTT honestly.
 
 **State:** idea only, nothing bought or built. Three doors, and they are deliberately listed separately because they are not the same problem:
@@ -531,6 +575,8 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 **Next step:** take the strike plates off both entrance doors - measure the main door's strike box depth against the deadbolt's full throw, and see what is behind the grill door's slot. Also check for a socket near the entrance and measure the grill door's closed gap. Then bench-test magnet + reed and magnet + hall sensor against the actual bolts before chiselling or drilling anything.
 
 ### Network device + access map
+**Priority:** P3
+
 **Why:** there is no single place that answers "what is on the network, and what can each thing reach or be reached by". Those facts are spread across `docker-compose.yml`, Readme, Pi-hole, the router, and past PROJECTS.md entries. The map is the answer to reach for when a device misbehaves, when something new joins the LAN, or when deciding whether a change widens exposure. Noted 2026-09-15.
 
 **State:** partly done, and deliberately kept out of git.
@@ -552,6 +598,8 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 **Next step:** pull the router DHCP table and Pi-hole client list, diff them against `docs/hardware.md`, and extend the file with the access columns above.
 
 ### Clawlight: a bootstrap script for a machine that has no hooks yet
+**Priority:** P3
+
 **Why:** `clawlight/setup-mac-focus-agent.sh` assumes the ten Claude Code hooks already exist - it reads `CLAWLIGHT_SERVER_URL` and `CLAWLIGHT_HOST_NAME` back out of them and only rewrites their paths, and it exits with *"are the clawlight hooks set up on this machine?"* if `~/.claude/settings.json` has none. So the one step that is still by hand is the first one, and it is the fiddliest: ten hooks, each with two env vars embedded in the command, each mapped to the right state. Noted 2026-09-19, when the personal MacBook turned out to have no clawlight at all.
 
 **State:** idea only. `clawlight/README.md` step 3 documents the wiring, so this is writing down what the README already tells a human to do by hand.
@@ -568,6 +616,8 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 **Next step:** write it as `clawlight/setup-clawlight-hooks.sh`, driven by the same ten-event list the README documents, and use the personal MacBook as its first real test.
 
 ### Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance
+**Priority:** P3
+
 **Why:** asked 2026-09-18 whether a big screen could be made into a wall clock with an ESP32. It can, but not any screen, and as a *clock alone* it loses to a ₹1500 shop clock. It only earns its place if it also shows what nothing else in the house shows at a glance: clawlight, healthcheck state, AC, power-on-battery.
 
 **First, what an ESP32 can actually drive.** No HDMI, ever - a TV or monitor needs a Pi or mini PC, not an ESP32. That leaves three kinds of screen:
@@ -612,6 +662,8 @@ qty | item | est | note
 **Next step:** none until the shape is decided - clock-first (buy one) or dashboard-first (build the matrix). If dashboard, start by listing what actually deserves wall space, since a 64x32 grid holds very little text.
 
 ### Ganapati 2027: solar system / general relativity decoration
+**Priority:** P3
+
 **Why:** next year's makhar theme, picked while this year's sound-reactive strip was still up. The solar system as spacetime curvature - planets orbiting in a warped grid - is a decoration and a physics demo at once, and it is the kind of thing visiting kids will actually queue up for. Noted 2026-09-18, roughly a year ahead, which is the point: this year's shortlist was decided partly by what could still arrive in time.
 
 **State:** idea only, nothing decided. Ganesh Chaturthi 2027 is around early September - confirm the date before planning backwards from it.
@@ -636,6 +688,8 @@ qty | item | est | note
 **Next step:** nothing until mid-2027. Then: fix the makhar size, decide the grid resolution, and price the pixel count. Order anything long-lead by July, which is the lesson from this year's shortlist.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
+**Priority:** P3
+
 **Why:** a wall clock that is simply always right, with no twice-a-year fiddling and no drift to correct by hand. Noted 2026-09-18.
 
 **State:** idea only. **Feasibility: settled - it works, and it is a well-trodden build.** Researched 2026-09-18; several independent projects do exactly this ([ESPCLOCK](https://hackaday.io/project/16742-espclock), [jim11662418/ESP8266-WiFi-Analog-Clock](https://github.com/jim11662418/ESP8266-WiFi-Analog-Clock), [randseq.org's write-up](https://www.randseq.org/2016/10/hacking-analog-clock-to-sync-with-ntp_29.html)).
@@ -680,6 +734,8 @@ Then it verifies itself slowly: leave it a few days against a known-good clock, 
 **Next step:** open a spare movement and confirm the coil can be freed from its quartz chip and pulsed by hand, before designing anything around it. That one bench test decides the whole project.
 
 ### Move WoL to an ESP32, put the Pi on the UPS (post-Ganapati)
+**Priority:** P3
+
 **Why:** the wol-sender Pi has two jobs that want opposite power. Its WoL job only works *because* it is on mains, not the UPS: it has to lose power in an outage and boot when mains returns, so its boot-time packet wakes xero. Everything else it now runs does better if it stays up: the clawlight LED, the buttons, and Node-RED for the AC. Today all of that dies the moment mains drops, while xero carries on for up to 200min on its UPS. Split the jobs: a mains-only ESP32 sends WoL, and the Pi moves onto the UPS. Noted 2026-09-16, for after Ganapati, when the aarti lights ESP32 can be freed for it.
 
 **State:** idea only. The firmware is half there: `esp32/wol_on_boot/wol_on_boot.ino` was written for exactly this before the Pi stood in (2026-08-01). It joins WiFi and broadcasts 3 magic packets to `192.168.1.255:9`.
@@ -714,6 +770,8 @@ When done: `docs/hardware.md` (new board, Pi's power row, and `wol-xero.service`
 **Next step:** during the next real outage, or by switching off the extender and xero's UPS input, check whether the Pi's spot can still reach xero. If it can't, this idea mostly buys buttons and Node-RED that have nothing to talk to.
 
 ### Pegboard backlight as the clawlight (leftover WS2812B on Pi GPIO13)
+**Priority:** P3
+
 **Why:** the shipped clawlight LED is not noticeable enough by day. There is leftover WS2812B strip, probably the ~2m spare from the aarti lights reel. Mounted on the back of the pegboard the wol-sender Pi already hangs on, it would throw clawlight state onto the wall as a glow visible across the room. It would replace the single red/green LED on the same pins. Noted 2026-09-16; started as "a bias light behind the monitor" and moved to the pegboard in the same conversation.
 
 **State:** idea, direction decided, nothing built.
@@ -753,6 +811,8 @@ When built: update `docs/gpio_pinout.md` (GPIO13 = strip data, GPIO19 free), `do
 **Next step:** measure the leftover strip and the pegboard (size, material, gap from the wall), then check a pixel test from the Pi on GPIO13 with audio off, before any mounting.
 
 ### Homelab health LED (Pi GPIO) - the whole healthcheck as one light
+**Priority:** P3
+
 **Why:** `projects/healthcheck/healthcheck.sh` already knows whether the homelab is healthy, but the only way to find that out is to go looking - open the Stats dashboard, or wait for an email/ntfy push on a failure. The clawlight LED above proved the other shape works: a light on the desk that is simply *right*, with nothing to open. Same idea, different source of truth - green means every check passed, red means at least one did not, and the answer is visible from across the room.
 
 **State:** idea only, noted 2026-09-11. Nothing built - but most of the pieces are already in place, which is the reason to write it down now. **LED bought 2026-09-15, and it is RG (red/green bi-colour), not RGB** - same purchase and same caveats as the clawlight LED above (check leg count and polarity before wiring).
@@ -788,6 +848,8 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Next step:** decide whether the LED reads `homelab/healthcheck/overall` directly (nothing new to build server-side, covers what `healthcheck.sh` covers) or an HA-consolidated topic (more coverage, one more moving part). Then `scripts/clawlight/clawlight-led.py` + `scripts/clawlight/deploy_clawlight_led_pi.sh` are the templates to copy - the MQTT-retained-state, stale-means-amber, systemd-unit shape is already worked out there.
 
 ### In-house smart switch to replace Tinxy
+**Priority:** P3
+
 **Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
 **State:** not started - brainstormed 2026-09-02. Two directions considered:
 - **Reflash existing Tinxy units with Tasmota/ESPHome** - cheapest, reuses hardware already wired into the walls, would get fully local MQTT control with zero cloud dependency. Risk: Tinxy isn't a known-flashable brand like Sonoff, so it's a per-unit gamble (open one up, identify the chip, risk bricking it) before knowing if it's worth doing for the rest.
@@ -795,6 +857,8 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Next step:** crack open one existing Tinxy switch to see what's actually inside (chip ID, whether it's a known-flashable module) before committing to either path.
 
 ### Remote control for scenes/scripts (Spotify, white noise, etc.)
+**Priority:** P3
+
 **Why:** the existing physical GPIO buttons (wol-sender Pi, see ✅ Done) prove the pattern - a button publishes an MQTT message, an HA automation fires a scene/script - but that only works for locations physically next to a host with GPIO. An ESP32/ESPHome-based remote would extend the same no-app physical-control idea (see "Physical GPIO buttons (wol-sender Pi)" in ✅ Done) to a standalone battery/USB device controllable from anywhere, not tied to the Pi's location - e.g. a bedside remote for white noise start/stop or Spotify play/pause/skip without opening the HA app.
 **State:** not started - the ESP32/ESPHome route was already flagged as the likely answer for "a button location that isn't next to an existing host" in the scene-buttons project (now done, that thread closed as not needed for household use); this generalizes that to Spotify/media control specifically.
 **Next step:** decide button layout/count needed (e.g. white noise on/off, Spotify play/pause/skip) and whether to build on ESPHome's native HA integration (least custom code, matches the existing MQTT-bridge pattern) or a fully custom firmware.

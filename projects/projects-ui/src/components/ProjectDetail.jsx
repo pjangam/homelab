@@ -10,6 +10,11 @@ export function ProjectDetail({ project, section, inList, onToggleInList }) {
     <article className="project-detail" data-status={section.id}>
       <p className="detail-status">
         <span aria-hidden="true">{section.emoji}</span> {section.label}
+        {project.priority && (
+          <span className="priority-badge" data-priority={project.priority}>
+            {project.priority}
+          </span>
+        )}
       </p>
       <h2>{project.title}</h2>
       <div

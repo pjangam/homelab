@@ -15,6 +15,11 @@ export function StatusSection({ section, selectedId, onSelect }) {
               aria-current={project.id === selectedId ? 'true' : undefined}
               onClick={() => onSelect(project.id)}
             >
+              {project.priority && (
+                <span className="priority-badge" data-priority={project.priority}>
+                  {project.priority}
+                </span>
+              )}
               <span className="project-link-title">{project.title}</span>
               {project.parts?.length > 0 && (
                 <span className="parts-badge">{project.parts.length} parts</span>

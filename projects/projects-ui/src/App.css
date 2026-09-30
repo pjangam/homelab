@@ -87,6 +87,29 @@ header h1 {
   border-color: var(--accent);
 }
 
+/* --- Priority: P1 red, P2 amber, P3 grey ------------------------------- */
+
+.priority-badge {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.18);
+  color: var(--muted);
+}
+
+.detail-status .priority-badge {
+  margin-left: 0.5rem;
+}
+
+.priority-badge[data-priority='P1'] { background: rgba(239, 68, 68, 0.18); color: #ef4444; }
+.priority-badge[data-priority='P2'] { background: rgba(234, 179, 8, 0.2); color: #ca8a04; }
+
+.priority-chip.chip-active[data-priority='P1'] { border-color: #ef4444; }
+.priority-chip.chip-active[data-priority='P2'] { border-color: #eab308; }
+.priority-chip.chip-active[data-priority='P3'] { border-color: var(--muted); }
+
 input[type='search'] {
   flex: 1 1 200px;
   padding: 0.4rem 0.75rem;
@@ -151,6 +174,10 @@ input[type='search'] {
   background: var(--card-bg);
   border-color: var(--accent);
   font-weight: 600;
+}
+
+.project-link-title {
+  flex: 1;
 }
 
 .project-link .parts-badge {

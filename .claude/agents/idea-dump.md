@@ -83,6 +83,8 @@ Match the surrounding entries: bold lead-ins, full sentences, specifics over
 adjectives. Structure:
 
 - `### Title` - what it is, not a slogan.
+- `**Priority:** P3` on its own line straight under the title, then a blank
+  line. New ideas start at P3; the user raises them to P2 or P1 themselves.
 - **Why:** the itch, in one or two sentences, with the date noted.
 - **State:** idea only / researched / decided, and what is already true.
 - **The feasibility answer**, with links.

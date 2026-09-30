@@ -122,3 +122,53 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByText(/couldn.t load/i)).toBeInTheDocument())
   })
 })
+
+describe('App priorities', () => {
+  const PRIORITISED = `## 💡 Backlog ideas
+
+### Later thing
+**Priority:** P3
+
+Eventually.
+
+### Urgent thing
+**Priority:** P1
+
+Now.
+
+## ✅ Done
+
+### Finished thing
+All done.
+`
+
+  beforeEach(async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(PRIORITISED),
+    }))
+    render(<App />)
+    await waitFor(() => screen.getByText('Urgent thing'))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('lists P1 above P3 within a section', () => {
+    const titles = screen.getAllByRole('button', { name: /thing/ }).map((b) => b.textContent)
+    expect(titles[0]).toMatch(/Urgent thing/)
+    expect(titles[1]).toMatch(/Later thing/)
+  })
+
+  it('hides a priority when its chip is toggled off, leaving untagged projects alone', async () => {
+    const user = userEvent.setup()
+    const group = screen.getByRole('group', { name: /priority/i })
+
+    await user.click(within(group).getByRole('button', { name: 'P3' }))
+
+    expect(screen.queryByText('Later thing')).not.toBeInTheDocument()
+    expect(screen.getByText('Urgent thing')).toBeInTheDocument()
+    expect(screen.getByText('Finished thing')).toBeInTheDocument()
+  })
+})

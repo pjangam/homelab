@@ -4,6 +4,7 @@ import { StatusSection } from './components/StatusSection'
 import { ProjectDetail } from './components/ProjectDetail'
 import { ShoppingList } from './components/ShoppingList'
 import { mergeParts } from './lib/parts'
+import { PRIORITIES } from './lib/parseProjects'
 import './App.css'
 
 function matchesSearch(project, term) {
@@ -53,6 +54,7 @@ export default function App() {
   const { status, sections, error } = useProjects()
   const [search, setSearch] = useState('')
   const [disabledStatuses, setDisabledStatuses] = useState(() => new Set())
+  const [disabledPriorities, setDisabledPriorities] = useState(() => new Set())
   const [selectedId, setSelectedId] = useState(null)
   const listScrollY = useRef(0)
   const detailRef = useRef(null)
@@ -68,10 +70,16 @@ export default function App() {
         .filter((section) => !disabledStatuses.has(section.id))
         .map((section) => ({
           ...section,
-          projects: section.projects.filter((project) => matchesSearch(project, search)),
+          // Only tagged projects answer to the priority chips: Done and Closed
+          // carry no priority and stay under their own status chips.
+          projects: section.projects.filter(
+            (project) =>
+              matchesSearch(project, search) &&
+              !(project.priority && disabledPriorities.has(project.priority)),
+          ),
         }))
         .filter((section) => section.projects.length > 0),
-    [sections, disabledStatuses, search],
+    [sections, disabledStatuses, disabledPriorities, search],
   )
 
   // Selected from every section, not just the visible ones - a status filter
@@ -142,6 +150,23 @@ export default function App() {
                     onClick={() => toggleStatus(section.id)}
                   >
                     {section.emoji} {section.label}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="chips" role="group" aria-label="Priority">
+              {PRIORITIES.map((priority) => {
+                const active = !disabledPriorities.has(priority)
+                return (
+                  <button
+                    key={priority}
+                    type="button"
+                    aria-pressed={active}
+                    className={`chip priority-chip${active ? ' chip-active' : ''}`}
+                    data-priority={priority}
+                    onClick={() => toggleInSet(setDisabledPriorities, priority)}
+                  >
+                    {priority}
                   </button>
                 )
               })}

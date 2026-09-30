@@ -70,3 +70,51 @@ describe('parseProjects', () => {
     expect(parseProjects('# Just a title\n\nSome text.\n')).toEqual([])
   })
 })
+
+describe('priorities', () => {
+  const PRIORITISED = `## 💡 Backlog ideas
+
+### Low one
+**Priority:** P3
+
+**Why:** later.
+
+### Untagged one
+No priority line.
+
+### Urgent one
+**Priority:** P1
+
+Do it now.
+
+### Middle one
+**Priority:** p2
+
+Soon.
+
+### Another low one
+**Priority:** P3
+
+Also later.
+`
+
+  it('reads the priority and keeps the line out of the body', () => {
+    const [section] = parseProjects(PRIORITISED)
+    const urgent = section.projects.find((p) => p.title === 'Urgent one')
+    expect(urgent.priority).toBe('P1')
+    expect(urgent.bodyHtml).not.toMatch(/Priority/)
+    expect(urgent.bodyHtml).toMatch(/Do it now/)
+  })
+
+  it('sorts P1, P2, P3, then untagged, keeping file order within a priority', () => {
+    const [section] = parseProjects(PRIORITISED)
+    expect(section.projects.map((p) => p.title)).toEqual([
+      'Urgent one',
+      'Middle one',
+      'Low one',
+      'Another low one',
+      'Untagged one',
+    ])
+    expect(section.projects[4].priority).toBeNull()
+  })
+})
