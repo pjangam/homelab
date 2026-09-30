@@ -118,3 +118,74 @@ Also later.
     expect(section.projects[4].priority).toBeNull()
   })
 })
+
+describe('status lines', () => {
+  const FLAT = `# Projects
+
+---
+
+## Projects
+
+### Shipped thing
+**Status:** Done
+
+It works.
+
+### Urgent idea
+**Status:** Backlog
+**Priority:** P1
+
+Soon.
+
+### Running thing
+**Status:** Active
+**Priority:** P2
+**Why:** straight on, no blank line.
+
+### Dropped thing
+**Status:** Closed
+
+Decided against.
+
+### Typo thing
+**Status:** Actve
+
+Oops.
+
+### Forgotten thing
+No status line at all.
+`
+
+  it('groups by the Status line, in the fixed status order', () => {
+    const groups = parseProjects(FLAT)
+    expect(groups.map((g) => g.label)).toEqual([
+      'Active',
+      'Backlog ideas',
+      'Closed (not acting)',
+      'Done',
+      'Actve',
+      'Projects',
+    ])
+    expect(groups[0].id).toBe('active')
+    expect(groups[1].projects[0].title).toBe('Urgent idea')
+  })
+
+  it('reads status and priority from one paragraph and keeps them out of the body', () => {
+    const [active, backlog] = parseProjects(FLAT)
+    expect(backlog.projects[0].priority).toBe('P1')
+    expect(backlog.projects[0].bodyHtml).not.toMatch(/Status|Priority/)
+    expect(active.projects[0].priority).toBe('P2')
+    expect(active.projects[0].bodyHtml).toContain('<strong>Why:</strong> straight on')
+    expect(active.projects[0].bodyHtml).not.toMatch(/Status|Priority/)
+  })
+
+  it('lets a Status line override the heading a project sits under', () => {
+    const groups = parseProjects('## 💡 Backlog ideas\n\n### Moved on\n**Status:** Done\n\nFinished.\n')
+    expect(groups.map((g) => g.label)).toEqual(['Done'])
+  })
+
+  it('does not treat a Status mention later in the body as the status', () => {
+    const groups = parseProjects('## 🟢 Active\n\n### Thing\nBody.\n\n**Status:** Done\n')
+    expect(groups.map((g) => g.label)).toEqual(['Active'])
+  })
+})

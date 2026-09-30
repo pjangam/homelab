@@ -2,9 +2,18 @@
 
 Working list of homelab projects and their state, so context survives across sessions instead of living only in chat history. Update this whenever a project's status changes — new project, next step decided, or something completed.
 
-**Priority:** every Active, Parked and Backlog entry carries a `**Priority:** P1` / `P2` / `P3` line of its own straight under its heading (P1 most urgent). The projects dashboard sorts each section P1 → P2 → P3 and can filter by priority. Done and Closed entries drop the line. Everything was set to P3 on 2026-09-30, when priorities were introduced.
+**Status and priority are lines, not sections.** Every project is a `###` entry in the one `## Projects` list, with its state in lines of their own straight under the heading:
 
-Status: 🟢 active · 🟡 parked (revisit when it becomes a real problem, not proactively) · 💡 backlog idea (not started) · ✅ done · ⚪ closed, not acting (understood, decided against)
+```
+### Some project
+**Status:** Backlog
+**Priority:** P2
+```
+
+Changing a project's state is a one-line edit - never move the block. The projects dashboard groups by Status and, within each group, sorts P1 → P2 → P3; it filters on both. New entries can go anywhere in the list; appending is fine.
+
+- **Status:** `Active` · `Parked` (revisit when it becomes a real problem, not proactively) · `Backlog` (idea, not started) · `Closed` (understood and written up, decided not to act: nothing shipped, and no trigger is being waited for) · `Done`. A missing or misspelt status shows up as its own ❔ group on the dashboard.
+- **Priority:** `P1` (most urgent), `P2`, `P3`, on Active, Parked and Backlog entries; Done and Closed ones drop it. Everything open was set to P3 on 2026-09-30, when priorities were introduced.
 
 **Parts lists:** a project that needs things bought carries a fenced ` ```parts ` block, one line per item:
 
@@ -17,9 +26,10 @@ qty | item | est | note
 
 ---
 
-## 🟢 Active
+## Projects
 
 ### Move white noise and spotifyd from xero to the wol Pi
+**Status:** Active
 **Priority:** P3
 
 **Why:** xero's only link to the Airtel router is the TP-Link extender, whose backhaul is 2.4GHz Wi-Fi. Moving xero onto a cable at the router would give it a real uplink, and would allow per-device data-usage monitoring later. The one thing tying xero to its current room is the USB speaker (ALSA card 1, `USB Audio Device`) that plays white noise and serves Spotify Connect. Move the audio to the Pi and xero is free to move. Decided 2026-09-23. **Keep everything installed on xero** (units disabled, not removed) until the Pi has run smoothly for a while.
@@ -107,6 +117,7 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 **Before xero itself moves: the power watchdog needs a new signal.** `watchdog_power.sh` infers a mains outage from `enp1s0` losing carrier, which works only because the extender is not on a UPS. Plugged into the Airtel router, which has its own UPS, the carrier never drops and xero would run its battery flat. Fix: keep the carrier check and add "the wol Pi **and** the extender both stop answering pings for N checks". Requiring both avoids false alarms from the Pi's flaky supply. The extender needs a pinned IP first.
 
 ### MacBook DNS keeps breaking - root cause closed out (OpenVPN Connect, at connect); no client-side cure
+**Status:** Active
 **Priority:** P3
 
 **Why:** the Mac's resolver broke six times with an identical signature, and each repair destroyed the evidence before anyone could say what caused it. Between breaks the Mac is silently unfiltered - the 2026-08-28 occurrence went unnoticed for 10 days.
@@ -168,6 +179,7 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 **Mitigated for clawlight specifically, 2026-09-28** (a *different* 2026-09-28 failure from the DNS one above, and the 6th time clawlight reported nowhere: Tailscale simply stopped, DNS itself was healthy, and *no* Mac session was on the light - noticed as a missing `travolutionary` session). Reporting never needed Tailscale: `server.py` binds `0.0.0.0:8126` and the tailnet URL is only Caddy in front of it, so the Mac's hooks can use `http://192.168.1.123:8126` while at home and fall back to the tailnet URL when away. "At home" is decided by the default gateway's MAC rather than the IP or a hostname - a bare LAN IP would post session ids and project paths to whatever holds `.123` on a cafe network, and a hostname would depend on the DNS that keeps breaking. See `clawlight/server-url.sh` and the README's "Reporting over the LAN". This narrows the blast radius of this bug; it does not fix the bug, and a Mac that is away from home still needs the tailnet up.
 
 ### ESP32 UPS LED monitor
+**Status:** Active
 **Priority:** P3
 
 **Why:** `watchdog_power.sh` (below) currently guesses "90 minutes on battery is probably safe" before shutting down cleanly. The RouterUPS has 4 status LEDs (plug=mains, battery-full=on-battery-ok, lightning=charging, battery-low=critical) - reading the actual battery-low LED would replace the time guess with the UPS's own real signal.
@@ -214,6 +226,7 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 **Next step:** open the UPS case (if possible) and inspect: enclosure fastening (screws/glue), LED wiring style (flying leads vs PCB-mounted), and PCB pad spacing if applicable. This inspection determines whether (D) is actually viable before any parts are bought or other options are pursued further.
 
 ### Check if server RAM is expandable
+**Status:** Active
 **Priority:** P3
 
 **Why:** Immich re-enablement (parked below) is blocked specifically on 8GB RAM being insufficient with ML enabled, currently parked "at least a couple quarters" waiting for a full hardware upgrade due to the chip-price spike. If this Beelink Mini PC's RAM is actually expandable (a free/accessible SO-DIMM slot, not soldered), adding RAM alone could be a much cheaper and faster path back to Immich than waiting out the price spike for a whole new machine - but many ultra-compact fanless mini PCs in this class have soldered, non-expandable RAM, so this isn't guaranteed.
@@ -221,6 +234,7 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 **Next step:** RAM being genuinely upgradeable reopens the cheaper-path option - price a second/replacement DDR4 2666MHz SO-DIMM (check whether the second slot is free for a straight add, or occupied meaning it'd need a swap to a larger single stick) and re-evaluate the Immich parking decision against that cost instead of waiting out the chip-price spike for a whole new machine. Separately, 128GB is small for a boot drive running 7+ containers - worth keeping an eye on free space, though not urgent unless it becomes one.
 
 ### Local Qwen (Ollama) delegation experiment
+**Status:** Active
 **Priority:** P3
 
 **Why:** wanted to test routing trivial subagent tasks to a locally-hosted model (Qwen via Ollama) instead of Anthropic's cloud models, to see if cost/latency can be saved on simple work while keeping a cloud Claude model for anything nontrivial. Manual/semi-automatic invocation is an explicitly acceptable bar for a first pass, full auto-detection would be a bonus.
@@ -236,6 +250,7 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 **Next step:** on the Mac - install Ollama, `ollama pull qwen2.5:1.5b`, set `ANTHROPIC_API_KEY`, then `uv run tools/dev-shell/qwen_delegate_repl.py` (needs `uv`, or fall back to `pip install anthropic requests` and drop the `uv run --script` shebang). User will need to run and debug this themselves since it's on a different machine.
 
 ### Check RAM in Lenovo Flex
+**Status:** Active
 **Priority:** P3
 
 **Why:** separate from the homelab server RAM check above - user's Lenovo Flex (personal laptop) has 2 RAM sticks, believed to be 16GB total, but unsure whether DDR3 or DDR4. Needs confirming to know what upgrade options (if any) exist.
@@ -243,6 +258,7 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 **Next step:** user to physically check the sticks (or pull exact specs via OS tooling) and report back exact capacity/type/speed, then evaluate whether replacing makes sense.
 
 ### Home power audit - smart/network devices + major appliances
+**Status:** Active
 **Priority:** P3
 
 **Why:** triggered by a tangent while discussing whether a new WiFi button (Shelly) would raise the electricity bill - user wants to know the actual continuous background draw of always-on smart/network gear versus the usage-driven draw of major appliances, to know where money is actually going.
@@ -268,6 +284,7 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 **Next step:** if precision matters, a cheap plug-in energy meter (or checking whether the Tinxy app/HA integration exposes real energy-monitoring data for whatever's wired behind the two Tinxy units) would replace the router/extender/xero/Pi estimates with real numbers cheaply. Fridge is the highest-value next target to actually measure, since it's likely the single biggest line item of everything in this audit.
 
 ### Clawlight jump-to-console from the iPhone (Termius -> ssh -> tmux attach)
+**Status:** Active
 **Priority:** P3
 
 **Why:** clawlight's click-to-jump (see ✅ Done) only moves a terminal on a desk machine. From the phone, the red light says a session needs you, but you still have to open Termius, pick the right host, and find the right tmux session by hand. Nothing runs Claude on the iPhone itself. Every session is on xero or the MacBook inside tmux, so tapping the session on the page should open Termius, ssh to that host, and attach at that pane. Noted 2026-09-15.
@@ -295,9 +312,9 @@ The design notes as first written:
 
 **Next step:** on the phone, save the xero host in Termius with `~/code/homelab/clawlight/phone-attach.sh` as the startup command. Tap a xero session on the page and connect by hand. Then try the open links.
 
-## 🟡 Parked
 
 ### ZFS mirror (real redundancy for datapool)
+**Status:** Parked
 **Priority:** P3
 
 **Why:** `datapool` is a single disk (`sda`, Kingston SA400 - budget SSD, no power-loss protection) with no mirror, despite the Readme claiming one exists. That false assumption is also why backup was skipped for this data. `copies=2` (done, see below) gives free self-healing for isolated corruption but not full-disk failure - only a real second disk fixes that.
@@ -305,6 +322,7 @@ The design notes as first written:
 **Next step:** decide on and buy a second disk, whenever justified.
 
 ### Offsite backup for Immich photo data
+**Status:** Parked
 **Priority:** P3
 
 **Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no offsite copy - only the ZFS pool itself (single disk, see above) and the original Google Takeout zips on a separate local disk.
@@ -312,6 +330,7 @@ The design notes as first written:
 **Next step:** none for now - needs the compress + cold-storage approach worked out before this is worth starting, not just "run rclone".
 
 ### Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement
+**Status:** Parked
 **Priority:** P3
 
 **Why:** currently uses Dropbox to keep sensitive personal documents (ID cards, tax documents, etc.) available across devices.
@@ -328,6 +347,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** none yet, not started.
 
 ### Immich re-enablement
+**Status:** Parked
 **Priority:** P3
 
 **Why:** ~13k photos already migrated from Google Takeout, but Immich is disabled - 8GB RAM isn't enough with ML enabled.
@@ -356,9 +376,9 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 **Google Takeout export - incomplete, gap unresolved (2026-08-26).** The full export (23 parts, `takeout-20260625T094226Z-3-*.zip`, downloaded 2026-06-25/26) is missing part `019` - re-downloading just that part turns out not to be possible. Moved the 22 complete parts off the nearly-full boot disk to `datapool/google-takeout/` (see disk-space cleanup below) regardless, since they're safe to keep either way. How to actually fill the gap (full fresh re-export vs. living with one missing part) is unresolved - deferred, not blocking anything while Immich itself is on hold.
 
-## 💡 Backlog ideas
 
 ### Move the Airtel router to a central spot (retire the Wi-Fi extender)
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** the router sits where Airtel's fibre drop enters the house, so the far rooms depend on the TP-Link extender. That includes xero, which reaches the router only through the extender's 2.4GHz Wi-Fi backhaul. A central router could cover the house on its own and give xero a short, direct link. **Needs outside help:** Airtel has to re-route its fibre drop, or it has to be extended inside the house, and they may charge. Parked 2026-09-23.
@@ -374,6 +394,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Notes:** `docs/home-network-uplink-options.md`, which covers all the options, costs and trade-offs, so none of it has to be worked out again.
 
 ### Fibre or Cat6 from the router to the desk
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** a real cable from the Airtel router to xero's desk replaces the extender's 2.4GHz Wi-Fi hop. It also keeps xero, its speaker and its screen where they are. **Needs outside help** (an electrician and/or a local FTTH technician). Parked 2026-09-23.
@@ -398,6 +419,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 - faster and more reliable Immich, backups and Tailscale access
 
 ### Miraie AC self-healing
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** Readme documents a known paper cut - "if entity shows Unavailable, turn the AC on/off physically to trigger a state update." Same shape of problem as the Tinxy watchdog (auto-recover after a sustained bad state) but for the Miraie AC MQTT integration.
@@ -413,6 +435,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** HA restarts are the remaining hole. No discovery config is retained on Mosquitto, and an HA restart does not make Node-RED reconnect, so the entity stays down until something restarts node-red (today that is the healthcheck auto-fix, 15-30min later). Candidate: react to HA's `homeassistant/status` = `online` birth message by restarting node-red (or running `fix_miraie_ac.sh --force`) from xero. **Parked 2026-09-15 by choice:** the healthcheck auto-fix is good enough for now. Build the listener only if HA restarts keep costing AC control. The signal is `autofixes_24h`/`last_autofix` on the MirAIe tile lining up with HA restarts.
 
 ### Tinxy: remove stale/decommissioned devices from account
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** some Tinxy devices are old/decommissioned and will always show offline, which is just noise (they made up ~60% of registered entities being unavailable even in the healthy baseline, discovered while tuning the watchdog's detection threshold below).
@@ -420,6 +443,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** remove the stale/unused devices from the Tinxy account so only in-use devices show up in HACS.
 
 ### Backup restore drill
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** Vaultwarden and HA config are backed up daily to Dropbox via rclone, but the restore path has never actually been tested - only that the upload step succeeds. "Untested backups aren't backups."
@@ -427,6 +451,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** pull a recent backup down and actually restore it (to a scratch/test location, not overwriting production) to confirm it works when needed.
 
 ### Shopping list display (touchscreen e-ink)
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** an always-visible, low-power household shopping list mounted somewhere shared (e.g. kitchen) - anyone can add/check off items via touch without opening an app. E-ink specifically for the always-on, no-glow, negligible-power display characteristics (fits the same "no app needed" philosophy as the physical GPIO buttons).
@@ -434,6 +459,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** research touchscreen e-ink modules (existing all-in-one boards like Inkplate, vs. a bare e-ink panel + separate touch overlay + driving MCU) and how list state would sync back to HA/a shared list source.
 
 ### Automatic plant watering (balcony)
+**Status:** Backlog
 **Priority:** P1
 
 **Why:** long-standing idea (predates this list) - water the balcony plants automatically instead of by hand. Noted 2026-09-04.
@@ -451,6 +477,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** none - parked on the wall/pipe work. Revisit if that construction happens anyway for another reason, or if a balcony-sited reservoir turns out to be acceptable.
 
 ### Pigeon deterrent - motion-triggered sprinkler (balcony railing/parapet)
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** pigeons roost on the balcony railing/parapet. Original idea was image recognition + sprinkler. Noted 2026-09-04.
@@ -462,6 +489,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** none - gated on the same balcony water supply as the watering project, and on the runoff question.
 
 ### Remote controlled curtains
+**Status:** Backlog
 **Priority:** P1
 
 **Why:** long-standing idea - open/close curtains from HA (and on a schedule/scene) instead of by hand. Noted 2026-09-04.
@@ -519,6 +547,7 @@ The window count, still to be taken, multiplies either one.
 **Next step:** parked on price. Before buying: measure rod diameter and shape, count windows (one motor each), weigh or estimate each curtain, and check whether SwitchBot or an authorised Indian seller lists the Rod 2.0 cheaper than this reseller, or wait for a sale. Also check whether xero has working Bluetooth; if not, budget the ESP32 proxy.
 
 ### Door open/close and lock status (main, safety, balcony)
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** nothing in HA currently knows whether any door in the house is shut. The everyday want is "was the balcony door left open with the AC running" and "is the main door still standing open" and "did anyone actually lock the front door"; the later want is an alert if the front door opens while nobody is home. Noted 2026-09-12. Everything downstream already exists - Mosquitto, HA, and the self-hosted ntfy push path built for clawlight - so this project is only about getting three binary states into MQTT honestly.
@@ -575,6 +604,7 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 **Next step:** take the strike plates off both entrance doors - measure the main door's strike box depth against the deadbolt's full throw, and see what is behind the grill door's slot. Also check for a socket near the entrance and measure the grill door's closed gap. Then bench-test magnet + reed and magnet + hall sensor against the actual bolts before chiselling or drilling anything.
 
 ### Network device + access map
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** there is no single place that answers "what is on the network, and what can each thing reach or be reached by". Those facts are spread across `docker-compose.yml`, Readme, Pi-hole, the router, and past PROJECTS.md entries. The map is the answer to reach for when a device misbehaves, when something new joins the LAN, or when deciding whether a change widens exposure. Noted 2026-09-15.
@@ -598,6 +628,7 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 **Next step:** pull the router DHCP table and Pi-hole client list, diff them against `docs/hardware.md`, and extend the file with the access columns above.
 
 ### Clawlight: a bootstrap script for a machine that has no hooks yet
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** `clawlight/setup-mac-focus-agent.sh` assumes the ten Claude Code hooks already exist - it reads `CLAWLIGHT_SERVER_URL` and `CLAWLIGHT_HOST_NAME` back out of them and only rewrites their paths, and it exits with *"are the clawlight hooks set up on this machine?"* if `~/.claude/settings.json` has none. So the one step that is still by hand is the first one, and it is the fiddliest: ten hooks, each with two env vars embedded in the command, each mapped to the right state. Noted 2026-09-19, when the personal MacBook turned out to have no clawlight at all.
@@ -616,6 +647,7 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
 **Next step:** write it as `clawlight/setup-clawlight-hooks.sh`, driven by the same ten-event list the README documents, and use the personal MacBook as its first real test.
 
 ### Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** asked 2026-09-18 whether a big screen could be made into a wall clock with an ESP32. It can, but not any screen, and as a *clock alone* it loses to a ₹1500 shop clock. It only earns its place if it also shows what nothing else in the house shows at a glance: clawlight, healthcheck state, AC, power-on-battery.
@@ -662,6 +694,7 @@ qty | item | est | note
 **Next step:** none until the shape is decided - clock-first (buy one) or dashboard-first (build the matrix). If dashboard, start by listing what actually deserves wall space, since a 64x32 grid holds very little text.
 
 ### Ganapati 2027: solar system / general relativity decoration
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** next year's makhar theme, picked while this year's sound-reactive strip was still up. The solar system as spacetime curvature - planets orbiting in a warped grid - is a decoration and a physics demo at once, and it is the kind of thing visiting kids will actually queue up for. Noted 2026-09-18, roughly a year ahead, which is the point: this year's shortlist was decided partly by what could still arrive in time.
@@ -688,6 +721,7 @@ qty | item | est | note
 **Next step:** nothing until mid-2027. Then: fix the makhar size, decide the grid resolution, and price the pixel count. Order anything long-lead by July, which is the lesson from this year's shortlist.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** a wall clock that is simply always right, with no twice-a-year fiddling and no drift to correct by hand. Noted 2026-09-18.
@@ -734,6 +768,7 @@ Then it verifies itself slowly: leave it a few days against a known-good clock, 
 **Next step:** open a spare movement and confirm the coil can be freed from its quartz chip and pulsed by hand, before designing anything around it. That one bench test decides the whole project.
 
 ### Move WoL to an ESP32, put the Pi on the UPS (post-Ganapati)
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** the wol-sender Pi has two jobs that want opposite power. Its WoL job only works *because* it is on mains, not the UPS: it has to lose power in an outage and boot when mains returns, so its boot-time packet wakes xero. Everything else it now runs does better if it stays up: the clawlight LED, the buttons, and Node-RED for the AC. Today all of that dies the moment mains drops, while xero carries on for up to 200min on its UPS. Split the jobs: a mains-only ESP32 sends WoL, and the Pi moves onto the UPS. Noted 2026-09-16, for after Ganapati, when the aarti lights ESP32 can be freed for it.
@@ -770,6 +805,7 @@ When done: `docs/hardware.md` (new board, Pi's power row, and `wol-xero.service`
 **Next step:** during the next real outage, or by switching off the extender and xero's UPS input, check whether the Pi's spot can still reach xero. If it can't, this idea mostly buys buttons and Node-RED that have nothing to talk to.
 
 ### Pegboard backlight as the clawlight (leftover WS2812B on Pi GPIO13)
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** the shipped clawlight LED is not noticeable enough by day. There is leftover WS2812B strip, probably the ~2m spare from the aarti lights reel. Mounted on the back of the pegboard the wol-sender Pi already hangs on, it would throw clawlight state onto the wall as a glow visible across the room. It would replace the single red/green LED on the same pins. Noted 2026-09-16; started as "a bias light behind the monitor" and moved to the pegboard in the same conversation.
@@ -811,6 +847,7 @@ When built: update `docs/gpio_pinout.md` (GPIO13 = strip data, GPIO19 free), `do
 **Next step:** measure the leftover strip and the pegboard (size, material, gap from the wall), then check a pixel test from the Pi on GPIO13 with audio off, before any mounting.
 
 ### Homelab health LED (Pi GPIO) - the whole healthcheck as one light
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** `projects/healthcheck/healthcheck.sh` already knows whether the homelab is healthy, but the only way to find that out is to go looking - open the Stats dashboard, or wait for an email/ntfy push on a failure. The clawlight LED above proved the other shape works: a light on the desk that is simply *right*, with nothing to open. Same idea, different source of truth - green means every check passed, red means at least one did not, and the answer is visible from across the room.
@@ -848,6 +885,7 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Next step:** decide whether the LED reads `homelab/healthcheck/overall` directly (nothing new to build server-side, covers what `healthcheck.sh` covers) or an HA-consolidated topic (more coverage, one more moving part). Then `scripts/clawlight/clawlight-led.py` + `scripts/clawlight/deploy_clawlight_led_pi.sh` are the templates to copy - the MQTT-retained-state, stale-means-amber, systemd-unit shape is already worked out there.
 
 ### In-house smart switch to replace Tinxy
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
@@ -857,19 +895,16 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Next step:** crack open one existing Tinxy switch to see what's actually inside (chip ID, whether it's a known-flashable module) before committing to either path.
 
 ### Remote control for scenes/scripts (Spotify, white noise, etc.)
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** the existing physical GPIO buttons (wol-sender Pi, see ✅ Done) prove the pattern - a button publishes an MQTT message, an HA automation fires a scene/script - but that only works for locations physically next to a host with GPIO. An ESP32/ESPHome-based remote would extend the same no-app physical-control idea (see "Physical GPIO buttons (wol-sender Pi)" in ✅ Done) to a standalone battery/USB device controllable from anywhere, not tied to the Pi's location - e.g. a bedside remote for white noise start/stop or Spotify play/pause/skip without opening the HA app.
 **State:** not started - the ESP32/ESPHome route was already flagged as the likely answer for "a button location that isn't next to an existing host" in the scene-buttons project (now done, that thread closed as not needed for household use); this generalizes that to Spotify/media control specifically.
 **Next step:** decide button layout/count needed (e.g. white noise on/off, Spotify play/pause/skip) and whether to build on ESPHome's native HA integration (least custom code, matches the existing MQTT-bridge pattern) or a fully custom firmware.
 
----
-
-## ⚪ Closed (not acting)
-
-Understood and written up, with a deliberate decision not to act. Not "done" - nothing shipped - and not "parked" either: no trigger is being waited for.
 
 ### Airtel: download throughput is unstable, upload is not - diagnosed, not reported
+**Status:** Closed
 
 **Why:** fast.com read 1.9 Mbps on 2026-09-23 while the line still felt usable, and two router restarts changed nothing. Measuring it properly found something narrower and odder than "the internet is slow". Full write-up in `docs/incidents/2026-09-23-airtel-inbound-throughput-path-dependent.md`.
 
@@ -893,19 +928,22 @@ Together: congestion or capacity exhaustion on *particular inbound paths* into A
 
 **Do not confuse this with the MacBook DNS entry.** That one also presents as "the internet is slow" and they overlapped on 2026-09-23. They are unrelated: DNS made *name lookups* take ~600 ms on the M2 only; this affects *throughput* on every device.
 
----
-
-## ✅ Done
 
 ### Public photo album for Ojaswi's 1st birthday (Tailscale Funnel)
+**Status:** Done
+
 Live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_ALBUM_PATH` in `.env`), viewable without Tailscale. `albums-gallery` (copyparty, read-only and hardened, ~40MB) behind the `albums-tailscale` sidecar with Funnel, serving `datapool/albums/ojaswi-1st-birthday` (copies=2); uploads go in through the new `albums` SMB share. Funnel is granted only to `tag:funnel` in the tailnet policy. Only the secret path is routed - copyparty's own `/?tree` would list volumes. `services/albums/check_public.sh` verified it over public DNS: album, thumbnails, and 404/401/403 for everything else. Setup gotchas (untagged auth key, restart after the grant): `services/albums/README.md`. **Family uploads (2026-09-29):** review-first - per-person logins (`uploader.sh`) can only add photos/videos to a hidden inbox, hooks refuse non-media by extension and by content, and `review.sh approve` moves them into `from-family/`. `check_uploads.sh` passes 15/15 over the public route; the gallery is on an internal-only docker network. When Immich comes back, move the album to an Immich shared link and retire this.
 
 ### LAN time server on xero, so the wol Pi's clock survives an ISP outage
+**Status:** Done
+
 **Why:** on 2026-09-28 a power cut followed by an ISP outage left the wol Pi (and its screensaver clock) 15 minutes behind for about 10 hours. The Pi has no RTC: it boots on the time `systemd-timesyncd` last saved (04:31, but it actually booted at 04:46) and its only time sources were the internet pool, so nothing could correct it until the ISP came back at 14:54.
 
 **Shipped 2026-09-28:** chrony on xero (replaces timesyncd there) serves the LAN on UDP 123, with `local stratum 10` so it keeps answering from xero's RTC while the internet is down. The Pi's timesyncd lists xero first, then the Debian pool, in `NTP=` (not `FallbackNTP=`, which timesyncd ignores whenever `NTP=` is set). Files and `deploy.sh`: `services/chrony/`. After a power cut the Pi now comes right as soon as xero is back up (it WoLs xero itself on boot), internet or not.
 
 ### A clean HA dashboard, next to Overview rather than instead of it
+**Status:** Done
+
 **Why:** the default **Overview** is rigid and cluttered (noted 2026-09-19), and it cannot be curated without "taking control" of it, which stops it auto-adding new devices.
 
 **Shipped 2026-09-24: Home (`/dashboard-home`), now the default dashboard.** It started as a verbatim copy of Overview and was then edited by hand in the HA UI. Living Room and Bedroom became top-level tabs, and the dead `light.wled_main`/`segment_*` tiles and the Lights summary are gone. **Overview is untouched** and stays the complete, auto-updating index one click away. Details: `projects/ha-dashboard/README.md`.
@@ -921,6 +959,8 @@ Live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_A
 **Left for other entries:** the stale Tinxy devices (their own backlog entry) still clutter Overview and the area pages.
 
 ### One page listing every endpoint we serve
+**Status:** Done
+
 **Why:** there was no single place answering "what is running here and where do I open it" (noted 2026-09-19). The endpoints were scattered - some behind Caddy on `xero.<tailnet>`, some on their own tailnet hostnames, some plain LAN ports, one on the Pi, one on an ESP32 - and the only way to find one was to remember it or grep the repo.
 
 **Shipped 2026-09-19 at `https://xero.<tailnet>/endpoints/`. 23 endpoints, 5 groups.** Option (A) from the original entry - a static page served by Caddy - and it stayed there: no new container, no RAM.
@@ -946,6 +986,8 @@ Live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_A
 **One portability snag found on the way, not fixed:** `tools/diagrams/render.sh` uses `realpath -m`, which is GNU-only, so it cannot run on a Mac. Left alone as unrelated to this work - the underlying docker command was run by hand instead.
 
 ### A flashy colour for the toddler when she makes a noise
+**Status:** Done
+
 **Why:** the Tier 3 renderer already tells a ghanta from a clap from a voice (see "Sound-reactive aarti lights" in ✅ Done). The question was whether it can tell *whose* voice and give each person a colour - but the value is not evenly spread. Scoped down 2026-09-18 by the user, and the scoping is the most useful thing in this entry: **the 1-year-old getting her own flashy colour is the whole point, and everything else is good-to-have.** That is a happy accident, because she is by a distance the easiest of the four to detect and the only one whose case survives a room full of people singing. Build her band first and stop there if the rest never happens.
 **Feasibility answered 2026-09-18, measured rather than assumed. The short version: her colour is free and runs on the hardware already on the wall. A colour each for all four is the only part that ever needed a second mic, and it is closed - the user does not want to buy hardware, and it was the good-to-have anyway.**
 
@@ -972,6 +1014,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 - **Not yet seen:** her voice *inside* a sung aarti. The caveat above stands - adult harmonics in a mixture may mask or mimic her - and it has not been tested. If it misfires there, record a real aarti with `aarti-sound-lab.py record` and retune against that.
 
 ### Clawlight physical LED (Pi GPIO)
+**Status:** Done
+
 **Why:** the software clawlight (see below) only shows status while its browser tab or PiP window is actually visible. A LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version.
 **What shipped (software 2026-09-07, wired and deployed 2026-09-16):**
 - **Part:** 3-leg common-cathode **red/green** bi-colour LED - bought as RGB, turned out RG. Long leg to GND (pin 39), red through 220R to GPIO13 (pin 33), green through 220R to GPIO19 (pin 35). Diagram, leg test and bench checks: `clawlight/led_wiring.html` (https://claude.ai/artifact/UDgsMP8uYK5FkHFydLMwP9).
@@ -994,6 +1038,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 **Next step:** none.
 
 ### scripts/ split into one folder per project
+**Status:** Done
+
 **Why:** `scripts/` had grown to 73 loose files across a dozen unrelated projects, with nothing saying which ones cron or a service depended on - the start of a big ball of mud.
 **What shipped (2026-09-15):** 14 project folders (`aarti-lights/`, `healthcheck/`, `notify/`, `miraie-ac/`, `spotifyd/`, `white-noise/`, `pi-buttons/`, `wol-sender/`, `clawlight/`, `network/`, `esp32-tools/`, `certs-backup/`, `dev-shell/`, `repo-tools/`), no loose files, and `scripts/README.md` saying where a new script goes. Done in two phases: the ~50 scripts nothing live calls first, then the cron- and systemd-called ones together with their callers, moved just after a cron tick with no job running.
 **Notes worth keeping:**
@@ -1007,6 +1053,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 **Next step:** none.
 
 ### Sound-reactive aarti lights (Ganapati decoration)
+**Status:** Done
+
 **Why:** festival decoration for Ganesh Chaturthi - a WS2812 backdrop behind the makhar that reacts to the aarti in real time. Chosen 2026-09-07 over the other ideas (fountain + mist bowl, ghanta striker, fiber-optic canopy, infinity mirror halo, water curtain) on wow-per-rupee and on being the only one whose long-lead part could still arrive in time. The first fully local light in the house - no cloud.
 **What shipped (2026-09-12 to 2026-09-14), built breadboard-first per `projects/aarti-lights/aarti_lights_setup.md`:**
 - **Board:** ESP32 (D0WD-V3, 4MB) on **WLED 16.0.1 audioreactive**, static **192.168.1.125** / `wled-sound.local`. Strip data on GPIO4 through a 470R; INMP441 I2S mic on SD=32, WS=25, SCK=33 with `L/R` to GND.
@@ -1036,6 +1084,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 **Next step:** none. After the festival, decide whether the strip stays up or gets packed away; the board keeps its config, presets and boot preset either way.
 
 ### Claude Code and new iTerm tabs always land inside tmux
+**Status:** Done
+
 **Why:** A long Claude Code run in a bare terminal tab dies with the tab (and with any ssh carrying it), and there was no way back to a session you'd lost track of. Built by hand over 2026-09-10/11 in a `~/code/personal/scripts` session; packaged into this repo on 2026-09-12 so a second machine (or a reinstalled one) gets the same shell without reconstructing it from memory.
 **What shipped (2026-09-12):** `tools/dev-shell/setup-tmux-shell.sh`, installing three things from `tools/dev-shell/dotfiles/`:
 - **A session picker** (`tools/dev-shell/dotfiles/zsh/tmux-session-picker.zsh`) on every interactive iTerm shell that starts outside tmux. It deliberately **never auto-attaches** - an earlier version did, and silently dropping a new tab into whatever session happened to be first was worse than no tmux at all. It lists the running sessions (window count, attached/detached, last activity) and waits: a number attaches, `n` creates one you name, Enter gives a plain shell. Picking a session that's already open in another tab attaches an *independent view* of it (a tmux session group) rather than mirroring the other tab's window.
@@ -1052,6 +1102,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 **Next step:** none. Run it on any new machine after `new_machine_setup.sh`.
 
 ### spotifyd stopped advertising as a Connect device - boot race, not the old Docker-network bug
+**Status:** Done
+
 **Why:** `script.play_bedroom_track` failed with `Could not find media_player.xero_..._spotcast in the managed integrations`, while `spotifyd.service` showed `active (running)` with 5 days uptime and a clean authenticated session. Same visible symptom as the 2026-09-02 zeroconf bug, different cause.
 **What happened (2026-09-11):**
 - **Root cause:** spotifyd's `libmdns` zeroconf server enumerates interfaces once at startup and never retries. At the 2026-09-06 boot it started at 11:56:02, two seconds before `enp1s0` got carrier at 11:56:04, logged one non-fatal `Setting up dns-sd failed: No such device (os error 19)` and ran happily for five days without ever advertising. No advertisement → `xero` absent from Spotify's device list → spotcast's entity never became available → the HA script errored. Four layers between cause and symptom.
@@ -1065,6 +1117,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 **Next step:** none for the fix itself. Worth watching whether the ESP32/remote-control projects hit the same user-unit-network trap.
 
 ### iOS push notifications via self-hosted ntfy (clawlight, and reusable for other alerts)
+**Status:** Done
+
 **Why:** clawlight (see ✅ Done) only shows status while the PiP light is actually visible - there's no alert if you're not glancing at it, so a session sitting at a permission prompt can go unnoticed. Explored what it'd take to add a real push alert on the `waiting` transition. **Evaluation only (2026-09-02) - nothing built, deliberately parked.**
 
 **Option 1: `clawlight-cli` (`brew install clawlight/tap/clawlight`), the official clawlight.dev software - ruled out as a replacement.** It's a genuinely more feature-rich per-machine tool (multi-agent: Claude Code/opencode/Codex/Copilot, jump-to-terminal, native OS notifications, official ESP32 firmware driver via `clawlight led`), but it's strictly local - a menu bar/tray icon + TUI, no web server, no remote dashboard, no phone visibility, and can't run meaningfully on `xero` at all (headless server, no display). Doesn't solve "one dashboard, viewable from phone, across two machines" - the actual requirement our build was made for. Its ESP32 support (`clawlight led`) would be the right driver to reuse if the parked hardware version above is ever built.
@@ -1100,6 +1154,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 **State:** server, auth and clawlight wiring all done and verified end-to-end on xero. Remaining: install the iOS app and confirm a real push lands on the phone (needs Tailscale up on the phone to fetch message content - the APNs wake-up itself is contentless by design), **and subscribe to `homelab-health` and `homelab-updates` as well as `clawlight`** - logging in grants access but doesn't subscribe, so those pushes land nowhere until that's done.
 
 ### Claw Light (clawlight.dev) - agent status indicator, software-only version
+**Status:** Done
+
 **Why:** a desk light that shows at-a-glance status for coding agent sessions (Claude Code, Opencode, Codex CLI, GitHub Copilot CLI) via color-coded signal - green for active work, red when input is needed - so a running session doesn't need active alt-tabbing to check on.
 **What shipped (`clawlight/`, 2026-09-02):** no hardware - a web page (`clawlight/web/index.html`) served by `clawlight/server.py` on xero (port 8126, proxied at `/clawlight` by Caddy), showing green/red/gray states. "Always on top" is done via native video Picture-in-Picture (canvas → `captureStream()` → PiP), which works the same way on desktop Safari/Chrome and iOS Safari - one page covers both Mac and iOS, no OS-level always-on-top tooling needed. Confirmed floating and readable on both.
 - Status is driven by 10 Claude Code hooks (`UserPromptSubmit`→active, `Stop`→waiting, `Notification`/`PermissionRequest`→input_needed, `PostToolUse`→active, `SessionEnd`→end, `SubagentStart`/`TaskCreated`→task_start, `SubagentStop`/`TaskCompleted`→task_end) calling `clawlight/set-status.sh`, which POSTs to the server. The server aggregates across **all** reporting sessions, on **any** host (xero and the MacBook, over Tailscale) - red if any session needs input, green if any is active, gray otherwise. Both of the user's accounts (personal, enterprise) share one login per machine at a time, so no per-account tracking is needed.
@@ -1129,6 +1185,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 - It does have real advantages ours doesn't: multi-agent support (opencode/Codex CLI/Copilot CLI, not just Claude Code), native desktop notifications, and the official ESP32 firmware driver (`clawlight led`) for the hardware version above if it's ever built - worth revisiting standalone on the Mac if those specific features become wanted, but it was never a substitute for what this project needed. **Jump-to-terminal was on this list until 2026-09-09, when it was reimplemented here** (see above) - worth noting the borrowed idea landed differently than the original: `clawlight-cli` focuses a terminal window on the machine it runs on, whereas routing through the server means clicking on the phone can move the terminal on the Mac.
 
 ### Physical GPIO buttons (wol-sender Pi) - white noise start/stop + oju sleep/awake scenes
+**Status:** Done
+
 **Why:** the rest of the household and house help don't want to use the HA app/voice - physical buttons wired to the wol-sender Pi's GPIO give a simple, no-app way to trigger white noise and the sleep/awake scenes. This entry also closes the former parked umbrella project "Easier HA control for household + house help", which weighed three approaches: (1) a remote/buttons, (2) a cheap wall-mounted HA kiosk tablet plus a Claude/Alfred-style assistant client, (3) physical USB/GPIO buttons.
 **Outcome (2026-09-16):** these buttons (approach 1/3) worked for both the user's mother and the house help, so the need is met. The two threads still open under the umbrella project are closed as **not needed**: the tablet (approach 2, never explored) and ESP32/ESPHome buttons for locations away from the Pi (never built). Revisit only if one becomes a real need.
 **State:** four buttons across two bridge services, both confirmed working end-to-end against live HA switches/scenes (verified 2026-08-31).
@@ -1182,6 +1240,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 - **DIY ESP32/ESP8266 + ESPHome button** was the recommendation pending user decision - not needed for the wol-sender Pi buttons since GPIO wired directly there instead, and the likely answer if a button location away from an existing host ever comes up.
 
 ### Spotcast fix (v4 -> v6 reinstall) + spotifyd zeroconf bug found and fixed
+**Status:** Done
+
 **Why:** spotcast (the HACS integration for triggering Spotify playback from HA) was broken account-wide - `spotcast.start` failing with `KeyError: 'serverTime'`. Initially assumed to be expired `sp_dc`/`sp_key` cookies (the known failure mode - see Readme/memory), but fresh cookies didn't fix it either, pointing at something deeper.
 **What shipped (2026-09-02):**
 - **Root cause found:** the failing call was to `open.spotify.com/server-time`, an unauthenticated endpoint hit *before* cookies are ever used - confirmed via direct `curl` that it now 404s for everyone. A known, actively-discussed upstream break: Spotify removed web-browser-based Chromecast device listing, which the installed spotcast v4.0.1 depended on. Not a cookie problem at all.
@@ -1193,6 +1253,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 **Next step:** none - fully working. Worth keeping an eye on: spotcast v6 is still alpha, so future updates could introduce new breakage. **Update 2026-09-11:** the zeroconf half regressed after the 2026-09-06 reboot - same error line, different cause (a boot race, not the Docker network). See the entry at the top of Done.
 
 ### Power-outage watchdog - real UPS runtime measured, threshold updated, armed
+**Status:** Done
+
 **Why:** this server runs on its own RouterUPS battery, separate from the router's UPS. An uncontrolled crash when the battery dies is the likely cause of the ZFS corruption found in `datapool` (see below) - a clean shutdown before that happens avoids torn writes entirely.
 **State:** `watchdog_power.sh` built and cron-wired (every 5 min), detects `enp1s0` losing carrier (proxy for "on battery," via the existing WiFi-failover extender). Defaults to dry-run (logs only, never shuts down) until armed via `touch ~/.power-watchdog-armed` - **armed** (see confirmation below).
 
@@ -1280,9 +1342,13 @@ Two candidate fixes discussed, neither applied:
 Also observed the same morning, no action taken: `enp1s0` flapped repeatedly once mains returned (link up/down at 12:16, 12:17, 12:27 and 12:28), restarting the watch at 12:05 with a fresh clock.
 
 ### Clean dust with a blower
+**Status:** Done
+
 General preventive maintenance - dust buildup increases fan speed/noise and raises operating temperature over time, and this N5105 CPU already runs a tight thermal margin (idles ~65°C). Done (2026-08-21), during the same case-open as the RAM check above (see 🟢 Active) - fan didn't actually have much dust buildup, but cleaned out whatever was there anyway. Revisit opportunistically during a future case-open rather than as its own task.
 
 ### UI to visualize PROJECTS.md
+**Status:** Done
+
 **Why:** this file is a flat markdown doc with a growing wall of text per project - a visual/interactive view could make it easier to scan state at a glance than scrolling raw markdown. Ruled out publishing it publicly (GitHub Pages / `pjangam.github.io`) since the file contains private LAN IPs, a MAC address, and family members' names - kept LAN-only instead, same exposure pattern as Pi-hole/Node-RED.
 **What shipped (2026-08-26):**
 - A small React app (`projects/projects-ui/`, Vite + Vitest + React Testing Library) that fetches `PROJECTS.md` client-side and renders it grouped by status section, with search, per-status filter chips, and expand-all/collapse-all for the per-project `<details>` cards.
@@ -1299,6 +1365,8 @@ General preventive maintenance - dust buildup increases fan speed/noise and rais
 **Left for later, low priority:** edit support (currently read-only - would need a real backend with filesystem write access, unlike today's static-file setup; scope depends on whether "edit" means quick status moves or full text editing, still undecided) and a Tailscale hostname for remote access (same pattern as HA's `ha.${TAILNET_SUFFIX}` above) if LAN-only ever stops being enough. Neither needed right now.
 
 ### Expose Home Assistant via Tailscale with its own clean hostname
+**Status:** Done
+
 **Why:** Caddy only reverse-proxied Vaultwarden (`xero.{$TAILNET_SUFFIX}`); HA is the service most worth reaching remotely and already has its own login. Path-based routing (`/ha`) was rejected since HA's frontend/plugins assume a root-relative path.
 **What shipped (2026-08-26):** a `tailscale/tailscale` sidecar (`ha-tailscale` in `docker-compose.yml`, userspace networking - xero's own native `tailscaled` rules out host-mode) joins the tailnet under its own hostname `ha`, and `tailscale serve` (via `TS_SERVE_CONFIG` → `services/tailscale/ha/serve-config.json`) terminates TLS and reverse-proxies to HA at `192.168.1.123:8123`. Caddy untouched. `https://ha.{$TAILNET_SUFFIX}` confirmed working from inside the home network; LAN access unaffected. **Not yet tested from outside the home network / off Wi-Fi** - should work automatically over the tailnet like any other Tailscale node, but hasn't been verified.
 - `serve-config.json` gotcha: `AllowFunnel` is keyed per host:port, not a plain bool - a top-level `"AllowFunnel": false` crash-looped the container. Fix: omit it entirely (default off).
@@ -1307,6 +1375,8 @@ General preventive maintenance - dust buildup increases fan speed/noise and rais
 **Left for later, low priority:** remove the stale offline `homeassistant` device (100.112.159.113, leftover from the Pi's old HAOS days) from the Tailscale admin console.
 
 ### Network/security audit across all containers (Mosquitto auth, SSH, rpcbind)
+**Status:** Done
+
 **Why:** triggered by moving Node-RED's admin editor from localhost-only to reachable over Wi-Fi (see above) - prompted a full re-evaluation of network exposure and auth across every host/service, not just Node-RED.
 **What shipped (2026-08-23):**
 - **Mosquitto auth.** `allow_anonymous false` + `password_file`, user `homelab`. Rewired every client: Node-RED's `ha-miraie-ac` node (via its "credentials" sub-object, not flat fields - flat fields are silently accepted as ordinary config and never reach the credential store, a real gotcha hit live), Home Assistant's own MQTT integration (patched directly into `.storage/core.config_entries` via `docker exec -u root homeassistant` since that file is root-owned and no local sudo was available - backed up first), `white-noise-mqtt.py`, `volume-mqtt.py`, `publish_healthcheck_mqtt.py` (all via a new gitignored `.env.mqtt` + `EnvironmentFile=` in their systemd units / sourced in `projects/healthcheck/healthcheck.sh`). Verified end-to-end post-rollout: HA's MQTT client connects and stays connected (checked via `mosquitto`'s own log, since it logs to a file not stdout), both Python bridges show `available: online`, the cron healthcheck publisher's MQTT step confirmed with a live triggered run (not just reasoned-correct), and Node-RED's local-broker + MirAIe-cloud connections both confirmed ESTABLISHED at the socket level.
@@ -1317,31 +1387,49 @@ General preventive maintenance - dust buildup increases fan speed/noise and rais
 **Not changed (accepted status quo, not asked for):** Caddy only reverse-proxies Vaultwarden - HA, Pi-hole admin, and Node-RED remain plain HTTP on the LAN.
 
 ### Git hooks: pre-commit PII/public-IP/PCI scan, reproducible hook install
+**Status:** Done
+
 **Why:** gitleaks (existing `pre-push` hook) only catches credential-shaped secrets - it wouldn't catch a public IP, a Tailscale hostname, a phone number, or a card number accidentally committed. Separately, that pre-push hook only ever lived in `.git/hooks/` (untracked, per-clone) with no install step anywhere - it would not have survived a fresh `git clone`.
 **What shipped (2026-08-23):** moved both hooks into tracked `.githooks/` and set `git config core.hooksPath .githooks` (now done automatically by `new_machine_setup.sh`). Added `.githooks/pre-commit`: scans staged added lines for public IPv4s (private/loopback ranges and well-known DNS resolvers like `8.8.8.8`/`1.1.1.1` allowlisted), Tailscale `*.ts.net` hostnames (the doc placeholder `tailXXXXX.ts.net` allowlisted), emails outside a small allowlist, phone numbers, and card numbers (Luhn-checked to cut noise on generic digit strings) - blocks the commit with `git commit --no-verify` as the documented bypass for a confirmed false positive. Dry-run tested against all currently-tracked repo content first to calibrate the allowlist before enabling; live-tested against both a deliberately planted leak (all four categories correctly caught) and a legitimate change (correctly passed clean). Documented in `Readme.md` under "Git hooks (leak scanning)".
 
 ### White noise: HTTP polling → MQTT + systemd linger fix
+**Status:** Done
+
 Root cause of the unresponsive HA switch was `Linger=no` - `white-noise-api.service` (a `systemd --user` unit) died every time the SSH session that started it ended, and HA's `curl` polling failed silently. Replaced the HTTP API with an MQTT bridge (`projects/white-noise/white-noise-mqtt.py`, `uv run --script`) using HA discovery, and ran `loginctl enable-linger pramod` so `systemd --user` units survive logout/reboot. Confirmed fixed via a real logout test.
 
 ### getty@tty1 crash-loop
+**Status:** Done
+
 The console font setup baked a single hardcoded font choice into a static `getty@.service.d` drop-in from a one-time probe; a reboot that negotiated a different video mode broke it and crash-looped the console. Fixed by making the drop-in try fonts largest-to-smallest at every getty start instead - now installed automatically by `new_machine_setup.sh`'s N5105 block. (The standalone recovery script for this incident was removed once the preventive fix landed; recoverable from git history if it ever recurs.) (Initially, and wrongly, thought this was *why* the white-noise bug surfaced that day - it wasn't; see the correction in memory/git history.)
 
 ### Docker/Tailscale CVE patching + auto-update
+**Status:** Done
+
 Found real CVEs unpatched because `unattended-upgrades` only covers Ubuntu's own archive by default: Docker BuildKit command injection (fixed in 29.6.2) and a Tailscale SSH privilege-escalation bug, TS-2026-009 (fixed in 1.98.9). Patched via a one-off dated script (since removed - the patch is applied, nothing left to re-run); the ongoing fix extending the twice-daily `unattended-upgrades` run to also cover the Docker and Tailscale repos is now installed automatically by `new_machine_setup.sh`, instead of a separate cron job.
 
 ### Synthetic healthcheck + email/heartbeat notifications
+**Status:** Done
+
 `healthcheck.sh` (cron, every 15 min): checks Docker containers, `systemctl --user`/system failed units, ZFS pool health, disk space, and linger. Alerts via Gmail SMTP to the user's own email (HA mobile push doesn't work without a Nabu Casa subscription - confirmed by testing), with state-based dedup so an unresolved problem alerts once, not every run. Also pings a healthchecks.io dead-man's-switch every run, to catch a total machine freeze that a script running on the machine itself could never detect about itself. Caught a real bug in its own construction: `systemctl --user` fails silently under cron's stripped environment without `XDG_RUNTIME_DIR` set.
 
 ### ZFS `copies=2` on Immich datasets
+**Status:** Done
+
 Found real, previously-unnoticed data corruption in `datapool` (6 blocks, from a 2026-07-12 scrub that was never surfaced) while building the ZFS check above. Set `copies=2` on `datapool/immich-upload` and `datapool/immich-db` - free, uses existing hardware, gives real self-healing for isolated corruption (exactly what was found) going forward. Does not fix the already-corrupted blocks (still recoverable from the intact Takeout zips whenever needed) or protect against full-disk failure (needs the real mirror project above).
 
 ### ZFS `sync=always` on Immich datasets
+**Status:** Done
+
 Surfaced while brainstorming graceful-shutdown options for the power watchdog: a different strategic angle from detection entirely - instead of getting better at *detecting* power loss, reduce the *impact* when it happens anyway. Set `sync=always` on `datapool/immich-upload` and `datapool/immich-db` (same scope as `copies=2` above), forcing every write to commit synchronously instead of buffering, shrinking the window of in-flight data that could be corrupted by an abrupt loss. Explicitly complementary, not a replacement: still need real power-loss detection (the ESP32/power-watchdog projects above), and sudden power loss can still damage hardware itself regardless of filesystem-level mitigation. Only applies to `datapool` - the OS root disk isn't ZFS, so this doesn't cover it.
 
 ### ZFS corruption on `datapool` fully resolved
+**Status:** Done
+
 All 6 originally-corrupted blocks (2026-07-12 scrub) dealt with. 2 "library" originals were recovered earlier from intact Takeout zips. Of the remaining 4 (found via `zpool status -v`, surfaced on the new MQTT dashboard as "Homelab ZFS Pool" going red): 2 were cached Immich thumbnail previews (no real data loss - deleted, Immich regenerates them automatically) and 2 were video originals under Immich's managed `upload/` path with no corresponding database row at all (confirmed via a temporary read-only query against a one-off `database` container started against the real `datapool/immich-db` volume) - meaning Immich had already forgotten these assets regardless of corruption. Identified which two Takeout videos they were by matching `photoTakenTime` timestamps from Takeout JSON sidecars against the corrupted files' own embedded metadata (still fully readable despite the corruption) - duration matched to the microsecond, confirming identity beyond doubt. File sizes differed substantially (Takeout originals ~1.4-3x larger) because Immich had transcoded them on upload, so the recovered copies are actually higher quality than what was lost. Moved to a new, separate, hardened dataset (`datapool/recovered-media`, `copies=2`/`sync=always`) rather than restored into the orphaned Immich path, since Immich can't reference them either way until manually re-uploaded once it's back online. Corrupted files deleted, `zpool clear` + fresh scrub run - confirmed "0 errors", "No known data errors".
 
 ### Tinxy watchdog: two-tier recovery + entity-based down-detection
+**Status:** Done
+
 2026-07-27 ISP outage exposed two gaps in `watchdog_tinxy.sh`.
 - **(1) Detection only grepped MQTT connect/disconnect log lines** - blind to a stalled integration setup that logged nothing distinctive after one of the watchdog's own restarts. Fixed by adding a second signal: querying actual Tinxy entity availability via the HA API, tripping at >=90% unavailable (had to be that high since ~60% of registered entities are *always* unavailable already, from old/decommissioned devices - see backlog item above).
 - **(2) Recovery jumped straight to a full `docker restart homeassistant`** - now tries a lighter config-entry reload first (what actually fixed the outage) at 20min, only escalating to a full restart at 35min if that doesn't clear it.
@@ -1349,17 +1437,25 @@ All 6 originally-corrupted blocks (2026-07-12 scrub) dealt with. 2 "library" ori
 All three tiers (start watch, reload, escalate to restart) tested live against the real script and real data, including one real end-to-end restart.
 
 ### Monitor for silent backup failures
+**Status:** Done
+
 `backup_vaultwarden.sh`/`backup_homeassistant.sh` run daily via cron and log to `backup.log`, but nothing checked whether they actually succeeded - an expired rclone token or full remote could fail them silently for weeks. Extended `healthcheck.sh` to check the age of the last success line for each (>=30h flags a problem - daily cadence plus slack, not tied to time-of-day). Tested against the real log (correctly clean), a simulated stale log, and a missing-log case.
 
 ### iPhone → ZFS video uploads via local SMB share
+**Status:** Done
+
 Immich (the normal ingestion path) is currently disabled, but videos still needed to get off the phone. Rejected a Dropbox-relay approach as an unnecessary cloud round-trip since phone and server share the same LAN. Set up a `dperson/samba` container serving a new, separate ZFS dataset (`datapool/phone-uploads`, deliberately isolated from Immich's managed datasets) over SMB. Credentials pushed into Vaultwarden (not relayed through chat) for retrieval via the Bitwarden mobile app. Confirmed the container is healthy and the share config (`valid users = phoneupload`, `read only = No`) is correct; connects from iOS via Files app → Connect to Server → `smb://192.168.1.123`.
 
 Actual driving need: reclaiming phone storage, which was running low - this is a plain file dump, not photo management. Explicitly a stopgap: it loses the AI features (face/object search, memories, etc.) that Google Photos/Immich provide, so it's not a replacement for Immich re-enablement (parked above), just what's usable in the meantime. First real batch: 53 large video files uploaded and moved off the phone (2026-07-31), all verified non-corrupt via `ffprobe`.
 
 ### Consolidated status dashboard
+**Status:** Done
+
 Previously the only way to know something's wrong was a `healthcheck.sh` email after the fact. Extended `healthcheck.sh` to publish its check results (containers, systemd units, ZFS pool health, disk usage, backup freshness) to MQTT with HA discovery, grouped under a "Homelab Healthcheck" device - 9 entities total, published on every 15min cron run independent of the email-alert path so a publish failure can't suppress a real alert. Added a "Homelab Health" section to the existing "Stats" Lovelace dashboard with tile cards for all 9 entities (required stopping HA briefly to hand-edit the storage-mode dashboard file directly, since it's UI-managed rather than YAML). Verified end-to-end: entities confirmed live via the HA REST API, dashboard confirmed intact after restart with no lovelace-related errors in logs.
 
 ### Move some load to the Raspberry Pi
+**Status:** Done
+
 **Why:** the `wol-sender` Pi previously only sent a boot-time magic packet to `xero` - a trivially light job for a whole Pi, real spare capacity going unused.
 
 **Node-RED migrated (2026-08-22)** - flows/credentials/Miraie AC config copied to the Pi, started via plain `docker run`, both required MQTT connections (local HA broker, MirAIe cloud broker) confirmed live at the socket level. Removed `node-red` from `xero`'s `docker-compose.yml`.

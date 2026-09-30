@@ -78,13 +78,16 @@ These recur, and an entry that ignores them gets rebuilt later:
 
 ## 4. Write the entry in the house format
 
-Place it under `## 💡 Backlog ideas` unless it is plainly active or parked.
+Append it to the `## Projects` list. Status is a line, not a section, so
+there is no section to find.
 Match the surrounding entries: bold lead-ins, full sentences, specifics over
 adjectives. Structure:
 
 - `### Title` - what it is, not a slogan.
-- `**Priority:** P3` on its own line straight under the title, then a blank
-  line. New ideas start at P3; the user raises them to P2 or P1 themselves.
+- `**Status:** Backlog` and `**Priority:** P3` on their own lines straight
+  under the title (Status first), then a blank line. Use `Active` or `Parked`
+  if the idea plainly is one. New ideas start at P3; the user raises them to
+  P2 or P1 themselves.
 - **Why:** the itch, in one or two sentences, with the date noted.
 - **State:** idea only / researched / decided, and what is already true.
 - **The feasibility answer**, with links.
