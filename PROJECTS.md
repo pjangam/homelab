@@ -434,7 +434,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** research touchscreen e-ink modules (existing all-in-one boards like Inkplate, vs. a bare e-ink panel + separate touch overlay + driving MCU) and how list state would sync back to HA/a shared list source.
 
 ### Automatic plant watering (balcony)
-**Priority:** P3
+**Priority:** P1
 
 **Why:** long-standing idea (predates this list) - water the balcony plants automatically instead of by hand. Noted 2026-09-04.
 **State:** not started. **Blocked on plumbing, not electronics** - which is why it never got built despite being wanted from the start.
@@ -462,7 +462,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** none - gated on the same balcony water supply as the watering project, and on the runoff question.
 
 ### Remote controlled curtains
-**Priority:** P3
+**Priority:** P1
 
 **Why:** long-standing idea - open/close curtains from HA (and on a schedule/scene) instead of by hand. Noted 2026-09-04.
 **State:** not started. **Wanted: a clip-on "curtain robot" that sits on the existing rod** - no new track, no wiring, battery-powered. Reference product (user, 2026-09-25): [SwitchBot Curtain, Rod 2.0 version on Amazon.in](https://www.amazon.in/dp/B0FLQ46BQW). **Stuck between two bad options:** readymade robots are expensive, and a DIY build is difficult for this kind of curtain.
