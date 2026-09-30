@@ -1465,3 +1465,10 @@ Previously the only way to know something's wrong was a `healthcheck.sh` email a
 **Watchdog fixed and redesigned (2026-08-23)** - the Mosquitto-auth security pass broke `watchdog_nodered.sh` (no credentials passed), which surfaced a deeper pre-existing bug: its `AC_TOPIC` never matched what the `ha-miraie-ac` node actually publishes, and that data isn't retained anyway (only sent once per reconnect). Rewrote to check the container's own `/proc/net/tcp` for ESTABLISHED connections instead - independent of the AC's power state. Documented in `Readme.md` under "Node-RED Watchdog (MQTT bridge health)".
 
 **Closed out (2026-09-02):** the old `homelab_node-red-data` volume on `xero`, left as a rollback net, is confirmed gone (`docker volume ls` no longer lists it). Vaultwarden was the only other live candidate and stays deliberately deprioritized to last resort (2026-08-20 decision, see git history) rather than an open action item - re-open only if real headroom pressure shows up on the Pi.
+
+### Offsite copy of docs/hardware.md (Dropbox, encrypted)
+**Status:** Done
+
+**Why:** `docs/hardware.md` is gitignored, so the master on xero was its only copy; the Mac once had an scp'd copy, but it is gone and nothing kept it in step anyway. Decided 2026-09-30: back it up to Dropbox only, and leave the Mac without a copy - no Dropbox or rclone on the work laptop.
+**What shipped (2026-09-30):** `projects/certs-backup/backup_hardware_md.sh`, the Vaultwarden backup's shape reused: GPG with `BACKUP_PASSPHRASE` from `.env.backup`, `rclone copy` to `backup:homelab-hardware`, keep 7, and skip when the file's sha256 matches the last successful upload. Cron 03:30 daily on xero (also in `new_machine_setup.sh`), logging to `backup.log`. Verified: first run uploaded, second skipped, and the Dropbox copy decrypts byte-identical to xero's file. **Restore:** `rclone cat backup:homelab-hardware/<newest> | gpg -d > docs/hardware.md`.
+**Not covered:** `healthcheck.sh` checks backup freshness only for Vaultwarden and HA, not this one.
