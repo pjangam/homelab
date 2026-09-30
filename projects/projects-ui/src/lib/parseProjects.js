@@ -113,7 +113,7 @@ export function parseProjects(markdown) {
   // Known statuses in their fixed order, then anything else (a typo'd status,
   // or a project under a non-status heading) in the order first seen, so a
   // mistake shows up as its own group rather than vanishing.
-  const groups = STATUSES.map(({ key, ...status }) => ({ ...status, projects: [] }))
+  const groups = STATUSES.map(({ id, emoji, label }) => ({ id, emoji, label, projects: [] }))
   for (const project of projects) {
     const label = project.status ?? project.heading
     const known = findStatus(label) ?? (project.status ? null : findStatus(project.heading))
