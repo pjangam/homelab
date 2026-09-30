@@ -30,11 +30,14 @@ sleep 0.5
 # The binding's body, with the mouse's `-t =` replaced by an explicit target.
 dragend() {
   tmux if-shell -F -t "$S" '#{scroll_position}' \
-    "send -t $S -X copy-selection-no-clear" \
+    "send -t $S -X copy-selection" \
     "send -t $S -X copy-selection-and-cancel"
 }
 mode() { tmux display -p -t "$S" '#{pane_in_mode}'; }
 pos()  { tmux display -p -t "$S" '#{scroll_position}'; }
+# Empty outside copy-mode; normalise to 0 so the assertion reads the same in
+# both branches - no copy-mode is no selection.
+sel()  { local v; v=$(tmux display -p -t "$S" '#{selection_present}'); echo "${v:-0}"; }
 
 echo "== drag-select at the live bottom leaves copy-mode =="
 tmux copy-mode -e -t "$S"
@@ -44,6 +47,7 @@ tmux send -t "$S" -X begin-selection
 tmux send -t "$S" -X -N 5 cursor-right
 dragend
 is "drag-end exits copy-mode" "$(mode)" 0
+is "no selection left behind" "$(sel)" 0
 
 echo "== drag-select while scrolled back stays put =="
 tmux copy-mode -e -t "$S"
@@ -54,11 +58,18 @@ tmux send -t "$S" -X -N 5 cursor-right
 # Moving the cursor can nudge the view itself, which is the test's doing and not
 # the binding's - so compare against where we actually were when the drag ended.
 before=$(pos)
+is "selection is live mid-drag" "$(sel)" 1
 dragend
 is "drag-end stays in copy-mode" "$(mode)" 1
 is "scroll position kept" "$(pos)" "$before"
+is "selection ends with the mouse" "$(sel)" 0
 [ "$before" -ne 0 ] && ok "still scrolled back, not snapped to the bottom" \
   || bad "test set up wrong: pane was already at the bottom"
+
+# The regression this branch used to have: with copy-selection-no-clear the
+# selection stayed live, so scrolling on kept dragging it wider.
+tmux send -t "$S" -X -N 3 scroll-up
+is "scrolling after the copy does not re-grow a selection" "$(sel)" 0
 
 echo "== the wheel alone gets you back out (-e on the drag entry) =="
 tmux send -t "$S" -X -N 11 scroll-down
