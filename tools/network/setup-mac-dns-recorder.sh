@@ -40,7 +40,13 @@ run scp "$XERO:$REPO/tools/network/mac-dns-recorder.sh" "$DEST/mac-dns-recorder.
 # Setup-vs-State section that names who owns a bad resolver.
 run scp "$XERO:$REPO/tools/network/diagnose_macbook_dns.sh" "$DEST/diagnose_macbook_dns.sh"
 run scp "$XERO:$REPO/tools/network/fix_macbook_dns.sh" "$DEST/fix_macbook_dns.sh"
-run chmod +x "$DEST/mac-dns-recorder.sh" "$DEST/diagnose_macbook_dns.sh" "$DEST/fix_macbook_dns.sh"
+# The two readers of the evidence. fix_macbook_dns.sh step 5 calls the first one
+# by $(dirname $0), so it has to land in the same directory as the fix script.
+run scp "$XERO:$REPO/tools/network/summarize_ovpnagent_dns.sh" "$DEST/summarize_ovpnagent_dns.sh"
+run scp "$XERO:$REPO/tools/network/summarize_dns_snapshots.sh" "$DEST/summarize_dns_snapshots.sh"
+run chmod +x "$DEST/mac-dns-recorder.sh" "$DEST/diagnose_macbook_dns.sh" \
+  "$DEST/fix_macbook_dns.sh" "$DEST/summarize_ovpnagent_dns.sh" \
+  "$DEST/summarize_dns_snapshots.sh"
 
 say
 say "writing $PLIST"
@@ -104,8 +110,10 @@ if [ "$ok" = 1 ]; then
   say
   say "Installed. It now snapshots on every resolver change."
   say
-  say "Next time DNS breaks on this Mac, run this BEFORE fixing anything:"
-  say "    $DEST/mac-dns-recorder.sh --timeline"
+  say "Next time DNS breaks on this Mac, run these BEFORE fixing anything:"
+  say "    $DEST/summarize_dns_snapshots.sh      # when it broke, against the tunnel"
+  say "    $DEST/summarize_ovpnagent_dns.sh      # ovpnagent's own write/restore log"
+  say "    $DEST/mac-dns-recorder.sh --timeline  # the long form"
   say "and the change that broke it, plus who owned the setting, is already there."
 else
   say "the agent did not complete a poll - check $ERRLOG"

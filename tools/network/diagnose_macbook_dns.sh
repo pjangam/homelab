@@ -13,8 +13,13 @@ echo "default interface: ${SVC:-unknown}"
 networksetup -listnetworkserviceorder 2>/dev/null | grep -B1 "Device: ${SVC}" | head -4
 
 echo
-echo "=== manually-configured DNS per service (the usual culprit) ==="
-# "There aren't any DNS Servers set" == good, means DHCP is being used.
+echo "=== manually-configured DNS per service (NOT the usual culprit - see below) ==="
+# "There aren't any DNS Servers set" does NOT mean the resolver is clean. This
+# asks `networksetup`, which reads the on-disk SCPreferences file, and the bug
+# that broke this Mac six times never reaches that file. It answered "There
+# aren't any DNS Servers set on Wi-Fi" throughout every occurrence. Read the
+# "WHO owns the DNS setting" section below instead; this one is kept only to
+# catch a genuine hand-set override.
 networksetup -listallnetworkservices 2>/dev/null | tail -n +2 | while read -r s; do
   printf '  %-28s %s\n' "$s" "$(networksetup -getdnsservers "$s" 2>/dev/null | tr '\n' ' ')"
 done
@@ -78,19 +83,25 @@ scutil --dns 2>/dev/null | awk '/nameserver\[/{print $3}' | sort -u | while read
 done
 
 echo
-echo "=== WHO owns the DNS setting: persistent (Setup:) vs runtime (State:) ==="
-# This is the question that decides whether it is safe to clear.
-#   Setup:  = written by System Settings / `networksetup`. Survives reboots.
-#             Clearing this does NOT touch OpenVPN.
-#   State:  = written at runtime by DHCP or a VPN client (OpenVPN/Tunnelblick
-#             push DNS here, never into Setup:). Clearing Setup: leaves these
-#             alone; the VPN re-applies them on every connect.
-# So: if the off-subnet servers appear under Setup:, they are a stale manual
-# override and OpenVPN is not involved. If they appear only under State: bound
-# to a tunnel interface, OpenVPN is the owner and must be fixed at its config.
+echo "=== WHO owns the DNS setting: Setup: vs State: vs the on-disk file ==="
+# This is the question that decides whether it is safe to clear, and the earlier
+# version of this comment had it backwards - which cost a month (2026-08-28 to
+# 2026-09-30, six occurrences). What is actually true:
+#   Setup:  in configd's LIVE store. Usually written by System Settings /
+#           `networksetup` - but OpenVPN Connect's root agent writes here too,
+#           directly, on every tunnel connect. So "it is in Setup:" does NOT
+#           mean a human set it.
+#   State:  written at runtime by DHCP or a VPN client.
+#   the on-disk file (/Library/Preferences/SystemConfiguration/preferences.plist)
+#           is what `networksetup` reads. A Setup: key present live but absent
+#           here was written straight into the dynamic store and never persisted
+#           - that is this bug's fingerprint, and why `networksetup` called the
+#           broken state clean six times running.
+# So: compare all three. Live-Setup-but-not-on-disk = a VPN client holding the
+# resolver in memory; on-disk = a real manual override.
 for k in $(scutil <<< "list" 2>/dev/null | awk '/Network\/Service\/.*\/DNS$/{print $NF}'); do
   case "$k" in
-    Setup:*) layer="Setup (persistent/manual)" ;;
+    Setup:*) layer="Setup (live store)" ;;
     State:*) layer="State (runtime: DHCP or VPN)" ;;
     *)       layer="?" ;;
   esac
@@ -99,15 +110,69 @@ for k in $(scutil <<< "list" 2>/dev/null | awk '/Network\/Service\/.*\/DNS$/{pri
 done
 
 echo
+echo "--- every Setup: DNS dictionary, VERBATIM (the writer signs its work) ---"
+# OpenVPN Connect leaves OpenVPNConnectOrig{ServerAddresses,SearchDomains,
+# SearchOrder} in the dictionary as its own backup of what it overwrote; the
+# sentinel OpenVPNConnectDeleteValue means "there was nothing here, delete the
+# key when you put it back". Seeing those keys names the culprit outright.
+setup_keys=$(scutil <<< "list" 2>/dev/null | awk '/Setup:.*\/DNS$/{print $NF}')
+if [ -n "$setup_keys" ]; then
+  for k in $setup_keys; do
+    echo "  $k"
+    scutil <<< "show $k" 2>/dev/null | sed 's/^/    /'
+  done
+else
+  echo "  (no Setup: DNS key - healthy)"
+fi
+
+echo
+echo "--- the same services in the ON-DISK store (what networksetup reads) ---"
+plutil -extract NetworkServices xml1 -o - \
+  /Library/Preferences/SystemConfiguration/preferences.plist 2>/dev/null \
+  | python3 -c '
+import plistlib, sys
+try:
+    d = plistlib.loads(sys.stdin.buffer.read())
+except Exception as e:
+    print("    (unreadable: %s)" % e); raise SystemExit
+for k, v in sorted(d.items(), key=lambda kv: str(kv[1].get("UserDefinedName"))):
+    print("    %-22s %s" % (v.get("UserDefinedName"), v.get("DNS")))
+' 2>/dev/null || echo "    (could not read preferences.plist)"
+
+echo
+echo "=== ovpnagent's own log: every DNS write it has made ==="
+# /var/log/ovpnagent.log prints each dynamic-store dictionary it touches as
+# "*** DSDict <key>" with ORIG/MODIFIED around it. A write with no matching
+# restore is this bug. "has exited, destroy tun" as the last line of a session
+# is the crash path that skips the restore.
+OVPNLOG=/var/log/ovpnagent.log
+SUMMARIZE="$(dirname "$0")/summarize_ovpnagent_dns.sh"
+if [ ! -r "$OVPNLOG" ]; then
+  echo "  ($OVPNLOG not readable)"
+elif [ -x "$SUMMARIZE" ]; then
+  echo "  log last written: $(stat -f '%Sm' "$OVPNLOG" 2>/dev/null)"
+  "$SUMMARIZE" --tail 8 | sed 's/^/  /'
+else
+  # A bare grep is much less use than the summariser - it cannot tell a write
+  # from a restore, which is the only thing worth knowing here.
+  echo "  log last written: $(stat -f '%Sm' "$OVPNLOG" 2>/dev/null)"
+  grep -nE 'DSDict Setup:.*/DNS|has exited, destroy tun' "$OVPNLOG" 2>/dev/null \
+    | tail -6 | sed 's/^/  /'
+  echo "  ($SUMMARIZE missing - re-run setup-mac-dns-recorder.sh to fetch it)"
+fi
+
+echo
 echo "=== configured VPN services ==="
 scutil --nc list 2>/dev/null || echo "  (none)"
 
 echo
 echo "=== running VPN clients ==="
-ps aux 2>/dev/null \
-  | grep -iE 'openvpn|tunnelblick|viscosity|anyconnect|globalprotect|zscaler|wireguard|nordvpn|expressvpn' \
-  | grep -v grep \
-  | awk '{print "  " $11 " " $12}' | sort -u || echo "  (none running)"
+# Whole command line: "openvpn --config" alone does not say which config, nor
+# whether it is OpenVPN Connect's own core or the separate homebrew CLI.
+# Match on the executable path ($2) only. Matching anywhere in the line means a
+# grep or sed of this very investigation reports itself as a running VPN client.
+ps -Ao pid,command 2>/dev/null | awk 'NR>1 && tolower($2) ~ /openvpn|ovpnagent|ovpnhelper|tunnelblick|viscosity|anyconnect|globalprotect|zscaler|wireguard|nordvpn|expressvpn/ {print "  " $0}' \
+  || echo "  (none running)"
 
 echo
 echo "=== tunnel interfaces present ==="

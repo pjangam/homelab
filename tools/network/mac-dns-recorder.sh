@@ -10,6 +10,14 @@
 # and DHCP was correctly offering 192.168.1.123, so something writes those at
 # the runtime (State:) layer and we still do not know what.
 #
+# Answered 2026-09-30, and the guess above was wrong twice over: the pair is
+# written into the *Setup:* layer of configd's in-memory store (never to disk),
+# by OpenVPN Connect's root agent ovpnagent, on every tunnel *connect*. See
+# docs/incidents/2026-09-23-mac-dns-openvpn-connect-left-stale-servers.md. The
+# recorder stays installed because the open question is now a negative one -
+# which session endings skip ovpnagent's restore - and only an unattended log
+# can catch the next one of those.
+#
 # So: snapshot on change, unattended, and keep the history. The next time DNS
 # breaks, the answer is already on disk instead of being cleared to fix it.
 #
@@ -92,6 +100,43 @@ snapshot() {
     dns_owners | sed 's/^/ /' || true
 
     echo
+    echo "--- every Setup: DNS dictionary, VERBATIM ---"
+    # The ServerAddresses line above is not enough. What named the writer on
+    # 2026-09-30 was the *other* keys in this dictionary: OpenVPN Connect
+    # leaves OpenVPNConnectOrig{ServerAddresses,SearchDomains,SearchOrder}
+    # behind as its own backup of what it overwrote. Print the dictionary
+    # whole so the next occurrence names its writer without a follow-up.
+    setup_keys=$("$SCUTIL" <<< "list" 2>/dev/null | awk '/Setup:.*\/DNS$/{print $NF}')
+    if [ -n "$setup_keys" ]; then
+      for k in $setup_keys; do
+        echo "  $k"
+        "$SCUTIL" <<< "show $k" 2>/dev/null | sed 's/^/    /'
+      done
+    else
+      echo "  (no Setup: DNS key - healthy)"
+    fi
+
+    echo
+    echo "--- the same services in the ON-DISK persistent store ---"
+    # A Setup: key in the live store does NOT mean it was written to disk.
+    # ovpnagent writes straight into configd's dynamic store, so this file
+    # stays empty while scutil shows an override - which is exactly why
+    # networksetup (which reads this file) called the broken state clean for a
+    # month. An override here but not above is a real manual setting; above but
+    # not here is a VPN client holding the resolver hostage in memory only.
+    /usr/bin/plutil -extract NetworkServices xml1 -o - \
+      /Library/Preferences/SystemConfiguration/preferences.plist 2>/dev/null \
+      | /usr/bin/python3 -c '
+import plistlib, sys
+try:
+    d = plistlib.loads(sys.stdin.buffer.read())
+except Exception as e:
+    print("    (unreadable: %s)" % e); raise SystemExit
+for k, v in sorted(d.items(), key=lambda kv: str(kv[1].get("UserDefinedName"))):
+    print("    %-22s %s" % (v.get("UserDefinedName"), v.get("DNS")))
+' 2>/dev/null || echo "    (could not read preferences.plist)"
+
+    echo
     echo "--- manually-configured DNS per service ---"
     # "There aren't any DNS Servers set" is the healthy answer: DHCP is in use.
     "$NETWORKSETUP" -listallnetworkservices 2>/dev/null | tail -n +2 | while read -r s; do
@@ -125,13 +170,36 @@ snapshot() {
     fi
 
     echo
-    echo "--- VPN clients / tunnel interfaces (they push DNS into State:) ---"
+    echo "--- VPN clients / tunnel interfaces (they push DNS into State: AND Setup:) ---"
     "$SCUTIL" --nc list 2>/dev/null | sed 's/^/  /' || echo "  (no configured VPN services)"
-    ps aux 2>/dev/null \
-      | grep -iE 'openvpn|tunnelblick|viscosity|anyconnect|globalprotect|zscaler|wireguard|nordvpn|expressvpn' \
-      | grep -v grep | awk '{print "  running: " $11 " " $12}' | sort -u
+    # Whole command line, not $11 $12. Truncating it cost time on 2026-09-30:
+    # the snapshots recorded "openvpn --config" and so could not say *which*
+    # config, nor whether that process was OpenVPN Connect's own core or the
+    # separate homebrew CLI that is also installed here.
+    # Match on the executable path ($2) only - matching anywhere in the line
+    # makes any grep of this log report itself as a running VPN client.
+    ps -Ao pid,command 2>/dev/null \
+      | awk 'NR>1 && tolower($2) ~ /openvpn|ovpnagent|ovpnhelper|tunnelblick|viscosity|anyconnect|globalprotect|zscaler|wireguard|nordvpn|expressvpn/ {print "  running: " $0}'
+
     "$IFCONFIG" 2>/dev/null \
       | awk '/^(utun|ppp|ipsec|tun)[0-9]*:/{i=$1} /inet /{if(i){print "  " i " " $2; i=""}}'
+    echo
+    echo "--- ovpnagent's own DNS bookkeeping (it logs every write it makes) ---"
+    # /var/log/ovpnagent.log prints each dynamic-store dictionary it touches as
+    # "*** DSDict <key>" followed by ORIG/MODIFIED, so it names the writer in
+    # its own words. A write with no matching restore is this bug; a session
+    # whose last line is "has exited, destroy tun" with no restore after it is
+    # the crash path that strands the servers: measured 2026-09-30 over five
+    # months of this log, 32 of 48 such exits had no restore anywhere near them,
+    # against 441 of 444 clean disconnects that did restore.
+    OVPNLOG=/var/log/ovpnagent.log
+    if [ -r "$OVPNLOG" ]; then
+      echo "  last written: $(/usr/bin/stat -f '%Sm' "$OVPNLOG" 2>/dev/null)"
+      grep -nE 'DSDict Setup:.*/DNS|has exited, destroy tun|INSTANCE STOP' "$OVPNLOG" 2>/dev/null \
+        | tail -6 | sed 's/^/  /'
+    else
+      echo "  ($OVPNLOG not readable)"
+    fi
 
     echo
     echo "--- /etc/resolv.conf ---"

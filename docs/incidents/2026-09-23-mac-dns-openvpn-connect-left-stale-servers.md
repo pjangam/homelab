@@ -1,7 +1,10 @@
 # MacBook DNS kept breaking: OpenVPN Connect left its servers in `Setup:`
 
 **Date found:** 2026-09-23 (5th occurrence; the first four were 2026-08-28,
-2026-09-10, 2026-09-16, 2026-09-22)
+2026-09-10, 2026-09-16, 2026-09-22). A 6th followed on 2026-09-28 and settled
+what this round left open - see the 2026-09-30 section at the end, which also
+corrects two things below: the `Setup:` key is written only into configd's
+in-memory store and never to disk, and OpenVPN Connect does usually restore it.
 **Machine:** `sonalis-macbook-pro`, the employer-owned M2 - the host clawlight
 calls `mac`
 **Symptom, every time:** `en0` resolves against `192.168.0.2` + `192.169.0.2`.
@@ -131,3 +134,158 @@ xero's sessions plus whatever the Mac last managed to report, until the
 server's 30-minute staleness prune drops them. A clawlight colour that does not
 match what the Mac is actually doing is a symptom of this, and was how the 5th
 occurrence was noticed.
+
+---
+
+# 2026-09-30: 6th occurrence, and the two things the 09-23 round still had wrong
+
+**Found:** 2026-09-30 morning. The user ran `fix_macbook_dns.sh` before this
+investigation started, so DNS was already working; the recorder's log is the
+whole of the evidence below, which is precisely what it was installed for.
+
+**When it broke:** `2026-09-28 18:37:41 IST`. It had been clean since
+2026-09-26 16:12 (the previous manual repair) and stayed broken for
+**39 hours**, through the whole of 09-29, until the repair at
+`2026-09-30 09:49:11`.
+
+Read it with the two summarisers added the same day, rather than by scrolling
+90 snapshots of 170 lines:
+
+```
+tools/network/summarize_dns_snapshots.sh    # when it flipped, against the tunnel
+tools/network/summarize_ovpnagent_dns.sh    # ovpnagent's own write/restore log
+```
+
+## It is written at CONNECT, and that was the open question
+
+The 09-23 write-up ended asking whether a connect or a disconnect strands the
+servers. It is the connect, every time. `summarize_dns_snapshots.sh` collapses
+the recorder's log to its transitions, and all eight appearances of the pair
+since the recorder went in line up with `utun18` coming up or re-establishing:
+
+```
+2026-09-28 17:25:37  tun=                       Setup=-
+2026-09-28 18:37:41  tun=utun18/172.27.246.167  Setup=BAD  <== written  [tunnel: down -> up]
+```
+
+Not one appears at a disconnect. What a *disconnect* does is restore it -
+usually. The 09-23 note that "one disconnect restored cleanly" was not the
+exception; it was the rule, seen once.
+
+## ovpnagent logs every write it makes, in its own words
+
+`/var/log/ovpnagent.log` - the `StandardOutPath` of the
+`org.openvpn.client` LaunchDaemon - prints each dynamic-store dictionary it
+touches. This is the confession, and it had been sitting on disk unread since
+April:
+
+```
+*** DSDict Setup:/Network/Service/A02B9918-F5FF-4C22-ADC2-D8052BE73543/DNS
+ORIG {
+    OpenVPNConnectOrigSearchDomains = OpenVPNConnectDeleteValue;
+    OpenVPNConnectOrigSearchOrder = OpenVPNConnectDeleteValue;
+    OpenVPNConnectOrigServerAddresses = OpenVPNConnectDeleteValue;
+    SearchOrder = 5000;
+    ServerAddresses = ( "192.168.0.2", "192.169.0.2" );
+}
+MODIFIED {
+}
+```
+
+Counted over the log's whole span (2026-04-23 to 2026-09-25):
+
+| | |
+|---|---|
+| writes of the bad pair | 447 |
+| restores | 442 |
+| **net strandings** | **5** |
+| `Process N has exited, destroy tun` | 48, of which **32 had no restore near them** |
+
+Five net strandings against six occurrences on record is as close a match as
+this kind of count gets.
+
+## The restore is skipped when the tunnel process *dies* instead of disconnecting
+
+That is the discriminator the 09-23 round was looking for. A clean disconnect
+logs four things in order: the `DSDict` restore, `dscacheutil -flushcache`,
+`killall -HUP mDNSResponder`, then `INSTANCE STOP : E_SUCCESS`. A session whose
+last line is `Process N has exited, destroy tun` logs **none of them** - the tun
+device is torn down and the DNS dictionary is left exactly as the connect wrote
+it. The log's final entry is such an exit:
+
+```
+Fri Sep 25 23:07:12.439 2026 Process 18271 has exited, destroy tun
+```
+
+and the recorder shows the pair sitting there from then until the manual repair.
+(`INSTANCE STOP : E_SUCCESS` on its own is not a session end - it is the agent's
+per-HTTP-request completion marker, logged 126,000 times. Don't key on it.)
+
+## The layer was wrong too: it is Setup:, but only in memory
+
+The 09-23 write-up called it "the persistent `Setup:` layer". Half right, and
+the wrong half is the interesting one. The pair never reaches disk:
+
+```
+$ plutil -extract NetworkServices xml1 -o - \
+    /Library/Preferences/SystemConfiguration/preferences.plist
+  ... Wi-Fi  ->  DNS: {}
+```
+
+That is true of the current file **and** of `preferences.plist.old`, the copy
+macOS left behind at the moment of this morning's repair - so the on-disk store
+was empty while the override was live. ovpnagent writes straight into configd's
+dynamic store with `SCDynamicStoreSetValue` on a `Setup:`-prefixed key, skipping
+SCPreferences entirely.
+
+Everything that was confusing follows from that one fact:
+
+- **`networksetup -getdnsservers Wi-Fi` is not lying.** It reads SCPreferences,
+  which really is empty. It was the right answer to the wrong question, six
+  times.
+- **`networksetup -setdnsservers Wi-Fi empty` really is the cure,** and for a
+  reason nobody had articulated: committing SCPreferences makes configd
+  recompute the `Setup:` keys from disk, which drops the agent's in-memory
+  override as a side effect. Step 1 of `fix_macbook_dns.sh` was doing the work
+  all along while being written off as a no-op, because "before" and "after"
+  both printed "There aren't any DNS Servers set".
+- **It should not survive a reboot.** Untested, and worth testing: an in-memory
+  dynamic-store key cannot outlive configd. If a reboot does clear it, that is a
+  simpler repair than the one documented here.
+
+## One thing still unattributed
+
+The ovpnagent log stops at that 2026-09-25 23:07:12 abnormal exit and has not
+been written to since, though it is the same process (pid 556, up since 22 Jul).
+So the 09-28 18:37 write is **not** in it, and cannot be pinned on ovpnagent
+from the log alone - the snapshot for that moment shows a
+`/opt/homebrew/opt/openvpn/sbin/openvpn --config` process, a separate CLI
+OpenVPN that is also installed here, and the recorder was only capturing `$11
+$12` of the command line so it cannot say which config. Two gaps, both now
+closed in `mac-dns-recorder.sh`: it captures the full command line, and the
+`Setup:` dictionary verbatim - so the `OpenVPNConnectOrig*` sentinels will name
+the writer on the next occurrence without a follow-up.
+
+## Also worth knowing
+
+- **Not every `Setup=-` in the summariser is a repair.** When `en0` loses its
+  address, the service's `Setup:` key can drop out of the live store and come
+  back on reassociation. Those show as `en0=(none)` in
+  `summarize_dns_snapshots.sh` and are not clears.
+- **The tunnel reconnects a lot.** utun18's address changed on nearly every
+  snapshot while connected (`172.27.245.x` -> `.246.x` over a few days), so
+  "connect" here means dozens of writes per day, not one per session.
+
+## Tooling fixed the same day
+
+- `mac-dns-recorder.sh`: dumps every `Setup:` DNS dictionary verbatim, compares
+  it against the on-disk store, records full VPN command lines, and tails
+  ovpnagent's own DNS bookkeeping.
+- `diagnose_macbook_dns.sh`: its "WHO owns the DNS setting" comment asserted
+  that "OpenVPN/Tunnelblick push DNS into State:, never into Setup:". That
+  sentence is the false premise the whole month rested on, and it is gone.
+- `fix_macbook_dns.sh`: resolves the Wi-Fi service UUID, verifies step 1 with
+  `scutil` instead of `networksetup`, says why step 1 looks like a no-op and is
+  not, and says that step 3's tailscale toggle is what hid the bug.
+- New: `summarize_dns_snapshots.sh`, `summarize_ovpnagent_dns.sh`.
+- `setup-mac-dns-recorder.sh` ships the two new readers alongside the rest.
