@@ -19,10 +19,13 @@ services/mosquitto/log/
 services/mosquitto/passwd
 client_secret*.json
 hardware.md
-# Encrypted copies of it too. hardware.md is ignored by exact name, so a
-# transport copy like hardware_20260930_123947.md.gpg was untracked but NOT
-# ignored - one `git add -A` from being committed. Found 2026-09-30.
-hardware*.md.gpg
+# Every GPG blob, wherever it lands. hardware.md was ignored by exact name only,
+# so a stray encrypted copy of it in the repo root (hardware_20260930_123947.md.gpg,
+# found 2026-09-30) was untracked but NOT ignored - one `git add -A` from being
+# committed. backup_hardware_md.sh and the Vaultwarden backup both write .gpg, and
+# nothing encrypted belongs in this repo, so ignore the suffix outright rather
+# than chase each producer's naming.
+*.gpg
 security_findings*.md
 command.txt
 __pycache__/
