@@ -2,10 +2,20 @@
 # Run this ON the household MacBook (192.168.1.102). Needs sudo.
 #
 # Undoes the DNS overrides left behind by the 2026-08-28 outage:
-#   - Wi-Fi had a manual "8.8.8.8 1.1.1.1", which bypassed Pi-hole entirely.
+#   - Wi-Fi resolved against "8.8.8.8 1.1.1.1", which bypassed Pi-hole entirely.
+#     This line used to say "a manual 8.8.8.8 1.1.1.1". It was never manual -
+#     ovpnagent's log shows it writing 8.8.8.8, 1.1.1.1, 192.168.0.2, 192.169.0.2
+#     on every connect from 2026-07-22 to 2026-09-02, which is the window
+#     2026-08-28 falls in. Same bug as the item below, at a different setting of
+#     the corporate profile.
 #   - en0 was resolving against 192.168.0.2 plus a second entry in public
 #     192.169/16 space - neither on this LAN (192.168.1.x), so both are
 #     unreachable and queries sent to them just time out.
+#
+# Those two are not two problems. With a reachable public resolver in the pushed
+# list you get the first symptom (working, unfiltered, unnoticed for 10 days);
+# with only the two off-LAN servers you get the second (every lookup times out,
+# reads as "the internet is slow"). Which one depends on the profile that day.
 # Afterwards the Mac takes DNS from DHCP (192.168.1.123 = Pi-hole), and
 # Tailscale's MagicDNS keeps layering on top of that per the documented design.
 #

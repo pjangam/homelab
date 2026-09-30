@@ -128,9 +128,26 @@ Ruled out along the way and now moot: a stale global nameserver in the Tailscale
 - **ovpnagent was logging the whole thing all along.** `/var/log/ovpnagent.log` (the `StandardOutPath` of the `org.openvpn.client` LaunchDaemon) prints every dynamic-store dictionary it touches, `OpenVPNConnectOrig*` sentinels and all. Unread since April. `tools/network/summarize_ovpnagent_dns.sh` reads it.
 - **The layer was half wrong, and that half explains everything.** It is `Setup:`, but only in configd's **in-memory** store - `/Library/Preferences/SystemConfiguration/preferences.plist` has `DNS: {}` for Wi-Fi, and so does the `.old` copy macOS left at the moment of the repair. So `networksetup` was never lying, it was answering the wrong question; and `networksetup -setdnsservers Wi-Fi empty` cures it only as a side effect - committing SCPreferences makes configd recompute the `Setup:` keys from disk. Step 1 of `fix_macbook_dns.sh` was doing the work for four occurrences while being written off as a no-op.
 
+**2026-09-30, second pass - the mechanism, and why it only started hurting in August.** The bug is five months old; what changed is what the corporate profile pushes. ovpnagent's log records the server list of every write:
+
+```
+Apr 23 -> Jul  7   x297   192.168.0.2, 8.8.8.8, 192.169.0.2
+Jul  9 -> Jul 17   x42    (four revisions, some with 8.8.8.8/1.1.1.1, some without)
+Jul 22 -> Sep  2   x95    8.8.8.8, 1.1.1.1, 192.168.0.2, 192.169.0.2
+Sep 23 -> Sep 24   x13    192.168.0.2, 192.169.0.2
+```
+
+So one bug produces **two symptoms**, depending on whether that day's profile included a reachable public resolver. With `8.8.8.8`/`1.1.1.1` in the list DNS keeps working, off-LAN, Pi-hole bypassed and nothing feeling wrong - the silently-unfiltered state, and 2026-08-28 falls inside the Jul 22 - Sep 2 window. With only the two off-LAN servers every lookup times out - the "internet is slow" state, which is 2026-09-22 onwards.
+
+**This collapses two things the project was carrying as separate.** `fix_macbook_dns.sh` has said since August that on 2026-08-28 "Wi-Fi had a **manual** `8.8.8.8 1.1.1.1`". It was never manual - ovpnagent wrote exactly that list on every connect through that whole window. The August "stale manual public-resolver override" and the September "unreachable off-LAN servers" are one bug with one cause. Corrected in the script.
+
+**Why the write beats Pi-hole so completely:** `SearchOrder = 5000` against the DHCP resolver's `200000` (macOS orders ascending), and the resulting resolver is **unscoped** - no `if_index`, so it is the DNS for everything, not just Wi-Fi. `192.168.1.123` is not outranked, it is *absent*, from the scoped list too. And it reads `reach : 0x00000002 (Reachable)`, because OpenVPN pushes `/32` routes for both servers into the tunnel - so nothing in macOS ever flags it. That is why this surfaces only as latency.
+
+**The missing teardown, precisely:** a clean disconnect logs eight steps - `DSDict: updated`, `removed State:.../Info`, `MacDNS: RESETDNS`, the dictionary restore, `dscacheutil -flushcache`, `killall -HUP mDNSResponder`, `SCDynamicStoreNotifyValue`, `INSTANCE STOP : E_SUCCESS`. A session ending in `Process N has exited, destroy tun` does none of them. `destroy tun` and `RESETDNS` are separate code paths and only one is on the process-death path. The `OpenVPNConnectOrig*` sentinels are written *by the connect* as its own undo record, so the design is sound - only the teardown is unreachable on that path.
+
 **Left to do:**
 - **Try a reboot next time, before the repair.** An in-memory dynamic-store key should not survive configd restarting. Untested, and if it holds it is a simpler answer than anything here.
-- **Report the `192.169.0.2` typo upstream.** Unchanged and still worth doing (below).
+- **Report the `192.169.0.2` typo upstream**, and it is worse than it looked: the typo has been in the profile for at least five months and survived at least seven profile revisions (the table above). Every client on that VPN resolves against a publicly routable address in a block that is not theirs.
 - **One write is still unattributed.** ovpnagent's log stops at the 2026-09-25 abnormal exit and has not been written since, though it is the same process (pid 556, up since 22 Jul), so the 09-28 18:37 write is not in it. The snapshot for that moment shows a separate `/opt/homebrew/opt/openvpn/sbin/openvpn --config` CLI running, and the recorder was truncating the command line so it cannot say which config. Both gaps are closed in the recorder now (full command lines, plus the `Setup:` dictionary verbatim so the `OpenVPNConnectOrig*` sentinels name the writer), so the next occurrence settles it with no follow-up.
 - **No client-side cure exists.** The bug is in corporate software on a managed Mac. The repair stays a repair; what changed is that it is now a 30-second repair with an unambiguous verification, instead of a month of looking in the wrong layer.
 
