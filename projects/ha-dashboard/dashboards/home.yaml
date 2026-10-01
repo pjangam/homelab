@@ -333,6 +333,16 @@ views:
       features:
       - type: target-temperature
     - type: tile
+      entity: script.ac_on_for_an_hour
+      name: AC 1 hour
+      icon: mdi:timer-outline
+      tap_action:
+        action: perform-action
+        perform_action: script.ac_on_for_an_hour
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.ac_on_for_an_hour
+    - type: tile
       entity: switch.white_noise
       name:
         type: entity
