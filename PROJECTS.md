@@ -29,8 +29,9 @@ qty | item | est | note
 ## Projects
 
 ### Move white noise and spotifyd from xero to the wol Pi
-**Status:** Active
-**Priority:** P3
+**Status:** Done
+
+**Closed 2026-10-02:** white noise, both bridges, spotifyd (`raspberrypi`) and Play Bedroom Track have run on the Pi since the 2026-09-24 cutover, confirmed by the user after a week of use. What the plan below still lists - monitoring (step 5), the xero cleanup (step 6) and the power-watchdog change before xero moves - continues in "Pi audio move follow-ups". The Pi's under-voltage is its own entry, "wol Pi under-voltage: official 5.1V supply".
 
 **Why:** xero's only link to the Airtel router is the TP-Link extender, whose backhaul is 2.4GHz Wi-Fi. Moving xero onto a cable at the router would give it a real uplink, and would allow per-device data-usage monitoring later. The one thing tying xero to its current room is the USB speaker (ALSA card 1, `USB Audio Device`) that plays white noise and serves Spotify Connect. Move the audio to the Pi and xero is free to move. Decided 2026-09-23. **Keep everything installed on xero** (units disabled, not removed) until the Pi has run smoothly for a while.
 
@@ -115,6 +116,35 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 - **The Pi's supply:** its known undervoltage problem gets a new load in the USB speaker. The 3.5mm jack avoids it if the speaker has an AUX input.
 
 **Before xero itself moves: the power watchdog needs a new signal.** `watchdog_power.sh` infers a mains outage from `enp1s0` losing carrier, which works only because the extender is not on a UPS. Plugged into the Airtel router, which has its own UPS, the carrier never drops and xero would run its battery flat. Fix: keep the carrier check and add "the wol Pi **and** the extender both stop answering pings for N checks". Requiring both avoids false alarms from the Pi's flaky supply. The extender needs a pinned IP first.
+
+### Pi audio move follow-ups: monitoring, xero cleanup, then xero to the router
+**Status:** Backlog
+**Priority:** P3
+
+**Why:** white noise and Spotify moved to the wol Pi on 2026-09-24 (see "Move white noise and spotifyd from xero to the wol Pi" in Done). The cutover is done, but nothing watches the Pi's audio, and xero still carries the disabled copies.
+
+**Steps:**
+1. **Monitoring - the real gap.** Nothing alerts if spotifyd or a bridge breaks on the Pi; xero's spotifyd tile stays green only because its check now exits "not applicable".
+   - Move `watchdog_spotifyd.sh` to the Pi's cron (commented out in xero's crontab on 2026-09-24).
+   - Point `check_spotifyd_advertising.sh`/the dashboard tile at `raspberrypi`. It is avahi over the LAN, so xero can watch the Pi.
+   - Have `healthcheck.sh` alarm on the retained `whitenoise/available`/`volume/available` going `offline`.
+2. **xero cleanup:** remove the disabled `white-noise`, `white-noise-mqtt`, `volume-mqtt` and `spotifyd` units and spotifyd from xero; update the White Noise section of `Readme.md` and `white_noise_buttons_setup.md`, which still describe xero.
+3. **Then move xero to the router**, after the power-watchdog change described at the end of the Done entry (carrier loss stops meaning a mains outage once xero is on the router's UPS).
+
+### wol Pi under-voltage: official 5.1V supply
+**Status:** Active
+**Priority:** P2
+
+**Why:** the Pi reports under-voltage and throttling right now, not just historically: `vcgencmd get_throttled` = `0x50005` on 2026-09-24 and again on 2026-10-02 (boot of 2026-10-01). It was `0x0` on 2026-09-23. It now plays the bedroom white noise and Spotify, and sustained low voltage risks audio glitches and SD-card corruption. The earlier fix (a new cable, 2026-08-26) did not hold.
+
+**Cause (user, 2026-10-02):** it runs from a 5V phone charger. A Pi 3B wants 2.5A, and the official supply runs at 5.1V so the cable's voltage drop still leaves 5V at the board.
+
+**Next step:** user swaps in the official Raspberry Pi 5.1V supply. Then check `vcgencmd get_throttled` is `0x0` after a day that includes a night of white noise - the flags are sticky, so read them after a reboot on the new supply.
+
+```parts
+qty | item | est | note
+1 | Official Raspberry Pi power supply, 5.1V 2.5A micro-USB | 500-800 | the Pi 3B's micro-USB one, not the USB-C supply for Pi 4/5
+```
 
 ### MacBook DNS keeps breaking - root cause closed out (OpenVPN Connect, at connect); no client-side cure
 **Status:** Active
