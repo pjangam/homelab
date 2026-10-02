@@ -1507,3 +1507,42 @@ Previously the only way to know something's wrong was a `healthcheck.sh` email a
 **Why:** `docs/hardware.md` is gitignored, so the master on xero was its only copy; the Mac once had an scp'd copy, but it is gone and nothing kept it in step anyway. Decided 2026-09-30: back it up to Dropbox only, and leave the Mac without a copy - no Dropbox or rclone on the work laptop.
 **What shipped (2026-09-30):** `projects/certs-backup/backup_hardware_md.sh`, the Vaultwarden backup's shape reused: GPG with `BACKUP_PASSPHRASE` from `.env.backup`, `rclone copy` to `backup:homelab-hardware`, keep 7, and skip when the file's sha256 matches the last successful upload. Cron 03:30 daily on xero (also in `new_machine_setup.sh`), logging to `backup.log`. Verified: first run uploaded, second skipped, and the Dropbox copy decrypts byte-identical to xero's file. **Restore:** `rclone cat backup:homelab-hardware/<newest> | gpg -d > docs/hardware.md`.
 **Not covered:** `healthcheck.sh` checks backup freshness only for Vaultwarden and HA, not this one.
+
+### Baby-cry alert via ntfy (replace SMS Shortcut)
+**Status:** Backlog
+**Priority:** P3
+
+**Why:** a baby-cry alert already exists, but it goes out as an SMS. An iPhone Shortcut fires on Sound Recognition's "Baby Crying" and texts a number. The plan is to move the listening to a **different, dedicated iPhone** that stays near the baby, and have it publish to the self-hosted ntfy on xero instead of SMS. That gives a real push to every subscribed phone, at a priority that can break through, with no carrier involved. Noted 2026-10-02.
+
+**State:** idea only, researched 2026-10-02. True today: the SMS automation works on the current phone, and ntfy runs on xero with three topics (`clawlight`, `homelab-health`, `homelab-updates`). Not true yet: there is no `baby-cry` topic, publisher user or token, and no dedicated listener phone in `docs/hardware.md`.
+
+**Feasibility: yes, and nothing has to be bought if a second iPhone is at hand.** Shortcuts has a **Sound Recognition** personal-automation trigger, and the automation can be set to run without asking ([Apple: run automations automatically](https://support.apple.com/guide/shortcuts/apd602971e63/ios)). "Baby Crying" is one of the built-in sounds ([iPhone Life](https://iphonelife.com/content/how-to-enable-use-sound-recognition-iphone-ios-14), [iMore](https://imore.com/how-set-and-use-sound-recognition-iphone-and-ipad)). The existing SMS automation already proves the trigger works; only the action changes. Recognition happens on the phone itself. The ntfy POST only needs the tailnet, so it survives an ISP outage while the LAN is up and xero is on the UPS.
+
+**Design notes:**
+- **The action:** replace "Send Message" with "Get Contents of URL", method POST, to the ntfy **root** URL `https://ntfy.{tailnet}/`. The body is JSON `{"topic":"baby-cry","title":...,"message":...,"priority":5,"tags":["baby"]}`, with `priority` as a number, not a string. The header is `Authorization: Bearer tk_...`. Set the automation to **Run Immediately**.
+- **New topic `baby-cry`, with its own write-only principal** (e.g. `babycry`) and token. Add it to `tools/notify/setup_ntfy_users.sh` the same way as `clawlight`, `healthcheck` and `watchtower`, give `pramod` read-write on it, and extend `tools/notify/verify_ntfy_topics.sh` to cover it in both directions. **Do not put the `pramod` password in the Shortcut:** it reads every topic, and a Shortcut can be shared or exported.
+- **Receiving phones subscribe to `baby-cry` at high/urgent priority.** The listener publishes at priority 5 (urgent). In the ntfy app, check that the subscription is not muted and that the alert sound is set, so the push actually makes a noise. It is its own topic, so muting `clawlight` or `homelab-updates` never silences it.
+- **Keep the SMS automation until ntfy is proven, then disable it, but do not delete it.** Run both side by side until several real cries have arrived over ntfy on every receiving phone. Disabling instead of deleting keeps SMS one tap away if ntfy, Tailscale or xero ever lets it down.
+- **The listener iPhone must stay plugged in, on Wi-Fi, and on Tailscale with VPN On Demand.** ntfy is tailnet-only with `auth-default-access: deny-all` (`services/ntfy/server.yml`), so without Tailscale every POST fails, and SMS would no longer be there to cover it. Test once with Tailscale switched off, to see what failure looks like.
+- **Locked-phone behaviour decides the whole thing.** Sound Recognition is reported to listen only while the phone is awake, and it is not clear whether the Shortcut runs from a locked screen. Check both with the phone locked and the screen off before it goes into service. If it fails, the fallbacks are Auto-Lock "Never" on the charger, with brightness turned all the way down, or Guided Access.
+- **Mains-dependent.** In a long power cut the listener runs on its battery, then dies, and the Wi-Fi drops with it. Note this; at night it matters.
+- **Supplementary only.** Apple says Sound Recognition must not be relied on where someone could be harmed. This is a convenience alert, not a safety monitor.
+- **Unverified on the listener:** older iOS disables "Hey Siri" while Sound Recognition is on. Whether Sound Recognition still hears anything while another app (Alfred) holds the mic is also unknown.
+
+**Overlaps:**
+- **Baby monitor, Alfred Camera** (`Readme.md`, "Baby Monitor (Alfred Camera -> Home Assistant)"; `iphone_se` in `docs/hardware.md`). Alfred already sends cloud sound alerts from the SE. If the dedicated listener turns out to be the phone running Alfred, check that the two do not fight over the mic. This entry is also the local route for the Readme's "bridge Alfred alerts via Shortcuts" idea. That plan's "App -> Alfred -> Notification received" trigger does not appear to exist in Shortcuts, whereas the Sound Recognition trigger does.
+- **"ESP32 UPS LED monitor"** considers listening for a UPS low-battery beep. A second automation on the same listener phone (iOS 16+ can be trained on a custom alarm sound) could cover that later, on its own topic.
+
+**Readymade alternatives:** Alfred, already in use, is cloud-dependent. A dedicated baby monitor with cry detection is a second device, cloud-tied or limited in range, and cannot be pointed at xero. The current SMS route works, but it is a single recipient, depends on the carrier and costs per message. On a phone already owned, the ntfy route wins.
+
+```parts
+qty | item | est | note
+1 | iPhone as the dedicated listener | 0 | a spare one already owned - confirm which; nothing to buy if it exists
+1 | charger + cable for it, by the cot | 0 | reuse a spare; a phone charger from a local shop if not
+```
+
+**Cost:** ₹0 on a spare iPhone and charger already owned.
+
+**Effort:** ~1 hour. (1) 15min: on the listener phone, turn on Sound Recognition "Baby Crying" with an automation that only shows a notification, then play a crying clip from a speaker with the **phone locked and on the charger**. This decides the project, and it is the step that will overrun (finding where the phone sits so it hears the cot, and an awake/locked workaround if needed). (2) 15min: `baby-cry` topic, `babycry` user and token in `setup_ntfy_users.sh`, plus `verify_ntfy_topics.sh`. (3) 15min: swap the test action for the ntfy POST, and subscribe the receiving phones at urgent priority. (4) 15min: update `projects/endpoints/endpoints.toml`'s ntfy entry (`desc` lists three topics, `who` the publishers) and re-render with `render_endpoints.py`. Add the listener iPhone to `docs/hardware.md` as a new device (never commit that file). Then run alongside SMS, and disable the SMS automation once proven.
+
+**Next step:** pick the listener iPhone, then run step 1 on it locked and charging. If it fires from a locked screen, the rest is mechanical, and the project is meant to be built.
