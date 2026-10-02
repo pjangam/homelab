@@ -83,7 +83,7 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   host = "ha.{tailnet}"
   port = 443
   url = "https://ha.{tailnet}/"
-  desc = "The house. Automations, the AC, scenes, white noise, the WLED board."
+  desc = "The house. Automations, the AC, scenes, white noise."
   who = "Phone app, browser, and the webhook Watchtower posts its update report to."
   note = "Runs host-networked on 192.168.1.123:8123; the tailnet name comes from the ha-tailscale sidecar, whose cert renews itself."
 
@@ -143,15 +143,6 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   desc = "MirAIe AC integration, on the Pi rather than xero. Bridges MirAIe's cloud broker to Mosquitto here."
   who = "Home Assistant sees the AC only through this. If it is down, the AC is unavailable in HA."
   note = "Its MirAIe login lasts 84 days; xero's renew_miraie_login.sh restarts it at day 70. watchdog_nodered.sh restarts it if the MQTT links drop."
-
-  [[group.endpoint]]
-  name = "WLED"
-  proto = "http"
-  host = "192.168.1.125"
-  url = "http://192.168.1.125/"
-  desc = "The aarti-lights ESP32's own web UI - presets, segments, the audioreactive settings."
-  who = "HA's WLED integration, and hands-on tuning."
-  note = "Also at http://wled-sound.local via mDNS. Mains only, no UPS - it does not come back by itself after an outage."
 
   [[group.endpoint]]
   name = "This page"
@@ -306,26 +297,6 @@ blurb = "Packets with a direction and no listener, or a listener that never answ
   desc = "A magic packet at the broadcast address. Nothing listens; xero's NIC wakes on the pattern while the machine is off."
   who = "The Pi's wol-xero.service, fired on every Pi boot - which is how xero comes back after a power cut."
   note = "The endpoint is a direction, not a service. There is no way to test it other than letting xero sleep."
-
-  [[group.endpoint]]
-  name = "WLED realtime (DRGB)"
-  proto = "udp"
-  host = "192.168.1.125"
-  port = 21324
-  connect = "UDP 192.168.1.125:21324, DRGB - byte 0 = 2, byte 1 = timeout, then RGB per LED"
-  desc = "Pixel data straight at the strip, bypassing WLED's own effects entirely."
-  who = "aarti-lights.service on xero, the Tier 3 renderer. If it stops, WLED falls back to its own Gravimeter boot preset."
-  note = "Write-only. WLED does not answer on this port."
-
-  [[group.endpoint]]
-  name = "WLED audio sync"
-  proto = "udp"
-  host = "239.0.0.1"
-  port = 11988
-  connect = "UDP multicast 239.0.0.1:11988 - join the group, do not just bind the port"
-  desc = "The ESP32's INMP441 mic, broadcasting FFT bins and a smoothed level 20-40 times a second."
-  who = "The aarti-lights renderer and the sound-lab tools on xero listen; the ESP32 publishes whether or not anything is."
-  note = "Multicast: binding the port alone receives nothing, the group membership has to be joined."
 
 [[group]]
 name = "Tailnet names"

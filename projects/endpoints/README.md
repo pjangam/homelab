@@ -93,5 +93,5 @@ Caddyfile handles that `endpoints.toml` does not mention, and exits non-zero if
 anything is missing. It reads the tracked config rather than the live machines
 (unlike `check_hardware_md.sh`), so it runs on any clone with no `.env` and no
 ssh - and so it **cannot see** the systemd `--user` services, the Pi or the
-ESP32. clawlight on 8126, Node-RED on the Pi and the WLED UDP feeds are all on
+ESP32. clawlight on 8126 and Node-RED on the Pi are both on
 the page and invisible to it. Adding one of those is on you.
