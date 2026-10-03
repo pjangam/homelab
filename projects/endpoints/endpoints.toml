@@ -111,8 +111,8 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   host = "ntfy.{tailnet}"
   port = 443
   url = "https://ntfy.{tailnet}/"
-  desc = "Self-hosted push notifications. Three topics: clawlight, homelab-health, homelab-updates."
-  who = "The iOS ntfy app subscribes; healthcheck.sh, Watchtower and clawlight publish."
+  desc = "Self-hosted push notifications. Four topics: clawlight, homelab-health, homelab-updates, baby-cry."
+  who = "The iOS ntfy app subscribes; healthcheck.sh, Watchtower and clawlight publish, and the baby-cry listener iPhone's Shortcut POSTs JSON to the root URL over the tailnet."
   note = "The container binds 127.0.0.1:8127 only - publishers on xero use loopback, and everything else comes in over the tailnet. NTFY_BASE_URL must match the URL typed into the phone app exactly or iOS instant delivery breaks."
 
   [[group.endpoint]]

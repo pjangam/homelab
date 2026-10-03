@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verifies the clawlight / homelab-health / homelab-updates topic split
+# Verifies the clawlight / homelab-health / homelab-updates / baby-cry topic split
 # actually enforces, rather than just that setup_ntfy_users.sh printed the
 # right ACL lines.
 #
@@ -32,6 +32,7 @@ echo "=== publishers can reach their own topic ==="
 expect "healthcheck token -> homelab-health" 200 "$(post "$NTFY_HEALTH_TOKEN" homelab-health)"
 expect "clawlight token   -> clawlight"      200 "$(post "$NTFY_CLAWLIGHT_TOKEN" clawlight)"
 expect "watchtower token  -> homelab-updates" 200 "$(post "$NTFY_UPDATES_TOKEN" homelab-updates)"
+expect "babycry token     -> baby-cry"        200 "$(post "$NTFY_BABYCRY_TOKEN" baby-cry)"
 
 echo "=== and are denied the other's topic ==="
 expect "healthcheck token -> clawlight is refused"      403 "$(post "$NTFY_HEALTH_TOKEN" clawlight)"
@@ -43,12 +44,21 @@ expect "watchtower token  -> homelab-health is refused" 403 "$(post "$NTFY_UPDAT
 expect "watchtower token  -> clawlight is refused"      403 "$(post "$NTFY_UPDATES_TOKEN" clawlight)"
 expect "healthcheck token -> homelab-updates is refused" 403 "$(post "$NTFY_HEALTH_TOKEN" homelab-updates)"
 expect "clawlight token   -> homelab-updates is refused" 403 "$(post "$NTFY_CLAWLIGHT_TOKEN" homelab-updates)"
+# The baby-cry token is the one copy living off xero (in a phone Shortcut), so
+# it must reach nothing else, and no other publisher can fake a cry.
+expect "babycry token     -> homelab-health is refused" 403 "$(post "$NTFY_BABYCRY_TOKEN" homelab-health)"
+expect "babycry token     -> clawlight is refused"      403 "$(post "$NTFY_BABYCRY_TOKEN" clawlight)"
+expect "babycry token     -> homelab-updates is refused" 403 "$(post "$NTFY_BABYCRY_TOKEN" homelab-updates)"
+expect "healthcheck token -> baby-cry is refused"       403 "$(post "$NTFY_HEALTH_TOKEN" baby-cry)"
+expect "clawlight token   -> baby-cry is refused"       403 "$(post "$NTFY_CLAWLIGHT_TOKEN" baby-cry)"
+expect "watchtower token  -> baby-cry is refused"       403 "$(post "$NTFY_UPDATES_TOKEN" baby-cry)"
 
 echo "=== anonymous cannot publish to either ==="
 anon() { curl -sS -m 10 -o /dev/null -w '%{http_code}' -d "x" "$BASE/$1"; }
 expect "anonymous -> homelab-health is refused" 403 "$(anon homelab-health)"
 expect "anonymous -> clawlight is refused"      403 "$(anon clawlight)"
 expect "anonymous -> homelab-updates is refused" 403 "$(anon homelab-updates)"
+expect "anonymous -> baby-cry is refused"        403 "$(anon baby-cry)"
 
 echo "=== the phone login can READ both ==="
 readable() { # topic
@@ -58,11 +68,13 @@ readable() { # topic
 expect "pramod can read homelab-health" 200 "$(readable homelab-health)"
 expect "pramod can read clawlight"      200 "$(readable clawlight)"
 expect "pramod can read homelab-updates" 200 "$(readable homelab-updates)"
+expect "pramod can read baby-cry"        200 "$(readable baby-cry)"
 
 echo "=== and the container's publisher token cannot read its own history ==="
 tokread() { curl -sS -m 10 -o /dev/null -w '%{http_code}' \
   -H "Authorization: Bearer $1" "$BASE/$2/json?poll=1"; }
 expect "watchtower token cannot read homelab-updates" 403 "$(tokread "$NTFY_UPDATES_TOKEN" homelab-updates)"
+expect "babycry token cannot read baby-cry"           403 "$(tokread "$NTFY_BABYCRY_TOKEN" baby-cry)"
 
 echo
 [ "$fails" -eq 0 ] && { echo "All checks passed."; exit 0; }
