@@ -61,6 +61,8 @@ expect "anonymous -> homelab-updates is refused" 403 "$(anon homelab-updates)"
 expect "anonymous -> baby-cry is refused"        403 "$(anon baby-cry)"
 
 echo "=== the phone login can READ both ==="
+tokread() { curl -sS -m 10 -o /dev/null -w '%{http_code}' \
+  -H "Authorization: Bearer $1" "$BASE/$2/json?poll=1"; }
 readable() { # topic
   curl -sS -m 10 -o /dev/null -w '%{http_code}' \
     -u "pramod:$NTFY_ADMIN_PASSWORD" "$BASE/$1/json?poll=1"
@@ -69,10 +71,17 @@ expect "pramod can read homelab-health" 200 "$(readable homelab-health)"
 expect "pramod can read clawlight"      200 "$(readable clawlight)"
 expect "pramod can read homelab-updates" 200 "$(readable homelab-updates)"
 expect "pramod can read baby-cry"        200 "$(readable baby-cry)"
+# baby-cry is readable by `everyone`, so any account - including ones made
+# after this script last ran - and anonymous tailnet clients get the alert.
+# The other topics must stay closed to anonymous readers.
+anonread() { curl -sS -m 10 -o /dev/null -w '%{http_code}' "$BASE/$1/json?poll=1"; }
+expect "anonymous can read baby-cry"            200 "$(anonread baby-cry)"
+expect "healthcheck token can read baby-cry"    200 "$(tokread "$NTFY_HEALTH_TOKEN" baby-cry)"
+expect "anonymous cannot read homelab-health"   403 "$(anonread homelab-health)"
+expect "anonymous cannot read clawlight"        403 "$(anonread clawlight)"
+expect "anonymous cannot read homelab-updates"  403 "$(anonread homelab-updates)"
 
 echo "=== and the container's publisher token cannot read its own history ==="
-tokread() { curl -sS -m 10 -o /dev/null -w '%{http_code}' \
-  -H "Authorization: Bearer $1" "$BASE/$2/json?poll=1"; }
 expect "watchtower token cannot read homelab-updates" 403 "$(tokread "$NTFY_UPDATES_TOKEN" homelab-updates)"
 expect "babycry token cannot read baby-cry"           403 "$(tokread "$NTFY_BABYCRY_TOKEN" baby-cry)"
 

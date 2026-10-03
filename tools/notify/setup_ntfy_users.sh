@@ -103,6 +103,16 @@ nt access pramod     "$UPDATES_TOPIC" rw
 nt access watchtower "$UPDATES_TOPIC" write-only
 nt access pramod  "$BABYCRY_TOPIC" rw
 nt access babycry "$BABYCRY_TOPIC" write-only
+# Anyone in the household should get the cry alert, including accounts made
+# later, without remembering to grant each one. ntfy has no groups, so this is
+# the `everyone` wildcard: read-only for any account with no rule of its own
+# on baby-cry. A per-user rule wins over it, so babycry stays write-only and
+# pramod stays rw. `everyone` also covers anonymous, so any device on the
+# tailnet can read this topic without logging in. That is acceptable for a
+# topic that only ever says "baby crying", and is the only way to cover future
+# accounts. Nobody but babycry and pramod can PUBLISH, so a fake cry still
+# needs one of those two credentials.
+nt access everyone "$BABYCRY_TOPIC" read-only
 # Neither publisher gets any access to the other's topic - no rule is denial
 # under `auth-default-access: deny-all`, so there is nothing to revoke.
 
