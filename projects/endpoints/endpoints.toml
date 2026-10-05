@@ -226,6 +226,16 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "The outage nobody diagnoses as DNS at first. If xero is down, name resolution is down with it."
 
   [[group.endpoint]]
+  name = "Speech-to-Phrase (Wyoming STT)"
+  proto = "tcp"
+  host = "127.0.0.1"
+  port = 10300
+  connect = "projects/voice-assistant/test_stt.sh   (round-trips TTS audio through it via HA)"
+  desc = "Local speech-to-text for HA's Assist, over the Wyoming protocol. Recognises only commands for entities exposed to Assist plus the voice sentence triggers."
+  who = "Home Assistant's Assist pipeline (stt.speech_to_phrase) - the HA phone app's mic button today."
+  note = "Loopback only; HA (host network) is its only client. Restart the container to retrain after exposing or renaming entities. projects/voice-assistant/README.md"
+
+  [[group.endpoint]]
   name = "NTP (chrony)"
   proto = "udp"
   host = "192.168.1.123"

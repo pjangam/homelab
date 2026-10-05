@@ -147,6 +147,8 @@ services:
       - ./HOMEASSISTANT_CONFIG:/config
       # YAML-mode dashboards, tracked in git (projects/ha-dashboard/)
       - ./projects/ha-dashboard/dashboards:/config/dashboards:ro
+      # Voice-command automations, tracked in git (projects/voice-assistant/)
+      - ./projects/voice-assistant/packages:/config/packages:ro
       - /etc/localtime:/etc/localtime:ro
       - /run/dbus:/run/dbus:ro
     restart: unless-stopped
@@ -173,6 +175,29 @@ services:
       # name, because HA runs with network_mode: host and so isn't on this
       # compose network. Rendered by tools/network/render_ts_serve_config.sh.
       - ./services/tailscale/ha:/config
+
+  # Local speech-to-text for HA's Assist (projects/voice-assistant/README.md).
+  # Recognises only commands for entities exposed to Assist (plus the sentence
+  # triggers in projects/voice-assistant/packages/), so it stays fast on this
+  # CPU where Whisper would not. Legacy v1.4 image: newer Speech-to-Phrase
+  # ships only as an HA OS app. Published on loopback only - HA is on the host
+  # network and is its only client. Restart it to retrain after exposing or
+  # renaming entities.
+  speech-to-phrase:
+    image: rhasspy/wyoming-speech-to-phrase:latest
+    container_name: speech-to-phrase
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:10300:10300"
+    volumes:
+      - stp-models:/models
+      - stp-train:/train
+      - ./projects/voice-assistant/custom_sentences:/custom_sentences:ro
+    command:
+      - --hass-websocket-uri=ws://192.168.1.123:8123/api/websocket
+      - --hass-token=${HA_TOKEN_SPEECH_TO_PHRASE}
+      - --custom-sentences-dir=/custom_sentences
+      - --retrain-on-start
 
   mosquitto:
     image: eclipse-mosquitto:latest
@@ -449,6 +474,8 @@ volumes:
   caddy_data:
   caddy_config:
   ha-tailscale-state:
+  stp-models:
+  stp-train:
 
 networks:
   # Public album (services/albums/README.md): the gallery lives only on

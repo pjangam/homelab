@@ -1,0 +1,80 @@
+# Voice commands HA's built-in Assist sentences do not cover: fan speed
+# presets, AC on/off and AC temperature. Loaded as an HA package
+# (bind-mounted to /config/packages by docker-compose.yml). Speech-to-Phrase
+# reads these sentence triggers from HA when it trains, so a sentence added
+# here needs `docker restart speech-to-phrase` before it can be heard. A
+# {wildcard} also needs a same-named list in custom_sentences/en/. "A C" is
+# there because Speech-to-Phrase spells initialisms out letter by letter.
+automation:
+  - id: voice_ac_on_off
+    alias: "Voice: AC on/off"
+    triggers:
+      - trigger: conversation
+        id: "on"
+        command:
+          - "turn on [the] (AC|A C|air conditioner)"
+          - "switch on [the] (AC|A C|air conditioner)"
+      - trigger: conversation
+        id: "off"
+        command:
+          - "turn off [the] (AC|A C|air conditioner)"
+          - "switch off [the] (AC|A C|air conditioner)"
+    actions:
+      - action: "climate.turn_{{ trigger.id }}"
+        target:
+          entity_id: climate.panasonic_ac_panasonic_ac
+      - set_conversation_response: "AC {{ trigger.id }}"
+
+  - id: voice_ac_temperature
+    alias: "Voice: AC temperature"
+    triggers:
+      - trigger: conversation
+        command:
+          - "set [the] (AC|A C|air conditioner) [temperature] to {temperature} [degrees]"
+          - "(AC|A C|air conditioner) [to] {temperature} [degrees]"
+    variables:
+      temperature: "{{ trigger.slots.temperature | int(0) }}"
+    actions:
+      - if: "{{ 16 <= temperature <= 30 }}"
+        then:
+          - action: climate.set_temperature
+            target:
+              entity_id: climate.panasonic_ac_panasonic_ac
+            data:
+              temperature: "{{ temperature }}"
+          - set_conversation_response: "AC set to {{ temperature }} degrees"
+        else:
+          - set_conversation_response: "The AC only goes from 16 to 30 degrees"
+
+  # Trigger id is "<fan entity>|<preset>". A bare "fan" means the bedroom fan.
+  - id: voice_fan_speed
+    alias: "Voice: fan speed"
+    triggers:
+      - trigger: conversation
+        id: "fan.bedroom_fan_2|High"
+        command: "[set] [the] [bedroom] fan [speed] [to] (high|fast|full)"
+      - trigger: conversation
+        id: "fan.bedroom_fan_2|Medium"
+        command: "[set] [the] [bedroom] fan [speed] [to] medium"
+      - trigger: conversation
+        id: "fan.bedroom_fan_2|Low"
+        command: "[set] [the] [bedroom] fan [speed] [to] (low|slow)"
+      - trigger: conversation
+        id: "fan.living_room_fan|High"
+        command: "[set] [the] (hall|living room) fan [speed] [to] (high|fast|full)"
+      - trigger: conversation
+        id: "fan.living_room_fan|Medium"
+        command: "[set] [the] (hall|living room) fan [speed] [to] medium"
+      - trigger: conversation
+        id: "fan.living_room_fan|Low"
+        command: "[set] [the] (hall|living room) fan [speed] [to] (low|slow)"
+    variables:
+      fan: "{{ trigger.id.split('|')[0] }}"
+      preset: "{{ trigger.id.split('|')[1] }}"
+    actions:
+      - action: fan.turn_on
+        target:
+          entity_id: "{{ fan }}"
+        data:
+          preset_mode: "{{ preset }}"
+      - set_conversation_response: "{{ 'Hall' if fan == 'fan.living_room_fan' else 'Bedroom' }} fan {{ preset | lower }}"

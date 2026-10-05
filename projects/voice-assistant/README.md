@@ -1,0 +1,74 @@
+# Voice assistant (HA Assist, local)
+
+Voice control for lights, white noise, fans and the AC through Home
+Assistant's built-in **Assist**. Fully local, not "smart": speech is matched
+against a fixed set of commands for the entities exposed to Assist.
+
+HA here is a plain Docker container, not HA OS, so voice add-ons cannot be
+installed. That is very likely why an earlier attempt at a voice plugin never
+worked. Each voice piece runs as its own container in `docker-compose.yml`,
+connected to HA through the Wyoming integration.
+
+## Pieces
+
+| Piece | Where |
+|---|---|
+| Speech-to-text | `speech-to-phrase` container, `127.0.0.1:10300`. Legacy v1.4 (Kaldi) image: the newer Speech-to-Phrase ships only as an HA OS app. Fast on xero's CPU, where Whisper would not be. |
+| Command matching | HA's own conversation agent (`prefer_local_intents` on), plus `packages/voice_commands.yaml` for what its built-in sentences do not cover |
+| Pipeline | The preferred "Home Assistant" Assist pipeline, `stt_engine: stt.speech_to_phrase`, no TTS yet (the phone shows the reply as text) |
+| Mic | The HA phone app's Assist button, for now. Planned: the packed-away aarti-lights ESP32 + INMP441, reflashed to ESPHome, with openWakeWord on xero (the board is an original ESP32, not an S3) |
+
+## Commands
+
+Built in (HA + Speech-to-Phrase): `turn on/off <name>` for any exposed light,
+switch, fan or media player; `activate <scene> scene`; `run <script> script`;
+timers; `what time is it`.
+
+Added in `packages/voice_commands.yaml` (sentence-trigger automations):
+- `turn on/off the AC`, `set the AC to 24 [degrees]`, `AC 24 degrees` (16-30)
+- `[set the] [bedroom] fan [to] high|fast|medium|low|slow` (bare "fan" = bedroom)
+- `hall fan fast`, `living room fan low`, ...
+
+Names and aliases come from `setup_assist.py`: bedroom light / tube light,
+bedroom bulb, balcony light, bedroom fan, hall light, shelf light, hall fan,
+white noise, AC.
+
+## Files
+
+- `setup_assist.py` - idempotent: which entities are exposed (and the stale
+  Tinxy duplicates that are not), aliases, device areas, the Wyoming entry and
+  the pipeline's STT. Edit the lists at its top, re-run, then restart
+  `speech-to-phrase`.
+- `packages/` - bind-mounted to `/config/packages`; loaded by
+  `homeassistant: packages: !include_dir_named packages` in the gitignored
+  `HOMEASSISTANT_CONFIG/configuration.yaml` (added 2026-10-05). Reload with
+  `automation.reload` after editing.
+- `custom_sentences/en/` - lists for `{wildcards}` in the sentence triggers
+  (Speech-to-Phrase cannot hear a wildcard without one).
+- `ha_ws.py` - tiny HA websocket client used by the above.
+- `test_stt.sh` - synthesises phrases with HA's Google TTS and posts them to
+  the STT API; transcription check only, executes nothing.
+
+```sh
+set -a; . ./.env.healthcheck; set +a      # HA_TOKEN for the scripts
+projects/voice-assistant/setup_assist.py
+docker restart speech-to-phrase          # retrain on new names/sentences
+projects/voice-assistant/test_stt.sh "turn on white noise"
+```
+
+The container's own HA token is `HA_TOKEN_SPEECH_TO_PHRASE` in `.env`
+(long-lived token "speech-to-phrase" in HA's profile page).
+
+## Gotchas
+
+- **Speech-to-Phrase spells initialisms out:** "AC" is transcribed "A C", and
+  HA's matcher then knows no device called "A C". The sentence triggers list
+  `(AC|A C|air conditioner)` for that reason. Do the same for any new
+  initialism in a sentence trigger.
+- **Retraining is only on start.** A newly exposed entity, a new alias or a new
+  sentence trigger cannot be recognised until `docker restart speech-to-phrase`.
+- **HA's alias list holds a `None`** as the slot for the entity's own name; keep
+  it when editing aliases through the websocket API.
+- Speech-to-Phrase only ever returns a sentence from its grammar, so a mumble
+  can come back as the *nearest* command rather than nothing. Watch for false
+  activations once a mic is always listening.

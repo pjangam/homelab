@@ -1,0 +1,8 @@
+# Lists for the {wildcards} in packages/voice_commands.yaml. Speech-to-Phrase
+# can only transcribe a wildcard it has a same-named list for.
+language: "en"
+lists:
+  temperature:
+    range:
+      from: 16
+      to: 30

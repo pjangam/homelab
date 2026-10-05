@@ -1546,3 +1546,17 @@ qty | item | est | note
 **Effort:** ~1 hour. (1) 15min: on the listener phone, turn on Sound Recognition "Baby Crying" with an automation that only shows a notification, then play a crying clip from a speaker with the **phone locked and on the charger**. This decides the project, and it is the step that will overrun (finding where the phone sits so it hears the cot, and an awake/locked workaround if needed). (2) 15min: `baby-cry` topic, `babycry` user and token in `setup_ntfy_users.sh`, plus `verify_ntfy_topics.sh`. (3) 15min: swap the test action for the ntfy POST, and subscribe the receiving phones at urgent priority. (4) 15min: update `projects/endpoints/endpoints.toml`'s ntfy entry (`desc` lists three topics, `who` the publishers) and re-render with `render_endpoints.py`. Add the listener iPhone to `docs/hardware.md` as a new device (never commit that file). Then run alongside SMS, and disable the SMS automation once proven.
 
 **Next step:** pick the listener iPhone, then run step 1 on it locked and charging. If it fires from a locked screen, the rest is mechanical, and the project is meant to be built.
+
+### Local voice control (HA Assist)
+**Status:** Active
+**Priority:** P3
+
+**Why:** turn lights, white noise, fans and the AC on/off and set the AC temperature by voice. Doesn't need to be smart: a fixed set of English commands is enough. An HA voice add-on tried a year or two ago never worked - almost certainly because HA here is a plain Docker container, where add-ons cannot be installed. Assist itself is built into HA and needs only the speech pieces run as containers. Details: `projects/voice-assistant/README.md`.
+
+**Done 2026-10-05 (phone-app stage):**
+- `speech-to-phrase` container (legacy v1.4 Kaldi image, `127.0.0.1:10300`), added through the Wyoming integration and set as the STT of the preferred "Home Assistant" pipeline (`prefer_local_intents` on). Retrains in ~4s.
+- `setup_assist.py`: exposes 13 live entities with spoken aliases, un-exposes 21 stale ones (the unavailable bedroom/master-bedroom Tinxy duplicates, dishwasher, dead Spotcast players) whose names clashed, puts the live Tinxy boards in Bedroom / Living Room ("hall" alias).
+- `packages/voice_commands.yaml`, bind-mounted as an HA package: sentence triggers for AC on/off, AC temperature 16-30, fan presets for the bedroom and hall fans.
+- Verified by text (`conversation/process`) and by audio round-trip (`test_stt.sh`, HA's Google TTS -> STT): all test phrases transcribed and executed. Caught on the way: "AC" is transcribed "A C", which HA does not match - the triggers accept both.
+
+**Next step:** the user tests from the HA phone app (Assist button -> mic) in real rooms with the fan/white noise on. If it holds up, stage 2: reflash the packed-away aarti ESP32 + INMP441 (`docs/hardware.md`, wled-sound) to ESPHome `voice_assistant`, openWakeWord container on xero for the wake word (original ESP32, so no on-device micro_wake_word), a few WS2812s as the listening/ok/error light. Back up WLED config first so the aarti setup can be restored. Optional: Piper for spoken replies.
