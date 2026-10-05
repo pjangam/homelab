@@ -1,0 +1,8 @@
+# kanshi profile for the wol-sender Pi, installed to ~/.config/kanshi/config
+# by deploy_clock_screensaver.sh. The LG's EDID prefers 4K, which a Pi 3
+# cannot drive, so without a pinned mode labwc leaves HDMI-A-1 disabled
+# when the monitor comes back from its other HDMI input. kanshi re-applies
+# this on every reconnect.
+profile {
+	output HDMI-A-1 enable mode 1920x1080@60.000 position 0,0 scale 1.000000 transform normal
+}
