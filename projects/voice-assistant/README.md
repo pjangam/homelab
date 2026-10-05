@@ -15,7 +15,8 @@ connected to HA through the Wyoming integration.
 |---|---|
 | Speech-to-text | `speech-to-phrase` container, `127.0.0.1:10300`. Legacy v1.4 (Kaldi) image: the newer Speech-to-Phrase ships only as an HA OS app. Fast on xero's CPU, where Whisper would not be. |
 | Command matching | HA's own conversation agent (`prefer_local_intents` on), plus `packages/voice_commands.yaml` for what its built-in sentences do not cover |
-| Pipeline | The preferred "Home Assistant" Assist pipeline, `stt_engine: stt.speech_to_phrase`, no TTS yet (the phone shows the reply as text) |
+| Text-to-speech | `piper` container, `127.0.0.1:10200`, voice `en_US-lessac-medium`. **Required, not optional** - see Gotchas. |
+| Pipeline | The preferred "Home Assistant" Assist pipeline: `stt.speech_to_phrase` + `tts.piper` |
 | Mic | The HA phone app's Assist button, for now. Planned: the packed-away aarti-lights ESP32 + INMP441, reflashed to ESPHome, with openWakeWord on xero (the board is an original ESP32, not an S3) |
 
 ## Commands
@@ -46,6 +47,11 @@ white noise, AC.
 - `custom_sentences/en/` - lists for `{wildcards}` in the sentence triggers
   (Speech-to-Phrase cannot hear a wildcard without one).
 - `ha_ws.py` - tiny HA websocket client used by the above.
+- `test_pipeline_ws.py file.wav [end_stage]` - runs the pipeline over the
+  websocket exactly as the phone app does for voice (binary audio frames).
+  `end_stage tts` reproduces the app's request.
+- `watch_assist.sh` - live view of voice runs stage by stage, HA log and
+  speech-to-phrase log, for "the client does nothing" debugging.
 - `test_stt.sh` - synthesises phrases with HA's Google TTS and posts them to
   the STT API; transcription check only, executes nothing.
 
@@ -61,6 +67,12 @@ The container's own HA token is `HA_TOKEN_SPEECH_TO_PHRASE` in `.env`
 
 ## Gotchas
 
+- **The phone app's voice mode needs a TTS engine on the pipeline.** It always
+  asks for `end_stage: tts`; without TTS, HA rejects the run with
+  `validation-error: the pipeline does not support text-to-speech` before any
+  audio is sent. The app shows nothing at all, typing still works, and the
+  pipeline debug view lists the run with **zero events**. Cost an evening on
+  2026-10-05 before `test_pipeline_ws.py ... tts` reproduced it.
 - **Speech-to-Phrase spells initialisms out:** "AC" is transcribed "A C", and
   HA's matcher then knows no device called "A C". The sentence triggers list
   `(AC|A C|air conditioner)` for that reason. Do the same for any new

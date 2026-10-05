@@ -199,6 +199,20 @@ services:
       - --custom-sentences-dir=/custom_sentences
       - --retrain-on-start
 
+  # Local text-to-speech for HA's Assist (projects/voice-assistant/README.md).
+  # Not optional: the HA phone app's voice mode always asks for a spoken reply,
+  # and a pipeline without TTS rejects the whole run before any audio is sent.
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: piper
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:10200:10200"
+    volumes:
+      - piper-data:/data
+    command:
+      - --voice=en_US-lessac-medium
+
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
@@ -476,6 +490,7 @@ volumes:
   ha-tailscale-state:
   stp-models:
   stp-train:
+  piper-data:
 
 networks:
   # Public album (services/albums/README.md): the gallery lives only on

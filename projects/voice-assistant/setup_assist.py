@@ -6,7 +6,10 @@
 - Adds spoken aliases (union with any already set) and puts the live Tinxy
   boards in their rooms.
 - Adds the Wyoming integration for speech-to-phrase (127.0.0.1:10300) and
-  makes it the speech-to-text of the preferred Assist pipeline.
+  piper (127.0.0.1:10200) and makes them the speech-to-text and
+  text-to-speech of the preferred Assist pipeline. TTS is required: the phone
+  app's voice mode asks for a spoken reply, and a pipeline without TTS
+  rejects the run before any audio is sent.
 
 Run from the repo root:  set -a; . ./.env.healthcheck; set +a
                          projects/voice-assistant/setup_assist.py
@@ -19,7 +22,7 @@ import urllib.request
 from ha_ws import call, call_many
 
 HA_HTTP = "http://localhost:8123"
-STP_HOST, STP_PORT = "127.0.0.1", 10300
+WYOMING = {"speech_to_phrase": 10300, "piper": 10200}  # all on 127.0.0.1
 
 # entity_id -> extra spoken names. Every entity here is exposed to Assist.
 EXPOSE = {
@@ -100,28 +103,31 @@ def main():
     call_many(updates)
     print(f"applied {len(updates)} alias/area updates")
 
-    entries = http("GET", "/api/config/config_entries/entry?domain=wyoming")
-    if not any(e["title"].lower().startswith("speech-to-phrase") or
-               e.get("unique_id", "") == f"{STP_HOST}_{STP_PORT}" for e in entries):
+    titles = [e["title"].lower().replace("-", "_").replace(" ", "_")
+              for e in http("GET", "/api/config/config_entries/entry?domain=wyoming")]
+    for name, port in WYOMING.items():
+        if any(t.startswith(name) for t in titles):
+            print(f"wyoming {name}: already configured")
+            continue
         flow = http("POST", "/api/config/config_entries/flow", {"handler": "wyoming"})
         result = http("POST", f"/api/config/config_entries/flow/{flow['flow_id']}",
-                      {"host": STP_HOST, "port": STP_PORT})
-        print("wyoming:", result.get("type"), result.get("title"), result.get("errors"))
-    else:
-        print("wyoming: already configured")
+                      {"host": "127.0.0.1", "port": port})
+        print(f"wyoming {name}:", result.get("type"), result.get("title"), result.get("errors"))
 
-    stt = [s["entity_id"] for s in http("GET", "/api/states")
-           if s["entity_id"].startswith("stt.") and "phrase" in s["entity_id"]]
-    if not stt:
-        raise SystemExit("no stt.*phrase* entity yet - rerun in a few seconds")
+    states = [s["entity_id"] for s in http("GET", "/api/states")]
+    stt = [e for e in states if e.startswith("stt.") and "phrase" in e]
+    tts = [e for e in states if e.startswith("tts.") and "piper" in e]
+    if not stt or not tts:
+        raise SystemExit("stt/tts entity not there yet - rerun in a few seconds")
     pipelines = call({"type": "assist_pipeline/pipeline/list"})
     pipe = next(p for p in pipelines["pipelines"] if p["id"] == pipelines["preferred_pipeline"])
     fields = {k: pipe[k] for k in (
         "conversation_engine", "conversation_language", "language", "name",
         "tts_engine", "tts_language", "tts_voice", "wake_word_entity", "wake_word_id")}
-    fields.update(stt_engine=stt[0], stt_language="en", prefer_local_intents=True)
+    fields.update(stt_engine=stt[0], stt_language="en", prefer_local_intents=True,
+                  tts_engine=tts[0], tts_language="en_US", tts_voice="en_US-lessac-medium")
     call({"type": "assist_pipeline/pipeline/update", "pipeline_id": pipe["id"], **fields})
-    print(f"pipeline '{pipe['name']}': stt={stt[0]}")
+    print(f"pipeline '{pipe['name']}': stt={stt[0]} tts={tts[0]}")
 
 
 if __name__ == "__main__":

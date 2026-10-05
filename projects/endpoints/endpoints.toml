@@ -236,6 +236,15 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "Loopback only; HA (host network) is its only client. Restart the container to retrain after exposing or renaming entities. projects/voice-assistant/README.md"
 
   [[group.endpoint]]
+  name = "Piper (Wyoming TTS)"
+  proto = "tcp"
+  host = "127.0.0.1"
+  port = 10200
+  desc = "Local text-to-speech for HA's Assist, over the Wyoming protocol. Voice en_US-lessac-medium."
+  who = "Home Assistant's Assist pipeline (tts.piper). The phone app's voice mode will not start at all without a TTS engine on the pipeline."
+  note = "Loopback only; HA (host network) is its only client. projects/voice-assistant/README.md"
+
+  [[group.endpoint]]
   name = "NTP (chrony)"
   proto = "udp"
   host = "192.168.1.123"
