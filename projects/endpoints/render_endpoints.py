@@ -59,6 +59,25 @@ def esc(value, tailnet: str) -> str:
     return html.escape(str(value).replace("{tailnet}", tailnet))
 
 
+# A bare http(s) URL in prose. Matched after escaping, so `&` arrives as
+# `&amp;` and stays valid inside href. Trailing sentence punctuation is left
+# out of the match: "...:8080." should not link to ":8080.".
+URL_IN_TEXT = re.compile(r'https?://[^\s<>"]+?(?=[.,;:!?)]*(?:\s|$))')
+
+
+def esc_text(value, tailnet: str) -> str:
+    """esc(), plus any http(s) URL in the text made clickable.
+
+    Notes carry the LAN fallbacks (http://192.168.1.123:8080 and friends) that
+    have no card of their own, and a URL you have to select and paste is the
+    one thing this page exists to save you from.
+    """
+    return URL_IN_TEXT.sub(
+        lambda m: f'<a href="{m.group(0)}" target="_blank" rel="noopener">{m.group(0)}</a>',
+        esc(value, tailnet),
+    )
+
+
 # Protocol badges. The colour is doing real work: it is the fastest way to see
 # at a glance that a row is not something a browser can open.
 PROTO_CLASS = {
@@ -95,9 +114,9 @@ def render_endpoint(ep: dict, tailnet: str) -> str:
     out.append(f'<code class="addr">{address}</code>')
     out.append("</header>")
 
-    out.append(f'<p class="desc">{esc(ep["desc"], tailnet)}</p>')
+    out.append(f'<p class="desc">{esc_text(ep["desc"], tailnet)}</p>')
     if "who" in ep:
-        out.append(f'<p class="who"><span class="label">Used by</span> {esc(ep["who"], tailnet)}</p>')
+        out.append(f'<p class="who"><span class="label">Used by</span> {esc_text(ep["who"], tailnet)}</p>')
     if "connect" in ep:
         # The payload for everything a browser cannot open. data-copy carries
         # the unescaped-on-render text; the button hands it to the clipboard.
@@ -107,7 +126,7 @@ def render_endpoint(ep: dict, tailnet: str) -> str:
             f'<button type="button" class="copy" data-copy="{value}">copy</button></div>'
         )
     if "note" in ep:
-        out.append(f'<p class="note">{esc(ep["note"], tailnet)}</p>')
+        out.append(f'<p class="note">{esc_text(ep["note"], tailnet)}</p>')
 
     if ep.get("topic"):
         out.append('<dl class="topics">')
@@ -156,6 +175,7 @@ h2 {
 .ep h3 { font-size: 1rem; margin: 0; font-weight: 600; }
 .ep h3 a { color: var(--accent); text-decoration: none; }
 .ep h3 a:hover { text-decoration: underline; }
+.ep p a { color: var(--accent); }
 .badge {
   font: 600 .66rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   text-transform: uppercase; letter-spacing: .06em; padding: .3rem .45rem;
