@@ -32,21 +32,28 @@ SOURCE = HERE / "endpoints.toml"
 OUTDIR = HERE / "site"
 
 
-def tailnet_suffix() -> str:
-    """TAILNET_SUFFIX from the environment, else from the repo's .env.
+def env_value(name: str) -> str | None:
+    """NAME from the environment, else from the repo's .env, else None.
 
     Read by hand rather than sourced: .env is a docker compose env file, not a
     shell script, and sourcing it would run anything in it.
     """
-    value = os.environ.get("TAILNET_SUFFIX")
+    value = os.environ.get(name)
     if value:
         return value.strip()
     envfile = REPO / ".env"
     if envfile.exists():
         for line in envfile.read_text().splitlines():
-            match = re.match(r"\s*TAILNET_SUFFIX\s*=\s*(.+?)\s*$", line)
+            match = re.match(rf"\s*{re.escape(name)}\s*=\s*(.+?)\s*$", line)
             if match:
                 return match.group(1).strip().strip("\"'")
+    return None
+
+
+def tailnet_suffix() -> str:
+    value = env_value("TAILNET_SUFFIX")
+    if value:
+        return value
     sys.exit(
         "TAILNET_SUFFIX not set and not found in .env.\n"
         "This renders on xero, where .env lives. Elsewhere, pass it in:\n"
@@ -54,9 +61,26 @@ def tailnet_suffix() -> str:
     )
 
 
+# {env:NAME} in endpoints.toml is filled from .env at render time, for values
+# that must not be in git but belong on the page - the album's secret path.
+# The page is tailnet-only (xero is not funneled; only the albums node is),
+# and site/ is gitignored, so the rendered value goes no further than .env
+# already does. A missing variable is fatal rather than rendering a dead link.
+ENV_PLACEHOLDER = re.compile(r"\{env:([A-Z0-9_]+)\}")
+
+
+def fill_env(text: str) -> str:
+    def sub(match):
+        value = env_value(match.group(1))
+        if value is None:
+            sys.exit(f"{match.group(1)} (used as {match.group(0)} in endpoints.toml) not set and not in .env")
+        return value
+    return ENV_PLACEHOLDER.sub(sub, text)
+
+
 def esc(value, tailnet: str) -> str:
-    """Substitute the tailnet placeholder, then escape for HTML."""
-    return html.escape(str(value).replace("{tailnet}", tailnet))
+    """Substitute the tailnet and {env:NAME} placeholders, then escape for HTML."""
+    return html.escape(fill_env(str(value).replace("{tailnet}", tailnet)))
 
 
 # A bare http(s) URL in prose. Matched after escaping, so `&` arrives as

@@ -23,7 +23,9 @@
 #   proto   - badge on the page: https, http, mqtt, dns, smb, ssh, udp
 #   host    - hostname or LAN address ({tailnet} substituted at render time)
 #   port    - numeric port, or omitted where the scheme's default is the point
-#   url     - present = the page renders a clickable link. Omit for anything
+#   url     - present = the page renders a clickable link. {env:NAME} in any
+#             field is filled from .env at render time (secrets that belong on
+#             the tailnet-only page but not in git). Omit for anything
 #             a browser cannot open (MQTT, WoL, the UDP feeds).
 #   connect - a copyable connection string for the non-clickable ones. This is
 #             the field that earns the page its keep: it is what otherwise gets
@@ -120,9 +122,10 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   proto = "https"
   host = "albums.{tailnet}"
   port = 443
+  url = "https://albums.{tailnet}/{env:OJASWI_ALBUM_PATH}/"
   desc = "PUBLIC via Tailscale Funnel - no Tailscale needed to view. copyparty gallery (albums-gallery) of /datapool/albums/ojaswi-1st-birthday; read-only for viewers, and <secret>/upload/ takes review-first family uploads (per-person logins)."
   who = "Family, via a shared link; relatives with a login upload from their phones. Nothing on the tailnet depends on it."
-  note = "No link here on purpose: the album path is the secret (OJASWI_ALBUM_PATH in .env); every other path on albums.{tailnet} is a 404. services/albums/README.md."
+  note = "The album path is the secret (OJASWI_ALBUM_PATH in .env), filled in at render time - never write it here; every other path on albums.{tailnet} is a 404. Rotating it means re-rendering this page too. services/albums/README.md."
 
   [[group.endpoint]]
   name = "Pi-hole admin"
