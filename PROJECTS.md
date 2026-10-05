@@ -139,7 +139,11 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 
 **Cause (user, 2026-10-02):** it runs from a 5V phone charger. A Pi 3B wants 2.5A, and the official supply runs at 5.1V so the cable's voltage drop still leaves 5V at the board.
 
-**Next step:** user swaps in the official Raspberry Pi 5.1V supply. Then check `vcgencmd get_throttled` is `0x0` after a day that includes a night of white noise - the flags are sticky, so read them after a reboot on the new supply.
+**Supply swapped 2026-10-05:** the Pi now runs from the official Raspberry Pi 5.1V supply. Booted on it at 07:48; at 22:30 `get_throttled` = `0x0` with no kernel under-voltage lines since boot - but no night of white noise yet.
+
+**Watching until ~2026-10-09:** `scripts/wol-sender/watch_pi_undervoltage.sh` runs from xero's crontab every 15min (marked TEMPORARY), logging flags and the boot's kernel under-voltage count to `pi-undervoltage.log`, and pushing one ntfy alert (homelab-health) per Pi boot if under-voltage appears.
+
+**Next step:** read `pi-undervoltage.log` around 2026-10-09. If it stayed `0x0` through nights of white noise, mark this Done, update the Power row in `docs/hardware.md` to "official supply, verified", and remove the cron line (and the script, or keep it for the next time). If it alerts, the supply was not the whole story - suspect the cable, then load (the GPIO fan, USB devices).
 
 ```parts
 qty | item | est | note
