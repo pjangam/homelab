@@ -22,6 +22,7 @@ scp -q clock-screensaver.desktop "$PI":~/.config/autostart/
 ssh "$PI" 'python3 -c "import gi; gi.require_foreign(\"cairo\")" 2>/dev/null \
     || { echo "python3-gi-cairo missing: sudo apt install python3-gi-cairo" >&2; exit 1; }
   pkill -x swayidle; sleep 1  # clock_screensaver.sh execs swayidle, so this stops it
+  pkill -f "^python3 .*analog_clock"  # an open clock still runs the old code
   export XDG_RUNTIME_DIR=/run/user/$(id -u) WAYLAND_DISPLAY=wayland-0
   nohup ~/clock_screensaver.sh >/dev/null 2>&1 &
   sleep 1; pgrep -a swayidle'

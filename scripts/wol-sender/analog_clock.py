@@ -24,6 +24,7 @@
 import json
 import math
 import os
+import sys
 import threading
 import time
 import urllib.request
@@ -374,8 +375,31 @@ def main():
         )
 
     win.connect("realize", hide_cursor)
-    win.fullscreen()
+    # Prefer a real monitor over labwc's headless fallback output, which
+    # reports itself as Unknown/Unknown and outlives an unplug.
+    display = Gdk.Display.get_default()
+    real = [
+        i
+        for i in range(display.get_n_monitors())
+        if display.get_monitor(i).get_model() not in (None, "Unknown")
+    ]
+    if real:
+        win.fullscreen_on_monitor(win.get_screen(), real[0])
+    else:
+        win.fullscreen()
     win.show_all()
+
+    # Switching the monitor's input to its other HDMI port unplugs it: labwc
+    # moves this window to a headless output and the process lives on, so
+    # clock_screensaver.sh's pgrep guard would never start another. When a
+    # monitor comes back, start over as a fresh window on it.
+    def restart():
+        # Same command line as swayidle used, so its pgrep guard still matches.
+        os.execvp("python3", ["python3"] + sys.argv)
+
+    display.connect(
+        "monitor-added", lambda *_: GLib.timeout_add_seconds(2, restart)
+    )
 
     def tick():
         area.queue_draw()
