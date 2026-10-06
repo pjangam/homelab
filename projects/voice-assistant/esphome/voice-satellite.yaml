@@ -44,6 +44,7 @@ wifi:
     gateway: 192.168.1.1
     subnet: 255.255.255.0
     dns1: 192.168.1.123
+    dns2: 192.168.1.124  # secondary Pi-hole on the wol Pi
   ap:
     password: !secret ap_password
 
