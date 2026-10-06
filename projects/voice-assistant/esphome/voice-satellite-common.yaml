@@ -1,0 +1,171 @@
+# Shared by every voice satellite board: an original ESP32 + INMP441 mic
+# (+ optional 8-LED WS2812 stick on GPIO4), streaming audio to HA, where the
+# pipeline's openWakeWord (on xero) listens for the wake word. Each board's
+# own file (voice-satellite.yaml, voice-bedroom.yaml) sets name, friendly_name
+# and static_ip, and its own API key. See projects/voice-assistant/README.md.
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  on_boot:
+    priority: -100
+    then:
+      - script.execute: show_disconnected
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  manual_ip:
+    static_ip: ${static_ip}
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+    dns1: 192.168.1.123
+    dns2: 192.168.1.124  # secondary Pi-hole on the wol Pi
+  ap:
+    password: !secret ap_password
+
+captive_portal:
+
+# INMP441, same pins as the aarti build: SD=32, WS=25, SCK=33, L/R to GND
+# (= left channel). It sends 24-bit samples in 32-bit slots.
+i2s_audio:
+  - id: i2s_in
+    i2s_lrclk_pin: GPIO25
+    i2s_bclk_pin: GPIO33
+
+microphone:
+  - platform: i2s_audio
+    id: mic
+    i2s_audio_id: i2s_in
+    adc_type: external
+    i2s_din_pin: GPIO32
+    channel: left
+    bits_per_sample: 32bit
+    sample_rate: 16000
+
+voice_assistant:
+  id: va
+  microphone: mic
+  use_wake_word: true
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 2.0
+  on_wake_word_detected:
+    - script.execute: show_listening
+  on_stt_vad_end:
+    - script.execute: show_thinking
+  on_intent_end:
+    - script.execute: show_done
+  on_error:
+    - script.execute: show_error
+  # on_end follows on_error/on_intent_end at once; let their colour finish.
+  on_end:
+    - if:
+        condition:
+          not:
+            or:
+              - script.is_running: show_error
+              - script.is_running: show_done
+        then:
+          - script.execute: show_idle
+  # voice_assistant's own client triggers, not api's: those fire for any API
+  # client (an `esphome logs` session too), and on an HA reconnect fired before
+  # HA had subscribed to the voice stream ("No API client connected"), leaving
+  # the board idle until reflashed or reconnected.
+  on_client_connected:
+    - voice_assistant.start_continuous:
+    - script.execute: show_idle
+  on_client_disconnected:
+    - voice_assistant.stop:
+    - script.execute: show_disconnected
+
+# Each state sets both lights: the onboard LED (visible up close) and the
+# WS2812 strip (visible across the room). The strip works whether or not it
+# is plugged in.
+script:
+  - id: show_disconnected
+    then:
+      - light.turn_on: { id: status, brightness: 30%, effect: "Slow blink" }
+      - light.turn_on: { id: strip, brightness: 25%, red: 100%, green: 45%, blue: 0%, effect: "Slow pulse" }
+  - id: show_idle
+    then:
+      - light.turn_off: status
+      - light.turn_off: strip
+  - id: show_listening
+    then:
+      - light.turn_on: { id: status, brightness: 100%, effect: none }
+      - light.turn_on: { id: strip, brightness: 70%, red: 0%, green: 25%, blue: 100%, effect: none }
+  - id: show_thinking
+    then:
+      - light.turn_on: { id: status, brightness: 100%, effect: "Fast blink" }
+      - light.turn_on: { id: strip, brightness: 70%, red: 0%, green: 100%, blue: 100%, effect: "Fast pulse" }
+  - id: show_done
+    mode: restart
+    then:
+      - light.turn_off: status
+      - light.turn_on: { id: strip, brightness: 70%, red: 0%, green: 100%, blue: 0%, effect: none }
+      - delay: 1s
+      - script.execute: show_idle
+  - id: show_error
+    mode: restart
+    then:
+      - light.turn_on: { id: status, brightness: 100%, effect: "Fast blink" }
+      - light.turn_on: { id: strip, brightness: 70%, red: 100%, green: 0%, blue: 0%, effect: "Fast pulse" }
+      - delay: 2s
+      - script.execute: show_idle
+
+# Onboard blue LED (GPIO2 on most ESP32 dev boards): slow blink = not
+# connected to HA, solid = heard the wake word / listening, fast blink =
+# processing or error, off = idle. The strip's colours are in the scripts above.
+output:
+  - platform: ledc
+    pin:
+      number: GPIO2
+      ignore_strapping_warning: true  # onboard LED; harmless at boot
+    id: led_out
+
+light:
+  - platform: monochromatic
+    output: led_out
+    id: status
+    name: Status LED
+    effects:
+      - pulse:
+          name: Slow blink
+          transition_length: 1s
+          update_interval: 1s
+      - strobe:
+          name: Fast blink
+          colors:
+            - { state: true, brightness: 100%, duration: 150ms }
+            - { state: false, duration: 150ms }
+  # 8-LED WS2812B stick on GPIO4 via the 470R, powered from VIN (wiring.html).
+  # Internal: driven only by the scripts above, and kept out of HA so Assist
+  # never sees a second "light" on this board.
+  - platform: esp32_rmt_led_strip
+    id: strip
+    internal: true
+    pin: GPIO4
+    num_leds: 8
+    chipset: WS2812
+    rgb_order: GRB
+    default_transition_length: 0s
+    effects:
+      - pulse:
+          name: Slow pulse
+          transition_length: 1s
+          update_interval: 1s
+      - pulse:
+          name: Fast pulse
+          transition_length: 300ms
+          update_interval: 300ms

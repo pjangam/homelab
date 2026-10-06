@@ -52,7 +52,7 @@ white noise, AC.
   `end_stage tts` reproduces the app's request.
 - `watch_assist.sh` - live view of voice runs stage by stage, HA log and
   speech-to-phrase log, for "the client does nothing" debugging.
-- `esphome/` - the ESP32 satellite: `voice-satellite.yaml`, `esphome.sh`
+- `esphome/` - the ESP32 satellites: `voice-satellite-common.yaml` (shared), one small file per board - `voice-satellite.yaml` (living room, .125) and `voice-bedroom.yaml` (bedroom, .126, waiting on a second INMP441) - `build_on_mac.sh [bedroom]`, `esphome.sh`
   (ESPHome in docker: `compile`, `run --device /dev/ttyUSB0`, later OTA to
   192.168.1.125), and the gitignored `secrets.yaml` (Wi-Fi, API key, OTA
   password). **Do not compile on xero while its RAM is suspect** - see

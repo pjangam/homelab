@@ -7,6 +7,7 @@
 #   esphome.sh flash-bin build-out/firmware.factory.bin [/dev/ttyUSB0]
 #                                       # flash a .bin built elsewhere
 #                                       # (build_on_mac.sh), no compile here
+# CONFIG=voice-bedroom.yaml picks another board (default voice-satellite.yaml).
 # Build cache lives in the esphome-build docker volume, so rebuilds are fast.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -22,4 +23,4 @@ if [ "$cmd" = flash-bin ]; then
 fi
 exec docker run --rm -i "${tty[@]}" "${dev[@]}" --net host \
   -v "$PWD":/config -v esphome-build:/config/.esphome \
-  ghcr.io/esphome/esphome:stable "$cmd" voice-satellite.yaml "$@"
+  ghcr.io/esphome/esphome:stable "$cmd" "${CONFIG:-voice-satellite.yaml}" "$@"

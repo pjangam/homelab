@@ -1,0 +1,16 @@
+# Bedroom voice satellite: the second ESP32 + its own INMP441, wired as
+# wiring.html. Keep it away from the white-noise speaker: the hiss drowns out
+# commands even when the wake word gets through (tested 2026-10-06).
+# Everything but the name, address and API key is in voice-satellite-common.yaml.
+# Build and flash from the Mac: build_on_mac.sh bedroom
+substitutions:
+  name: voice-bedroom
+  friendly_name: Voice Bedroom
+  static_ip: 192.168.1.126
+
+packages:
+  common: !include voice-satellite-common.yaml
+
+api:
+  encryption:
+    key: !secret api_key_bedroom
