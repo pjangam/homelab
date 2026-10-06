@@ -14,6 +14,11 @@ Idempotent: adding a tile that is already on the board changes nothing.
 
   projects/healthcheck/add_stats_dashboard_tile.py binary_sensor.foo
   projects/healthcheck/add_stats_dashboard_tile.py binary_sensor.foo --after binary_sensor.bar
+  projects/healthcheck/add_stats_dashboard_tile.py sensor.foo --section-title "wol Pi"
+
+--section-title picks the section by its heading, creating it (as the last
+section) if there is none. A tile already in another section is moved
+there, so this also re-homes existing tiles.
 
 Needs HA_TOKEN in the environment (it is in .env.healthcheck).
 """
@@ -60,6 +65,7 @@ def main():
     ap.add_argument("entity")
     ap.add_argument("--dashboard", default="dashboard-stats")
     ap.add_argument("--section", type=int, default=0)
+    ap.add_argument("--section-title", help="the section whose heading is this; created if missing")
     ap.add_argument("--after", help="place the new tile directly after this entity")
     ap.add_argument("--url", default=os.environ.get("HA_URL", "http://localhost:8123"))
     args = ap.parse_args()
@@ -72,11 +78,31 @@ def main():
     get = {"type": "lovelace/config", "url_path": args.dashboard}
     (config,) = asyncio.run(ws_call(ws_url, token, [get]))
 
-    section = config["views"][0]["sections"][args.section]
+    sections = config["views"][0]["sections"]
+    if args.section_title:
+        for idx, sec in enumerate(sections):
+            if any(c.get("type") == "heading" and c.get("heading") == args.section_title
+                   for c in sec.get("cards", [])):
+                break
+        else:
+            sections.append({"type": "grid", "cards": [
+                {"type": "heading", "heading": args.section_title}]})
+            idx = len(sections) - 1
+            print(f"created section {args.section_title!r}.")
+        args.section = idx
+    section = sections[args.section]
     cards = section["cards"]
     if any(c.get("entity") == args.entity for c in cards):
-        print(f"{args.entity} is already on the board - nothing to do.")
+        print(f"{args.entity} is already in that section - nothing to do.")
         return
+    moved_from = None
+    for idx, sec in enumerate(sections):
+        if idx == args.section:
+            continue
+        for c in list(sec.get("cards", [])):
+            if c.get("type") == "tile" and c.get("entity") == args.entity:
+                sec["cards"].remove(c)
+                moved_from = idx
 
     tile = {"type": "tile", "entity": args.entity}
     at = len(cards)
@@ -102,7 +128,8 @@ def main():
 
     save = {"type": "lovelace/config/save", "url_path": args.dashboard, "config": config}
     asyncio.run(ws_call(ws_url, token, [save]))
-    print(f"added {args.entity} at position {at} of section {args.section}.")
+    how = f"moved from section {moved_from}" if moved_from is not None else "added"
+    print(f"{how}: {args.entity} at position {at} of section {args.section}.")
 
 
 if __name__ == "__main__":
