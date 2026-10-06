@@ -12,7 +12,7 @@ esphome:
   on_boot:
     priority: -100
     then:
-      - light.turn_on: { id: status, brightness: 30%, effect: "Slow blink" }
+      - script.execute: show_disconnected
 
 esp32:
   board: esp32dev
@@ -69,29 +69,72 @@ voice_assistant:
   auto_gain: 31dBFS
   volume_multiplier: 2.0
   on_wake_word_detected:
-    - light.turn_on: { id: status, brightness: 100%, effect: none }
+    - script.execute: show_listening
   on_stt_vad_end:
-    - light.turn_on: { id: status, brightness: 100%, effect: "Fast blink" }
-  on_end:
-    - light.turn_off: status
+    - script.execute: show_thinking
+  on_intent_end:
+    - script.execute: show_done
   on_error:
-    - light.turn_on: { id: status, brightness: 100%, effect: "Fast blink" }
-    - delay: 2s
-    - light.turn_off: status
+    - script.execute: show_error
+  # on_end follows on_error/on_intent_end at once; let their colour finish.
+  on_end:
+    - if:
+        condition:
+          not:
+            or:
+              - script.is_running: show_error
+              - script.is_running: show_done
+        then:
+          - script.execute: show_idle
   # voice_assistant's own client triggers, not api's: those fire for any API
   # client (an `esphome logs` session too), and on an HA reconnect fired before
   # HA had subscribed to the voice stream ("No API client connected"), leaving
   # the board idle until reflashed or reconnected.
   on_client_connected:
     - voice_assistant.start_continuous:
-    - light.turn_off: status
+    - script.execute: show_idle
   on_client_disconnected:
     - voice_assistant.stop:
-    - light.turn_on: { id: status, brightness: 30%, effect: "Slow blink" }
+    - script.execute: show_disconnected
 
-# Onboard blue LED (GPIO2 on most ESP32 dev boards) as the status light until
-# the WS2812 stick is wired: slow blink = not connected to HA, solid = heard
-# the wake word / listening, fast blink = processing or error, off = idle.
+# Each state sets both lights: the onboard LED (visible up close) and the
+# WS2812 strip (visible across the room). The strip works whether or not it
+# is plugged in.
+script:
+  - id: show_disconnected
+    then:
+      - light.turn_on: { id: status, brightness: 30%, effect: "Slow blink" }
+      - light.turn_on: { id: strip, brightness: 25%, red: 100%, green: 45%, blue: 0%, effect: "Slow pulse" }
+  - id: show_idle
+    then:
+      - light.turn_off: status
+      - light.turn_off: strip
+  - id: show_listening
+    then:
+      - light.turn_on: { id: status, brightness: 100%, effect: none }
+      - light.turn_on: { id: strip, brightness: 70%, red: 0%, green: 25%, blue: 100%, effect: none }
+  - id: show_thinking
+    then:
+      - light.turn_on: { id: status, brightness: 100%, effect: "Fast blink" }
+      - light.turn_on: { id: strip, brightness: 70%, red: 0%, green: 100%, blue: 100%, effect: "Fast pulse" }
+  - id: show_done
+    mode: restart
+    then:
+      - light.turn_off: status
+      - light.turn_on: { id: strip, brightness: 70%, red: 0%, green: 100%, blue: 0%, effect: none }
+      - delay: 1s
+      - script.execute: show_idle
+  - id: show_error
+    mode: restart
+    then:
+      - light.turn_on: { id: status, brightness: 100%, effect: "Fast blink" }
+      - light.turn_on: { id: strip, brightness: 70%, red: 100%, green: 0%, blue: 0%, effect: "Fast pulse" }
+      - delay: 2s
+      - script.execute: show_idle
+
+# Onboard blue LED (GPIO2 on most ESP32 dev boards): slow blink = not
+# connected to HA, solid = heard the wake word / listening, fast blink =
+# processing or error, off = idle. The strip's colours are in the scripts above.
 output:
   - platform: ledc
     pin:
@@ -114,3 +157,23 @@ light:
           colors:
             - { state: true, brightness: 100%, duration: 150ms }
             - { state: false, duration: 150ms }
+  # 8-LED WS2812B stick on GPIO4 via the 470R, powered from VIN (wiring.html).
+  # Internal: driven only by the scripts above, and kept out of HA so Assist
+  # never sees a second "light" on this board.
+  - platform: esp32_rmt_led_strip
+    id: strip
+    internal: true
+    pin: GPIO4
+    num_leds: 8
+    chipset: WS2812
+    rgb_order: GRB
+    default_transition_length: 0s
+    effects:
+      - pulse:
+          name: Slow pulse
+          transition_length: 1s
+          update_interval: 1s
+      - pulse:
+          name: Fast pulse
+          transition_length: 300ms
+          update_interval: 300ms
