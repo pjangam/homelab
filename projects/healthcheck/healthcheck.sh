@@ -301,6 +301,24 @@ if [ -f "$POWER_DOWN_SINCE_FILE" ]; then
   power_down_minutes=$(( ($(date +%s) - power_down_since) / 60 ))
 fi
 
+# wol Pi health (projects/pi-health/): the Pi publishes its own power state
+# to MQTT every minute, so read it back from HA. Sticky since-boot flag, not
+# "now": a dip between two runs still alerts, once per Pi boot (the text
+# carries the boot time, so the dedup below keys on it). Unavailable means
+# the Pi or its publisher went silent - its last-will fired. An empty answer
+# means HA itself did not reply, which the container check already covers.
+ha_state() {
+  curl -s --max-time 10 -H "Authorization: Bearer $HA_TOKEN" "http://localhost:8123/api/states/$1" \
+    | jq -r '.state // empty' 2>/dev/null
+}
+wol_pi_uv=$(ha_state binary_sensor.wol_pi_under_voltage_since_boot)
+case "$wol_pi_uv" in
+  on)
+    problems+=("wol Pi has had under-voltage since it booted at $(ha_state sensor.wol_pi_booted) - see the wol Pi device in Home Assistant for when (Last under-voltage) and how often. The supply or cable is not delivering 5V under load.") ;;
+  unavailable|unknown)
+    problems+=("wol Pi health is not reporting to Home Assistant ($wol_pi_uv) - the Pi is off the network or pi-health-mqtt.service stopped. Check: ssh pramod@192.168.1.124 'systemctl --user status pi-health-mqtt'") ;;
+esac
+
 # Heartbeat: proves this script ran to completion, regardless of what it
 # found. If the machine hard-locks (e.g. the ZFS+postgres freeze from
 # 2026-06-29) and cron itself stops running, this ping goes silent and

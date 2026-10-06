@@ -1,0 +1,15 @@
+[Unit]
+Description=wol Pi health over MQTT (under-voltage, throttling)
+
+[Service]
+EnvironmentFile=/home/pramod/code/homelab/.env.mqtt
+ExecStart=%h/.local/bin/uv run --script /home/pramod/code/homelab/projects/pi-health/pi-health-mqtt.py
+# uv hands the SIGTERM of a normal stop back as exit 143.
+SuccessExitStatus=143
+# No network ordering: After=network-online.target is a no-op in a user unit,
+# and paho's connect_async keeps retrying until the broker answers.
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

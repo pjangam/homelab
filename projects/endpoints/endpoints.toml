@@ -176,7 +176,7 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
   port = 1883
   connect = "mosquitto_sub -h 192.168.1.123 -p 1883 -u homelab -P \"$MQTT_PASSWORD\" -t '#' -v"
   desc = "The broker. Authenticated - allow_anonymous is false, user homelab, password in .env.mqtt."
-  who = "Home Assistant, Node-RED on the Pi, the white-noise and volume bridges, the healthcheck publisher, clawlight's server and the Pi's LED, and both sets of GPIO buttons."
+  who = "Home Assistant, Node-RED on the Pi, the white-noise and volume bridges, the Pi health publisher, the healthcheck publisher, clawlight's server and the Pi's LED, and both sets of GPIO buttons."
   note = "No TLS: it is LAN-only and the password is the whole of the auth. Published on the host, which is how the Pi reaches it."
 
     [[group.endpoint.topic]]
@@ -198,6 +198,10 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
     [[group.endpoint.topic]]
     name = "volume/set, /state, /available"
     desc = "Server volume as an HA number: the Pi's 3.5mm jack, capped at 93%. Bridged by volume-mqtt.service on the wol Pi (moved from xero 2026-09-24)."
+
+    [[group.endpoint.topic]]
+    name = "homelab/wol_pi/state, /available"
+    desc = "Retained. The wol Pi's health as one JSON object (under-voltage and throttling flags, kernel under-voltage events) every 60s, from pi-health-mqtt.service on the Pi; /available is its last-will. HA shows it as the wol Pi device."
 
     [[group.endpoint.topic]]
     name = "homeassistant/#"

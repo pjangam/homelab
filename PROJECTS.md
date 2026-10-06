@@ -141,9 +141,9 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 
 **Supply swapped 2026-10-05:** the Pi now runs from the official Raspberry Pi 5.1V supply. Booted on it at 07:48; at 22:30 `get_throttled` = `0x0` with no kernel under-voltage lines since boot - but no night of white noise yet.
 
-**Watching until ~2026-10-09:** `scripts/wol-sender/watch_pi_undervoltage.sh` runs from xero's crontab every 15min (marked TEMPORARY), logging flags and the boot's kernel under-voltage count to `pi-undervoltage.log`, and pushing one ntfy alert (homelab-health) per Pi boot if under-voltage appears.
+**Watching until ~2026-10-09:** xero's temporary cron watch (2026-10-05) was replaced on 2026-10-06 by permanent monitoring, "wol Pi health monitoring" below. The Pi now reports its power flags every minute to HA, and healthcheck.sh alerts (email + ntfy) once per Pi boot if under-voltage appears. The watch's 50 samples (2026-10-05 22:45 to 2026-10-06 11:00) were all `0x0`; its log is `pi-undervoltage.log` on xero.
 
-**Next step:** read `pi-undervoltage.log` around 2026-10-09. If it stayed `0x0` through nights of white noise, mark this Done, update the Power row in `docs/hardware.md` to "official supply, verified", and remove the cron line (and the script, or keep it for the next time). If it alerts, the supply was not the whole story - suspect the cable, then load (the GPIO fan, USB devices).
+**Next step:** around 2026-10-09, open the wol Pi device in HA (or the Stats dashboard tile "Under-voltage since boot"). If it has stayed off through nights of white noise, mark this Done and update the Power row in `docs/hardware.md` to "official supply, verified". If it alerts, the supply was not the whole story - suspect the cable, then load (the GPIO fan, USB devices).
 
 ```parts
 qty | item | est | note
@@ -1568,3 +1568,17 @@ qty | item | est | note
 **Stage 2 wiring drawn 2026-10-05:** `projects/voice-assistant/wiring.html` (https://claude.ai/artifact/UWMZYLRTNdLTgHvdU6Vz6m) - same ESP32 + INMP441 pins as the aarti build, 8 LEDs from the spare reel on GPIO4 via the 470R, USB-powered (1-2A charger, or a xero USB port - xero is on the UPS; not the Pi, which already under-volts). Wake word decided: "Alejandro", a custom openWakeWord model (train with the openWakeWord notebook), run on xero. Breadboard build planned for the weekend.
 
 **Next step:** the user keeps testing from the HA phone app (Assist button -> mic) in real rooms with the fan/white noise on. If it holds up, stage 2: reflash the packed-away aarti ESP32 + INMP441 (`docs/hardware.md`, wled-sound) to ESPHome `voice_assistant`, openWakeWord container on xero for the wake word (original ESP32, so no on-device micro_wake_word), a few WS2812s as the listening/ok/error light. Back up WLED config first so the aarti setup can be restored. Optional: Piper for spoken replies.
+
+### wol Pi health monitoring
+**Status:** Done
+
+**Why:** the Pi plays the bedroom white noise and Spotify, and has had under-voltage on two supplies. Nothing on xero could see the Pi's health except a temporary 15-minute ssh poll, and nothing recorded *when* a dip happened. Asked for 2026-10-06 as permanent monitoring, power first, with CPU, memory and temperature to follow.
+
+**Shipped 2026-10-06:** `projects/pi-health/pi-health-mqtt.py` runs on the Pi as `pi-health-mqtt.service` (systemd --user, enabled; deploy with `projects/pi-health/deploy_pi_health.sh` from xero). Every 60s it publishes one retained JSON object to `homelab/wol_pi/state` on xero's Mosquitto, with a last-will on `homelab/wol_pi/available`. HA discovery makes a **wol Pi** device: Under-voltage (now / since boot), Throttled (now / since boot), Under-voltage events since boot (kernel log lines), Last under-voltage (timestamp), and diagnostics get_throttled, Booted, Last report. HA's history on these is the dashboard; "Under-voltage since boot" is also a tile on the Stats dashboard.
+
+**Alerting:** `healthcheck.sh` (xero, 15min) reads the entities back from HA. Under-voltage since boot = on alerts once per Pi boot; unavailable (the Pi off the network or the daemon dead) alerts too. Both tested: stopping the service took the entities to unavailable within seconds.
+
+**Gotcha found on the way:** kernel 6.18 logs "Undervoltage detected!" (hwmon), not "Under-voltage" - the old cron watch's `grep -ci under-voltage` would have counted 0 forever. The daemon matches both spellings. Its kernel count only covers the current boot: the Pi's journal is volatile.
+
+**Adding a metric later (CPU, memory, temperature, disk):** set the field in `collect()` and add one line to `ENTITIES` in `pi-health-mqtt.py`, then re-run the deploy script. CPU temp is `/sys/class/thermal/thermal_zone0/temp` (milli-°C); bit 3/19 of get_throttled is already the soft temperature limit, folded into Throttled.
+
