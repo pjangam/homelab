@@ -1,7 +1,9 @@
-# Living room voice satellite: the aarti-lights ESP32 + INMP441, reflashed
-# from WLED to ESPHome. 192.168.1.125 is the address it had as WLED
-# (docs/hardware.md, wled-sound). Name kept as voice-satellite so HA's
-# device and entities stay as they are.
+# The first voice satellite: the aarti-lights ESP32 + INMP441, reflashed from
+# WLED to ESPHome, at 192.168.1.125 (its WLED address, docs/hardware.md).
+# Which room it serves is its HA area (Bedroom since 2026-10-06), not this
+# file. Keep it away from the white-noise speaker: the hiss drowns out
+# commands even when the wake word gets through (tested 2026-10-06).
+# Name kept as voice-satellite so HA's device and entities stay as they are.
 # Everything but the name, address and API key is in voice-satellite-common.yaml.
 # Build and flash from the Mac: build_on_mac.sh
 substitutions:

@@ -6,9 +6,10 @@
 #   3. otherwise -> copy the .bin files to xero, flash there with
 #      `esphome.sh flash-bin` (the board plugged into xero)
 #
-#   ./build_on_mac.sh                     # living room board (voice-satellite.yaml)
-#   ./build_on_mac.sh bedroom             # bedroom board (voice-bedroom.yaml)
-#   ./build_on_mac.sh [bedroom] --no-flash  # build only
+#   ./build_on_mac.sh                     # first board, .125 (voice-satellite.yaml)
+#   ./build_on_mac.sh living              # second board, .126 (voice-living-room.yaml)
+#   ./build_on_mac.sh [living] --no-flash # build only
+# The room a board serves is its HA area, not anything in these files.
 #
 # Flashing over USB writes the chosen board's firmware to whatever ESP32 is
 # plugged in, so plug in the board that matches the argument.
@@ -29,9 +30,8 @@ config=voice-satellite.yaml; flash=1
 for a in "$@"; do
   case "$a" in
     --no-flash) flash=0 ;;
-    living|living-room) config=voice-satellite.yaml ;;
-    bedroom) config=voice-bedroom.yaml ;;
-    *) echo "Unknown argument: $a (use bedroom, living, --no-flash)" >&2; exit 1 ;;
+    living|living-room) config=voice-living-room.yaml ;;
+    *) echo "Unknown argument: $a (use living, --no-flash)" >&2; exit 1 ;;
   esac
 done
 # Each board file names itself and its address in substitutions.
