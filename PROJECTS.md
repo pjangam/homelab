@@ -1580,5 +1580,7 @@ qty | item | est | note
 
 **Gotcha found on the way:** kernel 6.18 logs "Undervoltage detected!" (hwmon), not "Under-voltage" - the old cron watch's `grep -ci under-voltage` would have counted 0 forever. The daemon matches both spellings. Its kernel count only covers the current boot: the Pi's journal is volatile.
 
-**Adding a metric later (CPU, memory, temperature, disk):** set the field in `collect()` and add one line to `ENTITIES` in `pi-health-mqtt.py`, then re-run the deploy script. CPU temp is `/sys/class/thermal/thermal_zone0/temp` (milli-°C); bit 3/19 of get_throttled is already the soft temperature limit, folded into Throttled.
+**CPU, memory, temperature and disk added 2026-10-06** (same publisher, same 60s): CPU usage % (from `/proc/stat` deltas, so unknown for the first minute after a restart), Memory usage % (MemAvailable-based), CPU temperature °C, Disk usage % of `/` (the SD card). All have `state_class: measurement`, so HA keeps long-term statistics. Tiles in the "wol Pi" section. First readings matched `free`, `df`, `vcgencmd measure_temp` and `top` on the Pi: CPU ~3%, memory ~50% of 905MB, 52.6°C, disk 34%. **Dashboard only - nothing alerts on them yet;** if that is wanted, healthcheck.sh is where it goes (e.g. temperature, or disk over 90%).
+
+**Adding a metric:** set the field in `collect()` and add one line to `ENTITIES` in `pi-health-mqtt.py`, re-run `deploy_pi_health.sh`, then `add_stats_dashboard_tile.py <entity> --section-title "wol Pi"`.
 

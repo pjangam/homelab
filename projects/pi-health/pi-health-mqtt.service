@@ -1,5 +1,5 @@
 [Unit]
-Description=wol Pi health over MQTT (under-voltage, throttling)
+Description=wol Pi health over MQTT (power, CPU, memory, temperature, disk)
 
 [Service]
 EnvironmentFile=/home/pramod/code/homelab/.env.mqtt

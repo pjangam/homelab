@@ -12,8 +12,9 @@ off the network or this daemon dies - which is how xero's healthcheck.sh
 tells "Pi healthy" from "Pi silent".
 
 Started 2026-10-06 for the Pi's under-voltage (PROJECTS.md "wol Pi health
-monitoring"). To add a metric (CPU, memory, temperature, ...): set its field
-in collect() and add one line to ENTITIES. Nothing else changes.
+monitoring"); CPU, memory, temperature and disk added the same day. To add a
+metric: set its field in collect() and add one line to ENTITIES. Nothing
+else changes.
 
 vcgencmd get_throttled bits:
   0 under-voltage now     16 under-voltage since boot
@@ -26,6 +27,8 @@ import json
 import os
 import subprocess
 import time
+
+import shutil
 
 import paho.mqtt.client as mqtt
 
@@ -74,6 +77,41 @@ def boot_time():
     return None
 
 
+_prev_cpu = None
+
+
+def cpu_percent():
+    """Busy % since the previous call, from /proc/stat. None on the first call."""
+    global _prev_cpu
+    with open("/proc/stat") as f:
+        fields = [int(x) for x in f.readline().split()[1:]]
+    idle = fields[3] + fields[4]  # idle + iowait
+    total = sum(fields[:8])       # leave out guest time, already counted in user
+    prev, _prev_cpu = _prev_cpu, (idle, total)
+    if prev is None or total == prev[1]:
+        return None
+    return round(100 * (1 - (idle - prev[0]) / (total - prev[1])), 1)
+
+
+def memory_percent():
+    info = {}
+    with open("/proc/meminfo") as f:
+        for line in f:
+            key, value = line.split(":")
+            info[key] = int(value.split()[0])
+    return round(100 * (1 - info["MemAvailable"] / info["MemTotal"]), 1)
+
+
+def cpu_temperature():
+    with open("/sys/class/thermal/thermal_zone0/temp") as f:
+        return round(int(f.read()) / 1000, 1)
+
+
+def disk_percent():
+    usage = shutil.disk_usage("/")
+    return round(100 * usage.used / usage.total, 1)
+
+
 def collect():
     flags = throttled_flags()
     uv_count, uv_last = kernel_undervoltage()
@@ -87,6 +125,10 @@ def collect():
         "throttled_since_boot": bool(flags & 0xE0000),
         "undervoltage_events": uv_count,
         "undervoltage_last": uv_last,
+        "cpu_percent": cpu_percent(),
+        "memory_percent": memory_percent(),
+        "cpu_temperature": cpu_temperature(),
+        "disk_percent": disk_percent(),
     }
 
 
@@ -117,6 +159,16 @@ ENTITIES = [
         "device_class": "timestamp",
         "value_template": "{{ value_json.undervoltage_last or None }}",
     }),
+    # cpu_percent is None for the first report after a start (it needs two
+    # samples), so it shows unknown for one minute.
+    sensor("cpu_percent", "CPU usage", "mdi:cpu-64-bit", unit_of_measurement="%",
+           state_class="measurement"),
+    sensor("memory_percent", "Memory usage", "mdi:memory", unit_of_measurement="%",
+           state_class="measurement"),
+    sensor("cpu_temperature", "CPU temperature", "mdi:thermometer", unit_of_measurement="°C",
+           device_class="temperature", state_class="measurement"),
+    sensor("disk_percent", "Disk usage", "mdi:sd", unit_of_measurement="%",
+           state_class="measurement"),
     sensor("throttled_raw", "get_throttled", "mdi:chip", entity_category="diagnostic"),
     sensor("boot", "Booted", "mdi:restart", device_class="timestamp", entity_category="diagnostic"),
     sensor("ts", "Last report", "mdi:calendar-check", device_class="timestamp",

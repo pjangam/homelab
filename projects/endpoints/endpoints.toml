@@ -201,7 +201,7 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
 
     [[group.endpoint.topic]]
     name = "homelab/wol_pi/state, /available"
-    desc = "Retained. The wol Pi's health as one JSON object (under-voltage and throttling flags, kernel under-voltage events) every 60s, from pi-health-mqtt.service on the Pi; /available is its last-will. HA shows it as the wol Pi device."
+    desc = "Retained. The wol Pi's health as one JSON object (under-voltage and throttling flags, kernel under-voltage events, CPU, memory, temperature, disk) every 60s, from pi-health-mqtt.service on the Pi; /available is its last-will. HA shows it as the wol Pi device."
 
     [[group.endpoint.topic]]
     name = "homeassistant/#"
