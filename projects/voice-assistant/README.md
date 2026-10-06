@@ -56,7 +56,9 @@ white noise, AC.
   (ESPHome in docker: `compile`, `run --device /dev/ttyUSB0`, later OTA to
   192.168.1.125), and the gitignored `secrets.yaml` (Wi-Fi, API key, OTA
   password). **Do not compile on xero while its RAM is suspect** - see
-  PROJECTS.md.
+  PROJECTS.md. Build on the Mac instead: `esphome/build_on_mac.sh` from a
+  clone (venv, no Docker) flashes over USB on the Mac, OTA, or copies the
+  `.bin` to xero for `esphome.sh flash-bin`.
 - `wakewords/` - custom openWakeWord models, mounted into the `openwakeword`
   container (`127.0.0.1:10400`, preloads `ok_nabu`).
 - `test_stt.sh` - synthesises phrases with HA's Google TTS and posts them to
