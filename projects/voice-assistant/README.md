@@ -60,7 +60,7 @@ white noise, AC.
   clone (venv, no Docker) flashes over USB on the Mac, OTA, or copies the
   `.bin` to xero for `esphome.sh flash-bin`.
 - `wakewords/` - custom openWakeWord models, mounted into the `openwakeword`
-  container (`127.0.0.1:10400`, preloads `ok_nabu`).
+  container (`127.0.0.1:10400`, preloads `okay_nabu`).
 - `test_stt.sh` - synthesises phrases with HA's Google TTS and posts them to
   the STT API; transcription check only, executes nothing.
 

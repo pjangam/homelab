@@ -25,7 +25,7 @@ HA_HTTP = "http://localhost:8123"
 WYOMING = {"speech_to_phrase": 10300, "piper": 10200, "openwakeword": 10400}  # all on 127.0.0.1
 # Wake word for the ESP32 satellite (the phone app starts at speech-to-text and
 # ignores it). Swap to the custom model's id once "Alejandro" is trained.
-WAKE_WORD_ID = "ok_nabu"
+WAKE_WORD_ID = "okay_nabu"
 
 # entity_id -> extra spoken names. Every entity here is exposed to Assist.
 EXPOSE = {

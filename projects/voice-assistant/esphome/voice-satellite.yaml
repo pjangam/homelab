@@ -24,12 +24,6 @@ logger:
 api:
   encryption:
     key: !secret api_key
-  on_client_connected:
-    - voice_assistant.start_continuous:
-    - light.turn_off: status
-  on_client_disconnected:
-    - voice_assistant.stop:
-    - light.turn_on: { id: status, brightness: 30%, effect: "Slow blink" }
 
 ota:
   - platform: esphome
@@ -84,9 +78,16 @@ voice_assistant:
     - light.turn_on: { id: status, brightness: 100%, effect: "Fast blink" }
     - delay: 2s
     - light.turn_off: status
-  # A pipeline error ends the continuous loop; restart it unless HA is gone.
+  # voice_assistant's own client triggers, not api's: those fire for any API
+  # client (an `esphome logs` session too), and on an HA reconnect fired before
+  # HA had subscribed to the voice stream ("No API client connected"), leaving
+  # the board idle until reflashed or reconnected.
+  on_client_connected:
+    - voice_assistant.start_continuous:
+    - light.turn_off: status
   on_client_disconnected:
     - voice_assistant.stop:
+    - light.turn_on: { id: status, brightness: 30%, effect: "Slow blink" }
 
 # Onboard blue LED (GPIO2 on most ESP32 dev boards) as the status light until
 # the WS2812 stick is wired: slow blink = not connected to HA, solid = heard
