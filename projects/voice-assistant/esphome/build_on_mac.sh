@@ -54,8 +54,11 @@ esphome="$VENV/bin/esphome"
 echo "== Compiling"
 "$esphome" compile voice-satellite.yaml
 
-out=.esphome/build/voice-satellite/.pioenvs/voice-satellite
-ls -l "$out/firmware.factory.bin" "$out/firmware.bin"
+# esp-idf builds land in build/; older PlatformIO builds used .pioenvs/<name>/
+out=$(dirname "$(ls -t .esphome/build/voice-satellite/build/firmware.factory.bin \
+  .esphome/build/voice-satellite/.pioenvs/voice-satellite/firmware.factory.bin 2>/dev/null | head -1)")
+[ -f "$out/firmware.factory.bin" ] || { echo "Built, but firmware.factory.bin not found" >&2; exit 1; }
+ls -l "$out"/firmware*.bin
 [ "$flash" = 1 ] || { echo "== Built, not flashed (--no-flash)"; exit 0; }
 
 port=$(ls /dev/cu.usbserial-* /dev/cu.SLAB_USBtoUART* /dev/cu.wchusbserial* 2>/dev/null | head -1 || true)
@@ -71,7 +74,7 @@ elif nc -z -G 3 "$DEVICE_IP" 6053 2>/dev/null; then
 else
   echo "== No board on USB here and no ESPHome at $DEVICE_IP; copying the build to xero"
   ssh "$XERO" "mkdir -p $XERO_DIR/build-out"
-  scp "$out/firmware.factory.bin" "$out/firmware.bin" "$XERO:$XERO_DIR/build-out/"
+  scp "$out"/firmware*.bin "$XERO:$XERO_DIR/build-out/"
   cat <<EOF
 == Copied. With the ESP32 plugged into xero by USB, run there:
      projects/voice-assistant/esphome/esphome.sh flash-bin build-out/firmware.factory.bin
