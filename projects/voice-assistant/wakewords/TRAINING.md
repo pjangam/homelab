@@ -30,6 +30,33 @@ Not in the community collection
    (the `.onnx` one is not needed). Rename it to `alejandro.tflite` if it is
    called something else - the file name becomes the wake word id.
 
+### Gotchas hit on the first attempt (2026-10-06)
+
+- **Colab's default runtime is Python 3.13, and the notebook's pinned
+  packages have no 3.13 builds** (`piper-phonemize` missing, `torchvision==0.20.0`
+  not found, then `No module named 'piper_phonemize'`). Fix: *Runtime ->
+  Change runtime type -> Runtime version*: pick an older dated version
+  (Python 3.12 worked), then *Disconnect and delete runtime* and start over.
+  Check with `!python --version`.
+- **Spelling that worked:** `ah leh hahn droh` (lowercase, spaces; the
+  English voice says "ali jan dro" for `alejandro`, and capitals or hyphens
+  risk letter-by-letter reading or an odd file name). "Not perfect but
+  workable" by ear. Rename the downloaded model to `alejandro.tflite`.
+- **Step 2 failed with `ImportError: cannot import name '_center' from
+  'numpy._core.umath'`**: an install cell upgraded numpy while the old one
+  was still loaded. Fix: *Runtime -> Restart session* (not delete runtime),
+  then *Run all*; installs and downloads are reused. A `git clone ... already
+  exists` error on the rerun is harmless.
+- **Leaving it to run overnight:** add this as the last cell and run it once
+  before training, so the model lands in Google Drive -> wakewords/ even
+  after Colab wipes the idle machine (and keep the Mac awake, `caffeinate -dis`):
+  ```python
+  from google.colab import drive
+  drive.mount('/content/drive')
+  !mkdir -p /content/drive/MyDrive/wakewords
+  !find /content -name '*.tflite' -mmin -720 -not -path '*resources*' -exec cp -v {} /content/drive/MyDrive/wakewords/ \;
+  ```
+
 If it later wakes too rarely: retrain with more examples / steps, or lower
 the detection threshold on xero first (cheaper). If it wakes on random
 speech or music (the Lady Gaga song exists): raise the false-activation
