@@ -138,6 +138,16 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   note = "LAN only, plain HTTP. Not behind Caddy."
 
   [[group.endpoint]]
+  name = "Pi-hole admin (secondary, wol Pi)"
+  proto = "http"
+  host = "192.168.1.124"
+  port = 8081
+  url = "http://192.168.1.124:8081/admin"
+  desc = "The fallback Pi-hole's admin UI. Same password as xero's."
+  who = "Looking at what the Pi answered while xero was down. Do not edit settings here - nebula-sync overwrites them from xero every 6h."
+  note = "LAN only, plain HTTP. Containers pihole + nebula-sync on the Pi, host networking. services/pihole-secondary/README.md"
+
+  [[group.endpoint]]
   name = "Node-RED"
   proto = "http"
   host = "192.168.1.124"
@@ -227,7 +237,17 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   connect = "dig @192.168.1.123 example.com"
   desc = "TCP and UDP. Listening mode is all, because Pi-hole sits on Docker's bridge network."
   who = "Every device the router hands this address to - which is the whole LAN."
-  note = "The outage nobody diagnoses as DNS at first. If xero is down, name resolution is down with it."
+  note = "The outage nobody diagnoses as DNS at first. Since 2026-10-06 the wol Pi runs a second Pi-hole (below) as the router's DNS 2, so xero being down no longer takes the LAN's DNS with it - once the router hands both out."
+
+  [[group.endpoint]]
+  name = "DNS (Pi-hole, secondary)"
+  proto = "dns"
+  host = "192.168.1.124"
+  port = 53
+  connect = "dig @192.168.1.124 example.com"
+  desc = "TCP and UDP. Fallback copy of xero's Pi-hole on the wol Pi, same blocklists and upstreams, synced from xero by nebula-sync every 6h. Listening mode LOCAL (host networking)."
+  who = "Every device the router hands it to as DNS 2. Clients may use it even while xero is up."
+  note = "No UPS on the Pi, so in a power cut this one drops and xero (on the UPS) carries on. services/pihole-secondary/README.md"
 
   [[group.endpoint]]
   name = "Speech-to-Phrase (Wyoming STT)"
