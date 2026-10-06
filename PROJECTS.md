@@ -284,12 +284,12 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 **Next step:** on the Mac - install Ollama, `ollama pull qwen2.5:1.5b`, set `ANTHROPIC_API_KEY`, then `uv run tools/dev-shell/qwen_delegate_repl.py` (needs `uv`, or fall back to `pip install anthropic requests` and drop the `uv run --script` shebang). User will need to run and debug this themselves since it's on a different machine.
 
 ### Check RAM in Lenovo Flex
-**Status:** Active
+**Status:** Done
 **Priority:** P3
 
 **Why:** separate from the homelab server RAM check above - user's Lenovo Flex (personal laptop) has 2 RAM sticks, believed to be 16GB total, but unsure whether DDR3 or DDR4. Needs confirming to know what upgrade options (if any) exist.
-**State:** not checked yet.
-**Next step:** user to physically check the sticks (or pull exact specs via OS tooling) and report back exact capacity/type/speed, then evaluate whether replacing makes sense.
+**State (2026-10-06):** checked by the user: 2x Crucial 8GB DDR3L SO-DIMM, 16GB total. DDR3L is an old generation (new DDR3L sticks are not worth buying for an upgrade), and it cannot fill in for xero's failing DDR4 stick: different notch and voltage. Recorded in `docs/hardware.md` (spare laptops).
+**Next step:** none.
 
 ### Home power audit - smart/network devices + major appliances
 **Status:** Active
