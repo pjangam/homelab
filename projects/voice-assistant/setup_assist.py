@@ -22,7 +22,10 @@ import urllib.request
 from ha_ws import call, call_many
 
 HA_HTTP = "http://localhost:8123"
-WYOMING = {"speech_to_phrase": 10300, "piper": 10200}  # all on 127.0.0.1
+WYOMING = {"speech_to_phrase": 10300, "piper": 10200, "openwakeword": 10400}  # all on 127.0.0.1
+# Wake word for the ESP32 satellite (the phone app starts at speech-to-text and
+# ignores it). Swap to the custom model's id once "Alejandro" is trained.
+WAKE_WORD_ID = "ok_nabu"
 
 # entity_id -> extra spoken names. Every entity here is exposed to Assist.
 EXPOSE = {
@@ -117,7 +120,8 @@ def main():
     states = [s["entity_id"] for s in http("GET", "/api/states")]
     stt = [e for e in states if e.startswith("stt.") and "phrase" in e]
     tts = [e for e in states if e.startswith("tts.") and "piper" in e]
-    if not stt or not tts:
+    wake = [e for e in states if e.startswith("wake_word.") and "openwakeword" in e]
+    if not stt or not tts or not wake:
         raise SystemExit("stt/tts entity not there yet - rerun in a few seconds")
     pipelines = call({"type": "assist_pipeline/pipeline/list"})
     pipe = next(p for p in pipelines["pipelines"] if p["id"] == pipelines["preferred_pipeline"])
@@ -125,9 +129,10 @@ def main():
         "conversation_engine", "conversation_language", "language", "name",
         "tts_engine", "tts_language", "tts_voice", "wake_word_entity", "wake_word_id")}
     fields.update(stt_engine=stt[0], stt_language="en", prefer_local_intents=True,
-                  tts_engine=tts[0], tts_language="en_US", tts_voice="en_US-lessac-medium")
+                  tts_engine=tts[0], tts_language="en_US", tts_voice="en_US-lessac-medium",
+                  wake_word_entity=wake[0], wake_word_id=WAKE_WORD_ID)
     call({"type": "assist_pipeline/pipeline/update", "pipeline_id": pipe["id"], **fields})
-    print(f"pipeline '{pipe['name']}': stt={stt[0]} tts={tts[0]}")
+    print(f"pipeline '{pipe['name']}': stt={stt[0]} tts={tts[0]} wake={wake[0]}:{WAKE_WORD_ID}")
 
 
 if __name__ == "__main__":

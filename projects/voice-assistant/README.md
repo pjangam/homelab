@@ -52,6 +52,13 @@ white noise, AC.
   `end_stage tts` reproduces the app's request.
 - `watch_assist.sh` - live view of voice runs stage by stage, HA log and
   speech-to-phrase log, for "the client does nothing" debugging.
+- `esphome/` - the ESP32 satellite: `voice-satellite.yaml`, `esphome.sh`
+  (ESPHome in docker: `compile`, `run --device /dev/ttyUSB0`, later OTA to
+  192.168.1.125), and the gitignored `secrets.yaml` (Wi-Fi, API key, OTA
+  password). **Do not compile on xero while its RAM is suspect** - see
+  PROJECTS.md.
+- `wakewords/` - custom openWakeWord models, mounted into the `openwakeword`
+  container (`127.0.0.1:10400`, preloads `ok_nabu`).
 - `test_stt.sh` - synthesises phrases with HA's Google TTS and posts them to
   the STT API; transcription check only, executes nothing.
 

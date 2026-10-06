@@ -213,6 +213,22 @@ services:
     command:
       - --voice=en_US-lessac-medium
 
+  # Wake word for the ESP32 voice satellite (projects/voice-assistant/). The
+  # board is an original ESP32 (no on-device micro_wake_word), so it streams
+  # audio to HA continuously and this listens for the wake word. Custom models
+  # (e.g. "Alejandro") go in projects/voice-assistant/wakewords/.
+  openwakeword:
+    image: rhasspy/wyoming-openwakeword:latest
+    container_name: openwakeword
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:10400:10400"
+    volumes:
+      - ./projects/voice-assistant/wakewords:/custom:ro
+    command:
+      - --preload-model=ok_nabu
+      - --custom-model-dir=/custom
+
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto

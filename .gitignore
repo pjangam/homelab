@@ -43,3 +43,5 @@ projects/endpoints/site/
 # Holds the secret album path - rendered from .env by services/albums/render_serve_config.sh
 services/tailscale/albums/serve-config.json
 services/albums/accounts.conf
+projects/voice-assistant/esphome/secrets.yaml
+projects/voice-assistant/esphome/.esphome/
