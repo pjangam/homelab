@@ -1578,6 +1578,8 @@ qty | item | est | note
 
 **Speech-to-phrase got stuck 2026-10-07** (every request "decoded no frames" / "No text recognized", fan speed phrases unrecognised even with synthetic audio) until `docker restart speech-to-phrase`; same as 2026-10-06. Possibly xero's bad RAM (bit 34 already crashed this decoder once). Decision (user, 2026-10-07): wait for the new RAM (arriving 2026-10-08); if it recurs after the swap, it is a software bug - investigate then, and add a healthcheck that sends a test phrase and restarts speech-to-phrase on an empty result. Also 2026-10-07: satellite "finished speaking detection" set to relaxed (commands were cut off after ~1s); `replay_recordings.sh` re-tests saved commands. Board SNR measured 11-21 dB vs the phone's 31-37 dB - placement and white noise matter.
 
+**Wake word switched to `hey_jarvis` 2026-10-08** ("Hey Jarvis", one of openWakeWord's built-ins: alexa, hey_jarvis, hey_mycroft, hey_rhasspy, okay_nabu) until "Alejandro" is trained; xero-side only, no reflash. Same day, after xero's RAM/memtest restarts, openwakeword had no satellite client until the openwakeword container was recreated - the unflashed idle-after-restart issue above.
+
 **Next step:** flash the living room board from the Mac, then train "Alejandro" off xero (Mac or Colab); switching to it is xero-side only (model into `wakewords/`, restart `openwakeword`, pipeline wake word via `setup_assist.py`), no reflash. Remove the temporary `--debug` on `openwakeword` in docker-compose.yml and `assist_pipeline: debug_recording_dir` in HA's configuration.yaml once tuning is done.
 
 ### wol Pi health monitoring
