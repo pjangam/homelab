@@ -737,3 +737,18 @@ These fixes are gated behind a CPU model check (`N5105` in `/proc/cpuinfo`) in `
 
 
 
+- [x] CPU temperature alert — `healthcheck.sh` emails and pushes to ntfy when the 15-minute peak reaches 90°C (warn) or 98°C (urgent). Alert only; see below for an automatic shutdown.
+
+### Overheating: what protects xero, and a shutdown not yet built
+
+Checked 2026-10-08, after memtest86+ hit 103°C on the pegboard and a RAM bit flipped there.
+
+**What already exists:**
+- **The CPU protects itself.** Near TjMax (105°C) it throttles; far past it (a dead fan) it cuts its own power (THERMTRIP). Hardware, always on, so the chip will not cook - but that cut is as abrupt as a power cut.
+- **thermald** is running. It manages power limits; it never shuts anything down.
+- **The kernel's orderly shutdown does not work here.** Its `critical` trip point (119°C) sits on the `acpitz` zone, which reads a fixed 27.8°C regardless of load. The real CPU sensor is `x86_pkg_temp`, whose zone number changes between boots (find it by type, not number).
+- **The alert above.** Nothing acts on it.
+
+**Why not shut down on heat by default:** the damage seen at 100°C+ was RAM errors (silent corruption while xero keeps running), and since the CPU throttles instead of crashing, an overheating xero usually stays up long enough to act on the alert. A shutdown also keeps xero off until someone presses the button: with no power cut there is no Wake-on-LAN trigger, so HA goes dark and DNS falls back to the wol Pi.
+
+**If one is added, the suggestion:** a last-resort rule, a cron job every minute (or a check in `watchdog_power.sh`'s 5-minute run) that runs a clean `shutdown` when `x86_pkg_temp` stays at **100°C or more for 5 minutes**. Heavy but normal loads (a build, memtester) stay under it; a stopped fan or a blocked vent does not. It can reuse the power watchdog's passwordless sudo rule for `/usr/sbin/shutdown`, and its arm/disable flag pattern (dry run until armed). Alert on the way down (email + ntfy), and log to `journalctl` like the power watchdog. Before arming, dry-run it through a real load test to check normal work never trips it.
