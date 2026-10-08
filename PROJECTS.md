@@ -1298,8 +1298,9 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 
 **Why:** xero runs hot where it is mounted. memtest86+ hit 103°C there on 2026-10-08 (a RAM bit flipped), against 86°C on the desk with the fan side in open air. Mounted with the fan side facing the board, the only gap was its rubber feet. A memtester run that evening (2 x 10G, pegboard) climbed to 92-95°C even after two stopgaps: a makeshift stopper wedged between xero and the board for a gap (fragile), and the room AC turned down (not bearable as a permanent setting). Neither stays. Idle on the pegboard is 55-68°C, high for an N5105.
 
-**Options, cheapest first:**
+**Options** (user, 2026-10-08: an external fan and better mounting are both on the table):
 - **Sturdy standoffs** between xero and the board: M3/M4 nylon or brass standoffs, 3-4 cm, in xero's mounting holes (check the thread), or a Skadis shelf with xero standing on it, fan side out. Replaces the stopper.
+- **External USB fan** (user: manageable, 2026-10-08): a 5V 80-120mm USB fan (roughly ₹300-800) clipped to the pegboard, moving air through the gap behind xero - ideally pulling the hot exhaust out rather than blowing at the case. Powered from one of xero's USB ports, so it is on whatever UPS xero is on and runs whenever xero does. Pick a quiet one (low RPM or with a speed switch); it is in the room.
 - **New thermal paste** on the CPU (never redone; the 2026-08-21 clean was dust only). Likely the biggest single gain if idle stays in the 60s with good airflow.
 - **Turn the vented side away from the board** if a mount can be found (its mounting holes are on the fan side, which is why it faces the board now).
 
