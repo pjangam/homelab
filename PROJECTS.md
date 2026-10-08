@@ -141,6 +141,8 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 
 **Supply swapped 2026-10-05:** the Pi now runs from the official Raspberry Pi 5.1V supply. Booted on it at 07:48; at 22:30 `get_throttled` = `0x0` with no kernel under-voltage lines since boot - but no night of white noise yet.
 
+**The fan is not a factor (user, 2026-10-08):** the Pi's GPIO fan came off earlier, when xero became the main server, and under-voltage kept appearing without it until the 5.1V supply went in. So the supply is what fixed it, and the fan's removal does not flatter the verdict. (Lines elsewhere in this file about the fan's extra load describe the Pi before that.)
+
 **Watching until ~2026-10-09:** xero's temporary cron watch (2026-10-05) was replaced on 2026-10-06 by permanent monitoring, "wol Pi health monitoring" below. The Pi now reports its power flags every minute to HA, and healthcheck.sh alerts (email + ntfy) once per Pi boot if under-voltage appears. The watch's 50 samples (2026-10-05 22:45 to 2026-10-06 11:00) were all `0x0`; its log is `pi-undervoltage.log` on xero.
 
 **Next step:** around 2026-10-09, open the wol Pi device in HA (or the Stats dashboard tile "Under-voltage since boot"). If it has stayed off through nights of white noise, mark this Done and update the Power row in `docs/hardware.md` to "official supply, verified". If it alerts, the supply was not the whole story - suspect the cable, then load (the GPIO fan, USB devices).
