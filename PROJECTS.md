@@ -1302,6 +1302,8 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 
 **Update same day:** the user turned xero back on **without a UPS** at about 19:15 (waiting on Resonate's warranty reply; may move the router's UPS to xero meanwhile). Checked 21:14: `zpool status -x` healthy, all 16 containers up (pihole included), every HA integration loaded. A mains cut now crashes xero uncontrolled.
 
+**Shutdown threshold cut 200 -> 10 min 2026-10-08** (`DOWN_THRESHOLD_MIN` in `watchdog_power.sh`, user's call): frequent short cuts still ride through on whatever UPS xero is on; longer ones get a clean shutdown and rely on the wol Pi's WoL to boot xero after mains returns (xero's PSU never sees AC loss while a UPS holds it, so BIOS AC-restore will not). Side effect: an accidental extender switch-off (2026-08-28) now shuts xero down after 10 min instead of 200. Restore a measured threshold when the replacement UPS arrives.
+
 **Next:** if the UPS has a power button, try it (held 2-3s) with mains in; else claim warranty or buy a 12V >=3A DC mini UPS. When xero is back: `zpool status` (uncontrolled power loss), check containers, start `pihole` if Docker leaves it stopped, and do not re-run full-load tests on the pegboard (94°C and climbing). Consider an alert for "UPS stopped charging" - the ESP32 UPS LED monitor idea would cover it.
 
 ### Power-outage watchdog - real UPS runtime measured, threshold updated, armed

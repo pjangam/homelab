@@ -15,6 +15,11 @@
 # unarmed (dry-run only) the whole time. ZFS came back healthy afterward,
 # but that's not something to rely on happening again. Threshold set to
 # 200min, leaving ~88min of real margin before the confirmed failure point.
+# Cut to 10min on 2026-10-08: that UPS failed (dead, under warranty claim),
+# power cuts have become frequent, and xero runs on the router's UPS or none,
+# whose runtime under xero's load is unmeasured. Short cuts still ride
+# through; anything longer gets a clean shutdown, and the wol Pi's WoL brings
+# xero back once mains returns. Raise it again once a UPS is measured.
 # A clean shutdown well before that happens avoids it entirely - everything
 # unmounts properly, no torn writes.
 #
@@ -46,7 +51,7 @@ STATE_DIR="$HOME/.cache/power-watchdog"
 DOWN_SINCE_FILE="$STATE_DIR/down-since"
 LAST_MILESTONE_FILE="$STATE_DIR/last-logged-milestone-min"
 THRESHOLD_CROSSED_FILE="$STATE_DIR/threshold-crossed"
-DOWN_THRESHOLD_MIN=200
+DOWN_THRESHOLD_MIN=10
 # How often to re-log while still down and below threshold, so a long
 # outage doesn't spam a near-duplicate line every 5-minute cron tick (a
 # real 288min test outage produced 48+ near-identical "waiting" lines,

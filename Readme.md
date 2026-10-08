@@ -303,7 +303,7 @@ rm ~/.tinxy-watchdog-disabled      # re-enable
 **How it works:**
 1. Every 5 minutes (cron), checks `/sys/class/net/enp1s0/carrier` - `enp1s0` connects through a WiFi extender with no battery backup of its own, so losing carrier is a reliable proxy for "mains is out, running on UPS battery."
 2. On carrier loss, starts a clock in `~/.cache/power-watchdog/down-since`.
-3. Once down for **200 minutes** (`DOWN_THRESHOLD_MIN` in the script), runs `sudo /usr/sbin/shutdown -h now`. This threshold is grounded in a real measurement: a live outage test on 2026-07-31 found actual UPS runtime under this server's load is ~288 minutes (4h49m), so 200min leaves ~88min of real margin.
+3. Once down for **10 minutes** (`DOWN_THRESHOLD_MIN` in the script), runs `sudo /usr/sbin/shutdown -h now`. It was 200 minutes, from a live outage test on 2026-07-31 (~288 minutes real runtime on xero's own UPS); cut to 10 on 2026-10-08 when that UPS died and power cuts became frequent. Raise it again once a replacement UPS's runtime is measured.
 4. All actions logged via `logger -t power-watchdog` (`journalctl -t power-watchdog`) and to `power-watchdog.log` in the repo root.
 
 **Currently armed** - this will actually shut the server down on a real extended outage, not just log.
