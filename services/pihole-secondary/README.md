@@ -32,8 +32,12 @@ sync unable to change them):
 
 - **Admin UI on 8081**, the same port as xero's, but natively, since it is host
   networking.
-- **listeningMode LOCAL**, not ALL: on host networking ALL would answer anyone
-  who can reach the Pi.
+- **listeningMode ALL** (LOCAL until 2026-10-08): the Pi is the tailnet's
+  second DNS server (Tailscale `wol-sender`, `100.127.187.58`), and LOCAL
+  refused those queries - it answers only directly attached subnets, and
+  `tailscale0` is a /32. On host networking ALL answers anyone who can reach
+  the Pi: the LAN and the tailnet. The Pi is not port-forwarded, so nothing
+  beyond that.
 - **NTP server off**: xero's Pi-hole has it on, harmlessly, because its :123 is
   not published. Here it would bind :123 on the Pi.
 - **The container resolves with 1.1.1.1** (`--dns`), because the Pi's own

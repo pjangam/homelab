@@ -34,8 +34,11 @@ docker rm -f nebula-sync pihole >/dev/null 2>&1 || true
 # Teleporter import from xero cannot override them. They are the ones that
 # must differ from xero's:
 #   webserver.port  - 8081 here; xero's container uses 80 behind a port map
-#   listeningMode   - LOCAL: on host networking ALL would answer anyone who
-#                     can reach the Pi; LOCAL answers the LAN subnet only
+#   listeningMode   - ALL (since 2026-10-08; was LOCAL): LOCAL answers only
+#                     directly attached subnets, and tailscale0 is a /32, so it
+#                     refused the tailnet's queries. On host networking ALL
+#                     answers anyone who can reach the Pi: the LAN and the
+#                     tailnet. The Pi is not port-forwarded, so no further.
 #   ntp.*           - off: xero's config has Pi-hole's NTP server on, which on
 #                     host networking would grab :123 on the Pi
 #   dhcp.active     - off, belt and braces; the router does DHCP
@@ -48,7 +51,7 @@ docker run -d --name pihole \
   --env-file "$ENV_FILE" \
   -e TZ=Asia/Kolkata \
   -e 'FTLCONF_webserver_port=8081o,[::]:8081o' \
-  -e FTLCONF_dns_listeningMode=LOCAL \
+  -e FTLCONF_dns_listeningMode=ALL \
   -e FTLCONF_ntp_ipv4_active=false \
   -e FTLCONF_ntp_ipv6_active=false \
   -e FTLCONF_ntp_sync_active=false \
