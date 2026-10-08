@@ -1596,8 +1596,7 @@ qty | item | est | note
 
 
 ### Secondary Pi-hole on the wol Pi
-**Status:** Active
-**Priority:** P1
+**Status:** Done
 
 **Why:** xero runs the only Pi-hole, so xero down = the whole house without DNS (2026-08-28 was ~2h of it). xero is now suspected of bad RAM (gcc segfaults, the 2026-09-23 oops) and memtest means planned downtime. Decided 2026-10-06: a *second* Pi-hole on the wol Pi, with the router handing out xero as DNS 1 and the Pi as DNS 2. This does not reopen "RPi load migration", which ruled out *moving* Pi-hole to the Pi for lack of a UPS: xero stays primary and stays up on its UPS in a power cut.
 
@@ -1606,4 +1605,28 @@ qty | item | est | note
 - **Gotcha:** nebula-sync `FULL_SYNC=true` fails with 400 on `/api/config` - Pi-hole refuses API changes to env-forced keys (dns.listeningMode, ntp.*, webserver.port). Switched to selective sync: all gravity tables + dns (minus listeningMode), resolver, database, misc. `diag_config_patch.py` reproduces a sync section by section.
 - Verified from xero: `dig @192.168.1.124 example.com` resolves, `doubleclick.net` -> `0.0.0.0`, query log shows real client IPs, adlists match xero (1, StevenBlack) and gravity counts match (72234 each), nebula-sync "Sync completed".
 
-**Next step (user, by hand):** in the Airtel router's DHCP settings set DNS 1 = `192.168.1.123`, DNS 2 = `192.168.1.124`, then reconnect devices (or wait for lease renewal) so they pick it up. Then check a phone's DNS servers show both, and mark this Done. Clients may spread queries over both, so the query log splits across the two Pi-holes - expected.
+**Router step done, fallback verified 2026-10-08.** The Airtel router's DHCP hands out `192.168.1.123, 192.168.1.124` (seen on the MacBook's lease), and LAN clients' queries now show up in both Pi-holes' logs. With xero's `pihole` container stopped, xero refused on :53 and the Pi answered, both from xero and from the Mac (`dig @192.168.1.124 google.com`).
+
+**Gap: devices running Tailscale do not fall back.** With xero's Pi-hole stopped, `ping google.com` on the Mac still failed, and the Mac sent the Pi no queries. Tailscale's "Override local DNS" is on with one global nameserver, xero's `100.70.215.25`, so a tailnet device sends every lookup to `100.100.100.100`, which forwards only to xero; the DHCP pair is never tried. Devices without Tailscale are fine. Fix tracked in "Tailscale on the wol Pi, as the tailnet's second DNS server".
+
+**Testing tip:** stop just the container (`docker stop pihole`, then `docker start pihole`), not the whole of xero. And `dig 192.168.1.124 google.com` without the `@` queries the system resolvers, not the Pi.
+
+### Tailscale on the wol Pi, as the tailnet's second DNS server
+**Status:** Backlog
+**Priority:** P1
+
+**Why:** tailnet devices lose DNS whenever xero's Pi-hole is down, even at home with the secondary Pi-hole running (found 2026-10-08, see "Secondary Pi-hole on the wol Pi"). Tailscale's DNS settings have "Override local DNS" on with a single global nameserver, xero's `100.70.215.25`, so the Tailscale resolver on each device (`100.100.100.100`) forwards only to xero and never reaches the DHCP-provided Pi.
+
+**Rejected: adding the Pi's LAN IP `192.168.1.124` as the second global nameserver.** The setting applies tailnet-wide, wherever a device is, and Tailscale may query nameservers in parallel rather than only on failure. A laptop on an office or cafe LAN would then also send its lookups to whatever host has `192.168.1.124` there - a very common subnet - which could see or answer them.
+
+**Rejected: turning "Override local DNS" off.** At home it would work through DHCP's pair, but away from home it drops Pi-hole ad-blocking, and the Mac DNS work assumes tailnet-wide DNS.
+
+**Plan:**
+1. Install Tailscale on the Pi (needs `sudo` - the user runs it from a real terminal with `ssh -t`, a `!` command has no tty): `curl -fsSL https://tailscale.com/install.sh | sh`, then `sudo tailscale up --accept-dns=false` (the Pi must keep resolving through its own resolv.conf, not loop through MagicDNS). Note its `100.x` address.
+2. In the admin console, disable key expiry for the Pi, so the fallback does not silently die months later.
+3. Pi-hole on the Pi: listeningMode `LOCAL` -> `ALL` in `services/pihole-secondary/run_containers.sh`, since LOCAL refuses queries from `100.x` sources (tailscale0 is a /32, not a local subnet). With host networking ALL means anyone on the LAN or the tailnet, and the Pi is not port-forwarded. Redeploy with `deploy_pi.sh`; update the README's listeningMode rationale.
+4. Admin console -> DNS -> Global nameservers: add the Pi's `100.x` below xero's `100.70.215.25`. Keep "Override local DNS" on.
+5. Test: `docker stop pihole` on xero, then `ping -c 3 google.com` on the Mac (and a phone on mobile data with Tailscale on), check the Pi's log shows the queries from `100.x` addresses, then `docker start pihole`.
+6. Update `docs/hardware.md` (the Pi's tailnet name and address, tailscaled) and `projects/endpoints/endpoints.toml` (the Pi's DNS on the tailnet), and re-run both check scripts.
+
+**Cost:** tailscaled is about 30-40MB RSS; the Pi has about 380MB available with Node-RED and both Pi-hole containers running (2026-10-08).
