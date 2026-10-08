@@ -1645,8 +1645,7 @@ qty | item | est | note
 **Testing tip:** stop just the container (`docker stop pihole`, then `docker start pihole`), not the whole of xero. And `dig 192.168.1.124 google.com` without the `@` queries the system resolvers, not the Pi.
 
 ### Tailscale on the wol Pi, as the tailnet's second DNS server
-**Status:** Backlog
-**Priority:** P1
+**Status:** Done
 
 **Why:** tailnet devices lose DNS whenever xero's Pi-hole is down, even at home with the secondary Pi-hole running (found 2026-10-08, see "Secondary Pi-hole on the wol Pi"). Tailscale's DNS settings have "Override local DNS" on with a single global nameserver, xero's `100.70.215.25`, so the Tailscale resolver on each device (`100.100.100.100`) forwards only to xero and never reaches the DHCP-provided Pi.
 
@@ -1656,7 +1655,7 @@ qty | item | est | note
 
 **Rejected: turning "Override local DNS" off.** At home it would work through DHCP's pair, but away from home it drops Pi-hole ad-blocking, and the Mac DNS work assumes tailnet-wide DNS.
 
-**Progress 2026-10-08:** steps 1-2 done by the user (Tailscale up on the Pi as `wol-sender`, `100.127.187.58`; key expiry off). Step 3 done: listeningMode ALL deployed with `deploy_pi.sh`; before it, `dig @100.127.187.58 google.com` from the Mac timed out, after it resolves and `doubleclick.net` gives `0.0.0.0`; LAN still answers; nebula-sync "Sync completed". `endpoints.toml` updated. **Left: step 4** (admin console: replace the stopgap `192.168.1.124` with `100.127.187.58`) **and step 5** (the failover test).
+**Progress 2026-10-08:** steps 1-2 done by the user (Tailscale up on the Pi as `wol-sender`, `100.127.187.58`; key expiry off). Step 3 done: listeningMode ALL deployed with `deploy_pi.sh`; before it, `dig @100.127.187.58 google.com` from the Mac timed out, after it resolves and `doubleclick.net` gives `0.0.0.0`; LAN still answers; nebula-sync "Sync completed". `endpoints.toml` updated. Step 4 done by the user the same evening: the Mac's `tailscale dns status` lists resolvers `100.70.215.25`, then `100.127.187.58`; the LAN stopgap is gone. **Step 5 passed 22:38:** with xero's `pihole` stopped, the Mac's lookups of google.com still resolved and `ping google.com` worked, and the Pi's `pihole.log` shows the queries arriving from the Mac's tailnet address `100.74.192.33`. xero's `pihole` started again straight after. Not tested: a phone on mobile data.
 
 **Plan:**
 1. Install Tailscale on the Pi (needs `sudo` - the user runs it from a real terminal with `ssh -t`, a `!` command has no tty): `curl -fsSL https://tailscale.com/install.sh | sh`, then `sudo tailscale up --accept-dns=false` (the Pi must keep resolving through its own resolv.conf, not loop through MagicDNS). Note its `100.x` address.
