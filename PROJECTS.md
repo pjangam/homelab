@@ -1656,6 +1656,8 @@ qty | item | est | note
 
 **Rejected: turning "Override local DNS" off.** At home it would work through DHCP's pair, but away from home it drops Pi-hole ad-blocking, and the Mac DNS work assumes tailnet-wide DNS.
 
+**Progress 2026-10-08:** steps 1-2 done by the user (Tailscale up on the Pi as `wol-sender`, `100.127.187.58`; key expiry off). Step 3 done: listeningMode ALL deployed with `deploy_pi.sh`; before it, `dig @100.127.187.58 google.com` from the Mac timed out, after it resolves and `doubleclick.net` gives `0.0.0.0`; LAN still answers; nebula-sync "Sync completed". `endpoints.toml` updated. **Left: step 4** (admin console: replace the stopgap `192.168.1.124` with `100.127.187.58`) **and step 5** (the failover test).
+
 **Plan:**
 1. Install Tailscale on the Pi (needs `sudo` - the user runs it from a real terminal with `ssh -t`, a `!` command has no tty): `curl -fsSL https://tailscale.com/install.sh | sh`, then `sudo tailscale up --accept-dns=false` (the Pi must keep resolving through its own resolv.conf, not loop through MagicDNS). Note its `100.x` address.
 2. In the admin console, disable key expiry for the Pi, so the fallback does not silently die months later.

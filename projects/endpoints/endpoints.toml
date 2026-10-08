@@ -245,8 +245,8 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   host = "192.168.1.124"
   port = 53
   connect = "dig @192.168.1.124 example.com"
-  desc = "TCP and UDP. Fallback copy of xero's Pi-hole on the wol Pi, same blocklists and upstreams, synced from xero by nebula-sync every 6h. Listening mode LOCAL (host networking)."
-  who = "Every device the router hands it to as DNS 2. Clients may use it even while xero is up."
+  desc = "TCP and UDP. Fallback copy of xero's Pi-hole on the wol Pi, same blocklists and upstreams, synced from xero by nebula-sync every 6h. Listening mode ALL (host networking): answers the LAN and, since 2026-10-08, the tailnet at wol-sender.{tailnet} (100.127.187.58, `dig @100.127.187.58 example.com`)."
+  who = "Every device the router hands it to as DNS 2. Clients may use it even while xero is up. Tailnet devices once it is the second global nameserver in Tailscale's DNS settings."
   note = "No UPS on the Pi, so in a power cut this one drops and xero (on the UPS) carries on. services/pihole-secondary/README.md"
 
   [[group.endpoint]]
