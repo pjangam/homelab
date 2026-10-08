@@ -10,7 +10,9 @@ target=${1:-pramod@xero}
 peak=0
 while true; do
   read -r temp running failures < <(ssh "$target" '
-    echo $(( $(cat /sys/class/thermal/thermal_zone1/temp) / 1000 )) \
+    # Find the CPU zone by type: its number changes between boots.
+    pkg=$(grep -l x86_pkg_temp /sys/class/thermal/thermal_zone*/type)
+    echo $(( $(cat "${pkg%/type}/temp") / 1000 )) \
          $(pgrep -c memtester) \
          $(cat ~/memtester-[1-4].log 2>/dev/null | grep -a -c FAILURE)')
   if [ -z "${temp:-}" ] || [ -z "${failures:-}" ]; then
