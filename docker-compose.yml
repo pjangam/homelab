@@ -226,7 +226,7 @@ services:
     volumes:
       - ./projects/voice-assistant/wakewords:/custom:ro
     command:
-      - --preload-model=okay_nabu
+      - --preload-model=hey_jarvis
       - --custom-model-dir=/custom
 
   mosquitto:
