@@ -13,6 +13,9 @@ while true; do
     echo $(( $(cat /sys/class/thermal/thermal_zone1/temp) / 1000 )) \
          $(pgrep -c memtester) \
          $(cat ~/memtester-[1-4].log 2>/dev/null | grep -a -c FAILURE)')
+  if [ -z "${temp:-}" ] || [ -z "${failures:-}" ]; then
+    echo "$(date +%H:%M) $target unreachable - xero down (power or a crash)?"; sleep 60; continue
+  fi
   [ "$temp" -gt "$peak" ] && peak=$temp
   echo "$(date +%H:%M) temp=${temp}°C peak=${peak}°C running=$running failures=$failures"
   if [ "$failures" -gt 0 ]; then echo "STOP: memory errors found"; break; fi
