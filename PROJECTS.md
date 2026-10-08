@@ -1292,6 +1292,19 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 - **New HA script/button:** `script.play_bedroom_track`, assigned to the Bedroom area (so it shows up automatically on the auto-generated Overview dashboard with no manual dashboard editing needed) - plays a specific track via `spotcast.play_media` targeting `media_player.xero_..._spotcast`. Confirmed working after the zeroconf fix.
 **Next step:** none - fully working. Worth keeping an eye on: spotcast v6 is still alpha, so future updates could introduce new breakage. **Update 2026-09-11:** the zeroconf half regressed after the 2026-09-06 reboot - same error line, different cause (a boot race, not the Docker network). See the entry at the top of Done.
 
+### xero cooling on the Skadis pegboard
+**Status:** Backlog
+**Priority:** P2
+
+**Why:** xero runs hot where it is mounted. memtest86+ hit 103°C there on 2026-10-08 (a RAM bit flipped), against 86°C on the desk with the fan side in open air. Mounted with the fan side facing the board, the only gap was its rubber feet. A memtester run that evening (2 x 10G, pegboard) climbed to 92-95°C even after two stopgaps: a makeshift stopper wedged between xero and the board for a gap (fragile), and the room AC turned down (not bearable as a permanent setting). Neither stays. Idle on the pegboard is 55-68°C, high for an N5105.
+
+**Options, cheapest first:**
+- **Sturdy standoffs** between xero and the board: M3/M4 nylon or brass standoffs, 3-4 cm, in xero's mounting holes (check the thread), or a Skadis shelf with xero standing on it, fan side out. Replaces the stopper.
+- **New thermal paste** on the CPU (never redone; the 2026-08-21 clean was dust only). Likely the biggest single gain if idle stays in the 60s with good airflow.
+- **Turn the vented side away from the board** if a mount can be found (its mounting holes are on the fan side, which is why it faces the board now).
+
+**Done when:** a full-load run (memtester 2 x 10G or a build) on the pegboard, at normal room temperature, stays under ~85°C. The 90°C healthcheck alert covers it until then.
+
 ### xero's UPS (CRU12V3A) dead - xero off until it is replaced
 **Status:** Active
 **Priority:** P1
