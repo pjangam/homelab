@@ -319,6 +319,36 @@ case "$wol_pi_uv" in
     problems+=("wol Pi health is not reporting to Home Assistant ($wol_pi_uv) - the Pi is off the network or pi-health-mqtt.service stopped. Check: ssh pramod@192.168.1.124 'systemctl --user status pi-health-mqtt'") ;;
 esac
 
+# xero CPU temperature. On 2026-10-08 memtest86+ hit 103°C (TjMax 105) with
+# xero's fan side against the Skadis pegboard, and flipped a RAM bit there;
+# the same run in open air peaked at 86°C and was clean. Heat may also be
+# behind the 2026-09-23 oops under a full-core build. Nothing alerted on it.
+#
+# This runs every 15 minutes, but a build heats the chip in seconds, so it
+# takes the peak of HA's System Monitor history over the window (sampled about
+# once a minute), not just the reading now. sysfs is read too, so the check
+# still works with HA down. The text names the band, not the peak, so the
+# dedup below mails once per hot spell rather than every run.
+CPU_TEMP_WARN=90
+CPU_TEMP_URGENT=98
+cpu_temp_window_start=$(date -u -d "-15 min" +%Y-%m-%dT%H:%M:%SZ)
+cpu_temp_peak=$(
+  {
+    curl -s --max-time 10 -H "Authorization: Bearer $HA_TOKEN" \
+      "http://localhost:8123/api/history/period/$cpu_temp_window_start?filter_entity_id=sensor.system_monitor_processor_temperature&minimal_response&no_attributes" \
+      | jq -r '.[0][]?.state' 2>/dev/null
+    for zone in /sys/class/thermal/thermal_zone*; do
+      [ "$(cat "$zone/type")" = x86_pkg_temp ] && echo $(( $(cat "$zone/temp") / 1000 ))
+    done
+  } | grep -E '^[0-9]+(\.[0-9]+)?$' | sort -n | tail -1
+)
+cpu_temp_peak=${cpu_temp_peak%.*}
+if [ -n "$cpu_temp_peak" ] && [ "$cpu_temp_peak" -ge "$CPU_TEMP_URGENT" ]; then
+  problems+=("URGENT: xero CPU reached ${CPU_TEMP_URGENT}°C or more in the last 15 minutes (it shuts down at 105°C; RAM bit flips were seen at 103°C). Stop any heavy job now and check the fan and airflow. History: System Monitor Processor temperature in Home Assistant.")
+elif [ -n "$cpu_temp_peak" ] && [ "$cpu_temp_peak" -ge "$CPU_TEMP_WARN" ]; then
+  problems+=("xero CPU reached ${CPU_TEMP_WARN}°C or more in the last 15 minutes. Fine for a short burst, but sustained heat caused RAM errors on 2026-10-08 - check what is loading it and that the fan side has air. History: System Monitor Processor temperature in Home Assistant.")
+fi
+
 # Heartbeat: proves this script ran to completion, regardless of what it
 # found. If the machine hard-locks (e.g. the ZFS+postgres freeze from
 # 2026-06-29) and cron itself stops running, this ping goes silent and
