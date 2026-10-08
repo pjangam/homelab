@@ -1619,13 +1619,15 @@ qty | item | est | note
 
 **Rejected: adding the Pi's LAN IP `192.168.1.124` as the second global nameserver.** The setting applies tailnet-wide, wherever a device is, and Tailscale may query nameservers in parallel rather than only on failure. A laptop on an office or cafe LAN would then also send its lookups to whatever host has `192.168.1.124` there - a very common subnet - which could see or answer them.
 
+**Stopgap in place since 2026-10-08:** the user added `192.168.1.124` as the second global nameserver anyway, for now. Tested the same day: with xero's `pihole` stopped, the Mac's lookups reached the Pi (from `192.168.1.4`). It carries the foreign-LAN risk above until step 4 swaps it out.
+
 **Rejected: turning "Override local DNS" off.** At home it would work through DHCP's pair, but away from home it drops Pi-hole ad-blocking, and the Mac DNS work assumes tailnet-wide DNS.
 
 **Plan:**
 1. Install Tailscale on the Pi (needs `sudo` - the user runs it from a real terminal with `ssh -t`, a `!` command has no tty): `curl -fsSL https://tailscale.com/install.sh | sh`, then `sudo tailscale up --accept-dns=false` (the Pi must keep resolving through its own resolv.conf, not loop through MagicDNS). Note its `100.x` address.
 2. In the admin console, disable key expiry for the Pi, so the fallback does not silently die months later.
 3. Pi-hole on the Pi: listeningMode `LOCAL` -> `ALL` in `services/pihole-secondary/run_containers.sh`, since LOCAL refuses queries from `100.x` sources (tailscale0 is a /32, not a local subnet). With host networking ALL means anyone on the LAN or the tailnet, and the Pi is not port-forwarded. Redeploy with `deploy_pi.sh`; update the README's listeningMode rationale.
-4. Admin console -> DNS -> Global nameservers: add the Pi's `100.x` below xero's `100.70.215.25`. Keep "Override local DNS" on.
+4. Admin console -> DNS -> Global nameservers: **replace** the stopgap `192.168.1.124` with the Pi's `100.x`, below xero's `100.70.215.25`. Keep "Override local DNS" on.
 5. Test: `docker stop pihole` on xero, then `ping -c 3 google.com` on the Mac (and a phone on mobile data with Tailscale on), check the Pi's log shows the queries from `100.x` addresses, then `docker start pihole`.
 6. Update `docs/hardware.md` (the Pi's tailnet name and address, tailscaled) and `projects/endpoints/endpoints.toml` (the Pi's DNS on the tailnet), and re-run both check scripts.
 
