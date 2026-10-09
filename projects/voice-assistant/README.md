@@ -55,8 +55,9 @@ white noise, AC.
 - `esphome/` - the ESP32 satellites: `voice-satellite-common.yaml` (shared), one small file per board - `voice-satellite.yaml` (first board, .125, HA area Bedroom) and `voice-living-room.yaml` (.126, waiting on a second INMP441) - `build_on_mac.sh [living]`, `esphome.sh`
   (ESPHome in docker: `compile`, `run --device /dev/ttyUSB0`, later OTA to
   192.168.1.125), and the gitignored `secrets.yaml` (Wi-Fi, API key, OTA
-  password). **Do not compile on xero while its RAM is suspect** - see
-  PROJECTS.md. Build on the Mac instead: `esphome/build_on_mac.sh` from a
+  password). **Prefer not to compile on xero:** the RAM is replaced and cleared
+  (2026-10-09), but a full-core build still runs xero in the 90s°C on its
+  pegboard until "xero cooling" in PROJECTS.md is done. Build on the Mac instead: `esphome/build_on_mac.sh` from a
   clone (venv, no Docker) flashes over USB on the Mac, OTA, or copies the
   `.bin` to xero for `esphome.sh flash-bin`.
 - `wakewords/` - custom openWakeWord models, mounted into the `openwakeword`

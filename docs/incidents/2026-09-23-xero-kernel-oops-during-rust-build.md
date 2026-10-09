@@ -56,3 +56,13 @@ it moves suspicion to CPU or power.
 
 **Until then:** do not run heavy full-core builds on xero. The spotifyd build
 for the Pi moves elsewhere, or runs capped at 2 CPUs and a memory limit.
+
+**Outcome (2026-10-06 to 2026-10-09):** the RAM was bad. memtester on 2026-10-06
+found repeated single-bit failures, all on bit 34, on the 8GB "Kingsotin" stick.
+It was replaced with a 32GB Crucial DDR4 SO-DIMM. That stick threw one error in
+memtest86+ at 103°C, then ran clean through memtester (2 x 10G, 2 loops, 0
+failures, 2026-10-08/09) at 89-97°C. Heat was a second factor: HA history shows
+85-103°C on the evening of 2026-10-06, and xero's pegboard mount runs it into the
+90s under full load. `datapool` scrubbed clean (0B repaired, 0 errors) on
+2026-10-08. Follow-ups in `PROJECTS.md`: "xero cooling on the Skadis pegboard"
+and the 90/98°C alert in `healthcheck.sh`.

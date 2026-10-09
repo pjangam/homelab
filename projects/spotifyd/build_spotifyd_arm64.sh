@@ -18,9 +18,10 @@
 # `playerctl -p spotifyd pause`.
 #
 # WARNING: the first run of this on 2026-09-23 crashed xero with a kernel oops
-# mid-compile - suspect RAM, see
-# docs/incidents/2026-09-23-xero-kernel-oops-during-rust-build.md. Do not run it
-# on xero again until memtest has cleared the RAM.
+# mid-compile - bad RAM and heat, see
+# docs/incidents/2026-09-23-xero-kernel-oops-during-rust-build.md. The stick was
+# replaced and cleared on 2026-10-09; full-core load still runs xero in the 90s°C
+# on its pegboard, so keep it off xero until "xero cooling" in PROJECTS.md is done.
 #
 # Deploy with install_spotifyd_pi.sh. The build/ folder is gitignored.
 set -euo pipefail
