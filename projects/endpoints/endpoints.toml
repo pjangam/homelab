@@ -219,6 +219,10 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
     desc = "HA's MQTT discovery tree. The bridges above publish retained configs here, which is why their entities survive an HA restart."
 
     [[group.endpoint.topic]]
+    name = "homeassistant/status"
+    desc = "HA's birth message (online, not retained), sent each time HA's MQTT integration connects. xero's miraie-ha-birth.service listens for it and re-kicks the MirAIe AC bridge, whose discovery is not retained and so does not survive an HA restart."
+
+    [[group.endpoint.topic]]
     name = "white_noise_buttons/start|stop/pressed"
     desc = "The Pi's GPIO17 and GPIO18 push buttons."
 

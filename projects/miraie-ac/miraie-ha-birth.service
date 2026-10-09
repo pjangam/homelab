@@ -1,0 +1,12 @@
+[Unit]
+Description=Re-kick the MirAIe AC bridge when Home Assistant restarts
+
+[Service]
+EnvironmentFile=/home/pramod/code/homelab/.env.mqtt
+EnvironmentFile=/home/pramod/code/homelab/.env.healthcheck
+ExecStart=/home/pramod/code/homelab/projects/miraie-ac/ha_birth_listener.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
