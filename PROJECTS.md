@@ -386,7 +386,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Next step:** none yet, not started.
 
 ### Immich re-enablement
-**Status:** Parked
+**Status:** Active
 **Priority:** P3
 
 **Why:** ~13k photos already migrated from Google Takeout, but Immich is disabled - 8GB RAM isn't enough with ML enabled.
@@ -413,7 +413,8 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 **What to check on the laptop before either (2) or (3):** its RAM and CPU, its battery health (a swollen cell in a machine left plugged in 24/7 is a fire risk, and a healthy one is a free UPS - better than anything xero has), whether it can run lid-closed without sleeping, and its idle draw, which is likely 10-20W against xero's ~12W and runs on mains all day.
 
-**Restart under way (2026-10-09), on the new 32GB stick.** DB is at Immich 2.7.5 (12,906 assets, only ~900 through ML); `release` is now 3.3.1, which dropped pgvecto.rs, so the path is v2.7.5 on the vectorchord postgres image first, then v3.3.1. Waiting on the user's sudo steps: a ZFS snapshot of both datasets and `rewrite_for_copies.sh`. **Load guard running first:** `services/immich/load_guard.sh` (systemd --user `immich-load-guard.service`) stops the `immich_*` containers if xero holds >=93°C for 1 min, <1.5GB available memory for 1 min, or >=95% CPU for 10 min, pushes to ntfy and keeps them stopped until `load_guard.sh --reset`.
+**Running again since 2026-10-09, on Immich v3.3.1** (32GB stick; `services/immich/README.md`). Path taken: ZFS snapshots `@pre-v3` of both datasets and `rewrite_for_copies.sh` on the library (user, sudo), then 2.7.5 on the vectorchord postgres image, which migrated the DB off pgvecto.rs, then 3.3.1. All 12,906 assets present; originals and thumbnails load. `IMMICH_VERSION` is now an exact pin, never `release`. ML is capped at `cpus: 2`, and the load guard (`services/immich/load_guard.sh`, systemd --user `immich-load-guard`) stops the `immich_*` containers at >=93°C for 1 min, <1.5GB free memory for 1 min or >=95% CPU for 10 min, pushes to ntfy, and keeps them down until `load_guard.sh --reset`.
+**Next step:** the ML backlog - only ~900 of 12,906 assets have smart search / faces. Queue Smart Search and Face Detection ("Missing") in Administration -> Jobs with concurrency 1 and watch the guard's journal for the first hour. Then: delete the `@pre-v3` snapshots once happy (the upload one holds 31G), upload the 2 videos in `datapool/recovered-media/`, and decide on LAN-only vs a Caddy/tailnet route for the phone app away from home.
 
 **Google Takeout export - incomplete, gap unresolved (2026-08-26).** The full export (23 parts, `takeout-20260625T094226Z-3-*.zip`, downloaded 2026-06-25/26) is missing part `019` - re-downloading just that part turns out not to be possible. Moved the 22 complete parts off the nearly-full boot disk to `datapool/google-takeout/` (see disk-space cleanup below) regardless, since they're safe to keep either way. How to actually fill the gap (full fresh re-export vs. living with one missing part) is unresolved - deferred, not blocking anything while Immich itself is on hold.
 

@@ -171,9 +171,10 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   proto = "http"
   host = "192.168.1.123"
   port = 2283
-  desc = "Photos. Commented out in docker-compose.yml - 8GB of RAM is not enough to run it alongside everything else."
-  who = "Nothing. Listed so the port is not handed to something else."
-  note = "Parked, not removed. The library is safe on datapool/immich-upload."
+  url = "http://192.168.1.123:2283"
+  desc = "Photos (Immich v3.3.1, back since 2026-10-09 on the 32GB stick). Web UI and the mobile app's server URL."
+  who = "You, in a browser or the Immich phone app, on the home Wi-Fi."
+  note = "LAN only for now - no Caddy route or tailnet name. services/immich/load_guard.sh stops it if xero overheats; re-arm with load_guard.sh --reset."
 
 [[group]]
 name = "MQTT"
