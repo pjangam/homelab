@@ -42,8 +42,10 @@ The same login works at every address below. All three were checked
 Over the tailnet it also works away from home, carried inside Tailscale, so
 there is no need to open port 445 to the internet.
 
-- **iPhone:** Files app → `...` → Connect to Server → one of the addresses
-  above → Registered User.
+- **iPhone:** Files app → `...` → Connect to Server → the bare server
+  address (`smb://192.168.1.123` or `smb://xero.<tailnet>.ts.net`, no share
+  name) → Registered User. That shows every share as a folder. An address
+  with a share on the end opens only that share (see Gotchas).
 - **Mac:** Finder → Go → Connect to Server (Cmd-K).
 - **Linux:** `smbclient //192.168.1.123/phone-uploads -U phoneupload`, or
   mount it with `cifs-utils`.
