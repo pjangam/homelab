@@ -174,16 +174,19 @@ share name: `smb://192.168.1.123/documents` or
 | **Storage** | its own ZFS dataset `datapool/documents`, `copies=2`, `sync=always`, lz4 |
 | **Durability** | as [above](#durability): one disk, no snapshots, no off-machine backup. Keep originals of anything important elsewhere. |
 
-Seeded 2026-10-09 with a one-time copy of Dropbox's `docs` folder (114
-files, 203 MiB), checked against the source afterwards:
+Seeded 2026-10-09 with one-time copies from Dropbox, each checked against
+the source afterwards: the contents of `docs` (114 files, 203 MiB) at the
+share's top level, and `Career` (89 files, 15 MiB) as `Career/`:
 
 ```sh
 rclone copy backup:docs /datapool/documents
 rclone check backup:docs /datapool/documents --one-way
+rclone copy backup:Career /datapool/documents/Career
+rclone check backup:Career /datapool/documents/Career --one-way
 ```
 
-It is a copy, not a sync. Dropbox still has the originals, and from here on
-the two are edited separately.
+These are copies, not syncs. Dropbox still has the originals, and from here
+on the two are edited separately.
 
 Created with:
 
