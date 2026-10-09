@@ -34,28 +34,28 @@ docker_bad_containers=()
 while IFS=$'\t' read -r name state status; do
   [ -z "$name" ] && continue
   if [ "$state" != "running" ]; then
-    problems+=("Container $name is $state ($status)")
+    problems+=("🐳 Container $name is $state ($status)")
     docker_bad_containers+=("$name")
   fi
 done < <(docker ps -a --format '{{.Names}}	{{.State}}	{{.Status}}')
 
 while read -r name; do
   [ -z "$name" ] && continue
-  problems+=("Container $name is unhealthy")
+  problems+=("🐳 Container $name is unhealthy")
   docker_bad_containers+=("$name")
 done < <(docker ps --filter health=unhealthy --format '{{.Names}}')
 
 # systemd --user failed units (this is what caught the white-noise/linger bug)
 user_failed=$(systemctl --user --failed --no-legend 2>/dev/null)
-[ -n "$user_failed" ] && problems+=("systemd --user has failed units:"$'\n'"$user_failed")
+[ -n "$user_failed" ] && problems+=("⚙️ systemd --user has failed units:"$'\n'"$user_failed")
 
 # systemd system failed units (would have caught the getty@tty1 crash-loop)
 sys_failed=$(systemctl --failed --no-legend 2>/dev/null)
-[ -n "$sys_failed" ] && problems+=("systemd has failed units:"$'\n'"$sys_failed")
+[ -n "$sys_failed" ] && problems+=("⚙️ systemd has failed units:"$'\n'"$sys_failed")
 
 # ZFS pool health
 zfs_status=$(zpool status -x 2>&1)
-[ "$zfs_status" != "all pools are healthy" ] && problems+=("ZFS pool issue: $zfs_status")
+[ "$zfs_status" != "all pools are healthy" ] && problems+=("💾 ZFS pool issue: $zfs_status")
 
 # Disk space
 disk_root_pct=""
@@ -67,13 +67,13 @@ while read -r mount pct; do
     /datapool) disk_datapool_pct="$pct_num" ;;
   esac
   if [ "$pct_num" -ge 90 ]; then
-    problems+=("Disk $mount is ${pct} full")
+    problems+=("💽 Disk $mount is ${pct} full")
   fi
 done < <(df -h --output=target,pcent / /datapool 2>/dev/null | tail -n +2)
 
 # Linger (systemd --user services die on logout without this - bit us once already)
 linger=$(loginctl show-user pramod -p Linger 2>/dev/null)
-[ "$linger" != "Linger=yes" ] && problems+=("systemd linger is disabled for pramod ($linger) - user services will die on logout")
+[ "$linger" != "Linger=yes" ] && problems+=("⚙️ systemd linger is disabled for pramod ($linger) - user services will die on logout")
 
 # Backup freshness: backup_vaultwarden.sh/backup_homeassistant.sh run daily
 # via cron and report success into backup.log, but nothing was checking
@@ -87,17 +87,17 @@ check_backup_freshness() {
   local last_line last_ts last_epoch age_hours
   last_line=$(grep -F "$pattern" "$BACKUP_LOG" 2>/dev/null | tail -1)
   if [ -z "$last_line" ]; then
-    problems+=("$label backup: no successful run ever found in backup.log")
+    problems+=("🗄️ $label backup: no successful run ever found in backup.log")
     return
   fi
   last_ts=$(echo "$last_line" | grep -oP '(?<=\[)[^]]+(?=\])')
   if ! last_epoch=$(date -d "$last_ts" +%s 2>/dev/null); then
-    problems+=("$label backup: couldn't parse timestamp '$last_ts' from log")
+    problems+=("🗄️ $label backup: couldn't parse timestamp '$last_ts' from log")
     return
   fi
   age_hours=$(( ($(date +%s) - last_epoch) / 3600 ))
   printf -v "$outvar" '%s' "$age_hours"
-  [ "$age_hours" -ge "$MAX_BACKUP_AGE_HOURS" ] && problems+=("$label backup hasn't succeeded in ${age_hours}h (last: $last_ts)")
+  [ "$age_hours" -ge "$MAX_BACKUP_AGE_HOURS" ] && problems+=("🗄️ $label backup hasn't succeeded in ${age_hours}h (last: $last_ts)")
 }
 
 backup_vw_age_hours=""
@@ -106,13 +106,13 @@ if [ -f "$BACKUP_LOG" ]; then
   check_backup_freshness "Vaultwarden" "Backup complete: vaultwarden_" backup_vw_age_hours
   check_backup_freshness "Home Assistant" "] Done." backup_ha_age_hours
 else
-  problems+=("backup.log not found at $BACKUP_LOG - can't verify backup freshness")
+  problems+=("🗄️ backup.log not found at $BACKUP_LOG - can't verify backup freshness")
 fi
 
 # TLS cert expiry - see projects/certs-backup/check_certs.sh for why this is an independent
 # check rather than something renew_certs.sh reports on itself.
 while IFS= read -r cert_problem; do
-  [ -n "$cert_problem" ] && problems+=("$cert_problem")
+  [ -n "$cert_problem" ] && problems+=("🔒 $cert_problem")
 done < <("$SCRIPT_DIR/projects/certs-backup/check_certs.sh")
 
 # spotifyd watchdog (watchdog_spotifyd.sh): it silently self-heals a single
@@ -140,7 +140,7 @@ if [ -f "$SPOTIFYD_RESTART_LOG" ]; then
 fi
 
 if [ "$spotifyd_restarts_24h" -ge "$SPOTIFYD_RESTART_THRESHOLD" ]; then
-  problems+=("spotifyd watchdog restarted it $spotifyd_restarts_24h times in the last 24h (threshold $SPOTIFYD_RESTART_THRESHOLD) - investigate")
+  problems+=("🎵 spotifyd watchdog restarted it $spotifyd_restarts_24h times in the last 24h (threshold $SPOTIFYD_RESTART_THRESHOLD) - investigate")
 fi
 
 # spotifyd Connect advertisement. The checks above are all watchdog-derived,
@@ -167,7 +167,7 @@ if [ "$advert_rc" -eq 1 ]; then
   if [ -f "$SPOTIFYD_ADVERT_FAIL_FILE" ]; then
     advert_since=$(cat "$SPOTIFYD_ADVERT_FAIL_FILE")
     advert_mins=$(( ($(date +%s) - advert_since) / 60 ))
-    problems+=("spotifyd is running but has not advertised itself as a Spotify Connect device for ${advert_mins}m - it will not appear in the Spotify app and spotcast/HA scripts targeting it will fail. Check: journalctl --user -u spotifyd -b | grep dns-sd")
+    problems+=("🎵 spotifyd is running but has not advertised itself as a Spotify Connect device for ${advert_mins}m - it will not appear in the Spotify app and spotcast/HA scripts targeting it will fail. Check: journalctl --user -u spotifyd -b | grep dns-sd")
   else
     date +%s > "$SPOTIFYD_ADVERT_FAIL_FILE"
   fi
@@ -259,7 +259,7 @@ elif [ "$miraie_ac_rc" -eq 1 ]; then
       124) miraie_ac_why="the fix script timed out after ${MIRAIE_AC_FIX_TIMEOUT_S}s. Run projects/miraie-ac/fix_miraie_ac.sh --force by hand." ;;
       *) miraie_ac_why="fix_miraie_ac.sh --force reported success but HA still shows it unavailable. Check HA directly." ;;
     esac
-    problems+=("MirAIe AC has been unavailable in Home Assistant since $miraie_ac_since_hm (${miraie_ac_detail:-unavailable}) and the automatic fix did not bring it back: $miraie_ac_why Fix output is in healthcheck.log.")
+    problems+=("❄️ MirAIe AC has been unavailable in Home Assistant since $miraie_ac_since_hm (${miraie_ac_detail:-unavailable}) and the automatic fix did not bring it back: $miraie_ac_why Fix output is in healthcheck.log.")
   fi
 else
   # Clear on recovery, and on rc=2 (can't tell) so a missing token or an HA
@@ -280,8 +280,26 @@ if [ -f "$MIRAIE_AC_FIX_LOG" ]; then
   done < "$MIRAIE_AC_FIX_LOG"
   tail -n 50 "$MIRAIE_AC_FIX_LOG" > "$MIRAIE_AC_FIX_LOG.tmp" && mv "$MIRAIE_AC_FIX_LOG.tmp" "$MIRAIE_AC_FIX_LOG"
 fi
+# At most once a day. The text used to carry the count, so every new fix
+# (3 -> 4 -> 3) changed the message and the dedup below re-sent the whole
+# alert - four times in one night on 2026-10-08. Now the line carries the time
+# it was raised instead, re-stamped only after 24h, so it goes out once and
+# then once a day while fixes keep coming. It also stays up for that day even
+# if the count dips under the threshold, so it cannot flap in and out.
+MIRAIE_AC_FLAP_FILE="$MIRAIE_AC_STATE_DIR/miraie-ac-flapping-alerted"
+miraie_ac_flap_at=$(cat "$MIRAIE_AC_FLAP_FILE" 2>/dev/null)
+miraie_ac_flap_age=$(( $(date +%s) - ${miraie_ac_flap_at:-0} ))
 if [ "$miraie_ac_autofixes_24h" -ge "$MIRAIE_AC_FIXES_THRESHOLD" ]; then
-  problems+=("MirAIe AC needed the automatic fix $miraie_ac_autofixes_24h times in the last 24h (threshold $MIRAIE_AC_FIXES_THRESHOLD) - something keeps knocking it out, investigate. Attempts are in healthcheck.log.")
+  if [ -z "$miraie_ac_flap_at" ] || [ "$miraie_ac_flap_age" -ge 86400 ]; then
+    miraie_ac_flap_at=$(date +%s)
+    echo "$miraie_ac_flap_at" > "$MIRAIE_AC_FLAP_FILE"
+  fi
+elif [ -n "$miraie_ac_flap_at" ] && [ "$miraie_ac_flap_age" -ge 86400 ]; then
+  rm -f "$MIRAIE_AC_FLAP_FILE"
+  miraie_ac_flap_at=""
+fi
+if [ -n "$miraie_ac_flap_at" ]; then
+  problems+=("❄️ MirAIe AC keeps needing the automatic fix: $MIRAIE_AC_FIXES_THRESHOLD or more times in 24h (raised $(date -d "@$miraie_ac_flap_at" '+%F %H:%M'); repeats once a day while it lasts) - something keeps knocking it out, investigate. Attempts are in healthcheck.log.")
 fi
 
 # Power watchdog (watchdog_power.sh): surfaces whether enp1s0 is currently
@@ -314,9 +332,9 @@ ha_state() {
 wol_pi_uv=$(ha_state binary_sensor.wol_pi_under_voltage_since_boot)
 case "$wol_pi_uv" in
   on)
-    problems+=("wol Pi has had under-voltage since it booted at $(ha_state sensor.wol_pi_booted) - see the wol Pi device in Home Assistant for when (Last under-voltage) and how often. The supply or cable is not delivering 5V under load.") ;;
+    problems+=("⚡ wol Pi has had under-voltage since it booted at $(ha_state sensor.wol_pi_booted) - see the wol Pi device in Home Assistant for when (Last under-voltage) and how often. The supply or cable is not delivering 5V under load.") ;;
   unavailable|unknown)
-    problems+=("wol Pi health is not reporting to Home Assistant ($wol_pi_uv) - the Pi is off the network or pi-health-mqtt.service stopped. Check: ssh pramod@192.168.1.124 'systemctl --user status pi-health-mqtt'") ;;
+    problems+=("📡 wol Pi health is not reporting to Home Assistant ($wol_pi_uv) - the Pi is off the network or pi-health-mqtt.service stopped. Check: ssh pramod@192.168.1.124 'systemctl --user status pi-health-mqtt'") ;;
 esac
 
 # xero CPU temperature. On 2026-10-08 memtest86+ hit 103°C (TjMax 105) with
@@ -343,10 +361,31 @@ cpu_temp_peak=$(
   } | grep -E '^[0-9]+(\.[0-9]+)?$' | sort -n | tail -1
 )
 cpu_temp_peak=${cpu_temp_peak%.*}
-if [ -n "$cpu_temp_peak" ] && [ "$cpu_temp_peak" -ge "$CPU_TEMP_URGENT" ]; then
-  problems+=("URGENT: xero CPU reached ${CPU_TEMP_URGENT}°C or more in the last 15 minutes (it shuts down at 105°C; RAM bit flips were seen at 103°C). Stop any heavy job now and check the fan and airflow. History: System Monitor Processor temperature in Home Assistant.")
-elif [ -n "$cpu_temp_peak" ] && [ "$cpu_temp_peak" -ge "$CPU_TEMP_WARN" ]; then
-  problems+=("xero CPU reached ${CPU_TEMP_WARN}°C or more in the last 15 minutes. Fine for a short burst, but sustained heat caused RAM errors on 2026-10-08 - check what is loading it and that the fan side has air. History: System Monitor Processor temperature in Home Assistant.")
+# The alert names the real peak, but the dedup below re-sends on any change of
+# text, so it cannot simply print the latest reading (that would mail every 15
+# minutes while xero stays hot). Instead a hot spell records its peak and when
+# it was reached, and the text changes - and so re-sends - only when the peak
+# climbs CPU_TEMP_RENOTIFY_RISE more, or crosses into urgent. The spell ends,
+# and the "all clear" goes out, once a 15-minute window stays under warn.
+CPU_TEMP_RENOTIFY_RISE=3
+CPU_TEMP_SPELL_FILE=${CPU_TEMP_SPELL_FILE:-$HOME/.cache/healthcheck/cpu-temp-hot-spell}
+if [ -n "$cpu_temp_peak" ] && [ "$cpu_temp_peak" -ge "$CPU_TEMP_WARN" ]; then
+  spell_peak=""; spell_at=""
+  [ -f "$CPU_TEMP_SPELL_FILE" ] && read -r spell_peak spell_at < "$CPU_TEMP_SPELL_FILE"
+  if [ -z "$spell_peak" ] || [ "$cpu_temp_peak" -ge $(( spell_peak + CPU_TEMP_RENOTIFY_RISE )) ] \
+     || { [ "$spell_peak" -lt "$CPU_TEMP_URGENT" ] && [ "$cpu_temp_peak" -ge "$CPU_TEMP_URGENT" ]; }; then
+    spell_peak=$cpu_temp_peak; spell_at=$(date +%s)
+    mkdir -p "$(dirname "$CPU_TEMP_SPELL_FILE")"
+    echo "$spell_peak $spell_at" > "$CPU_TEMP_SPELL_FILE"
+  fi
+  spell_when=$(date -d "@$spell_at" '+%H:%M')
+  if [ "$spell_peak" -ge "$CPU_TEMP_URGENT" ]; then
+    problems+=("🔥🌡️ URGENT: xero CPU hit ${spell_peak}°C at ${spell_when} (urgent from ${CPU_TEMP_URGENT}°C; it shuts down at 105°C, RAM bit flips were seen at 103°C). Stop any heavy job now and check the fan and airflow. History: System Monitor Processor temperature in Home Assistant.")
+  else
+    problems+=("🌡️ xero CPU hit ${spell_peak}°C at ${spell_when} (warning from ${CPU_TEMP_WARN}°C; re-sent only if it climbs ${CPU_TEMP_RENOTIFY_RISE}°C more). Fine for a short burst, but sustained heat caused RAM errors on 2026-10-08 - check what is loading it and that the fan side has air. History: System Monitor Processor temperature in Home Assistant.")
+  fi
+else
+  rm -f "$CPU_TEMP_SPELL_FILE"
 fi
 
 # Heartbeat: proves this script ran to completion, regardless of what it
@@ -448,7 +487,7 @@ if [ "$dashboard_rc" -eq 1 ] && [ -n "$dashboard_faults" ]; then
     dash_since=$(cat "$DASHBOARD_FAIL_FILE")
     dash_mins=$(( ($(date +%s) - dash_since) / 60 ))
     while IFS= read -r fault; do
-      [ -n "$fault" ] && problems+=("$fault (ongoing ${dash_mins}m)")
+      [ -n "$fault" ] && problems+=("📊 $fault (ongoing ${dash_mins}m)")
     done <<< "$dashboard_faults"
   else
     date +%s > "$DASHBOARD_FAIL_FILE"

@@ -111,7 +111,16 @@ expect "a new outage gets its own attempt" "1" "$(fix_calls)"
 expect "  ...exit 3 says restart HA's MQTT integration" "1" "$(grep '^EMAIL|' "$ALERT_LOG" | grep -c "Restart HA's MQTT integration")"
 
 # 8. That was the third attempt today -> the flapping alert fires.
-expect "3 fixes in 24h raises the flapping alert" "1" "$(grep '^EMAIL|' "$ALERT_LOG" | grep -c 'needed the automatic fix 3 times')"
+expect "3 fixes in 24h raises the flapping alert" "1" "$(grep '^EMAIL|' "$ALERT_LOG" | grep -c 'keeps needing the automatic fix')"
+
+# 8b. A 4th fix the same day does not re-send it (its text has no count), but
+# a day later, with fixes still coming, it goes out again.
+echo "$(date +%s) 0" >> "$STATE/miraie-ac-autofixes.log"
+reset; run
+expect "  ...a 4th fix the same day sends nothing new" "0" "$(grep -c '^EMAIL|' "$ALERT_LOG" | head -1)"
+echo $(( $(date +%s) - 90000 )) > "$STATE/miraie-ac-flapping-alerted"
+reset; run
+expect "  ...a day later it is sent again" "1" "$(grep '^EMAIL|' "$ALERT_LOG" | grep -c 'keeps needing the automatic fix')"
 
 # 9. rc=2 from the check ("can't tell") never runs the fix or alerts.
 reset; echo 0 > "$CHECK_RC"; run
