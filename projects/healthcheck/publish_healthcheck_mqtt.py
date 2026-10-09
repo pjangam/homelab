@@ -73,6 +73,12 @@ BINARY_SENSORS = {
     # not a node-red/bridge tile: the bridge was green through both
     # 2026-09-11 outages while the entity was unusable for ~2h total.
     "miraie_ac": binary_sensor("miraie_ac", "Homelab MirAIe AC", "mdi:air-conditioner"),
+    # The daily "AC keeps needing auto-fixes" alert. The tile above goes
+    # green again after each fix, so without this one the alert raised
+    # overall with nothing else red (2026-10-09).
+    "miraie_ac_flapping": binary_sensor(
+        "miraie_ac_flapping", "Homelab MirAIe AC Flapping", "mdi:air-conditioner"
+    ),
     "power_watchdog": binary_sensor("power_watchdog", "Homelab Power Watchdog", "mdi:power-plug-off"),
     "overall": binary_sensor("overall", "Homelab Overall Status", "mdi:server"),
 }
@@ -144,6 +150,14 @@ def main():
             # outage never alerts - these are where it still shows.
             "autofixes_24h": data.get("miraie_ac_autofixes_24h"),
             "last_autofix": data.get("miraie_ac_last_autofix"),
+        },
+    )
+    pub_binary(
+        "miraie_ac_flapping",
+        data.get("miraie_ac_flapping", False),
+        {
+            "autofixes_24h": data.get("miraie_ac_autofixes_24h"),
+            "raised": data.get("miraie_ac_flap_raised"),
         },
     )
     pub_binary(

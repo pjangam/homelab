@@ -437,6 +437,7 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
     --arg miraie_ac_unavailable_minutes "${miraie_ac_unavailable_minutes:-}" \
     --arg miraie_ac_autofixes_24h "$miraie_ac_autofixes_24h" \
     --arg miraie_ac_last_autofix "$miraie_ac_last_autofix" \
+    --arg miraie_ac_flap_at "$miraie_ac_flap_at" \
     --argjson power_on_battery "$power_on_battery" \
     --arg power_down_minutes "${power_down_minutes:-}" \
     '{
@@ -460,6 +461,8 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
       miraie_ac_unavailable_minutes: (if $miraie_ac_unavailable_minutes == "" then null else ($miraie_ac_unavailable_minutes|tonumber) end),
       miraie_ac_autofixes_24h: ($miraie_ac_autofixes_24h|tonumber),
       miraie_ac_last_autofix: (if $miraie_ac_last_autofix == "" then null else $miraie_ac_last_autofix end),
+      miraie_ac_flapping: ($miraie_ac_flap_at != ""),
+      miraie_ac_flap_raised: (if $miraie_ac_flap_at == "" then null else ($miraie_ac_flap_at|tonumber|strflocaltime("%Y-%m-%d %H:%M")) end),
       power_on_battery: $power_on_battery,
       power_down_minutes: (if $power_down_minutes == "" then null else ($power_down_minutes|tonumber) end)
     }' | "$SCRIPT_DIR/projects/healthcheck/publish_healthcheck_mqtt.py"
