@@ -212,6 +212,11 @@ pool's root dataset, and `zfs create` then refuses to mount over it.
 
 ## Gotchas
 
+- **A share "looks empty" on the iPhone.** A server saved in Files with a
+  share in its address (`smb://…/phone-uploads`) only ever opens that share.
+  To reach another one, connect to `smb://…/<share>`, or to the bare server
+  address `smb://192.168.1.123` to pick from the list.
+  `docker exec samba smbstatus` shows which share each client is really on.
 - **HEIC photos.** The iPhone uploads photos as `.heic`, which GitHub and most
   browsers will not display. Convert them on xero with ImageMagick. It has
   HEIC support, while `ffmpeg` and `heif-convert` are not installed.
