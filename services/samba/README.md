@@ -23,6 +23,11 @@ There is no config file of its own: the share is set up entirely by the
 | **Permissions** | read-write, no guest access, `phoneupload` is the only valid user |
 | **Ports** | 445 (SMB), plus 139 for older clients. Both are published on every interface. |
 
+`vids/` holds Dropbox's old `vids` folder (25 files, 1.09 GiB, mostly GoPro
+clips), moved here 2026-10-09: hash-checked against Dropbox with
+`rclone check`, then deleted from Dropbox to free space. xero is now the only
+copy, apart from Dropbox's deleted-files trash, which lasts about 30 days.
+
 ## Connecting
 
 The same login works at every address below. All three were checked
