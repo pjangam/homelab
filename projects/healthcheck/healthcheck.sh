@@ -527,14 +527,18 @@ fi
 # each problem's emoji, so a phone notification reads at a glance.
 current=$(printf '%s\n\n' "${problems[@]}")
 if [ "$(headlines <<< "$current")" != "$(headlines <<< "$previous")" ]; then
+  push_body=$current
   if [ ${#problems[@]} -eq 1 ]; then
     title=$(headlines <<< "$current" | head -1)
+    # The title already is the headline: the push carries just the details.
+    push_body=$(grep '^ ' <<< "$current" | sed 's/^ *//')
+    [ -n "$push_body" ] || push_body=$title
   else
     title="${#problems[@]} homelab problems: $(headlines <<< "$current" | cut -d' ' -f1 | tr '\n' ' ')"
   fi
   priority=4; tag=warning
   grep -q '^🔥' <<< "$current" && { priority=5; tag=rotating_light; }
   send_email "[homelab] $title" "$current"
-  push_ntfy "$title" "$current" "$priority" "$tag"
+  push_ntfy "$title" "$push_body" "$priority" "$tag"
   printf '%s' "$current" > "$STATE_FILE"
 fi
