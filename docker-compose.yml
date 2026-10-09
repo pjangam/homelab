@@ -34,6 +34,10 @@ services:
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
+    # The N5105's iGPU (Jasper Lake QuickSync) does video transcoding;
+    # Administration -> Settings -> Video Transcoding -> Hardware Acceleration.
+    devices:
+      - /dev/dri:/dev/dri
     ports:
       - "2283:2283"
     depends_on:

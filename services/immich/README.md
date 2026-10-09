@@ -11,6 +11,12 @@ the version is pinned in `.env` as `IMMICH_VERSION`.
   `/data`: the database records that path (`system_metadata.MediaLocation`)
   and every `asset.originalPath` starts with it. Do not "fix" the mount to
   match upstream's compose.
+- Video transcoding runs on the N5105's iGPU through **VAAPI** (`/dev/dri`
+  passed to `immich_server`; set in Administration -> Settings -> Video
+  Transcoding -> Hardware Acceleration). Tested 2026-10-09 inside the
+  container: H.264 and VP9 sources to 720p H.264 in about a second per 30s of
+  video; Jasper Lake only has the low-power encoder (`EncSliceLP`) and ffmpeg
+  picks it by itself. QSV failed (`h264_qsv` error -22) - use VAAPI.
 - `immich_machine_learning` is capped at `cpus: 2` so the ML backlog cannot
   pin all four N5105 cores (xero has reached 103°C under full load).
 
