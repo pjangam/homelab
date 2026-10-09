@@ -13,6 +13,7 @@ set -a; source .env.healthcheck; set +a
 [ -n "$token" ] && HA_TOKEN=$token
 
 block=$(sed -n '/^# xero CPU temperature/,/^fi$/p' projects/healthcheck/healthcheck.sh)
+spell=""; [ "${1:-}" = --spell ] && { spell=1; shift; }
 [ -n "${1:-}" ] && block=$(sed "s/^CPU_TEMP_WARN=.*/CPU_TEMP_WARN=$1/" <<< "$block")
 [ -n "${2:-}" ] && block=$(sed "s/^CPU_TEMP_URGENT=.*/CPU_TEMP_URGENT=$2/" <<< "$block")
 
@@ -20,7 +21,7 @@ block=$(sed -n '/^# xero CPU temperature/,/^fi$/p' projects/healthcheck/healthch
 export CPU_TEMP_SPELL_FILE=$(mktemp -u)
 trap 'rm -f "$CPU_TEMP_SPELL_FILE"' EXIT
 
-if [ "${1:-}" = --spell ]; then
+if [ -n "$spell" ]; then
   # Replays a run of 15-minute peaks through the block (the measured peak is
   # replaced by each fake one) and prints the alert line each run would send.
   # The text changing between two runs is what makes the real script re-send.

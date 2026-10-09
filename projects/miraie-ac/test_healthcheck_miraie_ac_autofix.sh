@@ -119,6 +119,9 @@ echo "$(date +%s) 0" >> "$STATE/miraie-ac-autofixes.log"
 reset; run
 expect "  ...a 4th fix the same day sends nothing new" "0" "$(grep -c '^EMAIL|' "$ALERT_LOG" | head -1)"
 echo $(( $(date +%s) - 90000 )) > "$STATE/miraie-ac-flapping-alerted"
+# The last-sent text must carry yesterday's stamp too, as it would for real -
+# otherwise the re-stamp lands in the same minute and reads identical.
+sed -i 's/(raised [0-9-]* [0-9:]*;/(raised 2000-01-01 00:00;/' "$T/repo/.healthcheck_state"
 reset; run
 expect "  ...a day later it is sent again" "1" "$(grep '^EMAIL|' "$ALERT_LOG" | grep -c 'keeps needing the automatic fix')"
 
