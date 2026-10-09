@@ -111,7 +111,7 @@ expect "a new outage gets its own attempt" "1" "$(fix_calls)"
 expect "  ...exit 3 says restart HA's MQTT integration" "1" "$(grep '^EMAIL|' "$ALERT_LOG" | grep -c "Restart HA's MQTT integration")"
 
 # 8. That was the third attempt today -> the flapping alert fires.
-expect "3 fixes in 24h raises the flapping alert" "1" "$(grep '^EMAIL|' "$ALERT_LOG" | grep -c 'keeps needing the automatic fix')"
+expect "3 fixes in 24h raises the flapping alert" "1" "$(grep '^EMAIL|' "$ALERT_LOG" | grep -c 'keeps needing auto-fixes')"
 
 # 8b. A 4th fix the same day does not re-send it (its text has no count), but
 # a day later, with fixes still coming, it goes out again.
@@ -121,15 +121,15 @@ expect "  ...a 4th fix the same day sends nothing new" "0" "$(grep -c '^EMAIL|' 
 echo $(( $(date +%s) - 90000 )) > "$STATE/miraie-ac-flapping-alerted"
 # The last-sent text must carry yesterday's stamp too, as it would for real -
 # otherwise the re-stamp lands in the same minute and reads identical.
-sed -i 's/(raised [0-9-]* [0-9:]*;/(raised 2000-01-01 00:00;/' "$T/repo/.healthcheck_state"
+sed -i 's/raised [0-9]* [A-Za-z]* [0-9:]*)/raised 01 Jan 00:00)/' "$T/repo/.healthcheck_state"
 reset; run
-expect "  ...a day later it is sent again" "1" "$(grep '^EMAIL|' "$ALERT_LOG" | grep -c 'keeps needing the automatic fix')"
+expect "  ...a day later it is sent again" "1" "$(grep '^EMAIL|' "$ALERT_LOG" | grep -c 'keeps needing auto-fixes')"
 
 # 9. rc=2 from the check ("can't tell") never runs the fix or alerts.
 reset; echo 0 > "$CHECK_RC"; run
 reset; : > "$STATE/miraie-ac-autofixes.log"; echo 2 > "$CHECK_RC"; run; run
 expect "check rc=2 never runs the fix" "0" "$(fix_calls)"
-expect "  ...nor alerts about the AC" "0" "$(grep -c 'MirAIe AC has been unavailable' "$ALERT_LOG" | head -1)"
+expect "  ...nor alerts about the AC" "0" "$(grep -c 'AC unavailable in HA' "$ALERT_LOG" | head -1)"
 
 echo
 [ "$fails" -eq 0 ] && { echo "All checks passed."; exit 0; }

@@ -72,8 +72,9 @@ carrier=$(cat "/sys/class/net/$IFACE/carrier" 2>/dev/null || echo "1")
 if [ "$carrier" = "1" ]; then
   if [ -f "$DOWN_SINCE_FILE" ]; then
     logger -t "$LOG_TAG" "$IFACE carrier restored - clearing watch"
-    send_email "[homelab] $IFACE carrier restored" "$IFACE carrier restored at $(date). Power watchdog watch cleared." || true
-    push_ntfy "Power: $IFACE carrier restored" "Carrier restored at $(date). Power watchdog watch cleared." 3 white_check_mark
+    down_min=$(( ($(date +%s) - $(cat "$DOWN_SINCE_FILE")) / 60 ))
+    send_email "[homelab] ✅ Power back" "$IFACE carrier restored at $(date +%H:%M), after ${down_min}m. Watch cleared." || true
+    push_ntfy "Power back" "$IFACE restored at $(date +%H:%M), after ${down_min}m" 3 white_check_mark
   fi
   rm -f "$DOWN_SINCE_FILE" "$LAST_MILESTONE_FILE" "$THRESHOLD_CROSSED_FILE"
   exit 0
@@ -84,12 +85,12 @@ if [ ! -f "$DOWN_SINCE_FILE" ]; then
   date +%s > "$DOWN_SINCE_FILE"
   rm -f "$LAST_MILESTONE_FILE" "$THRESHOLD_CROSSED_FILE"
   logger -t "$LOG_TAG" "$IFACE lost carrier - likely on UPS battery, starting watch"
-  send_email "[homelab] $IFACE lost carrier" "$IFACE lost carrier at $(date). Likely on UPS battery - power watchdog is now watching (shuts down cleanly after ${DOWN_THRESHOLD_MIN}m if armed)." || true
+  send_email "[homelab] 🔌 Power cut?" "$IFACE lost carrier at $(date +%H:%M) - likely on UPS battery. Clean shutdown after ${DOWN_THRESHOLD_MIN}m if still down (when armed)." || true
   # Caveat: carrier loss usually means the switch/router lost power too, so
   # neither this push nor the email above can actually leave the house until
   # the link returns. Sent anyway - it costs nothing, and it does get through
   # when the loss is upstream of the LAN rather than a whole-house outage.
-  push_ntfy "Power: $IFACE lost carrier" "Lost carrier at $(date). Likely on UPS battery - shutting down cleanly after ${DOWN_THRESHOLD_MIN}m if armed." 5 electric_plug
+  push_ntfy "Power cut?" "$IFACE lost carrier at $(date +%H:%M); on UPS. Clean shutdown in ${DOWN_THRESHOLD_MIN}m if still down" 5 electric_plug
   exit 0
 fi
 

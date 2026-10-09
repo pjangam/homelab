@@ -96,6 +96,6 @@ body="The MirAIe login used by Node-RED on the Pi expires around $(fmt "$expires
 Run projects/miraie-ac/renew_miraie_login.sh --force by hand once the cause is fixed. Output:
 
 $output"
-send_email "[homelab] MirAIe login renewal failed" "$body" || true
-push_ntfy "homelab: MirAIe login renewal failed" "Node-RED's MirAIe login expires ~$(fmt "$expires") (${days_left}d left) and the restart to renew it failed (exit $fix_rc). Details in email / miraie-login-renew.log."
+send_email "[homelab] ❄️ MirAIe login renewal failed" "$body" || true
+push_ntfy "MirAIe login renewal failed" "Node-RED's MirAIe login expires ~$(fmt "$expires") (${days_left}d left) and the restart to renew it failed (exit $fix_rc). Details in email / miraie-login-renew.log." 4 snowflake
 exit 1

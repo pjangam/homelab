@@ -49,7 +49,7 @@ log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG"; }
 
 alert() {
   log "ALERT: $*"
-  push_ntfy "TLS cert problem on xero" "$*" 5 warning
+  push_ntfy "TLS cert problem on xero" "$*" 5 lock
 }
 
 days_left() {  # $1 = cert path; echoes whole days until expiry, or -1 if unreadable
