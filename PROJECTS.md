@@ -132,8 +132,7 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 3. **Then move xero to the router**, after the power-watchdog change described at the end of the Done entry (carrier loss stops meaning a mains outage once xero is on the router's UPS).
 
 ### wol Pi under-voltage: official 5.1V supply
-**Status:** Active
-**Priority:** P2
+**Status:** Done
 
 **Why:** the Pi reports under-voltage and throttling right now, not just historically: `vcgencmd get_throttled` = `0x50005` on 2026-09-24 and again on 2026-10-02 (boot of 2026-10-01). It was `0x0` on 2026-09-23. It now plays the bedroom white noise and Spotify, and sustained low voltage risks audio glitches and SD-card corruption. The earlier fix (a new cable, 2026-08-26) did not hold.
 
@@ -145,7 +144,9 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 
 **Watching until ~2026-10-09:** xero's temporary cron watch (2026-10-05) was replaced on 2026-10-06 by permanent monitoring, "wol Pi health monitoring" below. The Pi now reports its power flags every minute to HA, and healthcheck.sh alerts (email + ntfy) once per Pi boot if under-voltage appears. The watch's 50 samples (2026-10-05 22:45 to 2026-10-06 11:00) were all `0x0`; its log is `pi-undervoltage.log` on xero.
 
-**Next step:** around 2026-10-09, open the wol Pi device in HA (or the Stats dashboard tile "Under-voltage since boot"). If it has stayed off through nights of white noise, mark this Done and update the Power row in `docs/hardware.md` to "official supply, verified". If it alerts, the supply was not the whole story - suspect the cable, then load (the GPIO fan, USB devices).
+**Verified 2026-10-09 - Done.** HA history of `binary_sensor.wol_pi_under_voltage` and `..._since_boot` since monitoring began on 2026-10-06: never `on` (only off/unavailable/unknown), through three nights of white noise and a reboot after the 2026-10-08 power cut; 0 kernel under-voltage events since that boot. The 5.1V supply fixed it. `docs/hardware.md` Power row updated.
+
+~~Next step~~ (was): around 2026-10-09, open the wol Pi device in HA (or the Stats dashboard tile "Under-voltage since boot"). If it has stayed off through nights of white noise, mark this Done and update the Power row in `docs/hardware.md` to "official supply, verified". If it alerts, the supply was not the whole story - suspect the cable, then load (the GPIO fan, USB devices).
 
 ```parts
 qty | item | est | note
@@ -364,6 +365,8 @@ The design notes as first written:
 **Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no offsite copy - only the ZFS pool itself (single disk, see above) and the original Google Takeout zips on a separate local disk.
 **State:** reconsidered, not started. A naive rclone-to-Dropbox push (same pattern as Vaultwarden/HA) doesn't actually make sense here: the whole point of self-hosting Immich is avoiding paying for cloud photo storage, so continuously syncing the full photo set to cloud storage undermines that. If pursued, needs a different shape - compress/archive first, and use a cold-storage tier (e.g. S3 Glacier / Glacier Deep Archive) priced for rarely-accessed disaster-recovery data rather than active-sync storage, not a Dropbox-style always-on sync.
 **Next step:** none for now - needs the compress + cold-storage approach worked out before this is worth starting, not just "run rclone".
+
+**Wider than Immich (noted 2026-10-08/09):** nothing on `datapool` has a copy off xero - `albums`, `phone-uploads` and `recovered-media` too, not just Immich's two datasets. All five have `copies=2`, which repairs bit rot (the 2026-10-08 scrub: 0B repaired, 0 errors) but not a dead disk, a fire, or a pool lost to an uncontrolled crash - and power cuts have become frequent while xero's UPS is away for warranty. If these photos exist nowhere else, this matters more than anything else on xero. Dropbox is no home for it: the free tier is 2.75GiB, and briefly overflowed on 2026-10-09 from 2.8GB of HA backups alone.
 
 ### Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement
 **Status:** Parked
@@ -1293,6 +1296,14 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 - **New HA script/button:** `script.play_bedroom_track`, assigned to the Bedroom area (so it shows up automatically on the auto-generated Overview dashboard with no manual dashboard editing needed) - plays a specific track via `spotcast.play_media` targeting `media_player.xero_..._spotcast`. Confirmed working after the zeroconf fix.
 **Next step:** none - fully working. Worth keeping an eye on: spotcast v6 is still alpha, so future updates could introduce new breakage. **Update 2026-09-11:** the zeroconf half regressed after the 2026-09-06 reboot - same error line, different cause (a boot race, not the Docker network). See the entry at the top of Done.
 
+### xero boot SSD health check
+**Status:** Backlog
+**Priority:** P2
+
+**Why:** xero's boot drive is a budget Biwin NP202 128GB (DRAM-less class, no power-loss protection), and it has taken several uncontrolled power losses: the 2026-07 crash, a UPS that died under load on 2026-10-08, and frequent short power cuts since, with xero running off its own UPS for now. Cheap SSDs can corrupt or wear early under repeated sudden cuts, and nothing watches it.
+
+**Next step:** on xero, `sudo smartctl -a /dev/nvme0` (or `/dev/sda`, whichever `findmnt /` says is the boot disk; `apt install smartmontools` if missing). Read "Unsafe Shutdowns", "Media and Data Integrity Errors", "Percentage Used" and "Available Spare". If they look fine, consider adding a SMART check to `healthcheck.sh` (needs a sudoers rule for smartctl, like the power watchdog's for shutdown). If not, plan a replacement - and check that `new_machine_setup.sh` plus the backups really rebuild xero.
+
 ### xero cooling on the Skadis pegboard
 **Status:** Backlog
 **Priority:** P2
@@ -1609,7 +1620,9 @@ qty | item | est | note
 
 **Wake word switched to `hey_jarvis` 2026-10-08** ("Hey Jarvis", one of openWakeWord's built-ins: alexa, hey_jarvis, hey_mycroft, hey_rhasspy, okay_nabu) until "Alejandro" is trained; xero-side only, no reflash. **The firmware fixes are on the board** (checked 2026-10-08: HA reports sw_version `2026.9.1 (2026-10-06 23:43:36 +0530)`, built after the listening-start fix, WS2812 and dns2 commits), so the "not yet flashed" note above is stale; no reflash is pending for this board. After xero's boot the same day HA was streaming its audio to openwakeword ("Error processing audio stream" when that container was recreated at 16:40).
 
-**Next step:** flash the living room board from the Mac, then train "Alejandro" off xero (Mac or Colab); switching to it is xero-side only (model into `wakewords/`, restart `openwakeword`, pipeline wake word via `setup_assist.py`), no reflash. Remove the temporary `--debug` on `openwakeword` in docker-compose.yml and `assist_pipeline: debug_recording_dir` in HA's configuration.yaml once tuning is done.
+**Debug settings removed 2026-10-09:** the `--debug` on `openwakeword` (it was never committed; reverted on xero) and `assist_pipeline: debug_recording_dir` in HA's configuration.yaml (copy of the old file at `~/configuration.yaml.bak.20261009-debug` on xero); HA restarted, all integrations loaded, satellite connected, `test_stt.sh` fine. **The recordings had filled Dropbox:** they lived in HA's config folder, so the daily HA backups grew 0.04 -> 0.4 -> 1.9 -> 2.8GB, Dropbox (2.75GiB free tier) went over quota and the 2026-10-09 `hardware.md` backup failed. Recordings (4.1GB) moved to `~/archive/assist_recordings-2026-10` on xero (`RECORDINGS=` for `replay_recordings.sh`); the bloated backups deleted locally and in Dropbox; a fresh 40MB HA backup made and uploaded, `hardware.md` re-backed-up. Dropbox at 1.69/2.75GiB.
+
+**Next step:** flash the living room board from the Mac, then train "Alejandro" off xero (Mac or Colab); switching to it is xero-side only (model into `wakewords/`, restart `openwakeword`, pipeline wake word via `setup_assist.py`), no reflash. (Debug settings: removed 2026-10-09, see above.)
 
 ### wol Pi health monitoring
 **Status:** Done
