@@ -1,0 +1,10 @@
+[Unit]
+Description=Stop Immich if xero gets too hot, short of memory or pinned at full CPU
+
+[Service]
+ExecStart=/home/pramod/code/homelab/services/immich/load_guard.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
