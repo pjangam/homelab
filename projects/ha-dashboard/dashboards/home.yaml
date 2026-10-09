@@ -20,19 +20,19 @@ views:
       grid_options:
         rows: auto
     - type: tile
-      entity: sensor.system_monitor_processor_temperature
+      entity: sensor.xero_cpu_temperature_max_1_min
       state_content:
       - state
       - area_name
       show_entity_picture: true
     - type: tile
-      entity: sensor.system_monitor_processor_use
+      entity: sensor.xero_cpu_p95_1_min
       state_content:
       - state
       - area_name
       show_entity_picture: true
     - type: tile
-      entity: sensor.system_monitor_memory_free
+      entity: sensor.xero_memory_used_max_1_min
       state_content:
       - state
       - area_name
@@ -280,19 +280,22 @@ views:
       badges: []
     - type: tile
       entity: switch.living_room_tubelight
-      name:
-        type: entity
+      name: Light
+      vertical: false
+      features_position: bottom
     - type: tile
       entity: switch.living_room_shelf_led
-      name:
-        type: entity
+      name: LED Strip
+      vertical: false
+      features_position: bottom
     - type: tile
-      entity: switch.living_room_blank
-      name:
-        type: entity
       visibility:
       - condition: not
         conditions: []
+      entity: switch.living_room_blank
+      name: Door
+      vertical: false
+      features_position: bottom
     - type: tile
       entity: fan.living_room_fan
       name: Fan
@@ -304,48 +307,120 @@ views:
   type: sections
   header:
     badges_position: bottom
-  max_columns: 3
+    card:
+      type: markdown
+      text_only: true
+      content: Bedroom
+  max_columns: 2
   sections:
   - type: grid
     cards:
-    - type: heading
-      heading: bedroom
-      tap_action:
-        action: navigate
-        navigation_path: /config/devices/device/3149ac35b28c877e6d944b45919eaaa5
-      badges: []
-    - type: tile
-      entity: switch.bedroom_tubelight
-      name:
-        type: entity
-    - type: tile
-      entity: switch.bedroom_led_bulb_2
-      name:
-        type: entity
-    - type: tile
-      entity: fan.bedroom_fan_2
-    - type: tile
-      entity: switch.bedroom_balcony
-      name:
-        type: entity
-    - type: tile
-      entity: climate.panasonic_ac_panasonic_ac
-      features:
-      - type: target-temperature
-    - type: tile
-      entity: script.ac_on_for_an_hour
-      name: AC 1 hour
-      icon: mdi:timer-outline
-      tap_action:
-        action: perform-action
-        perform_action: script.ac_on_for_an_hour
-      icon_tap_action:
-        action: perform-action
-        perform_action: script.ac_on_for_an_hour
-    - type: tile
-      entity: switch.white_noise
-      name:
-        type: entity
+    - square: true
+      type: grid
+      cards:
+      - type: tile
+        entity: switch.bedroom_tubelight
+        name: Tube
+        icon: mdi:lightbulb-fluorescent-tube
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: switch.bedroom_led_bulb_2
+        name: NightLamp
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: fan.bedroom_fan_2
+        name: Fan
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: switch.bedroom_balcony
+        name:
+          type: entity
+      - type: tile
+        entity: switch.white_noise
+        name:
+          type: entity
+        icon: mdi:waves
+        vertical: false
+        features_position: bottom
+      columns: 3
+      title: Switches
+    - square: true
+      type: grid
+      cards:
+      - type: tile
+        entity: climate.panasonic_ac_panasonic_ac
+        features:
+        - type: target-temperature
+      - type: tile
+        entity: script.ac_on_for_an_hour
+        name: AC 1 hour
+        icon: mdi:timer-outline
+        tap_action:
+          action: perform-action
+          perform_action: script.ac_on_for_an_hour
+        icon_tap_action:
+          action: perform-action
+          perform_action: script.ac_on_for_an_hour
+      - type: tile
+        entity: script.ac_on_for_n_minutes
+        name: AC 5 minutes
+        icon: mdi:timer-outline
+        vertical: false
+        tap_action:
+          action: perform-action
+          perform_action: script.ac_on_for_n_minutes
+          target: {}
+          data:
+            minutes: 5
+        icon_tap_action:
+          action: perform-action
+          perform_action: script.ac_on_for_n_minutes
+          target: {}
+          data:
+            minutes: 5
+        features_position: bottom
+      - type: tile
+        entity: script.ac_on_for_n_minutes
+        name: AC 15 minutes
+        icon: mdi:snowflake
+        color: deep-purple
+        vertical: false
+        tap_action:
+          action: perform-action
+          perform_action: script.ac_on_for_n_minutes
+          target: {}
+          data:
+            minutes: 15
+        icon_tap_action:
+          action: perform-action
+          perform_action: script.ac_on_for_n_minutes
+          target: {}
+          data:
+            minutes: 15
+        features_position: bottom
+      - type: tile
+        entity: script.ac_on_for_n_minutes
+        name: AC 30 minutes
+        icon: mdi:snowflake
+        color: deep-purple
+        vertical: false
+        tap_action:
+          action: perform-action
+          perform_action: script.ac_on_for_n_minutes
+          target: {}
+          data:
+            minutes: 30
+        icon_tap_action:
+          action: perform-action
+          perform_action: script.ac_on_for_n_minutes
+          target: {}
+          data:
+            minutes: 30
+        features_position: bottom
+      title: AC
     column_span: 4
   - type: grid
     cards:
@@ -355,6 +430,9 @@ views:
       entity: script.play_bedroom_track
       name:
         type: entity
+      icon: mdi:play
+      vertical: false
+      features_position: bottom
     - type: heading
       heading: Spotcast Pramod
       tap_action:
@@ -477,41 +555,6 @@ views:
       name:
         type: entity
   badges: []
-- title: Media players
-  path: media-players
-  subview: false
-  icon: mdi:multimedia
-  type: sections
-  max_columns: 2
-  sections:
-  - type: grid
-    column_span: 2
-    cards:
-    - type: heading
-      heading: Areas
-    - heading_style: subtitle
-      type: heading
-      heading: Bedroom
-      tap_action:
-        action: navigate
-        navigation_path: areas-bedroom
-    - type: media-control
-      entity: media_player.spotify_pramod
-  - type: grid
-    column_span: 2
-    cards:
-    - type: heading
-      heading: Other media players
-    - type: media-control
-      entity: media_player.sonalis_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
-    - type: media-control
-      entity: media_player.iphone_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
-    - type: media-control
-      entity: media_player.xero_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
-    - type: media-control
-      entity: media_player.realme_x_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
-    - type: media-control
-      entity: media_player.pramods_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
 - title: Devices
   path: other-devices
   subview: false
@@ -812,3 +855,53 @@ views:
       - entity: media_player.pramods_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
         name:
           type: entity
+- title: Media players
+  path: media-players
+  subview: false
+  icon: mdi:multimedia
+  type: sections
+  max_columns: 2
+  sections:
+  - type: grid
+    column_span: 2
+    cards:
+    - type: heading
+      heading: Areas
+    - heading_style: subtitle
+      type: heading
+      heading: Bedroom
+      tap_action:
+        action: navigate
+        navigation_path: areas-bedroom
+    - type: media-control
+      entity: media_player.spotify_pramod
+  - type: grid
+    column_span: 2
+    cards:
+    - type: heading
+      heading: Other media players
+    - type: media-control
+      entity: media_player.sonalis_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+    - type: media-control
+      entity: media_player.iphone_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+    - type: media-control
+      entity: media_player.xero_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+    - type: media-control
+      entity: media_player.realme_x_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+    - type: media-control
+      entity: media_player.pramods_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+- type: sections
+  max_columns: 4
+  title: scripts
+  path: scripts
+  sections:
+  - type: grid
+    cards:
+    - type: tile
+      entity: script.play_bedroom_track
+      features:
+      - type: button
+  - type: grid
+    cards:
+    - type: heading
+      heading: New section

@@ -1629,6 +1629,13 @@ qty | item | est | note
 
 **Next step:** flash the living room board from the Mac, then train "Alejandro" off xero (Mac or Colab); switching to it is xero-side only (model into `wakewords/`, restart `openwakeword`, pipeline wake word via `setup_assist.py`), no reflash. (Debug settings: removed 2026-10-09, see above.)
 
+### xero stats as percentiles (xero-stats)
+**Status:** Done
+**Priority:** P3
+
+**Why:** the HA dashboards showed xero's CPU as System Monitor's average over its poll, CPU pressure as the kernel's 10s average and temperature as one reading a minute, so spikes never showed; the user, 2026-10-09: "never use average use percentiles". The wol Pi's tiles were averages too (its CPU read ~5% while the same minute's p95 was 35%, max 75%).
+**State:** done 2026-10-09. `tools/host-stats/host_stats.py` samples every second; `projects/xero-stats/xero-stats-mqtt.py` (systemd --user on xero) publishes CPU, temperature, memory used and CPU pressure p95/max per minute to `homelab/xero/stats`, and `projects/pi-health` uses the same sampler (its old average entities were deleted). Stats and Home dashboards switched over (`add_stats_dashboard_tile.py --replace` added for it); `healthcheck.sh` takes its temperature peak from `sensor.xero_cpu_temperature_max_1_min`. Disk usage stays a plain reading - it is a level, not something averaged.
+
 ### wol Pi health monitoring
 **Status:** Done
 

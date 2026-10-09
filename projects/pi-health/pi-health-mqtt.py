@@ -16,6 +16,12 @@ monitoring"); CPU, memory, temperature and disk added the same day. To add a
 metric: set its field in collect() and add one line to ENTITIES. Nothing
 else changes.
 
+CPU, temperature and memory are the p95 and max of the minute, from
+per-second samples (tools/host-stats/host_stats.py, shared with xero's
+projects/xero-stats). Until 2026-10-09 they were the minute's average and a
+single reading, which hid every spike; never go back to averages. The Pi 3B
+kernel has no /proc/pressure, so there is no CPU pressure here.
+
 vcgencmd get_throttled bits:
   0 under-voltage now     16 under-voltage since boot
   1 freq capped now       17 freq capped since boot
@@ -29,8 +35,13 @@ import subprocess
 import time
 
 import shutil
+import sys
+from pathlib import Path
 
 import paho.mqtt.client as mqtt
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "tools" / "host-stats"))
+from host_stats import Sampler  # noqa: E402
 
 BROKER = os.environ.get("MQTT_HOST", "localhost")
 PORT = 1883
@@ -77,34 +88,8 @@ def boot_time():
     return None
 
 
-_prev_cpu = None
-
-
-def cpu_percent():
-    """Busy % since the previous call, from /proc/stat. None on the first call."""
-    global _prev_cpu
-    with open("/proc/stat") as f:
-        fields = [int(x) for x in f.readline().split()[1:]]
-    idle = fields[3] + fields[4]  # idle + iowait
-    total = sum(fields[:8])       # leave out guest time, already counted in user
-    prev, _prev_cpu = _prev_cpu, (idle, total)
-    if prev is None or total == prev[1]:
-        return None
-    return round(100 * (1 - (idle - prev[0]) / (total - prev[1])), 1)
-
-
-def memory_percent():
-    info = {}
-    with open("/proc/meminfo") as f:
-        for line in f:
-            key, value = line.split(":")
-            info[key] = int(value.split()[0])
-    return round(100 * (1 - info["MemAvailable"] / info["MemTotal"]), 1)
-
-
-def cpu_temperature():
-    with open("/sys/class/thermal/thermal_zone0/temp") as f:
-        return round(int(f.read()) / 1000, 1)
+# Replaced by per-second p95/max entities on 2026-10-09; removed from HA on connect.
+OLD_ENTITIES = ["cpu_percent", "memory_percent", "cpu_temperature"]
 
 
 def disk_percent():
@@ -112,7 +97,7 @@ def disk_percent():
     return round(100 * usage.used / usage.total, 1)
 
 
-def collect():
+def collect(sampler):
     flags = throttled_flags()
     uv_count, uv_last = kernel_undervoltage()
     return {
@@ -125,9 +110,7 @@ def collect():
         "throttled_since_boot": bool(flags & 0xE0000),
         "undervoltage_events": uv_count,
         "undervoltage_last": uv_last,
-        "cpu_percent": cpu_percent(),
-        "memory_percent": memory_percent(),
-        "cpu_temperature": cpu_temperature(),
+        **sampler.report(),
         "disk_percent": disk_percent(),
     }
 
@@ -159,14 +142,18 @@ ENTITIES = [
         "device_class": "timestamp",
         "value_template": "{{ value_json.undervoltage_last or None }}",
     }),
-    # cpu_percent is None for the first report after a start (it needs two
-    # samples), so it shows unknown for one minute.
-    sensor("cpu_percent", "CPU usage", "mdi:cpu-64-bit", unit_of_measurement="%",
+    sensor("cpu_p95", "CPU p95 (1 min)", "mdi:cpu-64-bit", unit_of_measurement="%",
            state_class="measurement"),
-    sensor("memory_percent", "Memory usage", "mdi:memory", unit_of_measurement="%",
+    sensor("cpu_max", "CPU max (1 min)", "mdi:cpu-64-bit", unit_of_measurement="%",
            state_class="measurement"),
-    sensor("cpu_temperature", "CPU temperature", "mdi:thermometer", unit_of_measurement="°C",
-           device_class="temperature", state_class="measurement"),
+    sensor("temperature_p95", "CPU temperature p95 (1 min)", "mdi:thermometer",
+           unit_of_measurement="°C", device_class="temperature", state_class="measurement"),
+    sensor("temperature_max", "CPU temperature max (1 min)", "mdi:thermometer-alert",
+           unit_of_measurement="°C", device_class="temperature", state_class="measurement"),
+    sensor("memory_p95", "Memory used p95 (1 min)", "mdi:memory", unit_of_measurement="%",
+           state_class="measurement"),
+    sensor("memory_max", "Memory used max (1 min)", "mdi:memory", unit_of_measurement="%",
+           state_class="measurement"),
     sensor("disk_percent", "Disk usage", "mdi:sd", unit_of_measurement="%",
            state_class="measurement"),
     sensor("throttled_raw", "get_throttled", "mdi:chip", entity_category="diagnostic"),
@@ -188,6 +175,8 @@ def publish_discovery(client):
             "device": DEVICE,
         }
         client.publish(f"homeassistant/{component}/{uid}/config", json.dumps(payload), retain=True)
+    for key in OLD_ENTITIES:  # an empty retained config deletes the entity
+        client.publish(f"homeassistant/sensor/wol_pi_{key}/config", "", retain=True)
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -201,6 +190,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
 
 
 def main():
+    sampler = Sampler("/sys/class/thermal/thermal_zone0/temp")
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="wol-pi-health")
     client.username_pw_set(os.environ["MQTT_USERNAME"], os.environ["MQTT_PASSWORD"])
     client.will_set(AVAILABILITY_TOPIC, "offline", retain=True)
@@ -210,14 +200,14 @@ def main():
     client.loop_start()
 
     while True:
+        time.sleep(INTERVAL)  # the first report then covers a full minute of samples
         try:
-            state = collect()
+            state = collect(sampler)
             client.publish(STATE_TOPIC, json.dumps(state), retain=True)
             if state["undervoltage_now"] or state["undervoltage_since_boot"]:
                 print(f"under-voltage: {state}", flush=True)
         except Exception as e:  # one bad read must not kill the loop
             print(f"collect failed: {e!r}", flush=True)
-        time.sleep(INTERVAL)
 
 
 if __name__ == "__main__":

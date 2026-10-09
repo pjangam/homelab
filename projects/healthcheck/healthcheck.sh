@@ -343,8 +343,10 @@ esac
 # behind the 2026-09-23 oops under a full-core build. Nothing alerted on it.
 #
 # This runs every 15 minutes, but a build heats the chip in seconds, so it
-# takes the peak of HA's System Monitor history over the window (sampled about
-# once a minute), not just the reading now. sysfs is read too, so the check
+# takes the peak over the window of sensor.xero_cpu_temperature_max_1_min - the
+# max of per-second samples each minute, from projects/xero-stats (until
+# 2026-10-09 it was System Monitor's one reading a minute, which can miss a
+# spike entirely) - not just the reading now. sysfs is read too, so the check
 # still works with HA down. The text names the band, not the peak, so the
 # dedup below mails once per hot spell rather than every run.
 CPU_TEMP_WARN=90
@@ -353,7 +355,7 @@ cpu_temp_window_start=$(date -u -d "-15 min" +%Y-%m-%dT%H:%M:%SZ)
 cpu_temp_peak=$(
   {
     curl -s --max-time 10 -H "Authorization: Bearer $HA_TOKEN" \
-      "http://localhost:8123/api/history/period/$cpu_temp_window_start?filter_entity_id=sensor.system_monitor_processor_temperature&minimal_response&no_attributes" \
+      "http://localhost:8123/api/history/period/$cpu_temp_window_start?filter_entity_id=sensor.xero_cpu_temperature_max_1_min&minimal_response&no_attributes" \
       | jq -r '.[0][]?.state' 2>/dev/null
     for zone in /sys/class/thermal/thermal_zone*; do
       [ "$(cat "$zone/type")" = x86_pkg_temp ] && echo $(( $(cat "$zone/temp") / 1000 ))

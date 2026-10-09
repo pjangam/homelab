@@ -14,8 +14,9 @@ PI="pramod@192.168.1.124"
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 PI_ROOT="/home/pramod/homelab"
 
-ssh "$PI" "mkdir -p $PI_ROOT/projects/pi-health ~/.config/systemd/user"
+ssh "$PI" "mkdir -p $PI_ROOT/projects/pi-health $PI_ROOT/tools/host-stats ~/.config/systemd/user"
 scp -q "$REPO/projects/pi-health/pi-health-mqtt.py" "$PI:$PI_ROOT/projects/pi-health/"
+scp -q "$REPO/tools/host-stats/host_stats.py" "$PI:$PI_ROOT/tools/host-stats/"
 sed "s|/home/pramod/code/homelab|$PI_ROOT|g" "$REPO/projects/pi-health/pi-health-mqtt.service" \
   | ssh "$PI" 'cat > ~/.config/systemd/user/pi-health-mqtt.service'
 

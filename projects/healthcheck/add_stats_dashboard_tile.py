@@ -15,6 +15,7 @@ Idempotent: adding a tile that is already on the board changes nothing.
   projects/healthcheck/add_stats_dashboard_tile.py binary_sensor.foo
   projects/healthcheck/add_stats_dashboard_tile.py binary_sensor.foo --after binary_sensor.bar
   projects/healthcheck/add_stats_dashboard_tile.py sensor.foo --section-title "wol Pi"
+  projects/healthcheck/add_stats_dashboard_tile.py sensor.new --replace sensor.old
 
 --section-title picks the section by its heading, creating it (as the last
 section) if there is none. A tile already in another section is moved
@@ -67,6 +68,7 @@ def main():
     ap.add_argument("--section", type=int, default=0)
     ap.add_argument("--section-title", help="the section whose heading is this; created if missing")
     ap.add_argument("--after", help="place the new tile directly after this entity")
+    ap.add_argument("--replace", help="put the tile where this entity's tile is, removing that one")
     ap.add_argument("--url", default=os.environ.get("HA_URL", "http://localhost:8123"))
     args = ap.parse_args()
 
@@ -79,7 +81,20 @@ def main():
     (config,) = asyncio.run(ws_call(ws_url, token, [get]))
 
     sections = config["views"][0]["sections"]
-    if args.section_title:
+    replaced = None
+    if args.replace:
+        for idx, sec in enumerate(sections):
+            for i, c in enumerate(sec.get("cards", [])):
+                if c.get("type") == "tile" and c.get("entity") == args.replace:
+                    replaced = (idx, i)
+        if replaced is None:
+            sys.exit(f"--replace entity {args.replace} is not on the board")
+        if any(c.get("entity") == args.entity for sec in sections for c in sec.get("cards", [])):
+            sys.exit(f"{args.entity} is already on the board - remove it first")
+        idx, i = replaced
+        sections[idx]["cards"][i] = {**sections[idx]["cards"][i], "entity": args.entity}
+        args.section = idx
+    elif args.section_title:
         for idx, sec in enumerate(sections):
             if any(c.get("type") == "heading" and c.get("heading") == args.section_title
                    for c in sec.get("cards", [])):
@@ -92,11 +107,13 @@ def main():
         args.section = idx
     section = sections[args.section]
     cards = section["cards"]
-    if any(c.get("entity") == args.entity for c in cards):
+    if replaced:
+        pass
+    elif any(c.get("entity") == args.entity for c in cards):
         print(f"{args.entity} is already in that section - nothing to do.")
         return
     moved_from = None
-    for idx, sec in enumerate(sections):
+    for idx, sec in enumerate([] if replaced else sections):
         if idx == args.section:
             continue
         for c in list(sec.get("cards", [])):
@@ -105,15 +122,18 @@ def main():
                 moved_from = idx
 
     tile = {"type": "tile", "entity": args.entity}
-    at = len(cards)
-    if args.after:
+    at = replaced[1] if replaced else len(cards)
+    if replaced:
+        pass
+    elif args.after:
         for i, c in enumerate(cards):
             if c.get("entity") == args.after:
                 at = i + 1
                 break
         else:
             sys.exit(f"--after entity {args.after} is not on the board")
-    cards.insert(at, tile)
+    if not replaced:
+        cards.insert(at, tile)
 
     # HA rewrites the storage file on save, so snapshot it first. Not into
     # .storage/ itself - that is root-owned by the HA container and not
@@ -128,7 +148,8 @@ def main():
 
     save = {"type": "lovelace/config/save", "url_path": args.dashboard, "config": config}
     asyncio.run(ws_call(ws_url, token, [save]))
-    how = f"moved from section {moved_from}" if moved_from is not None else "added"
+    how = (f"replaced {args.replace}" if replaced else
+           f"moved from section {moved_from}" if moved_from is not None else "added")
     print(f"{how}: {args.entity} at position {at} of section {args.section}.")
 
 
