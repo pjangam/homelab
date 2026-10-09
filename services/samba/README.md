@@ -172,7 +172,18 @@ share name: `smb://192.168.1.123/documents` or
 |---|---|
 | **Directory on xero** | `/datapool/documents` (`DOCUMENTS_LOCATION` in `.env`), mounted as `/documents` in the container |
 | **Storage** | its own ZFS dataset `datapool/documents`, `copies=2`, `sync=always`, lz4 |
-| **Durability** | as [above](#durability): one disk, no snapshots, no off-machine backup. Keep originals of anything important elsewhere. |
+| **Durability** | one disk and no snapshots, as [above](#durability). Unlike the other shares it **has an off-machine backup**: see below. |
+| **Backup** | `projects/certs-backup/backup_documents.sh`, cron 03:45 daily: one GPG (AES-256, `BACKUP_PASSPHRASE` from `.env.backup`) tar of the whole share to `backup:documents-encrypted` in Dropbox. Uploads only when a file changed, and keeps the newest 2, because Dropbox has about 1 GiB free. `.deleted/` is left out. |
+
+Restore (checked 2026-10-09: all 203 files identical to the share):
+
+```sh
+rclone cat backup:documents-encrypted/<newest> | gpg -d | tar -xC <dir>
+```
+
+The passphrase must also live somewhere other than xero. A copy inside
+Vaultwarden is not enough: Vaultwarden runs on xero, and its own backup is
+encrypted with the same passphrase.
 
 Seeded 2026-10-09 with one-time copies from Dropbox, each checked against
 the source afterwards: the contents of `docs` (114 files, 203 MiB) at the

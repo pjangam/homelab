@@ -98,6 +98,7 @@ fi
 (crontab -l 2>/dev/null | grep -v "backup_vaultwarden.sh"; echo "0 2 * * * $HOMELAB_DIR/projects/certs-backup/backup_vaultwarden.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 (crontab -l 2>/dev/null | grep -v "backup_homeassistant.sh"; echo "0 3 * * * $HOMELAB_DIR/projects/certs-backup/backup_homeassistant.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 (crontab -l 2>/dev/null | grep -v "backup_hardware_md.sh"; echo "30 3 * * * $HOMELAB_DIR/projects/certs-backup/backup_hardware_md.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v "backup_documents.sh"; echo "45 3 * * * $HOMELAB_DIR/projects/certs-backup/backup_documents.sh >> $HOMELAB_DIR/backup.log 2>&1") | crontab -
 # Renew Tailscale certs weekly, via projects/certs-backup/renew_certs.sh.
 #
 # This used to be a long inline entry running `sudo tailscale cert ... && sudo
