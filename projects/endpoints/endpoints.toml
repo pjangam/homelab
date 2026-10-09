@@ -301,6 +301,17 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "Also smb://xero.{tailnet}/albums. services/albums/README.md."
 
   [[group.endpoint]]
+  name = "documents (SMB)"
+  proto = "smb"
+  host = "192.168.1.123"
+  port = 445
+  url = "smb://192.168.1.123/documents"
+  connect = "smb://192.168.1.123/documents"
+  desc = "Documents (scans, PDFs, paperwork) on datapool/documents (copies=2). Same phoneupload login as phone-uploads."
+  who = "Hands - filing documents from the phone or a laptop."
+  note = "Also smb://xero.{tailnet}/documents. No snapshots or off-machine backup yet. services/samba/README.md."
+
+  [[group.endpoint]]
   name = "SSH - xero"
   proto = "ssh"
   host = "192.168.1.123"

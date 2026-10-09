@@ -479,6 +479,7 @@ services:
     volumes:
       - ${PHONE_UPLOADS_LOCATION}:/share
       - ${ALBUMS_LOCATION}:/albums
+      - ${DOCUMENTS_LOCATION}:/documents
     command:
       - "-p"
       - "-u"
@@ -489,6 +490,9 @@ services:
       # here; albums-gallery serves each album read-only.
       - "-s"
       - "albums;/albums;yes;no;no;${SAMBA_USER};;;Photo albums shared via Funnel"
+      # Documents (scans, PDFs, paperwork) on datapool/documents, copies=2.
+      - "-s"
+      - "documents;/documents;yes;no;no;${SAMBA_USER};;;Documents"
 
 volumes:
   # model-cache:  # immich-machine-learning — disabled

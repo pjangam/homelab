@@ -161,6 +161,30 @@ then update Vaultwarden.
 user list, then run `docker compose up -d samba`. The container is recreated
 from scratch, so the old account is gone.
 
+## `documents` share
+
+Added 2026-10-09 for scans, PDFs and other paperwork. Same login as
+`phone-uploads` (`phoneupload`), same ports and addresses, just a different
+share name: `smb://192.168.1.123/documents` or
+`smb://xero.<tailnet>.ts.net/documents`.
+
+| | |
+|---|---|
+| **Directory on xero** | `/datapool/documents` (`DOCUMENTS_LOCATION` in `.env`), mounted as `/documents` in the container |
+| **Storage** | its own ZFS dataset `datapool/documents`, `copies=2`, `sync=always`, lz4 |
+| **Durability** | as [above](#durability): one disk, no snapshots, no off-machine backup. Keep originals of anything important elsewhere. |
+
+Created with:
+
+```sh
+sudo zfs create -o copies=2 -o sync=always -o compression=lz4 datapool/documents
+sudo chown pramod: /datapool/documents
+```
+
+The dataset has to exist before `docker compose up -d samba`: otherwise
+Docker creates `/datapool/documents` as a plain root-owned directory on the
+pool's root dataset, and `zfs create` then refuses to mount over it.
+
 ## Gotchas
 
 - **HEIC photos.** The iPhone uploads photos as `.heic`, which GitHub and most
