@@ -302,6 +302,39 @@ if [ -n "$miraie_ac_flap_at" ]; then
   problems+=("❄️ AC keeps needing auto-fixes (≥${MIRAIE_AC_FIXES_THRESHOLD} in 24h, raised $(date -d "@$miraie_ac_flap_at" '+%d %b %H:%M'))"$'\n'"  $miraie_ac_autofixes_24h fixes in 24h; something keeps knocking it out. Daily reminder. Attempts: healthcheck.log")
 fi
 
+# Voice speech-to-text (projects/voice-assistant/check_stt.sh): a saved
+# "turn off the AC" clip must transcribe. When it doesn't, speech-to-phrase
+# either trained before HA had loaded the custom voice sentences (after a
+# xero boot) or its decoder is stuck - a restart fixes both, so restart once
+# per run, tell the user it happened (low priority: it fixed itself), and
+# only raise a problem if the restart did not help.
+STT_RESTART_LOG="$HOME/.cache/healthcheck/stt-restarts.log"
+mkdir -p "$(dirname "$STT_RESTART_LOG")"
+stt_detail="$("$SCRIPT_DIR/projects/voice-assistant/check_stt.sh" 2>&1)"
+stt_rc=$?
+if [ "$stt_rc" -eq 1 ]; then
+  echo "[$(date '+%F %T')] speech-to-text check failed ($stt_detail) - restarting speech-to-phrase"
+  stt_restart_at=$(date '+%Y-%m-%dT%H:%M:%S')
+  docker restart speech-to-phrase >/dev/null 2>&1
+  for _ in $(seq 1 24); do
+    sleep 5
+    docker logs --since "$stt_restart_at" speech-to-phrase 2>&1 | grep -q 'Finished training' && break
+  done
+  stt_detail="$("$SCRIPT_DIR/projects/voice-assistant/check_stt.sh" 2>&1)"
+  stt_rc=$?
+  echo "$(date +%s) $stt_rc" >> "$STT_RESTART_LOG"
+  tail -n 50 "$STT_RESTART_LOG" > "$STT_RESTART_LOG.tmp" && mv "$STT_RESTART_LOG.tmp" "$STT_RESTART_LOG"
+  echo "[$(date '+%F %T')] after restart: $stt_detail"
+  if [ "$stt_rc" -eq 0 ]; then
+    source "$SCRIPT_DIR/tools/notify/push_ntfy.sh"
+    push_ntfy "voice: speech-to-text retrained" \
+      "Custom voice commands (AC, fan speed) were not being recognised; restarted speech-to-phrase and they are back." \
+      2 microphone
+  elif [ "$stt_rc" -eq 1 ]; then
+    problems+=("🎙️ Voice commands not recognised, restart did not help"$'\n'"  $stt_detail"$'\n'"  Check: docker logs --tail 30 speech-to-phrase")
+  fi
+fi
+
 # Power watchdog (watchdog_power.sh): surfaces whether enp1s0 is currently
 # down (proxy for "on UPS battery") on the dashboard, not just in
 # power-watchdog.log/journalctl. Dashboard-only signal, not added to

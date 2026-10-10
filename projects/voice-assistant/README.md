@@ -62,6 +62,13 @@ white noise, AC.
   `.bin` to xero for `esphome.sh flash-bin`.
 - `wakewords/` - custom openWakeWord models, mounted into the `openwakeword`
   container (`127.0.0.1:10400`, preloads `hey_jarvis`, the wake word since 2026-10-08; `okay_nabu` before).
+- `check_stt.sh` + `stt_probe.wav` - sends a saved "turn off the AC" clip
+  (Piper's voice) through speech-to-text. Run every 15 min by
+  `projects/healthcheck/healthcheck.sh`, which restarts speech-to-phrase
+  when it fails (it trains on HA's custom sentences only at start, and can
+  start before HA has loaded them after a boot), pushes a low-priority ntfy,
+  and raises a problem only if the restart did not help. Restarts are logged
+  in `~/.cache/healthcheck/stt-restarts.log`.
 - `test_stt.sh` - synthesises phrases with HA's Google TTS and posts them to
   the STT API; transcription check only, executes nothing.
 
