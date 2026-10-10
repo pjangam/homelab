@@ -1627,7 +1627,9 @@ qty | item | est | note
 
 **Debug settings removed 2026-10-09:** the `--debug` on `openwakeword` (it was never committed; reverted on xero) and `assist_pipeline: debug_recording_dir` in HA's configuration.yaml (copy of the old file at `~/configuration.yaml.bak.20261009-debug` on xero); HA restarted, all integrations loaded, satellite connected, `test_stt.sh` fine. **The recordings had filled Dropbox:** they lived in HA's config folder, so the daily HA backups grew 0.04 -> 0.4 -> 1.9 -> 2.8GB, Dropbox (2.75GiB free tier) went over quota and the 2026-10-09 `hardware.md` backup failed. Recordings (4.1GB) moved to `~/archive/assist_recordings-2026-10` on xero (`RECORDINGS=` for `replay_recordings.sh`); the bloated backups deleted locally and in Dropbox; a fresh 40MB HA backup made and uploaded, `hardware.md` re-backed-up. Dropbox at 1.69/2.75GiB.
 
-**Next step:** flash the living room board from the Mac, then train "Alejandro" off xero (Mac or Colab); switching to it is xero-side only (model into `wakewords/`, restart `openwakeword`, pipeline wake word via `setup_assist.py`), no reflash. (Debug settings: removed 2026-10-09, see above.)
+**Wake word candidates 2026-10-11:** "Alejandro" was only picked for being memorable and unused around the house, so instead of training it, two ready-made community models (https://github.com/fwartner/home-assistant-wakewords-collection) are in `wakewords/` and preloaded by `openwakeword`: `andromeda` and `dumbledore` (no "pomegranate" there). `hey_jarvis` stays live until the user tests them (to try: `WAKE_WORD_ID` in `setup_assist.py`, run it, restart speech-to-phrase, temporary `--debug` on openwakeword). Train on Colab only if neither works.
+
+**Next step:** flash the living room board from the Mac once its INMP441 arrives; try `andromeda` / `dumbledore` against `hey_jarvis` and keep the best. (Debug settings: removed 2026-10-09, see above.)
 
 ### xero stats as percentiles (xero-stats)
 **Status:** Done

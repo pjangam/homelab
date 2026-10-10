@@ -6,6 +6,10 @@ echo, against hours of ordinary speech it must *not* wake on. No recordings of
 your own voice are needed. Training runs on Google Colab (free GPU, in the
 browser), never on xero.
 
+**Parked 2026-10-11:** the name was never important, so two ready-made
+community models, `andromeda.tflite` and `dumbledore.tflite`, sit next to this
+file to be tried first (see ../README.md). Train only if neither works out.
+
 Not in the community collection
 (https://github.com/fwartner/home-assistant-wakewords-collection, checked
 2026-10-06), so it has to be trained.

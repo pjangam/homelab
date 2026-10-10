@@ -62,6 +62,11 @@ white noise, AC.
   `.bin` to xero for `esphome.sh flash-bin`.
 - `wakewords/` - custom openWakeWord models, mounted into the `openwakeword`
   container (`127.0.0.1:10400`, preloads `hey_jarvis`, the wake word since 2026-10-08; `okay_nabu` before).
+  `andromeda.tflite` and `dumbledore.tflite` (from the community collection,
+  https://github.com/fwartner/home-assistant-wakewords-collection, 2026-10-11)
+  are preloaded too, waiting to be tried instead of training "Alejandro". To
+  try one: `WAKE_WORD_ID` in `setup_assist.py`, run it, restart
+  speech-to-phrase; add `--debug` to openwakeword to see detections.
 - `check_stt.sh` + `stt_probe.wav` - sends a saved "turn off the AC" clip
   (Piper's voice) through speech-to-text. Run every 15 min by
   `projects/healthcheck/healthcheck.sh`, which restarts speech-to-phrase
