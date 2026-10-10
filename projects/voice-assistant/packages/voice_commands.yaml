@@ -19,10 +19,15 @@ automation:
         command:
           - "turn off [the] (AC|A C|air conditioner)"
           - "switch off [the] (AC|A C|air conditioner)"
+    # Set a mode, not climate.turn_on: the MirAIe AC (Node-RED bridge) ignores
+    # a bare turn_on - no change in 40s on 2026-10-10 - but set_hvac_mode
+    # cool switches it on at once. "on" means cool, the only mode used.
     actions:
-      - action: "climate.turn_{{ trigger.id }}"
+      - action: climate.set_hvac_mode
         target:
           entity_id: climate.panasonic_ac_panasonic_ac
+        data:
+          hvac_mode: "{{ 'cool' if trigger.id == 'on' else 'off' }}"
       - set_conversation_response: "AC {{ trigger.id }}"
 
   - id: voice_ac_temperature
