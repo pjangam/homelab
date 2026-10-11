@@ -20,7 +20,7 @@ There is no config file of its own: the share is set up entirely by the
 | **Storage** | its own ZFS dataset `datapool/phone-uploads`, compression on, no quota. It is kept separate from Immich's datasets on purpose. |
 | **Redundancy** | `copies=2` on a **single-disk** pool: two copies on one disk, no mirror. See [Durability](#durability) below. |
 | **File ownership** | every file lands owned by `pramod` (uid/gid 1000), whoever logged in. That is set by `USERID`/`GROUPID` in the compose file. |
-| **Permissions** | read-write, no guest access, `phoneupload` is the only valid user |
+| **Permissions** | read-write, no guest access. Valid users: `phoneupload` and `bhakti` on `phone-uploads` and `documents`; `phoneupload` only on `albums`. |
 | **Ports** | 445 (SMB), plus 139 for older clients. Both are published on every interface. |
 
 `vids/` holds Dropbox's old `vids` folder (25 files, 1.09 GiB, mostly GoPro
@@ -46,6 +46,11 @@ there is no need to open port 445 to the internet.
   address (`smb://192.168.1.123` or `smb://xero.<tailnet>.ts.net`, no share
   name) → Registered User. That shows every share as a folder. An address
   with a share on the end opens only that share (see Gotchas).
+- **Android (SambaLite, Material Files):** each connection is one share, so
+  the Share field is required (`phone-uploads`, `documents`) - a blank share
+  fails with just "connection failed". Server is the bare address
+  (`192.168.1.123` or `xero.<tailnet>.ts.net`), no `smb://`, domain blank.
+  Add one connection per share.
 - **Mac:** Finder → Go → Connect to Server (Cmd-K).
 - **Linux:** `smbclient //192.168.1.123/phone-uploads -U phoneupload`, or
   mount it with `cifs-utils`.

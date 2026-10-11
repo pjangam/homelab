@@ -288,37 +288,70 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "Added 2026-09-28 after a power cut plus ISP outage left the Pi 15 minutes behind for 10 hours. Config and deploy: services/chrony/."
 
   [[group.endpoint]]
-  name = "phone-uploads (SMB)"
+  name = "phone-uploads (SMB, LAN)"
   proto = "smb"
   host = "192.168.1.123"
   port = 445
   url = "smb://192.168.1.123/phone-uploads"
   connect = "smb://192.168.1.123/phone-uploads"
-  desc = "File drop zone (phone uploads, photos) on datapool/phone-uploads. Everything written lands owned by uid 1000 whichever login wrote it."
+  desc = "File drop zone (phone uploads, photos) on datapool/phone-uploads. Logins: phoneupload or bhakti. Everything written lands owned by uid 1000 whichever login wrote it."
   who = "The phone, offloading video to free up storage."
-  note = "Also reachable over the tailnet as smb://xero.{tailnet}/phone-uploads. Port 139 is published too, for older clients. The smb:// link opens Finder on a Mac and the Files app on iOS. Login and paths: services/samba/README.md."
+  note = "Tailnet entry below. Port 139 is published too, for older clients. The smb:// link opens Finder on a Mac and the Files app on iOS. Login and paths: services/samba/README.md."
 
   [[group.endpoint]]
-  name = "albums (SMB)"
+  name = "phone-uploads (SMB, tailnet)"
+  proto = "smb"
+  host = "xero.{tailnet}"
+  port = 445
+  url = "smb://xero.{tailnet}/phone-uploads"
+  connect = "smb://xero.{tailnet}/phone-uploads"
+  desc = "File drop zone on datapool/phone-uploads, over the tailnet. Same share as the LAN entry above."
+  who = "The phone away from home (Tailscale on), and any tailnet device."
+  note = "Works anywhere the client is on the tailnet. Android SMB apps that cannot resolve MagicDNS names can use xero's tailnet IP instead (tailscale ip -4 on xero)."
+
+  [[group.endpoint]]
+  name = "albums (SMB, LAN)"
   proto = "smb"
   host = "192.168.1.123"
   port = 445
   url = "smb://192.168.1.123/albums"
   connect = "smb://192.168.1.123/albums"
-  desc = "Upload side of the public photo albums, on datapool/albums (copies=2). Same phoneupload login as phone-uploads."
+  desc = "Upload side of the public photo albums, on datapool/albums (copies=2). phoneupload login only."
   who = "Whoever is adding photos to an album; albums-gallery serves each album folder read-only."
-  note = "Also smb://xero.{tailnet}/albums. services/albums/README.md."
+  note = "Tailnet entry below. services/albums/README.md."
 
   [[group.endpoint]]
-  name = "documents (SMB)"
+  name = "albums (SMB, tailnet)"
+  proto = "smb"
+  host = "xero.{tailnet}"
+  port = 445
+  url = "smb://xero.{tailnet}/albums"
+  connect = "smb://xero.{tailnet}/albums"
+  desc = "Upload side of the public photo albums, over the tailnet. Same share as the LAN entry above."
+  who = "Adding photos to an album from outside the LAN."
+  note = "Works anywhere the client is on the tailnet. Android SMB apps that cannot resolve MagicDNS names can use xero's tailnet IP instead (tailscale ip -4 on xero)."
+
+  [[group.endpoint]]
+  name = "documents (SMB, LAN)"
   proto = "smb"
   host = "192.168.1.123"
   port = 445
   url = "smb://192.168.1.123/documents"
   connect = "smb://192.168.1.123/documents"
-  desc = "Documents (scans, PDFs, paperwork) on datapool/documents (copies=2). Same phoneupload login as phone-uploads."
+  desc = "Documents (scans, PDFs, paperwork) on datapool/documents (copies=2). Logins: phoneupload or bhakti."
   who = "Hands - filing documents from the phone or a laptop."
-  note = "Also smb://xero.{tailnet}/documents. No snapshots or off-machine backup yet. services/samba/README.md."
+  note = "Tailnet entry below. No snapshots or off-machine backup yet. services/samba/README.md."
+
+  [[group.endpoint]]
+  name = "documents (SMB, tailnet)"
+  proto = "smb"
+  host = "xero.{tailnet}"
+  port = 445
+  url = "smb://xero.{tailnet}/documents"
+  connect = "smb://xero.{tailnet}/documents"
+  desc = "Documents on datapool/documents, over the tailnet. Same share as the LAN entry above."
+  who = "Filing documents from the phone or a laptop away from home."
+  note = "Works anywhere the client is on the tailnet. Android SMB apps that cannot resolve MagicDNS names can use xero's tailnet IP instead (tailscale ip -4 on xero)."
 
   [[group.endpoint]]
   name = "SSH - xero"
