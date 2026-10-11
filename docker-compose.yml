@@ -19,6 +19,81 @@ x-tailscale-sidecar-env: &tailscale-sidecar-env
   TS_SERVE_CONFIG: /config/serve-config.json
 
 services:
+  ### monitoring start - Prometheus + Grafana, services/grafana/README.md
+  # All host-networked and bound to 127.0.0.1: Grafana is reached through
+  # Caddy at https://xero.<tailnet>/grafana/, the rest only by each other.
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    container_name: prometheus
+    network_mode: host
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=90d
+      - --storage.tsdb.retention.size=8GB
+      - --web.listen-address=127.0.0.1:9090
+    volumes:
+      - ./services/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    container_name: node-exporter
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=127.0.0.1:9100
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|var/lib/docker/.+|host/var/lib/docker/.+)($$|/)
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.6
+    container_name: cadvisor
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=5s
+      - --store_container_labels=false
+      - --disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,percpu,process,referenced_memory,resctrl,sched,tcp,udp
+    ports:
+      - "127.0.0.1:8088:8080"
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.2.3
+    container_name: grafana
+    network_mode: host
+    environment:
+      GF_SERVER_HTTP_ADDR: 127.0.0.1
+      GF_SERVER_HTTP_PORT: "3000"
+      GF_SERVER_ROOT_URL: https://xero.${TAILNET_SUFFIX}/grafana/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      # Tailnet-only page, so anyone who reaches it may look; editing needs the admin login.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    volumes:
+      - ./services/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./services/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+  ### monitoring end
+
   ### photos servers start
   # Re-enabled 2026-10-09 on the 32GB stick. Versions are pinned in .env
   # (IMMICH_VERSION), never `release`: 3.0 dropped pgvecto.rs, so a floating
@@ -486,8 +561,10 @@ services:
       - "-p"
       - "-u"
       - "${SAMBA_USER};${SAMBA_PASSWORD};1000;1000;1000"
+      - "-u"
+      - "bhakti;${SAMBA_PASSWORD_BHAKTI}"
       - "-s"
-      - "phone-uploads;/share;yes;no;no;${SAMBA_USER};;;iPhone video drop zone"
+      - "phone-uploads;/share;yes;no;no;${SAMBA_USER},bhakti;;;iPhone video drop zone"
       # Upload side of the public albums (services/albums/README.md). Read-write
       # here; albums-gallery serves each album read-only.
       - "-s"
@@ -498,6 +575,8 @@ services:
 
 volumes:
   model-cache:
+  prometheus-data:
+  grafana-data:
   # node-red-data: no longer declared here (node-red moved to the Pi) - the
   # actual volume (homelab_node-red-data) is left in place on disk as a
   # rollback net; not deleted yet.

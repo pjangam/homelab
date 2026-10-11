@@ -1632,6 +1632,14 @@ qty | item | est | note
 
 **Next step:** flash the living room board from the Mac once its INMP441 arrives; try `andromeda` / `dumbledore` against `hey_jarvis` and keep the best. (Debug settings: removed 2026-10-09, see above.)
 
+### Grafana for all stats
+**Status:** Done
+**Priority:** P3
+
+**Why:** HA's dashboards show one series per tile and only what the sensor gives (averages, until 2026-10-09); asked for 2026-10-11 to see everything side by side with percentiles.
+**State:** running since 2026-10-11 at `https://xero.<tailnet>/grafana/` (`services/grafana/README.md`): Prometheus (5s scrapes, 90d/8GB), node_exporter on xero and the wol Pi, cAdvisor for containers, Grafana 13.2.3 with two generated dashboards (Hosts, Containers). Every panel is max/p95 of 5s samples per interval. Checks: `services/grafana/check_queries.py` (every query returns data) and `services/grafana/shot_grafana.sh` (screenshots; fails if Grafana does not boot or a panel shows no data). Overhead ~10% of one core, ~0.7GB RAM.
+**Next step:** maybe HA's `prometheus:` integration (needs an HA restart) and Immich's job-queue metrics, so those land in Grafana too.
+
 ### xero stats as percentiles (xero-stats)
 **Status:** Done
 **Priority:** P3

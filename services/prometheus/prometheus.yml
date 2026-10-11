@@ -1,0 +1,35 @@
+# Prometheus for the Grafana dashboards (services/grafana/README.md).
+#
+# Scrapes every 5s, not the usual 15-60s: the dashboards show the p95 and
+# max of each graph interval, never averages, and a counter's rate is only
+# as fine as its scrape interval - at 60s a ten-second CPU spike is already
+# flattened before any percentile sees it.
+#
+# Everything listens on localhost except the Pi's node_exporter, which
+# Prometheus reaches over the LAN.
+global:
+  scrape_interval: 5s
+  scrape_timeout: 4s
+
+scrape_configs:
+  - job_name: node
+    static_configs:
+      - targets: ["127.0.0.1:9100"]
+        labels: {host: xero}
+      - targets: ["192.168.1.124:9100"]
+        labels: {host: wol-pi}
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["127.0.0.1:8088"]
+        labels: {host: xero}
+    metric_relabel_configs:
+      # Keep per-container series only; the cgroup tree under them is noise.
+      - source_labels: [name]
+        regex: ""
+        action: drop
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["127.0.0.1:9090"]
+        labels: {host: xero}

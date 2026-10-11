@@ -42,6 +42,13 @@ xero.{$TAILNET_SUFFIX} {
         file_server
     }
 
+    # Grafana (services/grafana/README.md) - path kept intact: Grafana runs
+    # with serve_from_sub_path and routes on /grafana itself.
+    @grafana path /grafana /grafana/*
+    handle @grafana {
+        reverse_proxy localhost:3000
+    }
+
     handle {
         reverse_proxy localhost:8080
     }

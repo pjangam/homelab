@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""Generate the Grafana dashboards in services/grafana/dashboards/.
+
+The JSON there is provisioned read-in by Grafana (see provisioning/), so this
+script is the source of truth: change it, run it, commit both. Grafana picks
+the files up within a minute, no restart.
+
+Every panel shows the max and/or p95 of each graph interval, never an
+average (user's rule, 2026-10-09): Prometheus scrapes every 5s, a counter
+becomes a 5s rate with irate(), and each point on a graph is the max or p95
+of the 5s values inside that point's interval ($__interval). Zoomed out to
+a week, a point covers ~10 minutes and still shows the worst 5 seconds in it.
+Gauges (temperature, memory, disk) get max_over_time the same way.
+"""
+import json
+from pathlib import Path
+
+OUT = Path(__file__).resolve().parent / "dashboards"
+DS = {"type": "prometheus", "uid": "prometheus"}
+
+_ids = iter(range(1, 1000))
+
+
+def counter_rate(metric_expr):
+    """A per-second rate over the last two 5s samples."""
+    return f"irate({metric_expr}[30s])"
+
+
+def peak(expr):
+    """(max, p95) of expr's 5s values within each graph point's interval."""
+    return (f"max_over_time(({expr})[$__interval:5s])",
+            f"quantile_over_time(0.95, ({expr})[$__interval:5s])")
+
+
+def panel(title, targets, unit, x, y, w=12, h=8, max_=None, desc="", stack=False):
+    p = {
+        "id": next(_ids), "type": "timeseries", "title": title, "description": desc,
+        "datasource": DS, "interval": "5s",
+        "gridPos": {"x": x, "y": y, "w": w, "h": h},
+        "fieldConfig": {
+            "defaults": {
+                "unit": unit, "min": 0,
+                "custom": {"lineWidth": 1, "fillOpacity": 10 if stack else 0, "showPoints": "never",
+                           "spanNulls": True,
+                           "stacking": {"mode": "normal" if stack else "none"}},
+            },
+            "overrides": [
+                # p95 lines dashed so max and p95 of the same series read as a pair.
+                {"matcher": {"id": "byRegexp", "options": ".*p95.*"},
+                 "properties": [{"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [6, 4]}}]},
+            ],
+        },
+        "options": {
+            "legend": {"displayMode": "table", "placement": "right", "calcs": ["max", "lastNotNull"]},
+            "tooltip": {"mode": "multi", "sort": "desc"},
+        },
+        "targets": [{"datasource": DS, "refId": chr(65 + i), "expr": e, "legendFormat": l}
+                    for i, (e, l) in enumerate(targets)],
+    }
+    if max_ is not None:
+        p["fieldConfig"]["defaults"]["max"] = max_
+    return p
+
+
+def max_p95(expr, legend):
+    mx, p95 = peak(expr)
+    return [(mx, f"{legend} max"), (p95, f"{legend} p95")]
+
+
+def dashboard(uid, title, panels, desc):
+    return {
+        "uid": uid, "title": title, "description": desc, "tags": ["homelab"],
+        "timezone": "browser", "refresh": "30s", "schemaVersion": 39,
+        "time": {"from": "now-6h", "to": "now"},
+        "panels": panels, "editable": True,
+    }
+
+
+# ---- Hosts: xero and the wol Pi ---------------------------------------------
+cpu_busy = ('100 * (1 - sum by (host) (' + counter_rate('node_cpu_seconds_total{mode=~"idle|iowait"}') +
+            ') / count by (host) (node_cpu_seconds_total{mode="idle"}))')
+core_busy = '100 * (1 - sum by (host, cpu) (' + counter_rate('node_cpu_seconds_total{mode=~"idle|iowait"}') + '))'
+temp = 'node_thermal_zone_temp{type=~"x86_pkg_temp|cpu-thermal"}'
+core_temp = 'node_hwmon_temp_celsius{chip=~"platform_coretemp.*"}'
+mem_used = '100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)'
+psi = lambda kind, which: '100 * ' + counter_rate(f'node_pressure_{kind}_{which}_seconds_total')
+net_dev = 'device=~"enp.*|eth.*|wl.*|tailscale0"'
+disk_dev = 'device=~"sd[a-z]|nvme.*|mmcblk[0-9]"'
+
+y = 0
+hosts = []
+hosts.append(panel("CPU busy, all cores", max_p95(cpu_busy, "{{host}}"), "percent", 0, y, max_=100,
+                   desc="Share of all cores busy (not idle, not iowait) per 5s; each point is the max / p95 of its interval."))
+hosts.append(panel("CPU temperature", max_p95(temp, "{{host}}"), "celsius", 12, y,
+                   desc="xero: x86_pkg_temp (N5105 TjMax 105°C; healthcheck warns at 90, the Immich load guard stops it at 93). Pi: cpu-thermal."))
+y += 8
+hosts.append(panel("CPU busy per core (max)", [(peak(core_busy)[0], "{{host}} cpu{{cpu}}")], "percent", 0, y, max_=100))
+hosts.append(panel("xero core temperatures (max)", [(peak(core_temp)[0], "{{sensor}}")], "celsius", 12, y))
+y += 8
+hosts.append(panel("Memory used (excl. cache)", max_p95(mem_used, "{{host}}"), "percent", 0, y, max_=100,
+                   desc="1 - MemAvailable/MemTotal: page cache does not count, it is handed back on demand."))
+hosts.append(panel("Pressure stall (xero)", [
+    *max_p95(psi("cpu", "waiting"), "cpu some"),
+    *max_p95(psi("memory", "waiting"), "memory some"),
+    *max_p95(psi("io", "waiting"), "io some"),
+], "percent", 12, y, desc="% of each 5s that some task waited for CPU / memory / IO (PSI). The Pi's kernel has no PSI."))
+y += 8
+hosts.append(panel("Disk busy", max_p95('100 * ' + counter_rate(f'node_disk_io_time_seconds_total{{{disk_dev}}}'),
+                                        "{{host}} {{device}}"), "percent", 0, y, max_=100,
+                   desc="xero: sda = datapool (ZFS), sdb = boot SSD. Pi: mmcblk0."))
+hosts.append(panel("Disk throughput (max)", [
+    (peak(counter_rate(f'node_disk_read_bytes_total{{{disk_dev}}}'))[0], "{{host}} {{device}} read"),
+    (peak(counter_rate(f'node_disk_written_bytes_total{{{disk_dev}}}'))[0], "{{host}} {{device}} write"),
+], "Bps", 12, y))
+y += 8
+hosts.append(panel("Network (max)", [
+    (peak(counter_rate(f'node_network_receive_bytes_total{{{net_dev}}}'))[0], "{{host}} {{device}} rx"),
+    (peak(counter_rate(f'node_network_transmit_bytes_total{{{net_dev}}}'))[0], "{{host}} {{device}} tx"),
+], "Bps", 0, y, desc="xero's wired link negotiated 100Mb/s (~12MB/s) as of 2026-10-09."))
+hosts.append(panel("Filesystem used", [
+    (peak('100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|vfat"} / '
+          'node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|vfat"})')[0], "{{host}} {{mountpoint}}"),
+], "percent", 12, y, max_=100))
+y += 8
+hosts.append(panel("ZFS ARC size (xero, max)", [(peak('node_zfs_arc_size')[0], "ARC")], "bytes", 0, y))
+
+# ---- Containers on xero (cAdvisor) -------------------------------------------
+c_cpu = '100 * sum by (name) (' + counter_rate('container_cpu_usage_seconds_total{name!=""}') + ')'
+c_mem = 'container_memory_working_set_bytes{name!=""}'
+containers = [
+    panel("Container CPU (max)", [(peak(c_cpu)[0], "{{name}}")], "percent", 0, 0, w=24, h=10,
+          desc="100% = one full core; xero has 4. Each point is the max 5s value in its interval."),
+    panel("Container CPU (p95)", [(peak(c_cpu)[1], "{{name}} p95")], "percent", 0, 10, w=24, h=10),
+    panel("Container memory, working set (max)", [(peak(c_mem)[0], "{{name}}")], "bytes", 0, 20, w=24, h=10),
+    panel("Container network (max)", [
+        (peak('sum by (name) (' + counter_rate('container_network_receive_bytes_total{name!=""}') + ')')[0], "{{name}} rx"),
+        (peak('sum by (name) (' + counter_rate('container_network_transmit_bytes_total{name!=""}') + ')')[0], "{{name}} tx"),
+    ], "Bps", 0, 30, w=24, h=10, desc="Host-networked containers (Caddy, Grafana, Prometheus, HA...) do not show here."),
+]
+
+OUT.mkdir(exist_ok=True)
+for uid, title, panels, desc in [
+    ("hosts", "Hosts", hosts, "xero and the wol Pi: max and p95 of 5s samples, never averages."),
+    ("containers", "Containers (xero)", containers, "Per-container CPU, memory and network from cAdvisor."),
+]:
+    path = OUT / f"{uid}.json"
+    path.write_text(json.dumps(dashboard(uid, title, panels, desc), indent=2) + "\n")
+    print(f"wrote {path.relative_to(OUT.parent.parent.parent)} ({len(panels)} panels)")

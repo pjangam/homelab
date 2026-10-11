@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: homelab
+    folder: Homelab
+    type: file
+    # Edits made in the UI are kept until Grafana restarts; to keep one,
+    # change build_dashboards.py instead and rebuild.
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
