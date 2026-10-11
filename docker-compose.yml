@@ -494,7 +494,7 @@ services:
       - "albums;/albums;yes;no;no;${SAMBA_USER};;;Photo albums shared via Funnel"
       # Documents (scans, PDFs, paperwork) on datapool/documents, copies=2.
       - "-s"
-      - "documents;/documents;yes;no;no;${SAMBA_USER};;;Documents"
+      - "documents;/documents;yes;no;no;${SAMBA_USER},bhakti;;;Documents"
 
 volumes:
   model-cache:
