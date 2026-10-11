@@ -47,3 +47,13 @@ Snapshot first, with Immich stopped:
 `ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0` image first,
 because 3.0 dropped pgvecto.rs; the 2.7.5 server migrated the indexes to
 VectorChord on its first start. Snapshots `@pre-v3` were taken before it.
+
+**v3 needs video metadata re-extracted.** 3.x stores video stream details in
+a new `asset_video` table, filled by metadata extraction. Videos extracted
+under 2.x have `asset_job_status."metadataExtractedAt"` set but no
+`asset_video` row, so Extract Metadata -> Missing skips them, and thumbnail
+generation ("Missing video metadata") and transcoding skip them too - VP9
+videos then do not play on iPhones. Fixed 2026-10-12 for 953 videos by
+clearing `metadataExtractedAt` for videos with no `asset_video` row, then
+Extract Metadata -> Missing, Generate Thumbnails -> Missing, Transcode
+Videos -> Missing.
