@@ -34,6 +34,21 @@ minute. UI edits work but are lost on the next rebuild unless copied back.
 `check_queries.py` runs every dashboard query against Prometheus and lists any
 that return no data.
 
+## On the iPhone
+
+- **GrafLens** (free, open source) works. Server
+  `https://xero.<tailnet>:3443` - a second Caddy site that serves Grafana at
+  the root, because GrafLens keeps only host:port from the URL and calls
+  `/api/...` at the root, which on :443 is Vaultwarden (it 404s). Token: the
+  Viewer-only service account `ios-graflens` (created 2026-10-12; the token is
+  not stored in the repo - revoke or re-issue it under Administration ->
+  Service accounts).
+- **The official "Grafana" app does not work here.** It is Grafana IRM
+  (on-call/alerting), not a dashboard viewer: it asks for
+  `/a/grafana-irm-app/mobile-app-connection`, which needs the IRM plugin and
+  Grafana Cloud.
+- A Safari "Add to Home Screen" shortcut to `/grafana/` also works, no login.
+
 ## Not covered yet
 
 - **Home Assistant's own sensors** (Pi health, healthcheck, AC, room

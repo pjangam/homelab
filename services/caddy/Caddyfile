@@ -54,3 +54,15 @@ xero.{$TAILNET_SUFFIX} {
     }
 }
 
+# Grafana at the root of its own port, for mobile apps (GrafLens) that keep
+# only scheme://host:port from the URL you give them and call /api/... at the
+# root - which on :443 is Vaultwarden. Every request gets the /grafana prefix
+# put back, since Grafana runs with serve_from_sub_path. API-only in practice:
+# Grafana's own links and redirects still point at xero.<tailnet>/grafana/,
+# so a browser should keep using that URL.
+xero.{$TAILNET_SUFFIX}:3443 {
+    tls /certs/xero.{$TAILNET_SUFFIX}.crt /certs/xero.{$TAILNET_SUFFIX}.key
+    rewrite * /grafana{uri}
+    reverse_proxy localhost:3000
+}
+
