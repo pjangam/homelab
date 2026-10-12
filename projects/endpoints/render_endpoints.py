@@ -194,6 +194,9 @@ h2 {
 .ep {
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
   padding: .9rem 1.05rem;
+  /* Grid items default to min-width:auto, so a long connection string would
+     widen the card past a phone screen instead of scrolling inside .connect. */
+  min-width: 0;
 }
 .ep header { display: flex; flex-wrap: wrap; align-items: baseline; gap: .55rem; margin-bottom: .45rem; }
 .ep h3 { font-size: 1rem; margin: 0; font-weight: 600; }
@@ -234,6 +237,18 @@ p { margin: .3rem 0; }
 .topics dt { margin-top: .45rem; }
 .topics dt code { color: var(--msg); }
 .topics dd { margin: .1rem 0 0; font-size: .85rem; color: var(--dim); }
+/* Sticky so it stays in reach after scrolling down a long group. */
+.search {
+  position: sticky; top: 0; z-index: 1; background: var(--bg);
+  padding: .6rem 0; margin: -1rem 0 0;
+}
+.search input {
+  width: 100%; font: inherit; color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 8px; padding: .55rem .8rem;
+}
+.search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.nomatch { color: var(--dim); margin-top: 2rem; }
+[hidden] { display: none !important; }
 footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line);
   color: var(--dim); font-size: .85rem; }
 footer p { margin: .5rem 0; }
@@ -242,7 +257,50 @@ footer p { margin: .5rem 0; }
 }
 """
 
+# Search: filters the cards by their whole text (name, host, port, desc, who,
+# note, topics), so "1883", "pi" or "zigbee" all work. Every word must match,
+# in any order. A group with no matching card is hidden with its heading.
+# The query is mirrored into ?q= so a filtered view can be bookmarked or
+# sent; "/" focuses the box from anywhere, Escape clears it.
 JS = """
+(function () {
+  var box = document.getElementById('q');
+  var groups = Array.prototype.slice.call(document.querySelectorAll('.group'));
+  var nomatch = document.getElementById('nomatch');
+  groups.forEach(function (g) {
+    g.querySelectorAll('.ep').forEach(function (ep) {
+      ep.dataset.text = ep.textContent.toLowerCase();
+    });
+  });
+  function apply() {
+    var words = box.value.toLowerCase().split(/\\s+/).filter(Boolean);
+    var any = false;
+    groups.forEach(function (g) {
+      var shown = 0;
+      g.querySelectorAll('.ep').forEach(function (ep) {
+        var ok = words.every(function (w) { return ep.dataset.text.indexOf(w) !== -1; });
+        ep.hidden = !ok;
+        if (ok) shown++;
+      });
+      g.hidden = shown === 0;
+      if (shown) any = true;
+    });
+    nomatch.hidden = any;
+    var url = new URL(location.href);
+    if (box.value) url.searchParams.set('q', box.value); else url.searchParams.delete('q');
+    history.replaceState(null, '', url);
+  }
+  box.value = new URLSearchParams(location.search).get('q') || '';
+  box.addEventListener('input', apply);
+  box.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { box.value = ''; apply(); box.blur(); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== box) { e.preventDefault(); box.focus(); }
+  });
+  if (box.value) apply();
+})();
+
 document.addEventListener('click', function (e) {
   var btn = e.target.closest('.copy');
   if (!btn) return;
@@ -274,6 +332,7 @@ def main() -> None:
     body = []
     count = 0
     for group in data["group"]:
+        body.append('<section class="group">')
         body.append(f'<h2>{esc(group["name"], tailnet)}</h2>')
         if "blurb" in group:
             body.append(f'<p class="blurb">{esc(group["blurb"], tailnet)}</p>')
@@ -282,6 +341,7 @@ def main() -> None:
             body.append(render_endpoint(endpoint, tailnet))
             count += 1
         body.append("</div>")
+        body.append("</section>")
 
     page = f"""<!doctype html>
 <html lang="en">
@@ -296,6 +356,9 @@ def main() -> None:
 <h1>Homelab endpoints</h1>
 <p class="sub">{count} endpoints. Everything this house serves, what speaks it, and whether it is
 something you can click.</p>
+<div class="search"><input id="q" type="search" placeholder="Search name, host, port, protocol...  ( / )"
+  autocomplete="off" spellcheck="false" aria-label="Search endpoints"></div>
+<p id="nomatch" class="nomatch" hidden>Nothing matches.</p>
 {"".join(f"{line}\n" for line in body)}
 {FOOTER}
 </div>
