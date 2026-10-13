@@ -247,6 +247,10 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
     desc = "HA's birth message (online, not retained), sent each time HA's MQTT integration connects. xero's miraie-ha-birth.service listens for it and re-kicks the MirAIe AC bridge, whose discovery is not retained and so does not survive an HA restart."
 
     [[group.endpoint.topic]]
+    name = "homelab/miraie-ac/fix"
+    desc = "The Fix AC button on Home > Bedroom publishes force here (its retained discovery config is homeassistant/button/miraie_ac_fix/config). miraie-ha-birth.service on xero runs fix_miraie_ac.sh --force on each press; the output goes to its journal."
+
+    [[group.endpoint.topic]]
     name = "white_noise_buttons/start|stop/pressed"
     desc = "The Pi's GPIO17 and GPIO18 push buttons."
 

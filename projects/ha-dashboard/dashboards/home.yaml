@@ -420,6 +420,26 @@ views:
           data:
             minutes: 30
         features_position: bottom
+      - type: tile
+        entity: button.miraie_ac_fixer_fix_ac
+        name: Fix AC
+        icon: mdi:wrench
+        vertical: false
+        features_position: bottom
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.miraie_ac_fixer_fix_ac
+          confirmation:
+            text: Restart the AC bridge (node-red on the Pi)? Takes about a minute.
+        icon_tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.miraie_ac_fixer_fix_ac
+          confirmation:
+            text: Restart the AC bridge (node-red on the Pi)? Takes about a minute.
       title: AC
     column_span: 4
   - type: grid
