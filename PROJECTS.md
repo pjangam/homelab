@@ -15,6 +15,27 @@ Changing a project's state is a one-line edit - never move the block. The projec
 - **Status:** `Active` · `Parked` (revisit when it becomes a real problem, not proactively) · `Backlog` (idea, not started) · `Closed` (understood and written up, decided not to act: nothing shipped, and no trigger is being waited for) · `Done`. A missing or misspelt status shows up as its own ❔ group on the dashboard.
 - **Priority:** `P1` (most urgent), `P2`, `P3`, on Active, Parked and Backlog entries; Done and Closed ones drop it. Everything open was set to P3 on 2026-09-30, when priorities were introduced.
 
+**Every entry has the same shape** (set 2026-10-14), so its state reads from the top few lines:
+
+```
+### Some project
+**Status:** Active
+**Priority:** P2
+
+**Why:** the motivation, one short paragraph.
+**State:** where it stands today (open entries).
+**Next step:** the concrete next action (open entries).
+**Outcome:** what shipped or was decided, and when (Done/Closed - replaces State and Next step).
+
+#### Design / Options / Wiring / Parts / ...
+Reference detail that is not history, as named `####` subsections.
+
+#### Log
+- 2026-10-08: dated updates, oldest first.
+```
+
+When something happens, add a Log bullet and rewrite State / Next step to match - don't append updates to State. Closing an entry means replacing State and Next step with Outcome, so a Done entry never carries a next step that reads as open. Subsections are `####`: a `###` starts a new project.
+
 **Parts lists:** a project that needs things bought carries a fenced ` ```parts ` block, one line per item:
 
 ```
@@ -31,12 +52,16 @@ qty | item | est | note
 ### Move white noise and spotifyd from xero to the wol Pi
 **Status:** Done
 
-**Closed 2026-10-02:** white noise, both bridges, spotifyd (`raspberrypi`) and Play Bedroom Track have run on the Pi since the 2026-09-24 cutover, confirmed by the user after a week of use. What the plan below still lists - monitoring (step 5), the xero cleanup (step 6) and the power-watchdog change before xero moves - continues in "Pi audio move follow-ups". The Pi's under-voltage is its own entry, "wol Pi under-voltage: official 5.1V supply".
-
 **Why:** xero's only link to the Airtel router is the TP-Link extender, whose backhaul is 2.4GHz Wi-Fi. Moving xero onto a cable at the router would give it a real uplink, and would allow per-device data-usage monitoring later. The one thing tying xero to its current room is the USB speaker (ALSA card 1, `USB Audio Device`) that plays white noise and serves Spotify Connect. Move the audio to the Pi and xero is free to move. Decided 2026-09-23. **Keep everything installed on xero** (units disabled, not removed) until the Pi has run smoothly for a while.
+**Outcome:** closed 2026-10-02. White noise, both bridges, spotifyd (`raspberrypi`) and Play Bedroom Track have run on the Pi since the 2026-09-24 cutover, confirmed by the user after a week of use. The speaker is on the Pi's 3.5mm jack, not USB.
+- Left open: what the plan below still lists - monitoring (step 5), the xero cleanup (step 6) and the power-watchdog change before xero moves (tracked in "Pi audio move follow-ups").
+- Left open: checking both GPIO buttons and the HA volume slider by hand after the cutover, and testing white-noise-pauses-Spotify.
+- The Pi's under-voltage is its own entry, "wol Pi under-voltage: official 5.1V supply".
 
-**Pi as found (2026-09-23):** Pi 3B, arm64 trixie, ~400MB RAM available, ~95% idle, `get_throttled=0x0`. On `wlan0`, not `eth0`. PipeWire runs in the desktop session. `Linger=no`. No repo clone: files reach it through the `deploy_*_pi.sh` scp scripts. `sox` is in apt; spotifyd is not. xero runs spotifyd 0.4.2 from `~/.local/bin`.
+#### Pi as found (2026-09-23)
+Pi 3B, arm64 trixie, ~400MB RAM available, ~95% idle, `get_throttled=0x0`. On `wlan0`, not `eth0`. PipeWire runs in the desktop session. `Linger=no`. No repo clone: files reach it through the `deploy_*_pi.sh` scp scripts. `sox` is in apt; spotifyd is not. xero runs spotifyd 0.4.2 from `~/.local/bin`.
 
+#### Triggers
 **Triggers need no rewiring, just a switch of which machine answers MQTT.** Everything goes through MQTT:
 - **HA switch:** `switch.white_noise` publishes `whitenoise/set`.
 - **GPIO buttons:** the start/stop buttons already publish `white_noise_buttons/*/pressed` to HA, and HA's automations flip that same switch.
@@ -44,42 +69,14 @@ qty | item | est | note
 
 So HA and the buttons stay as they are. The cutover is simply which machine's bridge is subscribed to `whitenoise/set`. **Never run both bridges at once:** they share one discovery `unique_id` and would both play. The only HA edit is Spotify: `play_bedroom_track` in `scripts.yaml` targets xero's spotcast entity (`media_player.xero_..._spotcast`), and a new Connect device gets a new entity.
 
-**Progress (2026-09-23):**
-- **Step 1:** done, except spotifyd. The upstream aarch64 binary needs OpenSSL 1.1, which trixie does not have.
-  - Cross-building it on xero crashed xero; see `docs/incidents/2026-09-23-xero-kernel-oops-during-rust-build.md`.
-  - It is now built on the Pi itself with `projects/spotifyd/build_spotifyd_on_pi.sh`: one job at a time, LTO off. **Built 2026-09-24 in 93min** (swap peaked ~540MB, never throttled). The result is 0.4.2 linked to `libssl.so.3`, with MPRIS. So the raspotify fallback was not needed.
-  - Started by hand on the Pi (unit still disabled), it advertises `raspberrypi` over zeroconf, visible from xero's `avahi-browse`.
-- **Fallback if the build fails:** decided 2026-09-24, **don't retry, use raspotify.**
-  - `projects/spotifyd/install_raspotify_pi.sh` installs raspotify's librespot and disables the package's own system service. librespot then runs as a user unit named `raspberrypi`.
-  - librespot has no MPRIS, so pausing Spotify before white noise moves to an HA automation.
-- **Step 2:** done. `projects/white-noise/deploy_audio_pi.sh` installs the four units disabled under `~/homelab` on the Pi.
-- **White noise on the Pi:** tested through the 3.5mm jack. It starts, holds 59% and stops cleanly. The bridges were not started, since they would clash with xero's.
-
-**Next session (user has the speaker ready):**
-1. ~~Plug the USB speaker into the Pi and run `deploy_audio_pi.sh usb`.~~ Done differently 2026-09-24: the speaker is on the Pi's 3.5mm jack, deployed with `headphones` and calibrated (below).
-2. Test on the Pi alone:
-   - `systemctl --user start white-noise`: level and fade
-   - play to `raspberrypi` from the phone
-   - `playerctl -p spotifyd pause` from the Pi
-   - `vcgencmd get_throttled` after a while
-3. Cutover, **white noise done 2026-09-24:** xero's `white-noise`, `white-noise-mqtt` and `volume-mqtt` are disabled (installed, for rollback); the Pi's two bridges are enabled. No HA edit was needed. Checked: `whitenoise/set` ON/OFF (what the HA switch sends) starts and stops it on the Pi with the fade, both bridges `online`, the slider's discovery `max` is 93. White noise was left playing on the Pi, as it was on xero.
-   - **Still to check by hand:** both GPIO buttons and the HA volume slider.
-   - **spotifyd done 2026-09-24:** xero's disabled and its `watchdog_spotifyd.sh` cron line commented out; the Pi's enabled, and `raspberrypi` is advertised (seen from xero's `avahi-browse`). xero's health check now reads spotifyd as "not applicable" (exit 2), so it stays green but watches nothing until step 5.
-4. HA:
-   - ~~point `play_bedroom_track` at the new spotcast entity for `raspberrypi`~~ done 2026-09-25 (`media_player.raspberrypi_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast`, scripts reloaded). Phone to `raspberrypi` plays audibly through the jack (after naming the card in `spotifyd.conf`; `default` was HDMI).
-   - **Verified 2026-09-25** with the jack muted (`PCM` 0%, restored to 91% after): Play Bedroom Track through HA's API had spotifyd `Playing` a track from the playlist and the jack `RUNNING` within 2s. An earlier run that found no session seconds later was not reproduced.
-   - test white-noise-pauses-Spotify
-   - **2026-09-25: Spotify silent on the Pi.** It was playing to the jack, but the jack was still muted from a test the night before; the HA slider had since set 93% without unmuting. Fixed so it cannot recur: the slider (`volume-mqtt.py`) and white noise's start now also `unmute`. Tested the slider by muting and sending `volume/set 93`.
-
-spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It was started by hand, so a Pi reboot stops it.
-
-**Speaker on the Pi: volume recalibrated (2026-09-24).** The speaker is on the Pi's **3.5mm jack** (card 1 `Headphones`, control `PCM`) through its AUX input, not on USB, so `deploy_audio_pi.sh headphones` is the mode to use. The same % is quieter there than on xero (`Speaker`), and the jack's control goes above 0 dB, so it clips past ~97%: the "breaking" was the Pi, not the speaker.
+#### Speaker on the Pi: volume calibration
+The speaker is on the Pi's **3.5mm jack** (card 1 `Headphones`, control `PCM`) through its AUX input, not on USB, so `deploy_audio_pi.sh headphones` is the mode to use. The same % is quieter there than on xero (`Speaker`), and the jack's control goes above 0 dB, so it clips past ~97%: the "breaking" was the Pi, not the speaker.
 - Measured at the bed: xero at 59% is ~67 dB; the Pi at 95% matches it. The user capped the slider at **93%** and settled on **91%** for white noise (-5.58 dB, so ~63 dB).
 - Level, fade-out steps and slider top are now per-host settings (`WHITE_NOISE_LEVEL`, `WHITE_NOISE_FADE`, `VOLUME_MAX`), set by `deploy_audio_pi.sh`. xero keeps 59% / 45 32 18 5 / 100 and its installed unit was updated with no change in behaviour.
 - The Pi: level 91, slider max 93, fade out 80 68 57 46 (~12 dB apart, since the jack's % is linear in dB). Tested on the Pi: it starts at 91%, steps down through the four and resets to 91%. The fade in is sox's own 60s ramp and needed no change.
 - `deploy_audio_pi.sh` writes the level and fade into the Pi's `white-noise.service` itself, so edit them there (the `headphones)` line), not on the Pi: a deploy overwrites the Pi's copy.
 
-**Plan:**
+#### Plan
 1. **Packages on the Pi.**
    - `sudo apt install sox playerctl`.
    - spotifyd: the 0.4.2 `aarch64` release binary into `~/.local/bin`, the same version as xero.
@@ -111,20 +108,39 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 
 **Rollback at any point:** disable the Pi units, re-enable xero's, move the speaker back and revert the `scripts.yaml` entity.
 
-**Known costs:**
+#### Known costs
 - **Power cuts:** white noise and Spotify now stop during a power cut, because the Pi has no UPS. "Move WoL to an ESP32, put the Pi on the UPS" in the backlog would undo that, but it would also break the ping-based outage signal below.
 - **The Pi's supply:** its known undervoltage problem gets a new load in the USB speaker. The 3.5mm jack avoids it if the speaker has an AUX input.
 
-**Before xero itself moves: the power watchdog needs a new signal.** `watchdog_power.sh` infers a mains outage from `enp1s0` losing carrier, which works only because the extender is not on a UPS. Plugged into the Airtel router, which has its own UPS, the carrier never drops and xero would run its battery flat. Fix: keep the carrier check and add "the wol Pi **and** the extender both stop answering pings for N checks". Requiring both avoids false alarms from the Pi's flaky supply. The extender needs a pinned IP first.
+#### Before xero itself moves: the power watchdog needs a new signal
+`watchdog_power.sh` infers a mains outage from `enp1s0` losing carrier, which works only because the extender is not on a UPS. Plugged into the Airtel router, which has its own UPS, the carrier never drops and xero would run its battery flat. Fix: keep the carrier check and add "the wol Pi **and** the extender both stop answering pings for N checks". Requiring both avoids false alarms from the Pi's flaky supply. The extender needs a pinned IP first.
+
+#### Log
+- 2026-09-23: decided to move the audio to the Pi. Progress the same day:
+  - **Step 1:** done, except spotifyd. The upstream aarch64 binary needs OpenSSL 1.1, which trixie does not have. Cross-building it on xero crashed xero; see `docs/incidents/2026-09-23-xero-kernel-oops-during-rust-build.md`.
+  - **Step 2:** done. `projects/white-noise/deploy_audio_pi.sh` installs the four units disabled under `~/homelab` on the Pi.
+  - **White noise on the Pi:** tested through the 3.5mm jack. It starts, holds 59% and stops cleanly. The bridges were not started, since they would clash with xero's.
+- 2026-09-24: **fallback if the build fails** decided: **don't retry, use raspotify.** `projects/spotifyd/install_raspotify_pi.sh` installs raspotify's librespot and disables the package's own system service; librespot then runs as a user unit named `raspberrypi`. librespot has no MPRIS, so pausing Spotify before white noise moves to an HA automation.
+- 2026-09-24: spotifyd now built on the Pi itself with `projects/spotifyd/build_spotifyd_on_pi.sh`: one job at a time, LTO off. **Built in 93min** (swap peaked ~540MB, never throttled). The result is 0.4.2 linked to `libssl.so.3`, with MPRIS, so the raspotify fallback was not needed. Started by hand on the Pi (unit still disabled), it advertises `raspberrypi` over zeroconf, visible from xero's `avahi-browse`.
+- 2026-09-24: plan step "plug the USB speaker into the Pi and run `deploy_audio_pi.sh usb`" done differently: the speaker is on the Pi's 3.5mm jack, deployed with `headphones` and volume recalibrated (see "Speaker on the Pi: volume calibration").
+- 2026-09-24: test on the Pi alone, listed for this session: `systemctl --user start white-noise` (level and fade), play to `raspberrypi` from the phone, `playerctl -p spotifyd pause` from the Pi, `vcgencmd get_throttled` after a while.
+- 2026-09-24: **cutover, white noise done:** xero's `white-noise`, `white-noise-mqtt` and `volume-mqtt` are disabled (installed, for rollback); the Pi's two bridges are enabled. No HA edit was needed. Checked: `whitenoise/set` ON/OFF (what the HA switch sends) starts and stops it on the Pi with the fade, both bridges `online`, the slider's discovery `max` is 93. White noise was left playing on the Pi, as it was on xero. **Still to check by hand:** both GPIO buttons and the HA volume slider.
+- 2026-09-24: **spotifyd done:** xero's disabled and its `watchdog_spotifyd.sh` cron line commented out; the Pi's enabled, and `raspberrypi` is advertised (seen from xero's `avahi-browse`). xero's health check now reads spotifyd as "not applicable" (exit 2), so it stays green but watches nothing until step 5. spotifyd was left running on the Pi overnight as a soak test; it was started by hand, so a Pi reboot stops it.
+- 2026-09-25: HA: `play_bedroom_track` pointed at the new spotcast entity for `raspberrypi` (`media_player.raspberrypi_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast`, scripts reloaded). Phone to `raspberrypi` plays audibly through the jack (after naming the card in `spotifyd.conf`; `default` was HDMI).
+- 2026-09-25: **verified** with the jack muted (`PCM` 0%, restored to 91% after): Play Bedroom Track through HA's API had spotifyd `Playing` a track from the playlist and the jack `RUNNING` within 2s. An earlier run that found no session seconds later was not reproduced. Still listed: test white-noise-pauses-Spotify.
+- 2026-09-25: **Spotify silent on the Pi.** It was playing to the jack, but the jack was still muted from a test the night before; the HA slider had since set 93% without unmuting. Fixed so it cannot recur: the slider (`volume-mqtt.py`) and white noise's start now also `unmute`. Tested the slider by muting and sending `volume/set 93`.
+- 2026-10-02: closed, confirmed by the user after a week of use. Remaining steps moved to "Pi audio move follow-ups"; under-voltage to "wol Pi under-voltage: official 5.1V supply".
 
 ### Pi audio move follow-ups: monitoring, xero cleanup, then xero to the router
 **Status:** Backlog
 **Priority:** P3
 
 **Why:** white noise and Spotify moved to the wol Pi on 2026-09-24 (see "Move white noise and spotifyd from xero to the wol Pi" in Done). The cutover is done, but nothing watches the Pi's audio, and xero still carries the disabled copies.
+**State:** nothing started. Nothing alerts if spotifyd or a bridge breaks on the Pi; xero's spotifyd tile stays green only because its check now exits "not applicable".
+**Next step:** monitoring (step 1 below) - the real gap.
 
-**Steps:**
-1. **Monitoring - the real gap.** Nothing alerts if spotifyd or a bridge breaks on the Pi; xero's spotifyd tile stays green only because its check now exits "not applicable".
+#### Steps
+1. **Monitoring - the real gap.**
    - Move `watchdog_spotifyd.sh` to the Pi's cron (commented out in xero's crontab on 2026-09-24).
    - Point `check_spotifyd_advertising.sh`/the dashboard tile at `raspberrypi`. It is avahi over the LAN, so xero can watch the Pi.
    - Have `healthcheck.sh` alarm on the retained `whitenoise/available`/`volume/available` going `offline`.
@@ -134,53 +150,61 @@ spotifyd was left running on the Pi overnight on 2026-09-24 as a soak test. It w
 ### wol Pi under-voltage: official 5.1V supply
 **Status:** Done
 
-**Why:** the Pi reports under-voltage and throttling right now, not just historically: `vcgencmd get_throttled` = `0x50005` on 2026-09-24 and again on 2026-10-02 (boot of 2026-10-01). It was `0x0` on 2026-09-23. It now plays the bedroom white noise and Spotify, and sustained low voltage risks audio glitches and SD-card corruption. The earlier fix (a new cable, 2026-08-26) did not hold.
+**Why:** the Pi reported under-voltage and throttling, not just historically: `vcgencmd get_throttled` = `0x50005` on 2026-09-24 and again on 2026-10-02 (boot of 2026-10-01). It was `0x0` on 2026-09-23. It now plays the bedroom white noise and Spotify, and sustained low voltage risks audio glitches and SD-card corruption. The earlier fix (a new cable, 2026-08-26) did not hold.
+**Outcome:** verified 2026-10-09 - the official Raspberry Pi 5.1V supply (in since 2026-10-05) fixed it. Never under-voltage since monitoring began on 2026-10-06; `docs/hardware.md` Power row updated. Ongoing watch is "wol Pi health monitoring".
 
-**Cause (user, 2026-10-02):** it runs from a 5V phone charger. A Pi 3B wants 2.5A, and the official supply runs at 5.1V so the cable's voltage drop still leaves 5V at the board.
+#### Cause
+User, 2026-10-02: it ran from a 5V phone charger. A Pi 3B wants 2.5A, and the official supply runs at 5.1V so the cable's voltage drop still leaves 5V at the board.
 
-**Supply swapped 2026-10-05:** the Pi now runs from the official Raspberry Pi 5.1V supply. Booted on it at 07:48; at 22:30 `get_throttled` = `0x0` with no kernel under-voltage lines since boot - but no night of white noise yet.
+#### The fan is not a factor
+User, 2026-10-08: the Pi's GPIO fan came off earlier, when xero became the main server, and under-voltage kept appearing without it until the 5.1V supply went in. So the supply is what fixed it, and the fan's removal does not flatter the verdict. (Lines elsewhere in this file about the fan's extra load describe the Pi before that.)
 
-**The fan is not a factor (user, 2026-10-08):** the Pi's GPIO fan came off earlier, when xero became the main server, and under-voltage kept appearing without it until the 5.1V supply went in. So the supply is what fixed it, and the fan's removal does not flatter the verdict. (Lines elsewhere in this file about the fan's extra load describe the Pi before that.)
-
-**Watching until ~2026-10-09:** xero's temporary cron watch (2026-10-05) was replaced on 2026-10-06 by permanent monitoring, "wol Pi health monitoring" below. The Pi now reports its power flags every minute to HA, and healthcheck.sh alerts (email + ntfy) once per Pi boot if under-voltage appears. The watch's 50 samples (2026-10-05 22:45 to 2026-10-06 11:00) were all `0x0`; its log is `pi-undervoltage.log` on xero.
-
-**Verified 2026-10-09 - Done.** HA history of `binary_sensor.wol_pi_under_voltage` and `..._since_boot` since monitoring began on 2026-10-06: never `on` (only off/unavailable/unknown), through three nights of white noise and a reboot after the 2026-10-08 power cut; 0 kernel under-voltage events since that boot. The 5.1V supply fixed it. `docs/hardware.md` Power row updated.
-
-~~Next step~~ (was): around 2026-10-09, open the wol Pi device in HA (or the Stats dashboard tile "Under-voltage since boot"). If it has stayed off through nights of white noise, mark this Done and update the Power row in `docs/hardware.md` to "official supply, verified". If it alerts, the supply was not the whole story - suspect the cable, then load (the GPIO fan, USB devices).
-
+#### Parts
 ```parts
 qty | item | est | note
 1 | Official Raspberry Pi power supply, 5.1V 2.5A micro-USB | 500-800 | the Pi 3B's micro-USB one, not the USB-C supply for Pi 4/5
 ```
+
+#### Log
+- 2026-08-26: earlier fix, a new cable; it did not hold.
+- 2026-10-05: **supply swapped** to the official Raspberry Pi 5.1V supply. Booted on it at 07:48; at 22:30 `get_throttled` = `0x0` with no kernel under-voltage lines since boot - but no night of white noise yet. A temporary cron watch started on xero.
+- 2026-10-06: the temporary cron watch was replaced by permanent monitoring, "wol Pi health monitoring" below. The Pi now reports its power flags every minute to HA, and healthcheck.sh alerts (email + ntfy) once per Pi boot if under-voltage appears. The watch's 50 samples (2026-10-05 22:45 to 2026-10-06 11:00) were all `0x0`; its log is `pi-undervoltage.log` on xero.
+- Planned next step (was): around 2026-10-09, open the wol Pi device in HA (or the Stats dashboard tile "Under-voltage since boot"). If it has stayed off through nights of white noise, mark this Done and update the Power row in `docs/hardware.md` to "official supply, verified". If it alerts, the supply was not the whole story - suspect the cable, then load (the GPIO fan, USB devices).
+- 2026-10-09: **verified - Done.** HA history of `binary_sensor.wol_pi_under_voltage` and `..._since_boot` since monitoring began on 2026-10-06: never `on` (only off/unavailable/unknown), through three nights of white noise and a reboot after the 2026-10-08 power cut; 0 kernel under-voltage events since that boot. The 5.1V supply fixed it. `docs/hardware.md` Power row updated.
 
 ### MacBook DNS keeps breaking - root cause closed out (OpenVPN Connect, at connect); no client-side cure
 **Status:** Active
 **Priority:** P3
 
 **Why:** the Mac's resolver broke six times with an identical signature, and each repair destroyed the evidence before anyone could say what caused it. Between breaks the Mac is silently unfiltered - the 2026-08-28 occurrence went unnoticed for 10 days.
+**State:** root cause known (2026-09-30): OpenVPN Connect writes the off-LAN server pair into configd's in-memory `Setup:` store at connect, and skips the restore when the tunnel process dies instead of disconnecting. **No client-side cure exists** - the bug is in corporate software on a managed Mac. The repair stays a repair; what changed is that it is now a 30-second repair with an unambiguous verification, instead of a month of looking in the wrong layer. The recorder keeps running to catch the next occurrence.
+**Next step:**
+- **Try a reboot next time, before the repair.** An in-memory dynamic-store key should not survive configd restarting. Untested, and if it holds it is a simpler answer than anything here.
+- **Report the `192.169.0.2` typo upstream** (see "The 192.169 typo is upstream").
+- **Attribute the one remaining write** at the next occurrence (see "One write still unattributed").
 
-**The signature, every time:** `en0` resolves against `192.168.0.2` + `192.169.0.2`. Neither is on this LAN (192.168.1.0/24) and the second is a typo landing in publicly routable space, so queries *hang* rather than fail fast - which is why it reads as "the internet is slow", not "DNS is down".
+#### The signature, every time
+`en0` resolves against `192.168.0.2` + `192.169.0.2`. Neither is on this LAN (192.168.1.0/24) and the second is a typo landing in publicly routable space, so queries *hang* rather than fail fast - which is why it reads as "the internet is slow", not "DNS is down".
 
-**Occurrences:** 2026-08-28 (last clean query 20:47, found and fixed 09-07) - 2026-09-10 - 2026-09-16 - 2026-09-22 - 2026-09-22 19:56 (the one the recorder caught, noticed 2026-09-23) - **2026-09-28 18:37, broken for 39 hours until the repair on 2026-09-30 09:49.**
+#### Occurrences
+2026-08-28 (last clean query 20:47, found and fixed 09-07) - 2026-09-10 - 2026-09-16 - 2026-09-22 - 2026-09-22 19:56 (the one the recorder caught, noticed 2026-09-23) - **2026-09-28 18:37, broken for 39 hours until the repair on 2026-09-30 09:49.**
 
-**Root cause, 2026-09-23: OpenVPN Connect writes the pair into the `Setup:` layer and never restores it.** (Refined 2026-09-30, below: "persistent" was wrong - the key is written only into configd's in-memory store - and "never restores" is wrong too, it restores 442 times out of 447 and the interesting case is the 5 it does not.) Full write-up in `docs/incidents/2026-09-23-mac-dns-openvpn-connect-left-stale-servers.md`. The Wi-Fi service's `Setup:.../DNS` dictionary holds `ServerAddresses = 192.168.0.2, 192.169.0.2` alongside three `OpenVPNConnectOrig*` keys set to the sentinel `OpenVPNConnectDeleteValue` - OpenVPN Connect's own note that the dictionary was empty before it took it over and that the keys should be deleted on restore. It wrote, and never restored.
-
-**Two things this overturns, both of which cost a month:**
-- **The layer was wrong.** (And still not right on 09-23 - see 09-30 below.) Every earlier round concluded the pair lives in `State:`, not `Setup:`, on the strength of `networksetup -getdnsservers` reporting no override. `networksetup -getdnsservers Wi-Fi` *still* answers "There aren't any DNS Servers set on Wi-Fi" while `scutil` shows that dictionary populated. The two disagree; the one that was trusted is the wrong one. **Check DNS ownership with `scutil`, never `networksetup`.**
-- **The repair hid it.** `fix_macbook_dns.sh` step 3's `tailscale set --accept-dns` toggle makes tailscaled rewrite the resolver config so the pair stops being *used*, but never clears the `Setup:` key - so it survives every repair. Step 1, "clear the Wi-Fi override", was logged as a no-op four times because it asks `networksetup`, which cannot see it.
-
-Ruled out along the way and now moot: a stale global nameserver in the Tailscale admin console (2026-09-16), a second DHCP server on the TP-Link extender, a stale lease. MDM was close - this is corporate software on a managed Mac - but it is the VPN client, not a configuration profile.
-
-**The 192.169 typo is upstream.** It is whatever the corporate OpenVPN profile pushes, so the fat-finger is in that profile or the server config behind it. Every client on that VPN is resolving against a publicly routable address that is not theirs - worth reporting to whoever maintains it.
-
-**2026-09-30, the 6th occurrence closed the remaining questions.** Full detail appended to the same incident doc. Four things:
+#### Root cause
+Full write-up in `docs/incidents/2026-09-23-mac-dns-openvpn-connect-left-stale-servers.md` (the 2026-09-30 detail is appended to the same doc).
 
 - **It is written at CONNECT, not left at disconnect.** All eight appearances of the pair since the recorder went in line up with `utun18` coming up or re-establishing; not one appears at a disconnect. A disconnect normally *restores* it - the "one disconnect restored cleanly" note from 09-23 was the rule, not the exception.
 - **The restore is skipped when the tunnel process dies instead of disconnecting.** A clean disconnect logs the restore, a `dscacheutil -flushcache`, a `killall -HUP mDNSResponder` and `INSTANCE STOP : E_SUCCESS`. A session whose last line is `Process N has exited, destroy tun` logs none of them. Over five months of `/var/log/ovpnagent.log`: **447 writes, 442 restores, 5 net strandings**, and 32 of 48 such abnormal exits had no restore near them. Five strandings against six recorded occurrences.
 - **ovpnagent was logging the whole thing all along.** `/var/log/ovpnagent.log` (the `StandardOutPath` of the `org.openvpn.client` LaunchDaemon) prints every dynamic-store dictionary it touches, `OpenVPNConnectOrig*` sentinels and all. Unread since April. `tools/network/summarize_ovpnagent_dns.sh` reads it.
-- **The layer was half wrong, and that half explains everything.** It is `Setup:`, but only in configd's **in-memory** store - `/Library/Preferences/SystemConfiguration/preferences.plist` has `DNS: {}` for Wi-Fi, and so does the `.old` copy macOS left at the moment of the repair. So `networksetup` was never lying, it was answering the wrong question; and `networksetup -setdnsservers Wi-Fi empty` cures it only as a side effect - committing SCPreferences makes configd recompute the `Setup:` keys from disk. Step 1 of `fix_macbook_dns.sh` was doing the work for four occurrences while being written off as a no-op.
+- **The layer is `Setup:`, but only in configd's in-memory store.** The Wi-Fi service's `Setup:.../DNS` dictionary holds `ServerAddresses = 192.168.0.2, 192.169.0.2` alongside three `OpenVPNConnectOrig*` keys set to the sentinel `OpenVPNConnectDeleteValue` - OpenVPN Connect's own note that the dictionary was empty before it took it over and that the keys should be deleted on restore. But `/Library/Preferences/SystemConfiguration/preferences.plist` has `DNS: {}` for Wi-Fi, and so does the `.old` copy macOS left at the moment of the repair. So `networksetup` was never lying, it was answering the wrong question; and `networksetup -setdnsservers Wi-Fi empty` cures it only as a side effect - committing SCPreferences makes configd recompute the `Setup:` keys from disk. Step 1 of `fix_macbook_dns.sh` was doing the work for four occurrences while being written off as a no-op.
 
-**2026-09-30, second pass - the mechanism, and why it only started hurting in August.** The bug is five months old; what changed is what the corporate profile pushes. ovpnagent's log records the server list of every write:
+#### Two things this overturned, both of which cost a month
+- **The layer was wrong.** Every earlier round concluded the pair lives in `State:`, not `Setup:`, on the strength of `networksetup -getdnsservers` reporting no override. `networksetup -getdnsservers Wi-Fi` *still* answers "There aren't any DNS Servers set on Wi-Fi" while `scutil` shows that dictionary populated. The two disagree; the one that was trusted is the wrong one. **Check DNS ownership with `scutil`, never `networksetup`.** (Refined 2026-09-30: `Setup:` but in-memory only, see Root cause.)
+- **The repair hid it.** `fix_macbook_dns.sh` step 3's `tailscale set --accept-dns` toggle makes tailscaled rewrite the resolver config so the pair stops being *used*, but never clears the `Setup:` key - so it survives every repair. Step 1, "clear the Wi-Fi override", was logged as a no-op four times because it asks `networksetup`, which cannot see it.
+
+Ruled out along the way and now moot: a stale global nameserver in the Tailscale admin console (2026-09-16), a second DHCP server on the TP-Link extender, a stale lease. MDM was close - this is corporate software on a managed Mac - but it is the VPN client, not a configuration profile.
+
+#### Why it only started hurting in August
+The bug is five months old; what changed is what the corporate profile pushes. ovpnagent's log records the server list of every write:
 
 ```
 Apr 23 -> Jul  7   x297   192.168.0.2, 8.8.8.8, 192.169.0.2
@@ -193,38 +217,56 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 
 **This collapses two things the project was carrying as separate.** `fix_macbook_dns.sh` has said since August that on 2026-08-28 "Wi-Fi had a **manual** `8.8.8.8 1.1.1.1`". It was never manual - ovpnagent wrote exactly that list on every connect through that whole window. The August "stale manual public-resolver override" and the September "unreachable off-LAN servers" are one bug with one cause. Corrected in the script.
 
-**Why the write beats Pi-hole so completely:** `SearchOrder = 5000` against the DHCP resolver's `200000` (macOS orders ascending), and the resulting resolver is **unscoped** - no `if_index`, so it is the DNS for everything, not just Wi-Fi. `192.168.1.123` is not outranked, it is *absent*, from the scoped list too. And it reads `reach : 0x00000002 (Reachable)`, because OpenVPN pushes `/32` routes for both servers into the tunnel - so nothing in macOS ever flags it. That is why this surfaces only as latency.
+#### Why the write beats Pi-hole so completely
+`SearchOrder = 5000` against the DHCP resolver's `200000` (macOS orders ascending), and the resulting resolver is **unscoped** - no `if_index`, so it is the DNS for everything, not just Wi-Fi. `192.168.1.123` is not outranked, it is *absent*, from the scoped list too. And it reads `reach : 0x00000002 (Reachable)`, because OpenVPN pushes `/32` routes for both servers into the tunnel - so nothing in macOS ever flags it. That is why this surfaces only as latency.
 
-**The missing teardown, precisely:** a clean disconnect logs eight steps - `DSDict: updated`, `removed State:.../Info`, `MacDNS: RESETDNS`, the dictionary restore, `dscacheutil -flushcache`, `killall -HUP mDNSResponder`, `SCDynamicStoreNotifyValue`, `INSTANCE STOP : E_SUCCESS`. A session ending in `Process N has exited, destroy tun` does none of them. `destroy tun` and `RESETDNS` are separate code paths and only one is on the process-death path. The `OpenVPNConnectOrig*` sentinels are written *by the connect* as its own undo record, so the design is sound - only the teardown is unreachable on that path.
+#### The missing teardown, precisely
+A clean disconnect logs eight steps - `DSDict: updated`, `removed State:.../Info`, `MacDNS: RESETDNS`, the dictionary restore, `dscacheutil -flushcache`, `killall -HUP mDNSResponder`, `SCDynamicStoreNotifyValue`, `INSTANCE STOP : E_SUCCESS`. A session ending in `Process N has exited, destroy tun` does none of them. `destroy tun` and `RESETDNS` are separate code paths and only one is on the process-death path. The `OpenVPNConnectOrig*` sentinels are written *by the connect* as its own undo record, so the design is sound - only the teardown is unreachable on that path.
 
-**Left to do:**
-- **Try a reboot next time, before the repair.** An in-memory dynamic-store key should not survive configd restarting. Untested, and if it holds it is a simpler answer than anything here.
-- **Report the `192.169.0.2` typo upstream**, and it is worse than it looked: the typo has been in the profile for at least five months and survived at least seven profile revisions (the table above). Every client on that VPN resolves against a publicly routable address in a block that is not theirs.
-- **One write is still unattributed.** ovpnagent's log stops at the 2026-09-25 abnormal exit and has not been written since, though it is the same process (pid 556, up since 22 Jul), so the 09-28 18:37 write is not in it. The snapshot for that moment shows a separate `/opt/homebrew/opt/openvpn/sbin/openvpn --config` CLI running, and the recorder was truncating the command line so it cannot say which config. Both gaps are closed in the recorder now (full command lines, plus the `Setup:` dictionary verbatim so the `OpenVPNConnectOrig*` sentinels name the writer), so the next occurrence settles it with no follow-up.
-- **No client-side cure exists.** The bug is in corporate software on a managed Mac. The repair stays a repair; what changed is that it is now a 30-second repair with an unambiguous verification, instead of a month of looking in the wrong layer.
+#### The 192.169 typo is upstream
+It is whatever the corporate OpenVPN profile pushes, so the fat-finger is in that profile or the server config behind it. Every client on that VPN is resolving against a publicly routable address that is not theirs - worth reporting to whoever maintains it. And it is worse than it looked: the typo has been in the profile for at least five months and survived at least seven profile revisions (the table above). Every client on that VPN resolves against a publicly routable address in a block that is not theirs.
 
-**What the tooling does now** (all of it re-deployed with `setup-mac-dns-recorder.sh`, which scp's from xero - a `git pull` on the Mac does nothing for it):
+#### One write still unattributed
+ovpnagent's log stops at the 2026-09-25 abnormal exit and has not been written since, though it is the same process (pid 556, up since 22 Jul), so the 09-28 18:37 write is not in it. The snapshot for that moment shows a separate `/opt/homebrew/opt/openvpn/sbin/openvpn --config` CLI running, and the recorder was truncating the command line so it cannot say which config. Both gaps are closed in the recorder now (full command lines, plus the `Setup:` dictionary verbatim so the `OpenVPNConnectOrig*` sentinels name the writer), so the next occurrence settles it with no follow-up.
+
+#### Tooling
+All of it re-deployed with `setup-mac-dns-recorder.sh`, which scp's from xero - a `git pull` on the Mac does nothing for it.
 - `summarize_dns_snapshots.sh` - collapses the recorder's log to its transitions: when the pair appeared or went, against the tunnel coming up or down. This is the view that answered the connect-vs-disconnect question on its first run.
 - `summarize_ovpnagent_dns.sh` - ovpnagent's own write/restore history, with the net-stranding count and the verdict on whether the pair is sitting there now.
 - `diagnose_macbook_dns.sh` - its "WHO owns the DNS setting" comment used to assert that "OpenVPN/Tunnelblick push DNS into State:, never into Setup:". That single sentence is the false premise the whole month rested on; it is gone, and the script now prints the `Setup:` dictionary verbatim next to the on-disk store.
 - `fix_macbook_dns.sh` - resolves the Wi-Fi service UUID, verifies step 1 with `scutil` rather than `networksetup`, explains why step 1 looks like a no-op and is not, and says plainly that step 3's tailscale toggle is what hid the bug for a month.
 
-**The recorder is what cracked it.** `tools/network/mac-dns-recorder.sh` polls every 20s and snapshots only on change, capturing `Setup:` vs `State:` ownership, the network and location, the DHCP offer, per-resolver reachability and any VPN client or tunnel. Installed on the M2 2026-09-22 13:55 IST from the clone via `setup-mac-dns-recorder.sh`; the break it caught began six hours later, and it has since caught the 6th occurrence too (pid 41238, still alive 2026-09-30). It runs from `~/code/personal/scripts/`, which that script fills by scp from xero - re-run it to update the recorder, a `git pull` alone does not. Its log lives at `~/Library/Logs/homelab/dns-recorder/snapshots.log` on the M2.
+**The recorder is what cracked it.** `tools/network/mac-dns-recorder.sh` polls every 20s and snapshots only on change, capturing `Setup:` vs `State:` ownership, the network and location, the DHCP offer, per-resolver reachability and any VPN client or tunnel. It runs from `~/code/personal/scripts/`, which `setup-mac-dns-recorder.sh` fills by scp from xero - re-run it to update the recorder, a `git pull` alone does not. Its log lives at `~/Library/Logs/homelab/dns-recorder/snapshots.log` on the M2.
 
-**Knock-on worth knowing:** while DNS is broken (and Tailscale stopped), the M2 cannot resolve `xero.<tailnet>`, so every clawlight hook on it silently reports nowhere - `set-status.sh` swallows network errors by design. A clawlight colour that does not match what the Mac is doing is a symptom of this; that is how the 5th occurrence was noticed.
+#### Knock-on: clawlight
+While DNS is broken (and Tailscale stopped), the M2 cannot resolve `xero.<tailnet>`, so every clawlight hook on it silently reports nowhere - `set-status.sh` swallows network errors by design. A clawlight colour that does not match what the Mac is doing is a symptom of this; that is how the 5th occurrence was noticed.
 
-**Mitigated for clawlight specifically, 2026-09-28** (a *different* 2026-09-28 failure from the DNS one above, and the 6th time clawlight reported nowhere: Tailscale simply stopped, DNS itself was healthy, and *no* Mac session was on the light - noticed as a missing `travolutionary` session). Reporting never needed Tailscale: `server.py` binds `0.0.0.0:8126` and the tailnet URL is only Caddy in front of it, so the Mac's hooks can use `http://192.168.1.123:8126` while at home and fall back to the tailnet URL when away. "At home" is decided by the default gateway's MAC rather than the IP or a hostname - a bare LAN IP would post session ids and project paths to whatever holds `.123` on a cafe network, and a hostname would depend on the DNS that keeps breaking. See `clawlight/server-url.sh` and the README's "Reporting over the LAN". This narrows the blast radius of this bug; it does not fix the bug, and a Mac that is away from home still needs the tailnet up.
+Mitigated for clawlight specifically on 2026-09-28 (see Log): reporting never needed Tailscale. `server.py` binds `0.0.0.0:8126` and the tailnet URL is only Caddy in front of it, so the Mac's hooks can use `http://192.168.1.123:8126` while at home and fall back to the tailnet URL when away. "At home" is decided by the default gateway's MAC rather than the IP or a hostname - a bare LAN IP would post session ids and project paths to whatever holds `.123` on a cafe network, and a hostname would depend on the DNS that keeps breaking. See `clawlight/server-url.sh` and the README's "Reporting over the LAN". This narrows the blast radius of this bug; it does not fix the bug, and a Mac that is away from home still needs the tailnet up.
+
+#### Log
+- 2026-08-28: 1st occurrence (last clean query 20:47), unnoticed for 10 days; found and fixed 09-07.
+- 2026-09-10, 2026-09-16, 2026-09-22: further occurrences. 2026-09-16: a stale global nameserver in the Tailscale admin console ruled out.
+- 2026-09-22: recorder installed on the M2 at 13:55 IST from the clone via `setup-mac-dns-recorder.sh`; the break it caught began six hours later (19:56, noticed 2026-09-23).
+- 2026-09-23: **root cause: OpenVPN Connect writes the pair into the `Setup:` layer and never restores it.** Written up in `docs/incidents/2026-09-23-mac-dns-openvpn-connect-left-stale-servers.md`. One disconnect was noted as having restored cleanly.
+- 2026-09-28: **mitigated for clawlight** - a *different* 2026-09-28 failure from the DNS one, and the 6th time clawlight reported nowhere: Tailscale simply stopped, DNS itself was healthy, and *no* Mac session was on the light - noticed as a missing `travolutionary` session. Hooks now report over the LAN at home (see "Knock-on: clawlight").
+- 2026-09-28 18:37: 6th occurrence, broken for 39 hours until the repair on 2026-09-30 09:49. The recorder caught it (pid 41238, still alive 2026-09-30).
+- 2026-09-30: the 6th occurrence closed the remaining questions. Refined the 09-23 conclusion: "persistent" was wrong - the key is written only into configd's in-memory store - and "never restores" is wrong too, it restores 442 times out of 447 and the interesting case is the 5 it does not. Written at connect, restore skipped on process death, ovpnagent's log found (see "Root cause").
+- 2026-09-30, second pass: the mechanism, the profile history, why it only started hurting in August, and the August/September symptoms merged into one bug; `fix_macbook_dns.sh` corrected; tooling and recorder updated (full command lines, `Setup:` dictionary verbatim).
 
 ### ESP32 UPS LED monitor
 **Status:** Active
 **Priority:** P3
 
 **Why:** `watchdog_power.sh` (below) currently guesses "90 minutes on battery is probably safe" before shutting down cleanly. The RouterUPS has 4 status LEDs (plug=mains, battery-full=on-battery-ok, lightning=charging, battery-low=critical) - reading the actual battery-low LED would replace the time guess with the UPS's own real signal.
+**State:** LED behavior mapped. The 4 LEDs are only 5mm apart, too tight for discrete sensors, so five ways to read the UPS state have been weighed (see Options). (E) inline power sensor ranks strongest on paper, but the user is leaning toward (D), tapping the LED driver circuit, whose feasibility is unknown until the case is open. Nothing purchased yet.
+**Next step:** open the UPS case (if possible) and inspect: enclosure fastening (screws/glue), LED wiring style (flying leads vs PCB-mounted), and PCB pad spacing if applicable. This inspection determines whether (D) is actually viable before any parts are bought or other options are pursued further.
 
-**State:** LED behavior mapped.
-- **Physical blocker found:** the 4 LEDs are only 5mm apart, too tight for discrete sensors + individual light shields (ruled out phototransistors/LDR modules + heat-shrink light shields - the sensor packages themselves don't fit at that pitch).
-- **Two options considered:** (A) fiber-optic light pipes to relay light to normally-spaced sensors, or (B) a small camera reading pixel brightness at fixed, known coordinates in software (not image recognition/ML - just a threshold check on specific pixels, since the camera would be in a fixed mount).
-- **Leaning toward B** - turns a hard mechanical problem into an easier, more debuggable software one.
+#### Physical blocker
+The 4 LEDs are only 5mm apart, too tight for discrete sensors + individual light shields (ruled out phototransistors/LDR modules + heat-shrink light shields - the sensor packages themselves don't fit at that pitch).
+
+#### Options
+- **Two options first considered:** (A) fiber-optic light pipes to relay light to normally-spaced sensors, or (B) a small camera reading pixel brightness at fixed, known coordinates in software (not image recognition/ML - just a threshold check on specific pixels, since the camera would be in a fixed mount).
+- **Leaning toward B** at first - turns a hard mechanical problem into an easier, more debuggable software one.
 
 **GoPro HERO4 Black considered for (B) instead of buying anything - ruled out for the *permanent* build:**
 - No official USB webcam mode (that's HERO7+), only a WiFi AP-based UDP preview stream (community-documented, works, but the camera can't join the home WiFi as a client - only broadcasts its own isolated AP).
@@ -241,13 +283,15 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 - **Reliability: robust once aligned correctly, but a real long-term risk specific to this device.** A passive optical path has nothing to drift on its own - but the UPS itself heats up during charging/operation, and heat cycling can soften/creep the glue holding fiber alignment over time, silently degrading a channel with no obvious external symptom (just a dimmer or dark reading, discoverable only by physically reopening the enclosure to check). That's a worse failure mode than the camera's for something meant to trigger an automatic shutdown reliably - camera drift is at least visible in a preview image; fiber misalignment isn't visible at all without disassembly.
 - **Verdict:** fiber is cheaper and has less code, but the build is fiddlier with no feedback loop, and its failure mode (heat-driven glue creep) is quieter and harder to catch than the camera's. Still leaning toward the camera (B) for the trust/debuggability reasons, but fiber remains a legitimate lower-cost alternative if comfortable with occasional physical re-checks.
 
-**Two more options considered, (C) and (D):**
-- **(C) Pinhole mask + hollow chamber** - a single rigid opaque card with 4 tiny pinholes punched at the LEDs' actual 5mm spacing, held against the LED cluster; behind it, a small light-tight box (blackened inside to kill internal reflections) extends back a few cm to a second board where the 4 phototransistors sit with *normal* spacing - same pinhole-camera physics, light diverges enough over that distance that crowding stops being a problem. Combines fiber's advantages (cheap, ~₹100-150 in parts beyond what's on hand, plain ESPHome analog reads, no custom firmware) without its weaknesses: no per-strand precision gluing (one rigid mask instead of 4 floppy fiber tips), and much more heat-tolerant than fiber since a rigid mask held by friction/a snug enclosure doesn't rely on a glue joint holding sub-mm alignment. Currently looks like the strongest option overall - cheaper and simpler-firmware like fiber, without fiber's alignment fragility or heat-driven failure mode.
+**More options considered, (C), (D) and (E):**
+- **(C) Pinhole mask + hollow chamber** - a single rigid opaque card with 4 tiny pinholes punched at the LEDs' actual 5mm spacing, held against the LED cluster; behind it, a small light-tight box (blackened inside to kill internal reflections) extends back a few cm to a second board where the 4 phototransistors sit with *normal* spacing - same pinhole-camera physics, light diverges enough over that distance that crowding stops being a problem. Combines fiber's advantages (cheap, ~₹100-150 in parts beyond what's on hand, plain ESPHome analog reads, no custom firmware) without its weaknesses: no per-strand precision gluing (one rigid mask instead of 4 floppy fiber tips), and much more heat-tolerant than fiber since a rigid mask held by friction/a snug enclosure doesn't rely on a glue joint holding sub-mm alignment. Looked like the strongest option overall at the time - cheaper and simpler-firmware like fiber, without fiber's alignment fragility or heat-driven failure mode.
 - **(D) Tap the LED driver circuit directly, skip optics entirely** - open the UPS, find the PCB traces feeding each of the 4 LEDs, tap a wire to each with a voltage divider into an ESP32 GPIO. Sidesteps every optical problem at once (no alignment, no ambient light, no heat/glue concerns, nothing to ever drift). Most robust option in principle, but real safety stakes: opening a device with a rechargeable lithium battery and active charging circuit risks a short circuit, battery damage, or fire if a probe slips or a trace is misidentified, plus voids any warranty. Only worth doing with genuine confidence probing live boards carefully - not a casual default choice.
 - **(E) Inline voltage/current sensor on the DC power cable, bypassing the UPS's LEDs entirely** - splice an INA219/INA226 sensor breakout (~₹150-300, I2C, plain ESPHome sensor support) directly into the DC cable between the RouterUPS and the server. Measures actual power reaching the server directly - voltage sag or current-draw shift as the battery depletes - rather than inferring state from the UPS's own indicator LEDs. No need to open the UPS at all (splicing an external cable, not touching internals near the battery - none of (D)'s safety stakes), and no LED-reading problem at all (no 5mm spacing, no optics, no fiber/pinhole/camera build). Same caveat as everything else: still needs the actual voltage/current curve for this specific UPS+server pairing characterized during a real discharge to know what threshold means "critical" - same underlying need as the pending runtime-measurement test below, just answering a different question from it.
 - Also considered: a microphone/sound sensor listening for a low-battery beep, if the UPS has one - would be even simpler than (E). Unconfirmed whether this UPS actually beeps on low battery; user believes not but hasn't observed it for real. Free to check during the runtime-measurement test below rather than a separate step.
-- **Current ranking:** (E) inline power sensor looks like the strongest option now - avoids every problem raised so far (no LED optics, no UPS-internals safety risk) by measuring the thing that actually matters directly. (C) pinhole mask remains the best of the LED-reading approaches if E doesn't pan out. (B) camera is a solid fallback for debuggability. (A) fiber has the weakest reliability story. (D) electrical tap is the most direct read of intent but carries real safety stakes.
 
+**Current ranking:** (E) inline power sensor looks like the strongest option now - avoids every problem raised so far (no LED optics, no UPS-internals safety risk) by measuring the thing that actually matters directly. (C) pinhole mask remains the best of the LED-reading approaches if E doesn't pan out. (B) camera is a solid fallback for debuggability. (A) fiber has the weakest reliability story. (D) electrical tap is the most direct read of intent but carries real safety stakes.
+
+#### Option (D): safety and unknowns
 **User is leaning toward (D)** despite the safety stakes, with real safety practices agreed if it goes ahead:
 - Unplug from mains before opening.
 - Work on a non-conductive fire-safe surface.
@@ -260,51 +304,75 @@ So one bug produces **two symptoms**, depending on whether that day's profile in
 2. Whether the LEDs are on flying wires already connected to the main board (trivial to tap) or mounted directly on the PCB (would need to solder at whatever pad pitch the board actually uses, not necessarily the same 5mm as the LEDs' visible spacing).
 3. If it's PCB-mounted, whether that pitch is something comfortable to hand-solder at all.
 
-**Next step:** open the UPS case (if possible) and inspect: enclosure fastening (screws/glue), LED wiring style (flying leads vs PCB-mounted), and PCB pad spacing if applicable. This inspection determines whether (D) is actually viable before any parts are bought or other options are pursued further.
-
 ### Check if server RAM is expandable
 **Status:** Done
 
-**Why:** Immich re-enablement (parked below) is blocked specifically on 8GB RAM being insufficient with ML enabled, currently parked "at least a couple quarters" waiting for a full hardware upgrade due to the chip-price spike. If this Beelink Mini PC's RAM is actually expandable (a free/accessible SO-DIMM slot, not soldered), adding RAM alone could be a much cheaper and faster path back to Immich than waiting out the price spike for a whole new machine - but many ultra-compact fanless mini PCs in this class have soldered, non-expandable RAM, so this isn't guaranteed.
-**State:** **confirmed expandable (2026-08-21)** - opened the case. RAM is a removable SO-DIMM: 8GB DDR4 2666MHz. Also noted while inside: the boot SSD is a Biwin NP202 128GB.
-**Replacement stick fails memtest (2026-10-08):** a new 32GB Crucial DDR4 SO-DIMM (bought to replace the failing 8GB "Kingsotin", see `docs/incidents/2026-09-23-xero-kernel-oops-during-rust-build.md`), tested alone with memtest86+ 8.10 (`tools/memtest/boot_memtest_once.sh`), failed on the first pass: test 6 (moving inversions, 64-bit pattern), CPU 3, address `0x171beada0` (5.77GB), expected `...efff` found `...6fff` - one bit (bit 15) reading 0. Only error so far at pass 44%. xero has **one** SO-DIMM slot, so there is no other slot to compare. Intel lists the N5105 at 16GB max, but 32GB single sticks are widely run in N5105 mini PCs, and the error is at 5.77GB, well inside 16GB, so capacity is not the lead. Next: finish the pass, reseat, run two more full passes. The same address and bit again = a bad cell on the stick, return it. Different addresses or bits = contact, heat or the board. **The CPU read 103°C during memtest** (N5105 TjMax 105°C; xero idles at 65-70°C, high for this chip), so heat is now the lead suspect for this error and possibly for the 2026-09-23 crash under full-core load too. Next: check the fan spins, re-test with the case open and a desk fan on it; consider new thermal paste. **Second run, same day:** xero moved from its Skadis pegboard (fan side facing the board, gap only the rubber feet) to the desk with the fan side in open air; peaked at 86°C and ran clean through tests 0-9, including test 6, before a power cut stopped it (xero was off the UPS for the test; memtest does not touch the disks, so no ZFS risk). Suggests heat, **not confirmed**: no full pass has completed on this stick (a memtester run in Ubuntu the same afternoon was also cut short, by the UPS dying, at 0 errors). ~~Open: a fresh memtest86+ run~~ **Cleared 2026-10-09 by memtester instead (user's choice):** 2 copies x 10G, 2 loops each, all 18 tests ok in every loop, 0 failures, 21:32 -> 00:46 on the pegboard, on the router's UPS. CPU 89-95°C on sysfs (HA peak 97°C), with a makeshift stopper for a gap and the AC turned down - so the stick is clean in the low-to-mid 90s, where the first memtest86+ error came at 103°C. memtester covers only free memory (20 of 32GB), so this is strong evidence, not a full clearance; a recurrence of segfaults or speech-to-phrase hangs would mean testing again. Cooling is its own entry, "xero cooling on the Skadis pegboard". Still to do: one full clean pass on the UPS, then mount xero with the fan side facing open air, and plan new thermal paste (86°C at full load is high). **HA's history shows it happened in Ubuntu too:** the System Monitor processor temperature sat at 85-103°C from about 20:45 to 22:45 IST on 2026-10-06, the evening the ESPHome compile on xero segfaulted in gcc, with the old stick still in. Before that the highest in 30 days was 86°C; back on the pegboard (tilted) it idles about 55-68°C. memtest86+ readings never reach HA (Ubuntu is not running). **Alerting added 2026-10-08:** `healthcheck.sh` takes the peak of that sensor's HA history over its 15-minute window (plus sysfs `x86_pkg_temp`, so it works with HA down) and warns at 90°C, urgent at 98°C; `projects/healthcheck/test_cpu_temp_check.sh` exercises it.
-**Next step:** RAM being genuinely upgradeable reopens the cheaper-path option - price a second/replacement DDR4 2666MHz SO-DIMM (check whether the second slot is free for a straight add, or occupied meaning it'd need a swap to a larger single stick) and re-evaluate the Immich parking decision against that cost instead of waiting out the chip-price spike for a whole new machine. Separately, 128GB is small for a boot drive running 7+ containers - worth keeping an eye on free space, though not urgent unless it becomes one.
+**Why:** Immich re-enablement was blocked specifically on 8GB RAM being insufficient with ML enabled, then parked "at least a couple quarters" waiting for a full hardware upgrade due to the chip-price spike. If this Beelink Mini PC's RAM is actually expandable (a free/accessible SO-DIMM slot, not soldered), adding RAM alone could be a much cheaper and faster path back to Immich than waiting out the price spike for a whole new machine - but many ultra-compact fanless mini PCs in this class have soldered, non-expandable RAM, so this isn't guaranteed.
+**Outcome:** **confirmed expandable (2026-08-21)** - RAM is a removable SO-DIMM (8GB DDR4 2666MHz), and xero has **one** SO-DIMM slot. A 32GB Crucial DDR4 SO-DIMM replaced the failing 8GB stick; it was cleared by memtester on 2026-10-09 (strong evidence, not a full clearance - see Log).
+- Left open: one full clean pass on the UPS, then mount xero with the fan side facing open air, and plan new thermal paste (86°C at full load is high). Cooling is tracked in "xero cooling on the Skadis pegboard".
+- The Immich parking decision was re-evaluated against this: with the 32GB stick in, Immich has run again since 2026-10-09 (see "Immich re-enablement"), with no wait for a whole new machine.
+- Left open: 128GB is small for a boot drive running 7+ containers - worth keeping an eye on free space, though not urgent unless it becomes one.
+
+#### Hardware found inside
+- RAM: removable SO-DIMM, 8GB DDR4 2666MHz (the failing 8GB "Kingsotin", see `docs/incidents/2026-09-23-xero-kernel-oops-during-rust-build.md`). One slot only, so an upgrade is a swap to a larger single stick, not a straight add.
+- Boot SSD: Biwin NP202 128GB.
+- Intel lists the N5105 at 16GB max, but 32GB single sticks are widely run in N5105 mini PCs.
+
+#### Temperature alerting
+`healthcheck.sh` takes the peak of the HA System Monitor processor temperature sensor's history over its 15-minute window (plus sysfs `x86_pkg_temp`, so it works with HA down) and warns at 90°C, urgent at 98°C; `projects/healthcheck/test_cpu_temp_check.sh` exercises it. memtest86+ readings never reach HA (Ubuntu is not running).
+
+#### Log
+- 2026-08-21: opened the case. RAM is a removable SO-DIMM: 8GB DDR4 2666MHz. Also noted while inside: the boot SSD is a Biwin NP202 128GB.
+- Next step at the time (was): price a second/replacement DDR4 2666MHz SO-DIMM (check whether the second slot is free for a straight add, or occupied meaning it'd need a swap to a larger single stick) and re-evaluate the Immich parking decision against that cost. Done as the 32GB replacement stick below; the slot question was answered by there being one slot.
+- 2026-10-06: HA's history shows the heat happened in Ubuntu too: the System Monitor processor temperature sat at 85-103°C from about 20:45 to 22:45 IST, the evening the ESPHome compile on xero segfaulted in gcc, with the old stick still in. Before that the highest in 30 days was 86°C; back on the pegboard (tilted) it idles about 55-68°C.
+- 2026-10-08: **replacement stick fails memtest.** A new 32GB Crucial DDR4 SO-DIMM, tested alone with memtest86+ 8.10 (`tools/memtest/boot_memtest_once.sh`), failed on the first pass: test 6 (moving inversions, 64-bit pattern), CPU 3, address `0x171beada0` (5.77GB), expected `...efff` found `...6fff` - one bit (bit 15) reading 0. Only error so far at pass 44%. With one slot there is no other slot to compare. The error is at 5.77GB, well inside 16GB, so capacity is not the lead.
+  - Plan then: finish the pass, reseat, run two more full passes. The same address and bit again = a bad cell on the stick, return it. Different addresses or bits = contact, heat or the board.
+  - **The CPU read 103°C during memtest** (N5105 TjMax 105°C; xero idles at 65-70°C, high for this chip), so heat became the lead suspect for this error and possibly for the 2026-09-23 crash under full-core load too. Next then: check the fan spins, re-test with the case open and a desk fan on it; consider new thermal paste.
+- 2026-10-08, second run the same day: xero moved from its Skadis pegboard (fan side facing the board, gap only the rubber feet) to the desk with the fan side in open air; peaked at 86°C and ran clean through tests 0-9, including test 6, before a power cut stopped it (xero was off the UPS for the test; memtest does not touch the disks, so no ZFS risk). Suggests heat, **not confirmed**: no full pass had completed on this stick (a memtester run in Ubuntu the same afternoon was also cut short, by the UPS dying, at 0 errors).
+- 2026-10-08: **alerting added** (see "Temperature alerting").
+- 2026-10-09: ~~Open: a fresh memtest86+ run~~ **cleared by memtester instead (user's choice):** 2 copies x 10G, 2 loops each, all 18 tests ok in every loop, 0 failures, 21:32 -> 00:46 on the pegboard, on the router's UPS. CPU 89-95°C on sysfs (HA peak 97°C), with a makeshift stopper for a gap and the AC turned down - so the stick is clean in the low-to-mid 90s, where the first memtest86+ error came at 103°C. memtester covers only free memory (20 of 32GB), so this is strong evidence, not a full clearance; a recurrence of segfaults or speech-to-phrase hangs would mean testing again.
 
 ### Local Qwen (Ollama) delegation experiment
 **Status:** Active
 **Priority:** P3
 
 **Why:** wanted to test routing trivial subagent tasks to a locally-hosted model (Qwen via Ollama) instead of Anthropic's cloud models, to see if cost/latency can be saved on simple work while keeping a cloud Claude model for anything nontrivial. Manual/semi-automatic invocation is an explicitly acceptable bar for a first pass, full auto-detection would be a bonus.
-**State:** researched thoroughly, nothing built yet.
+**State:** researched thoroughly; `tools/dev-shell/qwen_delegate_repl.py` written and committed, syntax-checked only - **not yet run**, since it needs to execute on the Mac (target machine is a Mac M2, not the homelab server), which I (Claude, running via SSH on the homelab server) have no access to.
+**Next step:** on the Mac - install Ollama, `ollama pull qwen2.5:1.5b`, set `ANTHROPIC_API_KEY`, then `uv run tools/dev-shell/qwen_delegate_repl.py` (needs `uv`, or fall back to `pip install anthropic requests` and drop the `uv run --script` shebang). User will need to run and debug this themselves since it's on a different machine.
+
+#### Research findings
 - **Key finding:** Claude Code (CLI or the Agent SDK library, which is Claude Code packaged as a library) validates model names against an Anthropic-only allowlist - there is no way, via `ANTHROPIC_BASE_URL`, agent-definition frontmatter, or any env var, to point the main session or a subagent at Ollama or any local model. That rules out the originally-envisioned approach entirely.
 - **The viable path is different:** a **standalone script** using the Anthropic SDK's Tool Runner (`client.beta.messages.tool_runner`, not Claude Code at all), where Ollama/Qwen is wrapped as a *custom tool* (e.g. `delegate_to_local_model`) that a cloud Claude model can choose to call based on the tool's description - this gives genuine LLM-driven auto-routing (Claude itself judges what's trivial), which is actually closer to the original ask than manual routing.
 - **Tradeoff:** this is a bare API loop, not a Claude Code replacement - no built-in file/bash tools, no session persistence, none of Claude Code's actual UX beyond what we hand-built (a minimal REPL).
 - **Claude Agent SDK ruled out** (would've been a closer-to-Claude-Code chat experience) - it's the same harness under the hood and almost certainly has the same Anthropic-only model restriction, so it wouldn't solve the actual goal even though it looks closer to "chat normally."
 
+#### Target machine
 **Target machine changed to a Mac M2, not the homelab server.** This box (Celeron N5105, no GPU, ~5GB actually free, already running 7+ production containers with a history of memory-pressure lockups) is a poor fit for local inference even at small model sizes - too weak to be useful and too risky to share resources with. The Mac M2 has real unified memory and Metal acceleration Ollama uses natively, and nothing production running on it. Chose `qwen2.5:1.5b` as the model size for that machine.
 
-**State:** `tools/dev-shell/qwen_delegate_repl.py` written and committed - a REPL loop (`while True: input() -> tool_runner turn -> print reply`) that persists conversation history across turns, defines `delegate_to_local_model` as a custom tool wrapping Ollama's local HTTP API, and prints `[-> delegating to qwen2.5:1.5b: ...]` / `[<- ... replied: ...]` markers so delegation is visible live. Orchestrator defaults to `claude-opus-5` (swappable to sonnet/haiku for cost). Syntax-checked only - **not yet run**, since it needs to execute on the Mac, which I (Claude, running via SSH on the homelab server) have no access to.
-**Next step:** on the Mac - install Ollama, `ollama pull qwen2.5:1.5b`, set `ANTHROPIC_API_KEY`, then `uv run tools/dev-shell/qwen_delegate_repl.py` (needs `uv`, or fall back to `pip install anthropic requests` and drop the `uv run --script` shebang). User will need to run and debug this themselves since it's on a different machine.
+#### The script
+`tools/dev-shell/qwen_delegate_repl.py` is a REPL loop (`while True: input() -> tool_runner turn -> print reply`) that persists conversation history across turns, defines `delegate_to_local_model` as a custom tool wrapping Ollama's local HTTP API, and prints `[-> delegating to qwen2.5:1.5b: ...]` / `[<- ... replied: ...]` markers so delegation is visible live. Orchestrator defaults to `claude-opus-5` (swappable to sonnet/haiku for cost).
 
 ### Check RAM in Lenovo Flex
 **Status:** Done
 **Priority:** P3
 
 **Why:** separate from the homelab server RAM check above - user's Lenovo Flex (personal laptop) has 2 RAM sticks, believed to be 16GB total, but unsure whether DDR3 or DDR4. Needs confirming to know what upgrade options (if any) exist.
-**State (2026-10-06):** checked by the user: 2x Crucial 8GB DDR3L SO-DIMM, 16GB total. DDR3L is an old generation (new DDR3L sticks are not worth buying for an upgrade), and it cannot fill in for xero's failing DDR4 stick: different notch and voltage. Recorded in `docs/hardware.md` (spare laptops).
-**Next step:** none.
+**Outcome:** checked by the user (2026-10-06): 2x Crucial 8GB DDR3L SO-DIMM, 16GB total. DDR3L is an old generation (new DDR3L sticks are not worth buying for an upgrade), and it cannot fill in for xero's failing DDR4 stick: different notch and voltage. Recorded in `docs/hardware.md` (spare laptops). Nothing left open.
 
 ### Home power audit - smart/network devices + major appliances
 **Status:** Active
 **Priority:** P3
 
 **Why:** triggered by a tangent while discussing whether a new WiFi button (Shelly) would raise the electricity bill - user wants to know the actual continuous background draw of always-on smart/network gear versus the usage-driven draw of major appliances, to know where money is actually going.
-**State:** first pass done (2026-08-22), estimated from specs/datasheets (no plug meter available - see caveat below).
+**State:** first pass done (2026-08-22), estimated from specs/datasheets (no plug meter available - see caveat below). Always-on stack estimated at **~30W continuous**, roughly ₹130-175/month; the fridge is likely larger than all of it but was not measured.
+**Next step:** if precision matters, a cheap plug-in energy meter (or checking whether the Tinxy app/HA integration exposes real energy-monitoring data for whatever's wired behind the two Tinxy units) would replace the router/extender/xero/Pi estimates with real numbers cheaply. Fridge is the highest-value next target to actually measure, since it's likely the single biggest line item of everything in this audit.
 
+#### Hardware confirmed
 Confirmed real hardware details for two of the "always-on" devices by querying them directly:
 - `xero` is a Beelink mini PC, Celeron N5105 (10W TDP), 2x SSD (Kingston SA400 960GB + Biwin 128GB boot), no spinning disk.
 - The wol-sender Pi is a **Raspberry Pi 3 Model B Rev 1.2** (not 4 or Zero as assumed) with a GPIO-wired fan as extra continuous load, and `vcgencmd get_throttled` shows a sticky historical under-voltage flag consistent with the known wall-mount power-cable issue tracked elsewhere (not current-state undervoltage).
 
+#### Always-on draw estimate
 Estimated always-on draw (rounded, spec-based):
 | Device | Est. watts (continuous) | Basis |
 |---|---|---|
@@ -315,27 +383,33 @@ Estimated always-on draw (rounded, spec-based):
 | Tinxy 4-node switch x2 (self-consumption only, not switched load) | ~2W each (~4W total) | no official datasheet number found; general WiFi relay module self-consumption is ~0.5-1.5W per relay, shared control board per unit |
 | **Total** | **~30W continuous** | → ~21.6 kWh/month → roughly ₹130-175/month at typical India residential rates (₹6-8/kWh) |
 
+#### Major appliances
 Fridge is the only major appliance with a comparable continuous-ish profile (compressor duty-cycling): a typical double-door fridge averages ~60-90W day-long, a 5-star inverter model less (~30-50W) - likely **larger than the entire smart/network stack combined**, but wasn't measured here. Washing machine, dishwasher, and microwave standby draw is negligible (~1-3W each when idle); their real cost is almost entirely usage-frequency driven (cycles/week, not standby watts) and wasn't estimated - needs the user's actual usage pattern to be worth calculating.
 
-**Caveat:** all "always-on" numbers above are spec/datasheet estimates, not measured - could realistically be off ±30-40% per device without a real inline meter. Good enough to rank contributors and sanity-check "does this add to my bill" questions (context: prompted by the Shelly WiFi-button power question), not precise enough to reconcile against an actual bill.
-**Next step:** if precision matters, a cheap plug-in energy meter (or checking whether the Tinxy app/HA integration exposes real energy-monitoring data for whatever's wired behind the two Tinxy units) would replace the router/extender/xero/Pi estimates with real numbers cheaply. Fridge is the highest-value next target to actually measure, since it's likely the single biggest line item of everything in this audit.
+#### Caveat
+All "always-on" numbers above are spec/datasheet estimates, not measured - could realistically be off ±30-40% per device without a real inline meter. Good enough to rank contributors and sanity-check "does this add to my bill" questions (context: prompted by the Shelly WiFi-button power question), not precise enough to reconcile against an actual bill.
+
+#### Log
+- 2026-08-22: first pass done, estimated from specs/datasheets.
 
 ### Clawlight jump-to-console from the iPhone (Termius -> ssh -> tmux attach)
 **Status:** Active
 **Priority:** P3
 
-**Why:** clawlight's click-to-jump (see ✅ Done) only moves a terminal on a desk machine. From the phone, the red light says a session needs you, but you still have to open Termius, pick the right host, and find the right tmux session by hand. Nothing runs Claude on the iPhone itself. Every session is on xero or the MacBook inside tmux, so tapping the session on the page should open Termius, ssh to that host, and attach at that pane. Noted 2026-09-15.
+**Why:** clawlight's click-to-jump (see ✅ Done) only moves a terminal on a desk machine. From the phone, the red light says a session needs you, but you still have to open Termius, pick the right host, and find the right tmux session by hand. Nothing runs Claude on the iPhone itself. Every session is on xero or the MacBook inside tmux, so tapping the session on the page should open Termius, ssh to that host, and attach at that pane.
+**State:** built on xero 2026-09-17, not yet tried from the phone. `clawlight/phone-attach.sh`, `/api/phone-jump` + `/api/phone-claim` in `server.py`, and an iOS-only tap path on the page. The unit and end-to-end tests pass (`scripts/clawlight/test_clawlight_phone_jump*`), and the server is restarted with it. The README's "Jumping to a console from the iPhone" section has the design and setup. What is left is below.
+**Next step:** on the phone, save the xero host in Termius with `~/code/homelab/clawlight/phone-attach.sh` as the startup command. Tap a xero session on the page and connect by hand. Then try the open links.
 
-**State:** built on xero 2026-09-17, not yet tried from the phone. `clawlight/phone-attach.sh`, `/api/phone-jump` + `/api/phone-claim` in `server.py`, and an iOS-only tap path on the page. The unit and end-to-end tests pass (`scripts/clawlight/test_clawlight_phone_jump*`), and the server is restarted with it. The README's "Jumping to a console from the iPhone" section has the design and setup. Left:
+#### Left to do
 - **Phone setup:** saved Termius hosts for xero and the Mac, with `phone-attach.sh` as the startup command. Then tap a session on the page and connect within a minute.
 - **The open link is untested.** `CLAWLIGHT_PHONE_OPEN_URLS` in `.env.clawlight` is unset, so the page currently says "open <host> in Termius". Try an `ssh://` link (does it use the saved host's startup command?) and the Shortcuts "Connect to a host" action.
 - **The Mac needs a `git pull`** in its clone for the script, and Remote Login on.
 
-The design notes as first written:
+#### Design notes (as first written)
 - **The server already knows where to go.** `set-status.sh` reports the host, `$TMUX`'s socket and `$TMUX_PANE` for every session, and sessions outside tmux are already marked unreachable.
 - **So the phone needs no focus agent.** It is the one client that cannot run `focus-agent.sh`. Its version of a jump is just a link the page opens, not a routed request, and it takes a different path from the desk click. The page has to pick between the two, e.g. by detecting iOS or a "jump on this device" toggle, because the phone should not also move the Mac's terminal.
 
-**Things to settle, most likely to kill it first:**
+#### Things to settle (most likely to kill it first)
 - **Can a Termius link run a command, or only open a host? Checked 2026-09-17: no documented way.** The iOS changelog mentions "Deep links handling" once (4.6.5, 2020), with no syntax. Neither the changelog nor the connection docs show a link that carries a command. What Termius does have is a fixed **startup command per saved host**, which is how people already run Claude from the phone (e.g. `tmux attach -t cc || tmux new -s cc`). It can't vary per tap. So the design is snippet-plus-lookup:
   1. One saved Termius host each for xero and the Mac, whose startup command runs a small script (e.g. `clawlight-attach`).
   2. A tap on the page records "phone wants pane X on host Y" on the server, then opens `ssh://` to that host.
@@ -347,8 +421,9 @@ The design notes as first written:
 - **A non-interactive ssh command gets a thin PATH on the Mac.** Homebrew's tmux in `/opt/homebrew/bin` may not be found. It's the same trap as `lsof` under launchd (see the Done entry), so check it the way the ssh session sees it, not from an interactive shell.
 - **Mac reachability from the phone:** needs Remote Login on and the Mac awake on the tailnet. xero is always reachable. A Mac that's asleep should show the same honest "can't jump" as a missing focus agent, not a Termius connection that hangs.
 
-**Next step:** on the phone, save the xero host in Termius with `~/code/homelab/clawlight/phone-attach.sh` as the startup command. Tap a xero session on the page and connect by hand. Then try the open links.
-
+#### Log
+- 2026-09-15: noted.
+- 2026-09-17: checked Termius deep links (no documented way to carry a command); built on xero - `phone-attach.sh`, the phone API endpoints and the iOS tap path, tests passing, server restarted.
 
 ### ZFS mirror (real redundancy for datapool)
 **Status:** Parked
@@ -362,11 +437,15 @@ The design notes as first written:
 **Status:** Parked
 **Priority:** P3
 
-**Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no offsite copy - only the ZFS pool itself (single disk, see above) and the original Google Takeout zips on a separate local disk.
-**State:** reconsidered, not started. A naive rclone-to-Dropbox push (same pattern as Vaultwarden/HA) doesn't actually make sense here: the whole point of self-hosting Immich is avoiding paying for cloud photo storage, so continuously syncing the full photo set to cloud storage undermines that. If pursued, needs a different shape - compress/archive first, and use a cold-storage tier (e.g. S3 Glacier / Glacier Deep Archive) priced for rarely-accessed disaster-recovery data rather than active-sync storage, not a Dropbox-style always-on sync.
+**Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no offsite copy - only the ZFS pool itself (single disk, see above) and the original Google Takeout zips on a separate local disk. Wider than Immich: nothing on `datapool` has a copy off xero.
+**State:** reconsidered, not started. A naive rclone-to-Dropbox push (same pattern as Vaultwarden/HA) doesn't make sense here (see Approach).
 **Next step:** none for now - needs the compress + cold-storage approach worked out before this is worth starting, not just "run rclone".
 
-**Wider than Immich (noted 2026-10-08/09):** nothing on `datapool` has a copy off xero - `albums`, `phone-uploads` and `recovered-media` too, not just Immich's two datasets. All five have `copies=2`, which repairs bit rot (the 2026-10-08 scrub: 0B repaired, 0 errors) but not a dead disk, a fire, or a pool lost to an uncontrolled crash - and power cuts have become frequent while xero's UPS is away for warranty. If these photos exist nowhere else, this matters more than anything else on xero. Dropbox is no home for it: the free tier is 2.75GiB, and briefly overflowed on 2026-10-09 from 2.8GB of HA backups alone.
+#### Approach
+A naive rclone-to-Dropbox push doesn't actually make sense here: the whole point of self-hosting Immich is avoiding paying for cloud photo storage, so continuously syncing the full photo set to cloud storage undermines that. If pursued, needs a different shape - compress/archive first, and use a cold-storage tier (e.g. S3 Glacier / Glacier Deep Archive) priced for rarely-accessed disaster-recovery data rather than active-sync storage, not a Dropbox-style always-on sync.
+
+#### Log
+- 2026-10-08/09: scope is wider than Immich - nothing on `datapool` has a copy off xero - `albums`, `phone-uploads` and `recovered-media` too, not just Immich's two datasets. All five have `copies=2`, which repairs bit rot (the 2026-10-08 scrub: 0B repaired, 0 errors) but not a dead disk, a fire, or a pool lost to an uncontrolled crash - and power cuts have become frequent while xero's UPS is away for warranty. If these photos exist nowhere else, this matters more than anything else on xero. Dropbox is no home for it: the free tier is 2.75GiB, and briefly overflowed on 2026-10-09 from 2.8GB of HA backups alone.
 
 ### Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement
 **Status:** Parked
@@ -382,19 +461,34 @@ Problems with that:
 
 This is a distinct need from the iPhone-upload SMB share (Done section) - continuous, automatic, always-available-everywhere sync, not a manual one-off drop zone.
 **State:** not started. Syncthing identified as the right fit - true peer-to-peer, no cloud storage or third-party leak surface, no storage cap, works over LAN and (via Tailscale) when away from home. Homelab server would act as an always-on peer so devices stay in sync even when not simultaneously online.
-**Open question:** how the work laptop fits in - same policy-visibility risk that ruled out Dropbox offline-files there could apply to installing any sync client. Not yet decided whether that machine gets a full Syncthing client, browser/web-GUI-only access, no access at all, or gets figured out later. Scope for phone + personal devices + homelab server first.
 **Next step:** none yet, not started.
+
+#### Open question
+How the work laptop fits in - same policy-visibility risk that ruled out Dropbox offline-files there could apply to installing any sync client. Not yet decided whether that machine gets a full Syncthing client, browser/web-GUI-only access, no access at all, or gets figured out later. Scope for phone + personal devices + homelab server first.
 
 ### Immich re-enablement
 **Status:** Active
 **Priority:** P3
 
-**Why:** ~13k photos already migrated from Google Takeout, but Immich is disabled - 8GB RAM isn't enough with ML enabled.
-**State:** **on hold indefinitely (2026-08-26)** - previously parked "at least a couple quarters" pending a hardware/RAM upgrade, now open-ended rather than time-boxed. Fastest partial fix (disable just `immich-machine-learning`, keep the server running without face/object search) was suggested but not applied, since the user wants it parked entirely for now.
-**Next step:** none for now - revisit whenever it becomes a real priority again, not on any schedule. **Before restarting it:** `datapool/immich-upload` has `copies=2` set but uses 31.1G for 31.7G of data (checked 2026-09-21), so the imported library is most likely stored only once - it predates the setting. Run `services/samba/rewrite_for_copies.sh /datapool/immich-upload` while Immich is still stopped (about 32G extra space, dd-based because block cloning makes cp/cat no-ops). Check `immich-db` as well. All 6 corrupted blocks found in `datapool` (see ZFS corruption entry in Done) are now fully resolved and verified clean via scrub (2026-07-31) - no longer a blocker whenever this resumes. 2 recovered videos (`VID_20170311_210204.mp4`, `VID_20170729_134921.mp4`) are sitting in `datapool/recovered-media/`, not yet re-uploaded since there's no Immich to upload them to yet.
+**Why:** ~13k photos already migrated from Google Takeout, but Immich was disabled - 8GB RAM isn't enough with ML enabled.
+**State:** running again since 2026-10-09, on Immich v3.3.1 (32GB stick; `services/immich/README.md`). All 12,906 assets present; originals and thumbnails load. Only ~900 of 12,906 assets have smart search / faces. A sweep of every `originalPath` finds only `IMG-20191013-WA0002.jpg` missing. 5 animated GIFs still fail thumbnails with "Missing video metadata". Blocker to making it the primary photo app: speed (xero needs a direct cable to the router, see below). Google Takeout part `019` gap still unresolved.
+**Next step:**
+- The ML backlog: queue Smart Search and Face Detection ("Missing") in Administration -> Jobs with concurrency 1 and watch the guard's journal for the first hour.
+- Then: delete the `@pre-v3` snapshots once happy (the upload one holds 31G), upload the 2 videos in `datapool/recovered-media/`, and decide on LAN-only vs a Caddy/tailnet route for the phone app away from home.
 
-**Could an old Intel MacBook Pro be the Immich server? (asked 2026-09-19).** Three shapes, cheapest first:
-- **(1) Put 16GB in xero - still the best answer.** The blocker is one number: 8GB is not enough *with ML enabled*. The RAM is a removable SO-DIMM and confirmed expandable (see the active entry above), so a DDR4 2666MHz stick unparks this for a couple of thousand rupees, with nothing moved and no machine added. Everything below is a workaround for not doing this.
+#### How it is running
+Path taken: ZFS snapshots `@pre-v3` of both datasets and `rewrite_for_copies.sh` on the library (user, sudo), then 2.7.5 on the vectorchord postgres image, which migrated the DB off pgvecto.rs, then 3.3.1. `IMMICH_VERSION` is now an exact pin, never `release`. ML is capped at `cpus: 2`, and the load guard (`services/immich/load_guard.sh`, systemd --user `immich-load-guard`) stops the `immich_*` containers at >=93°C for 1 min, <1.5GB free memory for 1 min or >=95% CPU for 10 min, pushes to ntfy, and keeps them down until `load_guard.sh --reset`.
+
+#### Blockers to making Immich the primary photo app (user, 2026-10-12)
+The server holds the load fine.
+1. **Speed: xero needs a direct cable to the router.** Today it gets two caps. The extender's Ethernet port is Fast Ethernet: the link partner advertises nothing above 100baseT, so the link negotiates 100Mb/s (~12MB/s) whatever cable is used. Behind that port, every byte crosses the extender's 2.4GHz Wi-Fi backhaul. The fix is already planned three ways, cheapest first:
+   - "Pi audio move follow-ups", step 3: move xero to the router. The speaker no longer ties it to its room. This needs `projects/power-watchdog/watchdog_power.sh` to get the ping signal first.
+   - "Fibre or Cat6 from the router to the desk".
+   - "Move the Airtel router to a central spot".
+
+#### Could an old Intel MacBook Pro be the Immich server? (asked 2026-09-19)
+Three shapes, cheapest first:
+- **(1) Put 16GB in xero - still the best answer.** The blocker is one number: 8GB is not enough *with ML enabled*. The RAM is a removable SO-DIMM and confirmed expandable (see "Check if server RAM is expandable", Done: a 32GB stick went in on 2026-10-08), so a DDR4 2666MHz stick unparks this for a couple of thousand rupees, with nothing moved and no machine added. Everything below is a workaround for not doing this.
 - **(2) Keep Immich on xero, move only the ML to the MacBook.** Immich supports [remote machine learning](https://docs.immich.app/guides/remote-machine-learning/): the ML container runs on another host and the server is pointed at it under Administration -> Settings -> Machine Learning. **Add** the remote URL rather than replacing the local one, so jobs fall back when the laptop is off, and keep both ends on the same Immich version or expect bugs. This targets the actual blocker - the ML model is what does not fit in 8GB - while photos, the database and the ZFS story stay exactly where they are. An i5/i7 will also chew through face detection far faster than the N5105.
 - **(3) Move all of Immich onto the MacBook - the one to avoid.** It breaks the part of this setup that is actually good: the library lives on `datapool` with `copies=2`, `sync=always`, scrubs and rclone backups, and that history includes real recovered corruption. Serving it from a laptop SSD gives all that up, and serving it over NFS/SMB from xero adds a failure mode to every photo request. macOS itself is a poor 24/7 server (Docker Desktop is a VM with slow bind mounts, plus sleep, updates and login sessions), and installing Linux on an Intel Mac means Broadcom WiFi and fan control to sort out.
 
@@ -413,45 +507,49 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 **What to check on the laptop before either (2) or (3):** its RAM and CPU, its battery health (a swollen cell in a machine left plugged in 24/7 is a fire risk, and a healthy one is a free UPS - better than anything xero has), whether it can run lid-closed without sleeping, and its idle draw, which is likely 10-20W against xero's ~12W and runs on mains all day.
 
-**Running again since 2026-10-09, on Immich v3.3.1** (32GB stick; `services/immich/README.md`). Path taken: ZFS snapshots `@pre-v3` of both datasets and `rewrite_for_copies.sh` on the library (user, sudo), then 2.7.5 on the vectorchord postgres image, which migrated the DB off pgvecto.rs, then 3.3.1. All 12,906 assets present; originals and thumbnails load. `IMMICH_VERSION` is now an exact pin, never `release`. ML is capped at `cpus: 2`, and the load guard (`services/immich/load_guard.sh`, systemd --user `immich-load-guard`) stops the `immich_*` containers at >=93°C for 1 min, <1.5GB free memory for 1 min or >=95% CPU for 10 min, pushes to ntfy, and keeps them down until `load_guard.sh --reset`.
-**Missing originals found and restored (2026-10-11).** The first thumbnail run hit "Input file is missing" for 54 assets. None of them was anywhere in the library, and they were not in the `@pre-v3` snapshot either, so they were lost before 2026-10-09, not by the rewrite. 53 were in the Google Takeout zips on `datapool/google-takeout/`: each was matched by Immich's own SHA-1 (`asset.checksum`), copied to its exact `originalPath` (root:root, 644) and verified in place. That includes `Pancard.jpg`, a different photo from `pancard.jpg` in the same folder. **Still lost: `library/admin/2019/2019-10-13/IMG-20191013-WA0002.jpg`** - not in any of the 22 zips, possibly in the missing part `019`. 816 videos also have no metadata (never extracted), which is why their thumbnails fail; run Extract Metadata -> Missing before Generate Thumbnails -> Missing.
-**3 more missing originals restored (2026-10-14):** videos `QUIK_20180115_233719.mp4`, `VID-20180709-WA0000.mp4`, `IMG_3329.mov`. They were hidden until now because their metadata step failed before thumbnails ran. All three were in the Takeout zips, and `services/immich/restore_from_takeout.sh <asset-id>...` restored them with the SHA-1 verified. A sweep of every `originalPath` now finds only `IMG-20191013-WA0002.jpg` missing. 5 animated GIFs still fail thumbnails with "Missing video metadata" (files present, Immich v3 makes no `asset_video` row for them).
-**Blockers to making Immich the primary photo app (user, 2026-10-12):** the server holds the load fine.
-1. **Speed: xero needs a direct cable to the router.** Today it gets two caps. The extender's Ethernet port is Fast Ethernet: the link partner advertises nothing above 100baseT, so the link negotiates 100Mb/s (~12MB/s) whatever cable is used. Behind that port, every byte crosses the extender's 2.4GHz Wi-Fi backhaul. The fix is already planned three ways, cheapest first:
-   - "Pi audio move follow-ups", step 3: move xero to the router. The speaker no longer ties it to its room. This needs `projects/power-watchdog/watchdog_power.sh` to get the ping signal first.
-   - "Fibre or Cat6 from the router to the desk".
-   - "Move the Airtel router to a central spot".
-
-**Next step:** the ML backlog - only ~900 of 12,906 assets have smart search / faces. Queue Smart Search and Face Detection ("Missing") in Administration -> Jobs with concurrency 1 and watch the guard's journal for the first hour. Then: delete the `@pre-v3` snapshots once happy (the upload one holds 31G), upload the 2 videos in `datapool/recovered-media/`, and decide on LAN-only vs a Caddy/tailnet route for the phone app away from home.
-
-**Google Takeout export - incomplete, gap unresolved (2026-08-26).** The full export (23 parts, `takeout-20260625T094226Z-3-*.zip`, downloaded 2026-06-25/26) is missing part `019` - re-downloading just that part turns out not to be possible. Moved the 22 complete parts off the nearly-full boot disk to `datapool/google-takeout/` (see disk-space cleanup below) regardless, since they're safe to keep either way. How to actually fill the gap (full fresh re-export vs. living with one missing part) is unresolved - deferred, not blocking anything while Immich itself is on hold.
-
+#### Log
+- 2026-07-31: all 6 corrupted blocks found in `datapool` (see ZFS corruption entry in Done) fully resolved and verified clean via scrub - no longer a blocker whenever this resumes.
+- 2026-08-26: **on hold indefinitely** - previously parked "at least a couple quarters" pending a hardware/RAM upgrade, now open-ended rather than time-boxed. Fastest partial fix (disable just `immich-machine-learning`, keep the server running without face/object search) was suggested but not applied, since the user wanted it parked entirely. Next step then: none - revisit whenever it becomes a real priority again, not on any schedule. 2 recovered videos (`VID_20170311_210204.mp4`, `VID_20170729_134921.mp4`) sit in `datapool/recovered-media/`, not yet re-uploaded since there was no Immich to upload them to.
+- 2026-08-26: **Google Takeout export - incomplete, gap unresolved.** The full export (23 parts, `takeout-20260625T094226Z-3-*.zip`, downloaded 2026-06-25/26) is missing part `019` - re-downloading just that part turns out not to be possible. Moved the 22 complete parts off the nearly-full boot disk to `datapool/google-takeout/` (see disk-space cleanup below) regardless, since they're safe to keep either way. How to actually fill the gap (full fresh re-export vs. living with one missing part) is unresolved - deferred, not blocking anything while Immich itself was on hold.
+- 2026-09-19: asked whether an old Intel MacBook Pro could be the Immich server (see that subsection).
+- 2026-09-21: noted as a before-restart step: `datapool/immich-upload` has `copies=2` set but uses 31.1G for 31.7G of data (checked 2026-09-21), so the imported library was most likely stored only once - it predates the setting. Run `services/samba/rewrite_for_copies.sh /datapool/immich-upload` while Immich is still stopped (about 32G extra space, dd-based because block cloning makes cp/cat no-ops). Check `immich-db` as well. (The library rewrite was done on 2026-10-09, below.)
+- 2026-10-09: **running again**, on Immich v3.3.1 after the `@pre-v3` snapshots, the copies rewrite and the 2.7.5 DB migration (see How it is running).
+- 2026-10-11: **missing originals found and restored.** The first thumbnail run hit "Input file is missing" for 54 assets. None of them was anywhere in the library, and they were not in the `@pre-v3` snapshot either, so they were lost before 2026-10-09, not by the rewrite. 53 were in the Google Takeout zips on `datapool/google-takeout/`: each was matched by Immich's own SHA-1 (`asset.checksum`), copied to its exact `originalPath` (root:root, 644) and verified in place. That includes `Pancard.jpg`, a different photo from `pancard.jpg` in the same folder. **Still lost: `library/admin/2019/2019-10-13/IMG-20191013-WA0002.jpg`** - not in any of the 22 zips, possibly in the missing part `019`. 816 videos also have no metadata (never extracted), which is why their thumbnails fail; run Extract Metadata -> Missing before Generate Thumbnails -> Missing.
+- 2026-10-12: user listed the blockers to making Immich the primary photo app (see that subsection).
+- 2026-10-14: **3 more missing originals restored:** videos `QUIK_20180115_233719.mp4`, `VID-20180709-WA0000.mp4`, `IMG_3329.mov`. They were hidden until now because their metadata step failed before thumbnails ran. All three were in the Takeout zips, and `services/immich/restore_from_takeout.sh <asset-id>...` restored them with the SHA-1 verified. A sweep of every `originalPath` now finds only `IMG-20191013-WA0002.jpg` missing. 5 animated GIFs still fail thumbnails with "Missing video metadata" (files present, Immich v3 makes no `asset_video` row for them).
 
 ### Move the Airtel router to a central spot (retire the Wi-Fi extender)
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** the router sits where Airtel's fibre drop enters the house, so the far rooms depend on the TP-Link extender. That includes xero, which reaches the router only through the extender's 2.4GHz Wi-Fi backhaul. A central router could cover the house on its own and give xero a short, direct link. **Needs outside help:** Airtel has to re-route its fibre drop, or it has to be extended inside the house, and they may charge. Parked 2026-09-23.
-**Open questions:**
+**Why:** the router sits where Airtel's fibre drop enters the house, so the far rooms depend on the TP-Link extender. That includes xero, which reaches the router only through the extender's 2.4GHz Wi-Fi backhaul. A central router could cover the house on its own and give xero a short, direct link.
+**State:** parked, nothing done. **Needs outside help:** Airtel has to re-route its fibre drop, or it has to be extended inside the house, and they may charge.
+**Next step:** answer the open questions below. Notes: `docs/home-network-uplink-options.md`, which covers all the options, costs and trade-offs, so none of it has to be worked out again.
+
+#### Open questions
 - Where is central, and does the fibre drop reach it?
 - The router's UPS has to move with it.
 - Does a central router reach xero's room well without the extender?
 
-**If it works:**
+#### If it works
 - The extender and its failure mode go away.
 - `watchdog_power.sh` loses its outage signal, because the extender is what drops. Do the ping change first; see the notes.
 
-**Notes:** `docs/home-network-uplink-options.md`, which covers all the options, costs and trade-offs, so none of it has to be worked out again.
+#### Log
+- 2026-09-23: parked.
 
 ### Fibre or Cat6 from the router to the desk
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** a real cable from the Airtel router to xero's desk replaces the extender's 2.4GHz Wi-Fi hop. It also keeps xero, its speaker and its screen where they are. **Needs outside help** (an electrician and/or a local FTTH technician). Parked 2026-09-23.
+**Why:** a real cable from the Airtel router to xero's desk replaces the extender's 2.4GHz Wi-Fi hop. It also keeps xero, its speaker and its screen where they are.
+**State:** parked, nothing done. **Needs outside help** (an electrician and/or a local FTTH technician). Two options, fibre or Cat6 (below).
+**Next step:** have the electrician check how full the conduit is and the state of the old wiring, then push a pull cord through. Pull nothing through a packed conduit or past brittle insulation.
 
-**The route:** an existing conduit that already carries 230V mains wiring and has many bends.
+#### The route
+An existing conduit that already carries 230V mains wiring and has many bends.
 
-**The two options (full detail in `docs/home-network-uplink-options.md`):**
+#### The two options (full detail in `docs/home-network-uplink-options.md`)
 - **Fibre with a BiDi media converter pair,** ~₹3,500-6,500:
   - pull bare G.657A2 fibre, then have an FTTH technician fit SC plugs
   - no electrical path, no surge path, an easier pull
@@ -462,29 +560,36 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
   - the power watchdog needs the ping change
   - shielded Cat6 is ruled out
 
-**First step:** have the electrician check how full the conduit is and the state of the old wiring, then push a pull cord through. Pull nothing through a packed conduit or past brittle insulation.
-
-**Unlocks:**
+#### Unlocks
 - per-device data-usage monitoring with xero as the gateway (an OpenWrt router with nlbwmon remains the better way)
 - faster and more reliable Immich, backups and Tailscale access
+
+#### Log
+- 2026-09-23: parked.
 
 ### Miraie AC self-healing
 **Status:** Backlog
 **Priority:** P3
 
 **Why:** Readme documents a known paper cut - "if entity shows Unavailable, turn the AC on/off physically to trigger a state update." Same shape of problem as the Tinxy watchdog (auto-recover after a sustained bad state) but for the Miraie AC MQTT integration.
-**State:** auto-fix live from 2026-09-15 (see below); 2026-09-11 sharpened what it would have to do. That evening the entity sat `unavailable` while the bridge was provably fine - both brokers connected, DNS clean, no errors - because the indoor unit had stopped talking to the MirAIe cloud. Three restarts reported success and fixed nothing. So "self-healing" here cannot mean "restart Node-RED harder"; the only recovery for that failure is physical, and the useful automation is to *tell the difference* and say which one it is.
+**State:** auto-fix live from 2026-09-15: monitoring (`check_miraie_ac_available.sh` + `healthcheck.sh` auto-fix), the Node-RED refresh inject, MirAIe login renewal, the HA-restart listener `miraie-ha-birth` (2026-10-09) and a Fix AC button on Home > Bedroom (2026-10-13). The listener is verified with synthetic births but not yet seen on a real HA restart.
+**Next step:** confirm on the next real HA restart: `journalctl --user -u miraie-ha-birth` should show the fix within ~2min, and the healthcheck should log no auto-fix for that outage.
+
+#### What self-healing has to mean
+2026-09-11 sharpened what it would have to do. That evening the entity sat `unavailable` while the bridge was provably fine - both brokers connected, DNS clean, no errors - because the indoor unit had stopped talking to the MirAIe cloud. Three restarts reported success and fixed nothing. So "self-healing" here cannot mean "restart Node-RED harder"; the only recovery for that failure is physical, and the useful automation is to *tell the difference* and say which one it is.
 - `projects/miraie-ac/fix_miraie_ac.sh` now does the telling: it subscribes to `miraie-ac/#` before restarting (everything there is retain=false and published only on reconnect, so a subscriber started afterwards sees nothing), then reads the unit's `availability` off the reconnect. Exit 2 means the bridge is fine and the unit is not there.
 - The verdict deliberately does **not** key off the `ts` in the state payload. That is the unit's last state *change*, not a heartbeat - measured the same evening, an AC that was actively cooling published nothing at all for 5 minutes and reported a `ts` 8.6min old right after a reconnect. A staleness threshold would have sent someone to power-cycle a working AC. `projects/miraie-ac/test_miraie_ac_verdict.sh` pins that down.
 - The Node-RED watchdog (every 10min on the Pi) is back on for the season as of 2026-09-11, but it only covers the bridge - it is correctly silent for this failure.
-- A second outage the same evening (21:05) had a *different* cause and is worth keeping separate: the unit was online and answering commands while HA sat on `unavailable` for 37 minutes. The node publishes `availability` with retain=false and HA gates the entity on that topic, so an **HA** restart leaves HA with no availability value and it never recovers on its own unless it happens to be subscribed when Node-RED republishes `online`. Re-delivering that `online` fixes it instantly. The script now verifies the HA entity itself (not just the MQTT traffic, which is what made an earlier version of it report success while the entity was still down) and re-delivers the availability it witnessed; exit 3 means the entity still will not return and the problem is HA-side.
-- Monitoring closed 2026-09-11: `projects/miraie-ac/check_miraie_ac_available.sh` + a 30min threshold in `projects/healthcheck/healthcheck.sh` now alert by email/ntfy, with a Stats dashboard tile. Both outages that evening were invisible to every existing signal, which is why this watches the HA entity rather than the bridge.
-- Auto-fix shipped 2026-09-15, after the entity sat `unavailable` from 16:15 to 17:52 with the unit online: HA restarted at 16:15, and since Node-RED's connection to Mosquitto never dropped it republished neither discovery nor availability, while every watchdog run logged "healthy". (First written up as the watchdog's 15:40 restart; HA's recorder shows the entity was fine until HA restarted.) Running the fix script by hand cured it in a minute. `healthcheck.sh` now runs `fix_miraie_ac.sh --force` itself on the second consecutive unavailable run (~15min), once per outage, and only alerts if that does not cure it - with the verdict in the alert (exit 2 switch it on, exit 3 HA-side). Cured outages show as `autofixes_24h`/`last_autofix` on the tile, and 3+ in 24h alerts. `projects/miraie-ac/test_healthcheck_miraie_ac_autofix.sh` covers it (stubbed); the real fix path was verified by hand the same day, including ssh to the Pi with no agent as cron runs it.
-- Prevention shipped the same day: a Node-RED inject node (90s after start, then every 5min) wired into the MirAIe node, whose input handler re-fetches status from the MirAIe cloud API and republishes state + availability. That turned out better than the planned cache-and-replay flow: no broker credentials, no loop, no race with the startup publish, and the value is the cloud's `onlineStatus` rather than a remembered one. An HA birth-message hook was dropped because the refresh does not republish discovery, so it cannot bring back an entity HA lost on restart. `deploy_nodered_refresh_flow.sh` verified the refresh matches the reconnect (availability and the state fields HA reads) and `test_nodered_refresh_live.sh` saw HA recover from a forced `offline` in 180s with no restart. Details in Readme "Node-RED Watchdog".
-- Token expiry checked the same day: a MirAIe login lasts 84 days (`expiresIn` 7257599s, `check_miraie_token_lifetime.sh`). Every node-red restart logs in again, so it is not a practical risk, but it is covered anyway: `renew_miraie_login.sh` (xero cron, daily 11:05) restarts node-red once the login is 70 days old and alerts if that fails. Verified with a live `--force` renewal on 2026-09-15 (login now expires ~2026-12-08 23:08, renewal due ~2026-11-24).
-- HA-restart listener shipped 2026-10-09, after HA restarts took the AC down three times that day (10:15, 17:50 and 23:10, the last two from the Tinxy watchdog's 35min escalation restart), each cured only by the healthcheck auto-fix. `projects/miraie-ac/ha_birth_listener.sh`, run as the systemd --user unit `miraie-ha-birth` on xero, subscribes to HA's birth message (`homeassistant/status` = `online`, not retained). On each one it waits 60s, asks `check_miraie_ac_available.sh` whether the entity is down, and only then runs `fix_miraie_ac.sh --force`. The check matters because a Mosquitto restart also triggers a birth, but Node-RED reconnects then too, so the entity is fine. Alerting stays with the healthcheck, which retries and alerts if the listener's fix fails. `test_ha_birth_listener.sh` covers it with stubs. Verified live the same day: a synthetic birth with the entity healthy did nothing, and the listener run against a forced `offline` restarted node-red and brought the entity back in 28s. Not yet seen on a real HA restart.
-- Fix AC button added 2026-10-13 on Home > Bedroom (`button.miraie_ac_fixer_fix_ac`, asks for confirmation). HA in docker cannot run the script, so it is an MQTT button: `ha_birth_listener.sh` publishes its retained discovery config and also subscribes to `homelab/miraie-ac/fix`, running `fix_miraie_ac.sh --force` on a press (no check first; a re-press queued behind a fix within 30s is ignored). Output and verdict go to the unit's journal, not the dashboard. Verified live: a press through HA restarted node-red and the AC was back in 25s.
-**Next step:** confirm on the next real HA restart: `journalctl --user -u miraie-ha-birth` should show the fix within ~2min, and the healthcheck should log no auto-fix for that outage.
+
+#### Log
+- 2026-09-11: the unit-offline outage above (bridge fine, unit not talking to the MirAIe cloud); `fix_miraie_ac.sh` verdict logic and `test_miraie_ac_verdict.sh` written; Node-RED watchdog back on for the season.
+- 2026-09-11 (21:05): a second outage the same evening had a *different* cause and is worth keeping separate: the unit was online and answering commands while HA sat on `unavailable` for 37 minutes. The node publishes `availability` with retain=false and HA gates the entity on that topic, so an **HA** restart leaves HA with no availability value and it never recovers on its own unless it happens to be subscribed when Node-RED republishes `online`. Re-delivering that `online` fixes it instantly. The script now verifies the HA entity itself (not just the MQTT traffic, which is what made an earlier version of it report success while the entity was still down) and re-delivers the availability it witnessed; exit 3 means the entity still will not return and the problem is HA-side.
+- 2026-09-11: monitoring closed: `projects/miraie-ac/check_miraie_ac_available.sh` + a 30min threshold in `projects/healthcheck/healthcheck.sh` now alert by email/ntfy, with a Stats dashboard tile. Both outages that evening were invisible to every existing signal, which is why this watches the HA entity rather than the bridge.
+- 2026-09-15: auto-fix shipped, after the entity sat `unavailable` from 16:15 to 17:52 with the unit online: HA restarted at 16:15, and since Node-RED's connection to Mosquitto never dropped it republished neither discovery nor availability, while every watchdog run logged "healthy". (First written up as the watchdog's 15:40 restart; HA's recorder shows the entity was fine until HA restarted.) Running the fix script by hand cured it in a minute. `healthcheck.sh` now runs `fix_miraie_ac.sh --force` itself on the second consecutive unavailable run (~15min), once per outage, and only alerts if that does not cure it - with the verdict in the alert (exit 2 switch it on, exit 3 HA-side). Cured outages show as `autofixes_24h`/`last_autofix` on the tile, and 3+ in 24h alerts. `projects/miraie-ac/test_healthcheck_miraie_ac_autofix.sh` covers it (stubbed); the real fix path was verified by hand the same day, including ssh to the Pi with no agent as cron runs it.
+- 2026-09-15: prevention shipped the same day: a Node-RED inject node (90s after start, then every 5min) wired into the MirAIe node, whose input handler re-fetches status from the MirAIe cloud API and republishes state + availability. That turned out better than the planned cache-and-replay flow: no broker credentials, no loop, no race with the startup publish, and the value is the cloud's `onlineStatus` rather than a remembered one. An HA birth-message hook was dropped because the refresh does not republish discovery, so it cannot bring back an entity HA lost on restart. `deploy_nodered_refresh_flow.sh` verified the refresh matches the reconnect (availability and the state fields HA reads) and `test_nodered_refresh_live.sh` saw HA recover from a forced `offline` in 180s with no restart. Details in Readme "Node-RED Watchdog".
+- 2026-09-15: token expiry checked the same day: a MirAIe login lasts 84 days (`expiresIn` 7257599s, `check_miraie_token_lifetime.sh`). Every node-red restart logs in again, so it is not a practical risk, but it is covered anyway: `renew_miraie_login.sh` (xero cron, daily 11:05) restarts node-red once the login is 70 days old and alerts if that fails. Verified with a live `--force` renewal on 2026-09-15 (login now expires ~2026-12-08 23:08, renewal due ~2026-11-24).
+- 2026-10-09: HA-restart listener shipped, after HA restarts took the AC down three times that day (10:15, 17:50 and 23:10, the last two from the Tinxy watchdog's 35min escalation restart), each cured only by the healthcheck auto-fix. `projects/miraie-ac/ha_birth_listener.sh`, run as the systemd --user unit `miraie-ha-birth` on xero, subscribes to HA's birth message (`homeassistant/status` = `online`, not retained). On each one it waits 60s, asks `check_miraie_ac_available.sh` whether the entity is down, and only then runs `fix_miraie_ac.sh --force`. The check matters because a Mosquitto restart also triggers a birth, but Node-RED reconnects then too, so the entity is fine. Alerting stays with the healthcheck, which retries and alerts if the listener's fix fails. `test_ha_birth_listener.sh` covers it with stubs. Verified live the same day: a synthetic birth with the entity healthy did nothing, and the listener run against a forced `offline` restarted node-red and brought the entity back in 28s. Not yet seen on a real HA restart.
+- 2026-10-13: Fix AC button added on Home > Bedroom (`button.miraie_ac_fixer_fix_ac`, asks for confirmation). HA in docker cannot run the script, so it is an MQTT button: `ha_birth_listener.sh` publishes its retained discovery config and also subscribes to `homelab/miraie-ac/fix`, running `fix_miraie_ac.sh --force` on a press (no check first; a re-press queued behind a fix within 30s is ignored). Output and verdict go to the unit's journal, not the dashboard. Verified live: a press through HA restarted node-red and the AC was back in 25s.
 
 ### Tinxy: remove stale/decommissioned devices from account
 **Status:** Backlog
@@ -507,45 +612,63 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 **Priority:** P3
 
 **Why:** an always-visible, low-power household shopping list mounted somewhere shared (e.g. kitchen) - anyone can add/check off items via touch without opening an app. E-ink specifically for the always-on, no-glow, negligible-power display characteristics (fits the same "no app needed" philosophy as the physical GPIO buttons).
-**State:** idea only - had been in mind but never written down anywhere until now (2026-09-02). No hardware chosen, no research done yet.
+**State:** idea only - had been in mind but never written down anywhere until 2026-09-02. No hardware chosen, no research done yet.
 **Next step:** research touchscreen e-ink modules (existing all-in-one boards like Inkplate, vs. a bare e-ink panel + separate touch overlay + driving MCU) and how list state would sync back to HA/a shared list source.
 
 ### Automatic plant watering (balcony)
 **Status:** Backlog
 **Priority:** P1
 
-**Why:** long-standing idea (predates this list) - water the balcony plants automatically instead of by hand. Noted 2026-09-04.
-**State:** not started. **Blocked on plumbing, not electronics** - which is why it never got built despite being wanted from the start.
+**Why:** long-standing idea (predates this list) - water the balcony plants automatically instead of by hand.
+**State:** not started. **Blocked on plumbing, not electronics** - which is why it never got built despite being wanted from the start. The actuation half is mostly solved with hardware on hand; the blocker is getting water to the balcony at all.
+**Next step:** none - parked on the wall/pipe work. Revisit if that construction happens anyway for another reason, or if a balcony-sited reservoir turns out to be acceptable.
+
+#### The blocker
 - **The actuation half is already mostly solved with hardware on hand:** a spare Tinxy valve can be opened/closed from its electric switch or Tinxy's remote API, and a reservoir already exists in the bathroom.
 - **The blocker is getting water to the balcony at all** - the supply is in the bathroom, so any version needs a pipe run through a wall, i.e. drilling and laying pipe. That is construction work, not a weekend electronics build.
 - **The bathroom reservoir does not sidestep this** - it is on the wrong side of the same wall. The only variant that avoids drilling is a reservoir physically sited on the balcony (manual refilling, plus somewhere to put it) with a small submersible pump instead of a valve.
 - **Caveat on using the Tinxy valve:** it is cloud-dependent like the rest of the Tinxy gear (see "In-house smart switch to replace Tinxy" below) - watering would stop working during an ISP outage, and it inherits the same privacy concern. Fine for a first pass; an ESP32/ESPHome + solenoid valve would be the local-only version.
 
-**Design notes captured 2026-09-04** for whenever this unblocks - nothing built, but these are the decisions that usually decide whether such a build survives:
+#### Design notes (captured 2026-09-04)
+For whenever this unblocks - nothing built, but these are the decisions that usually decide whether such a build survives:
 - Use **capacitive** soil moisture sensors, not resistive - resistive probes pass current through wet soil and corrode through in weeks. Most common failure of this project.
 - **Water on a schedule with moisture as a veto**, rather than triggering on the sensor - a drifted or dead sensor then cannot flood the plants or starve them, it only loses the skip-if-already-wet optimisation.
 - Put a **hard max-runtime cutoff on the device itself** (ESPHome `on_turn_on` -> delay -> `turn_off`), not only in an HA automation. Given the bridge-flapping history here (Node-RED MQTT drops, the `white-noise-mqtt.py` reconnect loop), a valve that only closes when HA tells it to is a flood waiting for the next hiccup. Prefer a normally-closed valve so a power cut means no water.
 
-**Next step:** none - parked on the wall/pipe work. Revisit if that construction happens anyway for another reason, or if a balcony-sited reservoir turns out to be acceptable.
+#### Log
+- 2026-09-04: noted; design notes captured.
 
 ### Pigeon deterrent - motion-triggered sprinkler (balcony railing/parapet)
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** pigeons roost on the balcony railing/parapet. Original idea was image recognition + sprinkler. Noted 2026-09-04.
-**State:** not started.
+**Why:** pigeons roost on the balcony railing/parapet. Original idea was image recognition + sprinkler.
+**State:** not started. Plan is the dumb version first - a PIR sensor and a valve, no image recognition.
+**Next step:** none - gated on the same balcony water supply as the watering project, and on the runoff question.
+
+#### Notes
 - **Image recognition ruled out on `xero`** - Celeron N5105, no GPU, 8GB RAM with Immich's ML already disabled for exactly this reason, and a history of memory-pressure lockups. Continuous object detection there would put the whole homelab at risk. Real CV would need dedicated hardware (Pi 5 + Hailo hat, or a Coral TPU), roughly a Rs 15-25k project - not a weekend build.
 - **The CV is probably unnecessary anyway** - commercial motion-activated sprinklers (e.g. Orbit Yard Enforcer) are just a PIR sensor and a valve, no detection at all. Outdoor PIR does false-trigger on heat and moving shadows, but the cost of a false positive here is a cup of water. Build the dumb version first and only escalate to detection if it genuinely does not work.
 - **Shares the watering project's blocker** - a sprinkler on the balcony needs water at the balcony, the same wall/pipe run described above. If that ever gets solved, both projects unlock together.
 - **Two real-world constraints to settle before buying anything:** (1) **runoff** - the railing/parapet is an open edge, so spray falls onto whatever or whoever is below; worth confirming that is acceptable first, since it is the kind of thing that kills a project after it is built. (2) **habituation** - pigeons adapt fast to anything predictable, so randomise spray timing and duration rather than firing a fixed pattern.
-**Next step:** none - gated on the same balcony water supply as the watering project, and on the runoff question.
+
+#### Log
+- 2026-09-04: noted.
 
 ### Remote controlled curtains
 **Status:** Backlog
 **Priority:** P1
 
-**Why:** long-standing idea - open/close curtains from HA (and on a schedule/scene) instead of by hand. Noted 2026-09-04.
-**State:** not started. **Wanted: a clip-on "curtain robot" that sits on the existing rod** - no new track, no wiring, battery-powered. Reference product (user, 2026-09-25): [SwitchBot Curtain, Rod 2.0 version on Amazon.in](https://www.amazon.in/dp/B0FLQ46BQW). **Stuck between two bad options:** readymade robots are expensive, and a DIY build is difficult for this kind of curtain.
+**Why:** long-standing idea - open/close curtains from HA (and on a schedule/scene) instead of by hand.
+**State:** not started, parked on price. **Wanted: a clip-on "curtain robot" that sits on the existing rod** - no new track, no wiring, battery-powered. Reference product (user, 2026-09-25): [SwitchBot Curtain, Rod 2.0 version on Amazon.in](https://www.amazon.in/dp/B0FLQ46BQW). **Stuck between two bad options:** readymade robots are expensive, and a DIY build is difficult for this kind of curtain. Two options, both kept open: (1) clip-on robot, (2) DIY pulley + motor cord loop.
+**Next step:** before buying:
+- measure rod diameter and shape
+- count windows (one motor each)
+- weigh or estimate each curtain
+- check whether SwitchBot or an authorised Indian seller lists the Rod 2.0 cheaper than this reseller, or wait for a sale
+- check whether xero has working Bluetooth; if not, budget the ESP32 proxy
+
+#### Design notes
 - **The curtains are fabric on a rod with rings.** That is exactly what the "Rod" variant of these robots is for: it rides on the rod and pushes the rings along. The listing notes it does **not** fit square rods, so check the rod's shape and diameter first.
 - **Price is the blocker.** That listing is ₹8,199 **per motor**, from a reseller (brand shown as "Generic", 3 reviews). This looks like the same import markup found for Flic and Shelly in India.
 - **One-side opening, decided 2026-09-25.** Each curtain opens to one side as a single panel, not from the middle. So it is **one motor per window**, not two. The whole curtain rides on one robot, so check its weight against the motor's rating (SwitchBot quotes ~8kg max).
@@ -553,6 +676,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 - **Same form factor, other radios:** Aqara Curtain Driver E1 Rod (~US$100, Zigbee) and generic Tuya Zigbee rod robots (~US$60). These are only cheaper if a Zigbee coordinator gets bought anyway, for example for the "In-house smart switch to replace Tinxy" or door sensor projects. Otherwise BLE is the simpler route.
 - **DIY: a cord-loop drive, not a friction drive.** A friction drive gripping a ring rod is fiddly to make reliable. The cheaper DIY route (option 2 below) is the old traverse-rod trick: a closed cord loop runs between a motor-driven pulley at the stack end and a sprung idler at the far end, with only the lead ring clamped to the cord. It needs a socket near the window. The mechanics are drawn in `projects/curtains/cord-loop.html` (https://claude.ai/artifact/QwLF6BaaWgt55EFHwKPZqu). Part sizes there are proposals, not checked against the real rod. **End-of-travel switches: option B, decided 2026-09-25.** Beads crimped on the cord trip both switches at the motor end, so the switches, controller and motor form one cluster and no cable runs along the rod.
 
+#### Parts
 **Two options, both kept open.** Both are per window. The dashboard's parts table lists the two options together, so do not total it - tick one option's lines.
 
 ```parts
@@ -575,13 +699,13 @@ qty | item | est | note
 1 | Pulley: small ABS project box + hookup wire | 100-200 | local - holds the controller by the motor
 ```
 
-**Budget, per window:**
+#### Budget, per window
 - **Option 1, robot: about ₹6,000-8,200,** plus ₹0-900 once for the Bluetooth proxy.
 - **Option 2, pulley and motor: about ₹1,700-3,000,** or about ₹1,300-2,400 reusing a spare ESP32.
 
 The window count, still to be taken, multiplies either one.
 
-**Time:**
+#### Time
 - **Option 1: about 2-3 hours for the first window, then about 30 minutes for each extra one.**
   - **Bluetooth path to HA - 0.5-1.5h.** Check xero's Bluetooth first. If it cannot reach, flash a spare ESP32 with `bluetooth_proxy` and plug it in near the window.
   - **Mount and calibrate - 0.5h.** Clip it onto the rod and set the open and closed ends in SwitchBot's app once. After that, HA drives it locally.
@@ -592,24 +716,33 @@ The window count, still to be taken, multiplies either one.
   - **Controller and firmware - 2-4h.** ESPHome's `endstop` cover, with a maximum run time as a backstop.
   - **Tuning and HA - 2-3h.** Get the travel speed and stop points right, then set up the same automations as option 1.
 
-**Difficulty:**
+#### Difficulty
 - **Option 1: easy.** Everything is off the shelf and HA supports it natively. The only real risk is fit (rod shape, ring clearance, curtain weight), which is why measuring comes first.
 - **Option 2: medium.** The software is easy. The mechanical fitting is the work: cord slip, tension, and rod brackets sitting in the cord's path. It needs mains power at the window but no charging, and it is fully local.
 
-**Next step:** parked on price. Before buying: measure rod diameter and shape, count windows (one motor each), weigh or estimate each curtain, and check whether SwitchBot or an authorised Indian seller lists the Rod 2.0 cheaper than this reseller, or wait for a sale. Also check whether xero has working Bluetooth; if not, budget the ESP32 proxy.
+#### Log
+- 2026-09-04: noted.
+- 2026-09-25: user picked the SwitchBot Curtain Rod 2.0 listing as the reference product; decided one-side opening (one motor per window) and end-of-travel switch option B for the DIY build.
 
 ### Door open/close and lock status (main, safety, balcony)
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** nothing in HA currently knows whether any door in the house is shut. The everyday want is "was the balcony door left open with the AC running" and "is the main door still standing open" and "did anyone actually lock the front door"; the later want is an alert if the front door opens while nobody is home. Noted 2026-09-12. Everything downstream already exists - Mosquitto, HA, and the self-hosted ntfy push path built for clawlight - so this project is only about getting three binary states into MQTT honestly.
+**Why:** nothing in HA currently knows whether any door in the house is shut. The everyday want is "was the balcony door left open with the AC running" and "is the main door still standing open" and "did anyone actually lock the front door"; the later want is an alert if the front door opens while nobody is home. Everything downstream already exists - Mosquitto, HA, and the self-hosted ntfy push path built for clawlight - so this project is only about getting three binary states into MQTT honestly.
+**State:** idea only, nothing bought or built. Design is settled on paper: a door reed plus a bolt sensor in the keeper per door, giving **open / shut but unlocked / locked**, most likely on a wired ESP32/ESPHome node (option A). **The blocker is power and wiring, not the sensing.**
+**Next step:**
+- Take the strike plates off both entrance doors - measure the main door's strike box depth against the deadbolt's full throw, and see what is behind the grill door's slot.
+- Check for a socket near the entrance and measure the grill door's closed gap.
+- Then bench-test magnet + reed and magnet + hall sensor against the actual bolts before chiselling or drilling anything.
 
-**State:** idea only, nothing bought or built. Three doors, and they are deliberately listed separately because they are not the same problem:
+#### The three doors
+Three doors, and they are deliberately listed separately because they are not the same problem:
 - **Main door** - hinged wooden door, **mortise lock with deadbolt**. Leaf and frame meet flush, so a plain surface-mount reed contact on the hinge-opposite side is the textbook case. Easiest of the three.
 - **Safety door** - hinged steel grill door outside it, also a **mortise lock with deadbolt**. **The metal is the complication.** A reed contact screwed straight onto a steel frame has its magnet's flux shunted by the surrounding metal and the effective operating gap collapses - a pair that works fine on the wooden door can sit there reading "open" while the grill is actually shut. Fix is either a wide-gap contact sold for metal doors (18-25mm rated) or packing both halves out on a few mm of non-ferrous spacer (plastic or wood shim). Grill doors also often close with a sloppier, less repeatable gap than a solid door, which is the second reason to buy gap headroom here rather than the cheapest pair.
 - **Balcony door** - sliding, **single-point sliding latch** (a hook/lever on the panel engaging a keeper on the fixed frame). Reed on the fixed frame, magnet on the moving panel where it lands when fully closed. Mechanically the easiest fit of the three (the closed position is repeatable and the gap is fixed by the track), and it answers exactly the question worth asking, since this is the door most likely to be left a few cm ajar.
 
-**Lock state - decided 2026-09-15: sense the bolt inside the keeper, on the frame side.** A reed on the door only says shut, and shut-but-unlocked is the state actually worth an alert. All three locks push a bolt or hook into a keeper on the fixed frame, and that is where to sense it:
+#### Lock state - sense the bolt inside the keeper (decided 2026-09-15)
+**Sense the bolt inside the keeper, on the frame side.** A reed on the door only says shut, and shut-but-unlocked is the state actually worth an alert. All three locks push a bolt or hook into a keeper on the fixed frame, and that is where to sense it:
 - **Why the keeper, not the lock body or the knob.** A bolt sitting in the keeper proves shut *and* locked in one reading - a deadbolt thrown while the door stands open sticks out into air and correctly reads unlocked. It also proves the bolt went fully in, which a sensor on the inside thumb-turn cannot (a single key turn, or a bolt jammed short on a swollen frame, both look locked from the knob). And the frame never moves, so no wire crosses a hinge and nothing on the leaf needs a battery.
 - **Non-contact only.** A small neodymium disc magnet (~5x2mm) set into a shallow pocket drilled in the bolt's end face, with the sensor behind the keeper. Recessed, not stuck on the face: a disc proud of a retracted bolt sits in the few-mm gap between door edge and frame and can scrape as the door swings shut. Deliberately *not* a lever microswitch the bolt presses: one placed a millimetre too shallow stops the deadbolt throwing fully, and a sensor that can stop the front door locking is worse than no sensor.
 - **Main door (wooden frame):** drill a small hole straight back from the back wall of the strike box and push a plastic-bodied reed into it, **its long axis along the bolt's travel** so the magnet points at its end - a reed lying crosswise with the magnet at its middle has a dead spot where both blade tips take the same pole and never close, however near the bolt gets. The reed must close only at *full* throw - these deadbolts throw in two key turns, and one turn must read unlocked - so the magnet's reach has to land between the full-throw gap and the one-turn gap. **Steel behind the magnet costs nothing; steel around it shortens reach** (a magnet recessed into a steel bolt loses more than one in brass), which moves that number but not the design. Check the bolt with a fridge magnet, then find the real reach with a multimeter on continuity before drilling anything.
@@ -618,14 +751,17 @@ The window count, still to be taken, multiplies either one.
 
 That gives every door three states - **open / shut but unlocked / locked** - from two sensors each.
 
-**Smart lock considered and rejected - Tinxy door lock (₹4,699).** Its own listing describes its door sensor as "Opened/Closed", the same thing a ₹60 reed pair reports, not bolt state; it is mains-powered (a reviewer notes it falls back to the key without inverter backup); and it carries the same cloud/privacy concern as the rest of the Tinxy gear. The deeper reason holds for any smart lock, local ones included (Aqara, Nuki - and Nuki targets euro-profile cylinders that Indian mortise locks mostly are not, on top of doubtful India availability): **this project only needs to read.** A compromised sensor can lie, or leak when the house is empty; a compromised network-operable lock can open the front door. Sensing-only caps the worst case at privacy.
+#### Smart lock considered and rejected
+**Tinxy door lock (₹4,699).** Its own listing describes its door sensor as "Opened/Closed", the same thing a ₹60 reed pair reports, not bolt state; it is mains-powered (a reviewer notes it falls back to the key without inverter backup); and it carries the same cloud/privacy concern as the rest of the Tinxy gear. The deeper reason holds for any smart lock, local ones included (Aqara, Nuki - and Nuki targets euro-profile cylinders that Indian mortise locks mostly are not, on top of doubtful India availability): **this project only needs to read.** A compromised sensor can lie, or leak when the house is empty; a compromised network-operable lock can open the front door. Sensing-only caps the worst case at privacy.
 
+#### Power and wiring options
 **The blocker is power and wiring, not the sensing** - same shape as most projects here. Three ways to do it:
 - **(A) One wired ESP32/ESPHome node per location.** The main and safety doors share a doorway, so a single ESP32 at the entrance covers both with ~1m runs - four inputs (two door reeds, the main door bolt reed, the safety door hall sensor). The balcony door then needs either its own node or a long wire run across the flat. A reed is a dry contact, so cable length costs nothing electrically - it is purely about where wire can be run without it looking terrible. Cheapest per door, no batteries ever, and it matches the existing preference for WiFi-native devices that join the current infra directly.
 - **(B) Battery Zigbee door sensors** (Aqara/Tuya class, ~₹700-1200 each). Zero wiring, coin-cell life measured in a year or more, and the only option that can go on a door with no power anywhere near it. Cost is a Zigbee coordinator (~₹1500-2500) that does not exist yet - but note the standing synergy: both "Remote controlled curtains" and "In-house smart switch to replace Tinxy" are already parked partly on the same missing coordinator. Three projects sharing one purchase changes that maths.
 - **(C) Battery WiFi door sensor / deep-sleeping ESP32** - the tempting middle ground, and the one to avoid. Waking, associating to WiFi and publishing takes a second or more per event and costs far more energy than a Zigbee radio's burst, so a door that gets used all day eats cells in weeks. ESP-NOW fixes the energy side but then needs its own always-on gateway, which is a whole extra moving part for three binary sensors.
 - **Lock sensing tips it firmly towards (A).** A bolt sensor lives inside a strike box, which suits a wired reed or hall sensor and not a coin-cell Zigbee puck. A few Zigbee contact sensors accept an external reed on terminals, but that is the wired build again with a battery added.
 
+#### ESP32/ESPHome traps (option A)
 **If it goes the ESP32/ESPHome route (A), the traps are known ones:**
 - **Avoid the strapping pins.** A reed holding GPIO0/2/12/15 low at power-up can stop the board booting at all - and it would do it only when that door happens to be shut, which is a miserable thing to debug. Use GPIO25/26/32/33 for the reeds.
 - Wire reed to GND against `INPUT_PULLUP`, no external resistor needed, and put `delayed_on`/`delayed_off` filters (~100ms) on every input - reeds bounce, and a long run to a door frame is a decent antenna.
@@ -633,10 +769,17 @@ That gives every door three states - **open / shut but unlocked / locked** - fro
 - Keep both halves of each sensor on non-moving surfaces (frame and leaf). Nothing should cross a hinge; that is the failure that shows up months later as an intermittent.
 - **Publish with an MQTT last-will.** This is the same staleness lesson as the health LED project, and it bites harder here: a dead sensor node that leaves a retained "closed" behind is worse than no sensor, because it actively asserts the safe answer. ESPHome's MQTT availability topic handles this for free - HA shows *unavailable* instead of a confident lie.
 
-**Automations worth having once the three states exist:** ntfy push if the main door stays open past a few minutes; **shut but unlocked** late at night, or when the last person leaves; balcony door open while the AC is on (the Miraie integration is already there); front door opening while everyone is out; and the open/closed tiles on the consolidated status dashboard.
+#### Automations worth having
+Once the three states exist: ntfy push if the main door stays open past a few minutes; **shut but unlocked** late at night, or when the last person leaves; balcony door open while the AC is on (the Miraie integration is already there); front door opening while everyone is out; and the open/closed tiles on the consolidated status dashboard.
 
-**Unknowns to settle before buying anything:** whether there is a power socket near the entrance at all (decides A vs B on its own), how far the balcony door is from that entrance node, what the actual closed gap is on the grill door (measured with it shut - that number picks the contact), **how deep the main door's strike box is** against the deadbolt's full throw, and **what is behind the grill door's strike slot** - a cavity, a welded box, or solid steel.
+#### Unknowns to settle before buying anything
+- whether there is a power socket near the entrance at all (decides A vs B on its own)
+- how far the balcony door is from that entrance node
+- what the actual closed gap is on the grill door (measured with it shut - that number picks the contact)
+- **how deep the main door's strike box is** against the deadbolt's full throw
+- **what is behind the grill door's strike slot** - a cavity, a welded box, or solid steel
 
+#### Parts
 ```parts
 qty | item | est | note
 3 | Surface-mount magnetic reed door contact (pair) | 150-250 | local - alarm/security shop; get a wide-gap/metal-door type for the grill door
@@ -653,58 +796,76 @@ qty | item | est | note
 
 Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32 way - all of it loose local stock with nothing to order ahead. The Zigbee path (B) is cheaper in effort and dearer in rupees, and only makes sense bought together with the curtain/switch projects.
 
-**Next step:** take the strike plates off both entrance doors - measure the main door's strike box depth against the deadbolt's full throw, and see what is behind the grill door's slot. Also check for a socket near the entrance and measure the grill door's closed gap. Then bench-test magnet + reed and magnet + hall sensor against the actual bolts before chiselling or drilling anything.
+#### Log
+- 2026-09-12: noted.
+- 2026-09-15: decided to sense lock state at the bolt inside the keeper, on the frame side.
 
 ### Network device + access map
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** there is no single place that answers "what is on the network, and what can each thing reach or be reached by". Those facts are spread across `docker-compose.yml`, Readme, Pi-hole, the router, and past PROJECTS.md entries. The map is the answer to reach for when a device misbehaves, when something new joins the LAN, or when deciding whether a change widens exposure. Noted 2026-09-15.
-
+**Why:** there is no single place that answers "what is on the network, and what can each thing reach or be reached by". Those facts are spread across `docker-compose.yml`, Readme, Pi-hole, the router, and past PROJECTS.md entries. The map is the answer to reach for when a device misbehaves, when something new joins the LAN, or when deciding whether a change widens exposure.
 **State:** partly done, and deliberately kept out of git.
 - **`docs/hardware.md` exists (2026-08-25) but is gitignored.** It was held back from the public repo on 2026-08-26 (commit `b40a457`) pending `docs/security_findings_2026-08-25.md`, also gitignored. The file adds no new individual facts, but collecting already-public ones in one place makes them easier to use. That review never concluded, so the hold still stands.
 - **It is a hardware inventory, not an access map.** It covers the three managed devices (xero, the wol-sender Pi, the iPhone) with specs and services, and nothing about access.
 - **It is also three weeks stale.** It predates the MacBook's role in clawlight, the ntfy and HA tailnet sidecars going live, clawlight itself, and Node-RED's watchdog being re-enabled.
 - **Unmanaged devices are missing entirely.** The router, the WiFi extender, both Tinxy units, the MirAIe AC, the Tinxy valve, and anything else that got a DHCP lease are not listed.
 
-**What the map should add on top of the inventory, per device:**
+**Next step:** pull the router DHCP table and Pi-hole client list, diff them against `docs/hardware.md`, and extend the file with the access columns below.
+
+#### What the map should add on top of the inventory, per device
 - **Address:** LAN IP, static or DHCP reservation, tailnet name if any.
 - **Inbound:** listening ports, reachable from where (localhost / LAN / tailnet / internet), and what auth guards each one.
 - **Outbound:** which cloud it depends on (Tinxy cloud, MirAIe cloud, the ntfy.sh APNs relay, Dropbox for backups). This is also the "what breaks in an ISP outage" list.
 - **Credentials:** where they live, as a *pointer* to the Vaultwarden item, never the secret.
 
+#### Method
 **Build it from the network, not from memory.** Seed the list from the router's DHCP table and Pi-hole's client list, and check exposure with a port scan from a LAN client and from a tailnet-only client. The documented view and the real one are what should be compared. A device nobody remembers adding is the most useful thing this could find.
 
-**Keep it gitignored.** Extend `docs/hardware.md` (or a sibling `docs/network_map.md` with a gitignore line) rather than committing it. Listing which admin panels still lack auth (finding #2 in the security review) is precisely what should not be in a public repo. Revisit only if the repo goes private or finding #2 gets fixed.
+#### Keep it gitignored
+Extend `docs/hardware.md` (or a sibling `docs/network_map.md` with a gitignore line) rather than committing it. Listing which admin panels still lack auth (finding #2 in the security review) is precisely what should not be in a public repo. Revisit only if the repo goes private or finding #2 gets fixed.
 
-**Next step:** pull the router DHCP table and Pi-hole client list, diff them against `docs/hardware.md`, and extend the file with the access columns above.
+#### Log
+- 2026-08-25: `docs/hardware.md` written.
+- 2026-08-26: `docs/hardware.md` held back from the public repo (commit `b40a457`) pending the security review.
+- 2026-09-15: noted.
 
 ### Clawlight: a bootstrap script for a machine that has no hooks yet
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** `clawlight/setup-mac-focus-agent.sh` assumes the ten Claude Code hooks already exist - it reads `CLAWLIGHT_SERVER_URL` and `CLAWLIGHT_HOST_NAME` back out of them and only rewrites their paths, and it exits with *"are the clawlight hooks set up on this machine?"* if `~/.claude/settings.json` has none. So the one step that is still by hand is the first one, and it is the fiddliest: ten hooks, each with two env vars embedded in the command, each mapped to the right state. Noted 2026-09-19, when the personal MacBook turned out to have no clawlight at all.
-
+**Why:** `clawlight/setup-mac-focus-agent.sh` assumes the ten Claude Code hooks already exist - it reads `CLAWLIGHT_SERVER_URL` and `CLAWLIGHT_HOST_NAME` back out of them and only rewrites their paths, and it exits with *"are the clawlight hooks set up on this machine?"* if `~/.claude/settings.json` has none. So the one step that is still by hand is the first one, and it is the fiddliest: ten hooks, each with two env vars embedded in the command, each mapped to the right state.
 **State:** idea only. `clawlight/README.md` step 3 documents the wiring, so this is writing down what the README already tells a human to do by hand.
+**Next step:** write it as `clawlight/setup-clawlight-hooks.sh`, driven by the same ten-event list the README documents, and use the personal MacBook as its first real test.
 
-**What it would do:**
+#### What it would do
 - **Write the ten hooks** into the global `~/.claude/settings.json` - `UserPromptSubmit`/`PostToolUse` -> active, `Stop` -> waiting, `Notification`/`PermissionRequest` -> **input_needed** (the mapping that is easiest to get wrong), `SessionEnd` -> end, and the four subagent/task events -> task_start/task_end.
 - **Embed both env vars in every command.** Hook commands do not source a shell profile, so `CLAWLIGHT_SERVER_URL` and `CLAWLIGHT_HOST_NAME` go inline or the hook silently reports nowhere.
 - **Back up `settings.json` first and be re-runnable,** matching the existing script: rewriting a hook that is already correct should change nothing, and it must merge into whatever hooks are already configured rather than replacing the file.
 - **Then hand off** to `setup-mac-focus-agent.sh`, which already covers the clone paths, the terminal detection and the launchd agent - or simply tell the user to run it next.
 - **Work on Linux too.** xero's own hooks were wired by hand as well; the same script should serve any new machine, with the focus-agent half staying Mac-only.
 
-**Verify it the way the existing tooling does:** `clawlight/diagnose-mac-focus.sh` already walks the Mac path step by step, and the server shows whether a host is reporting - a bootstrap that claims success while nothing appears on the page is the failure worth designing against.
+#### Verification
+Verify it the way the existing tooling does: `clawlight/diagnose-mac-focus.sh` already walks the Mac path step by step, and the server shows whether a host is reporting - a bootstrap that claims success while nothing appears on the page is the failure worth designing against.
 
-**Next step:** write it as `clawlight/setup-clawlight-hooks.sh`, driven by the same ten-event list the README documents, and use the personal MacBook as its first real test.
+#### Log
+- 2026-09-19: noted, when the personal MacBook turned out to have no clawlight at all.
 
 ### Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** asked 2026-09-18 whether a big screen could be made into a wall clock with an ESP32. It can, but not any screen, and as a *clock alone* it loses to a ₹1500 shop clock. It only earns its place if it also shows what nothing else in the house shows at a glance: clawlight, healthcheck state, AC, power-on-battery.
+**Why:** asked whether a big screen could be made into a wall clock with an ESP32. It can, but not any screen, and as a *clock alone* it loses to a ₹1500 shop clock. It only earns its place if it also shows what nothing else in the house shows at a glance: clawlight, healthcheck state, AC, power-on-battery.
+**State:** idea only, and expected to sit here a long time - in the user's own words, it is not a priority and it would not help day to day. Options are priced (cheapest real build: a 64x32 HUB75 panel on the freed aarti board and supply, ~₹1000-1800).
+**Next step:** none until the shape is decided - clock-first (buy one) or dashboard-first (build the matrix). If dashboard, start by listing what actually deserves wall space, since a 64x32 grid holds very little text.
 
-**First, what an ESP32 can actually drive.** No HDMI, ever - a TV or monitor needs a Pi or mini PC, not an ESP32. That leaves three kinds of screen:
+#### Verdict to record
+If it is only a clock, buy one. Build the matrix only if it is a *homelab display* - the data is already there (`homelab/healthcheck/overall`, `clawlight/state`, the AC and power entities all publish over MQTT), so the work is a renderer, not plumbing. This overlaps two entries already here: **shopping list display** (which wants e-paper, not this) and **consolidated status dashboard** (which this would be the physical face of). Decide them together rather than buying two screens.
+
+**Why this will sit here a long time, in the user's own words (2026-09-19): it is not a priority and it would not help day to day.** That is the honest reason, not effort and not parts - a clock is a solved problem in this house, and a nicer-looking one changes nothing about a day. Worth saying out loud so it is not picked up later on the assumption that something was blocking it. Recorded because it costs nothing to keep and the pixel maths is the part nobody wants to redo.
+
+#### What an ESP32 can actually drive
+No HDMI, ever - a TV or monitor needs a Pi or mini PC, not an ESP32. That leaves three kinds of screen:
 - **HUB75 LED matrix panels** - the right answer for a wall clock. Bright enough to read across a room in daylight, fast, and cheap per area. `ESP32-HUB75-MatrixPanel-I2S-DMA` drives them; a 64x32 P3 panel is 192x96mm (about the footprint of a paperback) and a 64x64 is 192x192mm. Panels chain, so area scales linearly with cost.
 - **E-paper** - gorgeous, no glow, readable in sun, but refreshes in seconds, so a second hand is out and even a minute tick is a visible flash. It suits the **shopping list display** idea above far better than a clock, and a 7.5" 800x480 raw panel plus the ESP32 driver board lands around ₹6000-9000 - for a screen the size of a paperback.
   - **E-paper plus a small lamp, suggested 2026-09-18, is a better idea than it sounds.** E-paper is reflective, like paper: in a dark room it shows nothing at all, which is the usual reason it loses to a glowing display. A ~1W lamp over it fixes exactly that, and keeps what makes e-paper worth having - it stays paper-like by day and is lit only when someone is there. 1W continuous is ~0.7 kWh/month, around ₹5, so even left on it is nothing; on a PIR it is less.
@@ -714,8 +875,10 @@ Roughly **₹1600-2600** for both nodes with lock sensing, going the wired ESP32
   - **It does not fix the refresh limits** - still no seconds, still ghosting on a partial refresh. This makes e-paper viable *at night*, not suddenly a clock.
 - **SPI/RGB LCDs** - 3.5" to 7", fine on a desk, not a wall.
 
-**Prices checked 2026-09-18** (India, incl. GST): a 64x64 P3 panel is **₹2269** at Hubtronics (192x192mm), a 64x32 P3 panel is **₹600-1200** (192x96mm), and a MAX7219 4-in-1 red dot matrix (32x8) is about **₹260**.
+#### Prices (checked 2026-09-18)
+India, incl. GST: a 64x64 P3 panel is **₹2269** at Hubtronics (192x192mm), a 64x32 P3 panel is **₹600-1200** (192x96mm), and a MAX7219 4-in-1 red dot matrix (32x8) is about **₹260**.
 
+#### Parts
 **The first version of this entry priced two 64x64 panels at ₹6000-7000, and that is not worth it** - rejected 2026-09-18. The cheap configurations are the ones to consider, and they only work because the aarti lights board and its 5V 4A supply are freed after the festival:
 
 ```parts
@@ -728,7 +891,8 @@ qty | item | est | note
 
 **So ~₹1000-1800 built from freed parts, ~₹2500 buying everything new.** The even cheaper option is a **MAX7219 chain at ₹260-520 plus a board** - a 32x8 or 64x8 red ticker that scrolls time and one line of status for well under ₹1000. It is red-only, so it cannot use colour as the signal the way clawlight and the health LED do, and its digits are ~3cm tall against ~7cm on the panel.
 
-**The zero-cost option: digits built from the leftover WS2812B (recorded 2026-09-19, and honestly the least likely to get built).** The aarti reel is 60 LEDs/m, so the ~2m spare is about 120 pixels. Two layouts fit:
+#### The zero-cost option: digits from the leftover WS2812B
+Recorded 2026-09-19, and honestly the least likely to get built. The aarti reel is 60 LEDs/m, so the ~2m spare is about 120 pixels. Two layouts fit:
 - **True seven-segment** - 3 pixels per segment, 21 per digit, 4 digits plus a 2-pixel colon = **86 pixels** (~1.4m), digits ~10cm tall. At 4 px/segment it is 114 pixels, which fits 2m with nothing spare.
 - **Zigzag matrix** - 7 rows of 16 laid behind a diffuser, **112 pixels**, ~27cm x 10cm, digits drawn in software with a 3x5 font, ~7cm tall.
 
@@ -739,66 +903,72 @@ qty | item | est | note
 - **The 16-wide matrix (112) no longer fits.** A stacked one does: `HH` over `MM`, 6 columns by 11 rows = **66 pixels**, portrait instead of landscape, ~10cm wide and ~18cm tall.
 - **Measure the actual leftover before trusting any of this** - 120 pixels is inferred from the reel being 60/m, not counted.
 
-**Why this will sit here a long time, in the user's own words (2026-09-19): it is not a priority and it would not help day to day.** That is the honest reason, not effort and not parts - a clock is a solved problem in this house, and a nicer-looking one changes nothing about a day. Worth saying out loud so it is not picked up later on the assumption that something was blocking it. Recorded because it costs nothing to keep and the pixel maths is the part nobody wants to redo.
-
-**Verdict to record:** if it is only a clock, buy one. Build the matrix only if it is a *homelab display* - the data is already there (`homelab/healthcheck/overall`, `clawlight/state`, the AC and power entities all publish over MQTT), so the work is a renderer, not plumbing. This overlaps two entries already here: **shopping list display** (which wants e-paper, not this) and **consolidated status dashboard** (which this would be the physical face of). Decide them together rather than buying two screens.
-
-**Next step:** none until the shape is decided - clock-first (buy one) or dashboard-first (build the matrix). If dashboard, start by listing what actually deserves wall space, since a 64x32 grid holds very little text.
+#### Log
+- 2026-09-18: asked whether a big screen could be made into a wall clock with an ESP32. Prices checked; the first version of this entry (two 64x64 panels at ₹6000-7000) rejected in favour of the cheap configurations. E-paper plus a small lamp suggested.
+- 2026-09-19: zero-cost WS2812B digits option recorded, then corrected the same day - the pegboard clawlight only needs ~30 pixels, so both builds fit on the one reel, but the 16-wide matrix no longer does. User said it is not a priority and would not help day to day.
 
 ### Ganapati 2027: solar system / general relativity decoration
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** next year's makhar theme, picked while this year's sound-reactive strip was still up. The solar system as spacetime curvature - planets orbiting in a warped grid - is a decoration and a physics demo at once, and it is the kind of thing visiting kids will actually queue up for. Noted 2026-09-18, roughly a year ahead, which is the point: this year's shortlist was decided partly by what could still arrive in time.
-
+**Why:** next year's makhar theme, picked while this year's sound-reactive strip was still up. The solar system as spacetime curvature - planets orbiting in a warped grid - is a decoration and a physics demo at once, and it is the kind of thing visiting kids will actually queue up for. Noted roughly a year ahead, which is the point: this year's shortlist was decided partly by what could still arrive in time.
 **State:** idea only, nothing decided. Ganesh Chaturthi 2027 is around early September - confirm the date before planning backwards from it.
+**Next step:** nothing until mid-2027. Then: fix the makhar size, decide the grid resolution, and price the pixel count. Order anything long-lead by July, which is the lesson from this year's shortlist.
 
-**Three builds, and they combine well:**
+#### Three builds, and they combine well
 - **(A) The spandex gravity well.** Stretchy fabric over a hoop, a heavy mass in the middle, marbles rolled in to spiral around it. The classic, and the only one that is *interactive* - people will play with it for far longer than they will look at a light. Cheap (fabric, a hoop, ball bearings), no electronics at all, and it needs someone to re-launch marbles, which at a festival is a feature rather than a chore.
 - **(B) A WS2812 grid as the curved spacetime sheet.** Strips laid in a grid behind the makhar, rendered as a warped mesh with planets moving along their orbits, light bending near the sun, and a ripple when two masses merge. This is the one that reuses everything already learned: ESP32 + WLED, and the aarti Tier 3 renderer's shape (`aarti-render.py` streams every pixel over realtime UDP, with WLED's own boot preset as the fallback if xero is down). The work is the renderer, not the wiring.
 - **(C) Planets as glowing spheres, using the pixel strings.** WS2811 bullet-pixel strings are made for this: one pixel inside each ping-pong ball or frosted acrylic sphere, one data line for the whole set, each planet its own colour and brightness. Hangs in front of, or through, the grid in (B) and gives the display depth that a flat strip cannot.
 
-**Be honest about the physics, because someone will ask.** The rubber-sheet demo is the standard picture and it is *wrong* in an interesting way: it explains gravity by using gravity (the marbles fall because the Earth pulls them down), and what it really draws is closer to a potential well than curved spacetime. Two cheap additions fix it:
+#### Be honest about the physics
+Someone will ask. The rubber-sheet demo is the standard picture and it is *wrong* in an interesting way: it explains gravity by using gravity (the marbles fall because the Earth pulls them down), and what it really draws is closer to a potential well than curved spacetime. Two cheap additions fix it:
 - **A gravitational lens.** A shaped acrylic or glass lens - the base of a wine glass is the classic stand-in - held over a picture or over the LED grid distorts the image the way a real mass distorts light. That *is* general relativity, not an analogy, and it is the cheapest true demo of the three.
 - **A sign, and someone able to explain it.** "The sheet is an analogy; the light bending is the real thing" turns the flaw into the interesting part.
 
-**Constraints already known from this year:**
+#### Constraints already known from this year
 - **Mains only, no UPS**, and the renderer on xero means the display dies if xero does - hence a WLED boot preset that stands on its own.
 - **Power budget:** current cap in software, strip power never through a breadboard or dupont wires, and size the supply from the pixel count (the aarti entry has the real numbers).
 - **Everything local.** Last year's build was the first fully cloud-free light in the house; keep that.
 - **A soldering iron, decent power supply and 2m of spare WS2812B are already owned,** so only the new parts count.
 
-**Rough shape of the spend:** the fabric-and-marbles half is a few hundred rupees. The lit half depends entirely on pixel count - a grid dense enough to read as a curved mesh is the one line that can quietly run into thousands, so decide the grid size early and price *that* before anything else. Pixel strings and spheres are the cheap, high-impact part.
+#### Rough shape of the spend
+The fabric-and-marbles half is a few hundred rupees. The lit half depends entirely on pixel count - a grid dense enough to read as a curved mesh is the one line that can quietly run into thousands, so decide the grid size early and price *that* before anything else. Pixel strings and spheres are the cheap, high-impact part.
 
-**Next step:** nothing until mid-2027. Then: fix the makhar size, decide the grid resolution, and price the pixel count. Order anything long-lead by July, which is the lesson from this year's shortlist.
+#### Log
+- 2026-09-18: noted, roughly a year ahead.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** a wall clock that is simply always right, with no twice-a-year fiddling and no drift to correct by hand. Noted 2026-09-18.
+**Why:** a wall clock that is simply always right, with no twice-a-year fiddling and no drift to correct by hand.
+**State:** idea only. **Feasibility: settled - it works, and it is a well-trodden build.** Several independent projects do exactly this ([ESPCLOCK](https://hackaday.io/project/16742-espclock), [jim11662418/ESP8266-WiFi-Analog-Clock](https://github.com/jim11662418/ESP8266-WiFi-Analog-Clock), [randseq.org's write-up](https://www.randseq.org/2016/10/hacking-analog-clock-to-sync-with-ntp_29.html)).
+**Next step:** open a spare movement and confirm the coil can be freed from its quartz chip and pulsed by hand, before designing anything around it. That one bench test decides the whole project.
 
-**State:** idea only. **Feasibility: settled - it works, and it is a well-trodden build.** Researched 2026-09-18; several independent projects do exactly this ([ESPCLOCK](https://hackaday.io/project/16742-espclock), [jim11662418/ESP8266-WiFi-Analog-Clock](https://github.com/jim11662418/ESP8266-WiFi-Analog-Clock), [randseq.org's write-up](https://www.randseq.org/2016/10/hacking-analog-clock-to-sync-with-ntp_29.html)).
+#### How it works
+It is simpler than it sounds. A cheap quartz movement drives its hands with a [Lavet-type stepping motor](https://en.wikipedia.org/wiki/Lavet-type_stepping_motor): one coil that gets an alternating-polarity pulse once a second. The retrofit is to cut the coil off the movement's own quartz chip and solder its two leads to an H-bridge driven by two ESP32 pins. Every pulse advances the second hand one step, so "set the clock" means "send the right number of pulses".
 
-**How it works, and it is simpler than it sounds.** A cheap quartz movement drives its hands with a [Lavet-type stepping motor](https://en.wikipedia.org/wiki/Lavet-type_stepping_motor): one coil that gets an alternating-polarity pulse once a second. The retrofit is to cut the coil off the movement's own quartz chip and solder its two leads to an H-bridge driven by two ESP32 pins. Every pulse advances the second hand one step, so "set the clock" means "send the right number of pulses".
-
-**The two real problems:**
+#### The two real problems
 - **The board never knows where the hands are.** It only sends pulses; nothing reads the dial back. Two ways out: keep the position in flash and never lose power, or **home the hands** - a magnet on a hand past a reed switch or hall sensor, so on every boot it steps to 12:00 and then fast-forwards to NTP time. With power cuts as frequent as they are here, the homing sensor is the version worth building; storing position in flash alone means a clock that is confidently wrong after every outage.
 - **Catching up is slow, and only forwards.** A Lavet motor cannot run backwards, and only steps reliably up to some tens of pulses a second. At ~20 steps/s, six hours of catching up takes about 18 minutes of whirring. Going back an hour means either 11 hours of fast-forward or stopping the hands and waiting for the time to come round. Fine for a clock that is right afterwards, but it is not instant.
 
-**Where it gets its time.** `pool.ntp.org` needs the ISP; pointing it at xero instead makes it work during an internet outage, but then it needs xero. Either way it needs the router. xero does not serve NTP today (Pi-hole is DNS only), so the local-time-source version means running chrony there - small, and useful to more than this project.
+#### Where it gets its time
+`pool.ntp.org` needs the ISP; pointing it at xero instead makes it work during an internet outage, but then it needs xero. Either way it needs the router. xero does not serve NTP today (Pi-hole is DNS only), so the local-time-source version means running chrony there - small, and useful to more than this project.
 
 **In India there is no radio-clock shortcut (checked 2026-09-18).** The cheap US "atomic" clocks are not WiFi at all - they receive [WWVB](https://en.wikipedia.org/wiki/WWVB), a 60kHz time signal from Colorado, which is why a self-setting clock there costs $20 and needs no network or app. That signal does not reach India, and India has no equivalent consumer broadcast: [CSIR-NPL](https://www.nplindia.in/index.php/science-technology/indian-standard-time-metrology-division/) disseminates IST as `ATA` on 5/10/15 MHz HF and over INSAT, neither of which any consumer clock receives. So a WWVB clock bought or imported here is just a quartz clock that never syncs. **WiFi is the only self-setting route on this side of the world** - or GPS, which is worth knowing about: a ~₹400 GPS module gives correct time with no internet and no WiFi, as long as the clock hangs somewhere with a view of the sky or a window.
 
+#### What it actually buys
+India has no DST, and a quartz movement drifts ~15s/month, so the payoff is not really accuracy. It is that the clock fixes itself after a battery change or a power cut. Note the trap: a plain quartz clock keeps ticking on its own AA through an outage, so a mains-powered retrofit **without** the homing sensor is worse than the clock it replaced.
+
+#### Readymade options (checked 2026-09-18)
 **India availability of the readymade ones: nothing confirmed.** Amazon.in and Flipkart carry plain quartz wall clocks (₹200-650) and digital WiFi clocks, but no self-setting analog WiFi clock turned up. The WiFi analog clocks that do exist (Primex, American Time, Innovation Wireless) are US commercial fittings sold B2B. So realistically the choice is the ESP32 retrofit or importing a CH899-class movement.
 
-**Worth asking what it actually buys.** India has no DST, and a quartz movement drifts ~15s/month, so the payoff is not really accuracy. It is that the clock fixes itself after a battery change or a power cut. Note the trap: a plain quartz clock keeps ticking on its own AA through an outage, so a mains-powered retrofit **without** the homing sensor is worse than the clock it replaced.
-
-**Readymade options do exist (checked 2026-09-18), in three shapes:**
+Readymade options do exist, in three shapes:
 - **A whole WiFi analog clock.** [eYotto's 12" WiFi time-sync clock](https://www.amazon.com/eYotto-12-Inch-Non-Ticking-Operated-Automatic/dp/B0D3TNXV83) and the Bulova Connect C5000 (~$60) are the consumer ones; Primex and [TimeMachines](https://timemachinescorp.com/product/displays/) sell PoE/WiFi clocks for offices and schools. All US-market or commercial fittings. [Amazon.in lists "wifi clock"](https://www.amazon.in/wifi-clock/s?k=wifi+clock) but mostly digital ones - whether an analog WiFi clock is actually buyable here is unchecked, and worth five minutes before building anything.
 - **A readymade WiFi clock *movement*,** which is the interesting one: it drops into an existing clock body exactly like the DIY retrofit, but with no surgery. [Heng-Rong's CH899 14.5mm WiFi movement](https://www.hr-clockparts.com/clock-movement/wifi-clock-movement.html) networks once a day and comes with hands. Chinese OEM/wholesale, so the question is whether one or two can be bought at all, and at what landed cost.
 - **The catch with all of them:** a consumer WiFi clock almost certainly phones a vendor cloud and wants an app, which is the Tinxy problem again - it breaks in an ISP outage and cannot be pointed at xero. None of them can be a local-only device the way the retrofit can. A readymade movement bought for ~₹1000-2000 landed is still the lowest-effort answer if self-correcting is all that is wanted; the ESP32 retrofit is the answer if it should be local-only and answer to this homelab.
 
+#### Parts
 ```parts
 qty | item | est | note
 2 | Quartz clock movement | 300-600 | local - two on purpose: the first is for practising the coil surgery. A clock already owned can be the second
@@ -810,41 +980,55 @@ qty | item | est | note
 
 **Cost: about ₹800-1300 all in, or ₹400-700 reusing the aarti board** - and no shop trip is gated on delivery, since every line is loose local stock. A clock body to put it in is on top of that if one is not already owned (₹200-650 for a plain wall clock).
 
-**Effort: roughly 8-12 hours, over two or three evenings, plus a few days of watching it.** Four phases, and the cheap ones come first on purpose:
+#### Effort
+**Roughly 8-12 hours, over two or three evenings, plus a few days of watching it.** Four phases, and the cheap ones come first on purpose:
 - **Free the coil and pulse it by hand from the ESP32 - 1-2h.** This is the go/no-go test and the one where a movement gets destroyed, hence buying two.
 - **Firmware - 2-4h,** less if an existing sketch is adapted rather than written: NTP, the one-pulse-per-second loop, fast-forward, and the position kept in flash.
 - **Homing sensor - 2-3h,** and this is where it overruns. Aligning a magnet and reed switch against a moving hand is fiddly mechanical work, the same class of problem the fiber-optic option in the UPS LED project was rejected for.
 - **Install, tidy, mount - 1-2h.**
+
 Then it verifies itself slowly: leave it a few days against a known-good clock, and test an outage by pulling power and confirming it re-homes and catches up on its own.
 
-**Next step:** open a spare movement and confirm the coil can be freed from its quartz chip and pulsed by hand, before designing anything around it. That one bench test decides the whole project.
+#### Log
+- 2026-09-18: noted and researched; feasibility settled, radio-clock and readymade options checked.
 
 ### Move WoL to an ESP32, put the Pi on the UPS (post-Ganapati)
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** the wol-sender Pi has two jobs that want opposite power. Its WoL job only works *because* it is on mains, not the UPS: it has to lose power in an outage and boot when mains returns, so its boot-time packet wakes xero. Everything else it now runs does better if it stays up: the clawlight LED, the buttons, and Node-RED for the AC. Today all of that dies the moment mains drops, while xero carries on for up to 200min on its UPS. Split the jobs: a mains-only ESP32 sends WoL, and the Pi moves onto the UPS. Noted 2026-09-16, for after Ganapati, when the aarti lights ESP32 can be freed for it.
+**Why:** the wol-sender Pi has two jobs that want opposite power. Its WoL job only works *because* it is on mains, not the UPS: it has to lose power in an outage and boot when mains returns, so its boot-time packet wakes xero. Everything else it now runs does better if it stays up: the clawlight LED, the buttons, and Node-RED for the AC. Today all of that dies the moment mains drops, while xero carries on for up to 200min on its UPS. Split the jobs: a mains-only ESP32 sends WoL, and the Pi moves onto the UPS. For after Ganapati, when the aarti lights ESP32 can be freed for it.
+**State:** idea only. The firmware is half there: `esp32/wol_on_boot/wol_on_boot.ino` was written for exactly this before the Pi stood in. It joins WiFi and broadcasts 3 magic packets to `192.168.1.255:9`, but needs the WiFi-wait fix below. The open question the whole idea stands on is whether the Pi can reach xero during an outage at all.
+**Next step:** during the next real outage, or by switching off the extender and xero's UPS input, check whether the Pi's spot can still reach xero. If it can't, this idea mostly buys buttons and Node-RED that have nothing to talk to.
 
-**State:** idea only. The firmware is half there: `esp32/wol_on_boot/wol_on_boot.ino` was written for exactly this before the Pi stood in (2026-08-01). It joins WiFi and broadcasts 3 magic packets to `192.168.1.255:9`.
+#### Firmware
 
 **The firmware needs the lesson the Pi version already learned.** It gives up if WiFi has not connected within **30s**. After a real outage the router and extender take 60-120s to come back, often longer than the board takes to boot, which is why `update_wol_sender.sh` waits up to 2min for a real route. As written, the ESP32 would boot fast, give up and send nothing on exactly the event it exists for. It needs to wait at least as long as the Pi version does, or keep retrying until connected and then send.
 
 **The ESP32 must stay off the UPS.** A USB charger on a plain mains socket. On a UPS it never loses power, never reboots, and never sends.
 
-**What staying up actually buys - worth checking before the move, because it may be less than it looks:**
+#### What staying up actually buys
+
+Worth checking before the move, because it may be less than it looks:
 - **The Pi's services all talk to xero.** The clawlight LED reads `clawlight/state` from Mosquitto on xero, the buttons publish to HA on xero, and Node-RED bridges to xero's broker. Once the watchdog shuts xero down at 200min, the Pi is up with nothing to talk to. The gain is the window **while xero is still running**, not the whole outage.
 - **Can the Pi even reach xero during an outage?** The power watchdog detects an outage by `enp1s0` losing carrier, because xero's Ethernet uplink comes through the TP-Link extender, which is *not* on a UPS (proven by the 2026-08-28 false positive, when someone switched the extender off). If that link is down, the Pi on the UPS cannot reach xero at all, and the clawlight LED will just pulse "unknown". So check first how xero is reachable during a real outage, if at all. This is the question the whole idea stands on.
 - **Don't break the watchdog's signal by fixing that.** If the extender gets moved onto a UPS so the LAN survives outages, `enp1s0` stops losing carrier and `watchdog_power.sh` loses the only way it knows mains is gone. That needs a replacement signal first, such as the ESP32 UPS LED monitor above or the mains-powered WoL ESP32 itself reporting that it is alive.
 - **Clawlight from the Mac** also needs the router, the ISP and Tailscale, on top of xero.
 
-**Which UPS, and what it costs:**
+**Also removes a fragile path.** The Pi no longer reboots on every outage, which is where its boot-order problems showed up (the overlayroot hang, and booting 4.5min after xero on 2026-09-06).
+
+#### Which UPS, and what it costs
+
 - **xero's RouterUPS:** its 288min runtime and the 200min threshold were measured with xero's load alone. The Pi plus fan is ~2.5W on top of xero's ~12W, which is roughly a fifth more load. Runtime drops by about that much, which would eat most of the ~88min margin. The threshold has to be re-measured or re-derived before the Pi goes on it, or the watchdog will shut down too late.
 - **Output current:** a Pi 3B wants 2.5A at 5V. Mini-UPS USB ports are often 2A or less, and this Pi already has an undervoltage history (the wall-mount cable, fixed 2026-08-26). Confirm the port's rating and check `vcgencmd get_throttled` under load once it is moved.
 - **The pegboard backlight idea** also plans to run the strip from the Pi. Its 5V supply must stay on mains, or the strip drains the UPS.
 
-**Also removes a fragile path.** The Pi no longer reboots on every outage, which is where its boot-order problems showed up (the overlayroot hang, and booting 4.5min after xero on 2026-09-06).
+#### Verification
 
 **Verify when built:** `scripts/wol-sender/wol_listener.py` on xero checks for a valid magic packet without shutting the server down. Do that first, then repeat the real end-to-end test from 2026-08-20: shut xero down, cut and restore mains to the ESP32 only. Also confirm a broadcast from WiFi reaches xero's wired port via the extender.
+
+When done: `docs/hardware.md` (new board, Pi's power row, and `wol-xero.service` retired from the Pi) - see `CLAUDE.md`.
+
+#### Parts
 
 ```parts
 qty | item | est | note
@@ -852,41 +1036,52 @@ qty | item | est | note
 1 | 5V USB charger + cable (mains, not UPS) | 200-300 | household - likely already on hand
 ```
 
-When done: `docs/hardware.md` (new board, Pi's power row, and `wol-xero.service` retired from the Pi) - see `CLAUDE.md`.
-
-**Next step:** during the next real outage, or by switching off the extender and xero's UPS input, check whether the Pi's spot can still reach xero. If it can't, this idea mostly buys buttons and Node-RED that have nothing to talk to.
+#### Log
+- 2026-08-01: `esp32/wol_on_boot/wol_on_boot.ino` written for this, before the Pi stood in.
+- 2026-09-16: idea noted, for after Ganapati.
 
 ### Pegboard backlight as the clawlight (leftover WS2812B on Pi GPIO13)
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** the shipped clawlight LED is not noticeable enough by day. There is leftover WS2812B strip, probably the ~2m spare from the aarti lights reel. Mounted on the back of the pegboard the wol-sender Pi already hangs on, it would throw clawlight state onto the wall as a glow visible across the room. It would replace the single red/green LED on the same pins. Noted 2026-09-16; started as "a bias light behind the monitor" and moved to the pegboard in the same conversation.
+**Why:** the shipped clawlight LED is not noticeable enough by day. There is leftover WS2812B strip, probably the ~2m spare from the aarti lights reel. Mounted on the back of the pegboard the wol-sender Pi already hangs on, it would throw clawlight state onto the wall as a glow visible across the room. It would replace the single red/green LED on the same pins.
+**State:** idea, direction decided, nothing built. **Nothing is on the pegboard yet; the clawlight is still the single common-cathode RG LED on GPIO13/19.** A WLED version's software exists but is stopped (see Alternative below).
+**Next step:** measure the leftover strip and the pegboard (size, material, gap from the wall), then check a pixel test from the Pi on GPIO13 with audio off, before any mounting.
 
-**State:** idea, direction decided, nothing built.
+#### Alternative: the WLED mirror that already exists
 
-**Nothing is on the pegboard yet; the clawlight is still the single common-cathode RG LED on GPIO13/19.** Separately, software for a WLED version exists: `clawlight/wled-mirror.py`, run as `clawlight-wled-mirror.service` (2026-09-25, `clawlight/README.md`), set the aarti strip - wherever it stood - to the clawlight colour. It is stopped since the strip was packed away on 2026-10-02, with the unit left installed. So mounting the freed aarti board and strip on the pegboard and starting that unit is a no-new-code alternative to the Pi GPIO13 build below, at the cost of polling state every 2s and a second mains-only board.
+Software for a WLED version exists: `clawlight/wled-mirror.py`, run as `clawlight-wled-mirror.service` (2026-09-25, `clawlight/README.md`), set the aarti strip - wherever it stood - to the clawlight colour. It is stopped since the strip was packed away on 2026-10-02, with the unit left installed. So mounting the freed aarti board and strip on the pegboard and starting that unit is a no-new-code alternative to the Pi GPIO13 build below, at the cost of polling state every 2s and a second mains-only board.
 
-**Why the LED is dim, and why a diffuser does not fix it.** It is the drive current, not the LED. A GPIO pin through 220R at 3.3V gives the red die ~6mA and the green ~1.5mA, and the Pi's pins cannot supply much more without a transistor. A ping-pong ball spreads that same small amount of light over a bigger surface: it helps at night and makes daytime worse. WS2812B pixels are driven from their own 5V supply at up to ~20mA per colour, so the strip has headroom to run bright by day and dim at night by schedule or HA's sun state. It is also full RGB, which brings back the dim white idle the RG LED could not show. Bouncing off the wall diffuses it for free.
+#### Why the LED is dim, and why a diffuser does not fix it
 
-**Why the Pi drives it, not an ESP32 on WLED:**
+It is the drive current, not the LED. A GPIO pin through 220R at 3.3V gives the red die ~6mA and the green ~1.5mA, and the Pi's pins cannot supply much more without a transistor. A ping-pong ball spreads that same small amount of light over a bigger surface: it helps at night and makes daytime worse. WS2812B pixels are driven from their own 5V supply at up to ~20mA per colour, so the strip has headroom to run bright by day and dim at night by schedule or HA's sun state. It is also full RGB, which brings back the dim white idle the RG LED could not show. Bouncing off the wall diffuses it for free.
+
+#### Why the Pi drives it, not an ESP32 on WLED
+
 - **Nothing moves.** The pegboard is where the Pi already is, so the data run is short. The earlier "behind the monitor" version meant relocating the Pi along with its button wiring and fan, and hiding the existing LED.
 - **The pins already exist.** A strip takes one data wire: **GPIO13 (pin 33)**, today the LED's red leg. It is a hardware PWM pin (PWM1) that `rpi_ws281x` supports. GND stays on pin 39. **GPIO19 (pin 35) is freed** - it shares PWM1 with GPIO13, so it cannot drive a second strip.
 - **The logic stays in `clawlight-led.py`.** It moves from gpiozero to `rpi_ws281x` for output. The MQTT side is unchanged, including the retained `clawlight/state` and the last-will that turns an unknown state into a pulse, so no WLED realtime-timeout trick is needed.
 - An ESP32 on WLED remains the answer if the strip ever has to be somewhere away from the Pi.
 
-**What changes on the Pi:**
+#### What changes on the Pi
+
 - **Analog audio off:** `dtparam=audio=off` in `/boot/firmware/config.txt`, then reboot. PWM output shares hardware with the headphone jack and glitches the strip otherwise. Checked 2026-09-16: nothing plays audio there, pipewire only holds the MIDI sequencer.
 - **The service runs as root:** `rpi_ws281x` needs root for the PWM hardware. `clawlight-led.service` is `User=pramod` today, so the unit and `scripts/clawlight/deploy_clawlight_led_pi.sh` change with it.
 - **The strip gets its own 5V supply, never the Pi's 5V pin.** The Pi has an unresolved undervoltage problem from its wall-mount cable. The supply's ground joins the Pi's GND. A 470R goes in series on the data line, and a 1000uF capacitor across the strip's input.
 - **3.3V data into a 5V strip is outside spec,** but the aarti ESP32 is also 3.3V and drives this same strip without a level shifter. A 74AHCT125 is the fix if the first pixel flickers.
 - **Cap brightness in software** and size the supply from the LED count. A clawlight piece is only ~30 pixels (~0.5m), so most of the spare reel stays free - the wall display entry below does the maths for digits on what is left. A strip around the whole pegboard edge is many more LEDs than this needs. Only part of the edge can be lit, or the whole edge at a low cap.
 
-**Pegboard-specific:**
+#### Pegboard-specific
+
 - **Standoff decides the glow.** The halo needs a few cm between the board and the wall. Mount the strip facing the wall, or angled out, on the back edge.
 - **If the pegboard is metal,** insulate the strip's cut ends and solder joints (heatshrink or tape). Bare 5V pads against a metal board are a short.
 - **LED "strings" from reels are this same part:** WS2811/WS2812 pixels on wire instead of a flexible strip, one data line, no common cathode or anode to choose. Plain non-addressable RGB strings are usually 12V common anode and need a MOSFET per colour, so they are not a better buy than strip already owned.
 
-**Unknowns to settle first:** how much strip is left and its LED density; that it is really 5V WS2812B, not 12V WS2815; the pegboard's size, material and gap from the wall; and whether there is a spare socket for the strip's supply.
+#### Unknowns to settle first
+
+How much strip is left and its LED density; that it is really 5V WS2812B, not 12V WS2815; the pegboard's size, material and gap from the wall; and whether there is a spare socket for the strip's supply.
+
+#### Parts
 
 ```parts
 qty | item | est | note
@@ -898,15 +1093,20 @@ qty | item | est | note
 
 When built: update `docs/gpio_pinout.md` (GPIO13 = strip data, GPIO19 free), `docs/hardware.md` (see `CLAUDE.md`), and the clawlight LED entry in Done.
 
-**Next step:** measure the leftover strip and the pegboard (size, material, gap from the wall), then check a pixel test from the Pi on GPIO13 with audio off, before any mounting.
+#### Log
+- 2026-09-16: noted; started as "a bias light behind the monitor" and moved to the pegboard in the same conversation. Checked that nothing plays audio on the Pi.
+- 2026-09-25: `clawlight-wled-mirror.service` set the aarti strip to the clawlight colour.
+- 2026-10-02: aarti strip packed away; the mirror unit stopped, left installed.
 
 ### Homelab health LED (Pi GPIO) - the whole healthcheck as one light
 **Status:** Backlog
 **Priority:** P3
 
 **Why:** `projects/healthcheck/healthcheck.sh` already knows whether the homelab is healthy, but the only way to find that out is to go looking - open the Stats dashboard, or wait for an email/ntfy push on a failure. The clawlight LED above proved the other shape works: a light on the desk that is simply *right*, with nothing to open. Same idea, different source of truth - green means every check passed, red means at least one did not, and the answer is visible from across the room.
+**State:** idea only. Nothing built - but most of the pieces are already in place, which is the reason to write it down now. **The LED is bought, and it is RG (red/green bi-colour), not RGB** - same purchase and same caveats as the clawlight LED above (check leg count and polarity before wiring).
+**Next step:** decide whether the LED reads `homelab/healthcheck/overall` directly (nothing new to build server-side, covers what `healthcheck.sh` covers) or an HA-consolidated topic (more coverage, one more moving part). Then `scripts/clawlight/clawlight-led.py` + `scripts/clawlight/deploy_clawlight_led_pi.sh` are the templates to copy - the MQTT-retained-state, stale-means-amber, systemd-unit shape is already worked out there.
 
-**State:** idea only, noted 2026-09-11. Nothing built - but most of the pieces are already in place, which is the reason to write it down now. **LED bought 2026-09-15, and it is RG (red/green bi-colour), not RGB** - same purchase and same caveats as the clawlight LED above (check leg count and polarity before wiring).
+#### Design
 
 **The consolidator largely exists already.** `projects/healthcheck/publish_healthcheck_mqtt.py` publishes `homelab/healthcheck/overall` **retained** every 15 minutes (cron), ON = at least one check is unhappy, alongside per-check tiles (docker, systemd, zfs, spotifyd, spotifyd_advertising, miraie_ac, power_watchdog) and a `last_check` timestamp. So the LED can subscribe to one retained topic and be correct the moment it powers on, exactly like `clawlight-led.py` does with `clawlight/state`. An HA template sensor is only needed if the light should also cover things `healthcheck.sh` does not compute - Tinxy entity health, HA's own liveness, the Pi itself - in which case the consolidation happens in HA and gets published back to its own MQTT topic for the LED to read.
 
@@ -916,9 +1116,13 @@ When built: update `docs/gpio_pinout.md` (GPIO13 = strip data, GPIO19 free), `do
 
 **One LED, not a bar.** The ask is "overall", and a single worst-of light is what gets read from across the room; *which* check failed is what the Stats dashboard and the ntfy push already answer well. A per-subsystem LED bar is the obvious escalation if the single light turns out to send you to the dashboard every time anyway.
 
-**Wiring:** GPIO13/19 are taken by the clawlight LED (GPIO26 was planned for its blue and is free again), so this needs its own block - GPIO16 + GPIO20 + GPIO21 (pins 36/38/40) with GND on pin 34 is free and leaves every button-reserved pin alone. The RG LED needs only two of those (GPIO16 red, GPIO20 green), leaving GPIO21 free. Update `docs/gpio_pinout.md` when it gets wired.
+#### Wiring
+
+GPIO13/19 are taken by the clawlight LED (GPIO26 was planned for its blue and is free again), so this needs its own block - GPIO16 + GPIO20 + GPIO21 (pins 36/38/40) with GND on pin 34 is free and leaves every button-reserved pin alone. The RG LED needs only two of those (GPIO16 red, GPIO20 green), leaving GPIO21 free. Update `docs/gpio_pinout.md` when it gets wired.
 
 **Known trap:** this would be the **fourth** GPIO process on that Pi - it needs its own lgpio notify directory or it will silently break one of the existing ones, see `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`. That incident is exactly how the white-noise buttons died last time.
+
+#### Parts
 
 ```parts
 qty | item | est | note
@@ -936,17 +1140,22 @@ The LEDs themselves are bought (RG, not RGB - see State). One thing still worth 
 
 A soldering iron is assumed - it is already on the aarti lights list (₹500-800) and is the one real cost if not owned. Ping-pong ball for diffusion is household, not a purchase.
 
-**Next step:** decide whether the LED reads `homelab/healthcheck/overall` directly (nothing new to build server-side, covers what `healthcheck.sh` covers) or an HA-consolidated topic (more coverage, one more moving part). Then `scripts/clawlight/clawlight-led.py` + `scripts/clawlight/deploy_clawlight_led_pi.sh` are the templates to copy - the MQTT-retained-state, stale-means-amber, systemd-unit shape is already worked out there.
+#### Log
+- 2026-09-11: idea noted.
+- 2026-09-15: LED bought - RG, not RGB.
 
 ### In-house smart switch to replace Tinxy
 **Status:** Backlog
 **Priority:** P3
 
 **Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
-**State:** not started - brainstormed 2026-09-02. Two directions considered:
+**State:** not started - brainstormed 2026-09-02. Two directions considered (see Options).
+**Next step:** crack open one existing Tinxy switch to see what's actually inside (chip ID, whether it's a known-flashable module) before committing to either path.
+
+#### Options
+
 - **Reflash existing Tinxy units with Tasmota/ESPHome** - cheapest, reuses hardware already wired into the walls, would get fully local MQTT control with zero cloud dependency. Risk: Tinxy isn't a known-flashable brand like Sonoff, so it's a per-unit gamble (open one up, identify the chip, risk bricking it) before knowing if it's worth doing for the rest.
 - **Replace with switches built for local control from the start** - Shelly (local HTTP/MQTT API) or Zigbee units behind a local Zigbee2MQTT coordinator. Zigbee in particular never touches the internet at all, only local HA, so it sidesteps the ISP-outage problem structurally rather than depending on a reflash succeeding. Real cost: these are wall-mounted and already installed, not a five-minute swap, and Shelly historically runs ~2x the bare-device price once wiring/casing is counted (see the cost note in the approach 1 findings under "Physical GPIO buttons" in ✅ Done).
-**Next step:** crack open one existing Tinxy switch to see what's actually inside (chip ID, whether it's a known-flashable module) before committing to either path.
 
 ### Remote control for scenes/scripts (Spotify, white noise, etc.)
 **Status:** Backlog
@@ -956,53 +1165,81 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **State:** not started - the ESP32/ESPHome route was already flagged as the likely answer for "a button location that isn't next to an existing host" in the scene-buttons project (now done, that thread closed as not needed for household use); this generalizes that to Spotify/media control specifically.
 **Next step:** decide button layout/count needed (e.g. white noise on/off, Spotify play/pause/skip) and whether to build on ESPHome's native HA integration (least custom code, matches the existing MQTT-bridge pattern) or a fully custom firmware.
 
-
 ### Airtel: download throughput is unstable, upload is not - diagnosed, not reported
 **Status:** Closed
 
 **Why:** fast.com read 1.9 Mbps on 2026-09-23 while the line still felt usable, and two router restarts changed nothing. Measuring it properly found something narrower and odder than "the internet is slow". Full write-up in `docs/incidents/2026-09-23-airtel-inbound-throughput-path-dependent.md`.
+**Outcome:** **Closed 2026-09-29 without reporting it.** Diagnosed as congestion or capacity exhaustion on *particular inbound paths* into Airtel - different peering ports, IX links or transit hit differently - not one saturated pipe and not a shaper. The line is usable, upload is at full rate, and the one action left - an Airtel ticket - is not worth the call: the domestic test an agent would run reads 35 Mbps and closes it. Nothing here is unfinished work; it is a known property of this connection, kept because the next "the internet is slow" will look exactly like it.
 
-**What it is not:** not the local link (upload ran 34.8-40.6 Mbps over the same 2.4GHz Wi-Fi throughout - Wi-Fi carrying 40 Mbps up is not what caps 10 Mbps down), not the router, not the plan, and **not distance or international transit** - that was the working theory for most of the session and the evidence killed it.
+#### What it is not
 
-**The three findings, in order of how much they constrain the cause:**
+Not the local link (upload ran 34.8-40.6 Mbps over the same 2.4GHz Wi-Fi throughout - Wi-Fi carrying 40 Mbps up is not what caps 10 Mbps down), not the router, not the plan, and **not distance or international transit** - that was the working theory for most of the session and the evidence killed it.
+
+#### The three findings
+
+In order of how much they constrain the cause:
 - **Inbound only.** The Patna speedtest server gave 15.9 Mbps down against 40.6 Mbps up - same host, same 89 ms RTT, same moment. Equal RTT in both directions rules out window-size and bandwidth-delay explanations entirely.
 - **Unstable over minutes, which is what the path-dependence claim turned out to be.** Cloudflare Mumbai read 34.7, then 3.0, then 35.8 Mbps inside an hour with nothing changed at this end. An earlier version of this entry concluded "one congested peering path" from a table of *sequential* samples; re-measuring inverted the ranking completely. **Retracted** - see the write-up. Upload never moved throughout.
 - **Loss only under load.** 0% idle and 12.5% while downloading on the Hetzner DE path; 0-3.3% domestic. Every idle ping looked clean all session, which is why it kept reading as "slow" rather than "lossy".
 
 Together: congestion or capacity exhaustion on *particular inbound paths* into Airtel - different peering ports, IX links or transit hit differently - not one saturated pipe and not a shaper.
 
-**Why the speed tests disagreed** (the thing that made this visible at all): neither measures "the internet", each measures one path to one server, and here paths differ by 6x. speedtest.net offered nothing nearer than Patna (~1000 km) because Airtel's geolocation of the IP places the connection far from where it is; Cloudflare terminates at a healthy Mumbai PoP and reads 35 Mbps. The disagreement is the signal - a single number hides the whole effect.
+#### Why the speed tests disagreed
 
-**Closed 2026-09-29 without reporting it.** The line is usable, upload is at full rate, and the one action left - an Airtel ticket - is not worth the call: the domestic test an agent would run reads 35 Mbps and closes it. Nothing here is unfinished work; it is a known property of this connection, kept because the next "the internet is slow" will look exactly like it.
+This is the thing that made it visible at all: neither measures "the internet", each measures one path to one server, and here paths differ by 6x. speedtest.net offered nothing nearer than Patna (~1000 km) because Airtel's geolocation of the IP places the connection far from where it is; Cloudflare terminates at a healthy Mumbai PoP and reads 35 Mbps. The disagreement is the signal - a single number hides the whole effect.
 
-**If it gets worse and a ticket becomes worth raising:**
+#### If it gets worse and a ticket becomes worth raising
+
 - **Frame it as inbound-only congestion on specific paths**, including domestically-peered ones, with upload at full rate - *not* "my internet is slow". Ticket wording and the supporting numbers are in the incident write-up.
 - **Re-measure first, and again after any claimed fix**, with `tools/network/speedcheck.sh [seconds_per_target]`: link and PoP, four throughput targets, DNS timing, idle-vs-loaded loss, traceroute.
 - **Measure in the morning too.** Everything above was measured in one afternoon/evening, and the international numbers got visibly worse across the session (Hetzner DE 4.0 -> 0.9 Mbps). A morning run would say whether this is peak-hour congestion, which changes what Airtel can be asked for.
 
-**Do not confuse this with the MacBook DNS entry.** That one also presents as "the internet is slow" and they overlapped on 2026-09-23. They are unrelated: DNS made *name lookups* take ~600 ms on the M2 only; this affects *throughput* on every device.
+#### Not the MacBook DNS entry
 
+That one also presents as "the internet is slow" and they overlapped on 2026-09-23. They are unrelated: DNS made *name lookups* take ~600 ms on the M2 only; this affects *throughput* on every device.
+
+#### Log
+- 2026-09-23: fast.com read 1.9 Mbps; two router restarts changed nothing; measured over one afternoon/evening (findings above). An early "one congested peering path" conclusion was retracted after re-measuring.
+- 2026-09-29: closed without reporting it to Airtel.
 
 ### Public photo album for Ojaswi's 1st birthday (Tailscale Funnel)
 **Status:** Done
 
-Live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_ALBUM_PATH` in `.env`), viewable without Tailscale. `albums-gallery` (copyparty, read-only and hardened, ~40MB) behind the `albums-tailscale` sidecar with Funnel, serving `datapool/albums/ojaswi-1st-birthday` (copies=2); uploads go in through the new `albums` SMB share. Funnel is granted only to `tag:funnel` in the tailnet policy. Only the secret path is routed - copyparty's own `/?tree` would list volumes. `services/albums/check_public.sh` verified it over public DNS: album, thumbnails, and 404/401/403 for everything else. Setup gotchas (untagged auth key, restart after the grant): `services/albums/README.md`. **Family uploads (2026-09-29):** review-first - per-person logins (`uploader.sh`) can only add photos/videos to a hidden inbox, hooks refuse non-media by extension and by content, and `review.sh approve` moves them into `from-family/`. `check_uploads.sh` passes 15/15 over the public route; the gallery is on an internal-only docker network. When Immich comes back, move the album to an Immich shared link and retire this.
+**Why:** a public album for Ojaswi's 1st birthday, viewable without Tailscale.
+**Outcome:** live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_ALBUM_PATH` in `.env`), with review-first family uploads added the same day. Left open: when Immich comes back, move the album to an Immich shared link and retire this.
+
+#### Setup
+
+`albums-gallery` (copyparty, read-only and hardened, ~40MB) behind the `albums-tailscale` sidecar with Funnel, serving `datapool/albums/ojaswi-1st-birthday` (copies=2); uploads go in through the new `albums` SMB share. Funnel is granted only to `tag:funnel` in the tailnet policy. Only the secret path is routed - copyparty's own `/?tree` would list volumes. `services/albums/check_public.sh` verified it over public DNS: album, thumbnails, and 404/401/403 for everything else. Setup gotchas (untagged auth key, restart after the grant): `services/albums/README.md`.
+
+#### Family uploads
+
+Review-first - per-person logins (`uploader.sh`) can only add photos/videos to a hidden inbox, hooks refuse non-media by extension and by content, and `review.sh approve` moves them into `from-family/`. `check_uploads.sh` passes 15/15 over the public route; the gallery is on an internal-only docker network.
+
+#### Log
+- 2026-09-29: album live over Funnel; family uploads (review-first) added.
 
 ### LAN time server on xero, so the wol Pi's clock survives an ISP outage
 **Status:** Done
 
 **Why:** on 2026-09-28 a power cut followed by an ISP outage left the wol Pi (and its screensaver clock) 15 minutes behind for about 10 hours. The Pi has no RTC: it boots on the time `systemd-timesyncd` last saved (04:31, but it actually booted at 04:46) and its only time sources were the internet pool, so nothing could correct it until the ISP came back at 14:54.
+**Outcome:** shipped 2026-09-28. After a power cut the Pi now comes right as soon as xero is back up (it WoLs xero itself on boot), internet or not.
 
-**Shipped 2026-09-28:** chrony on xero (replaces timesyncd there) serves the LAN on UDP 123, with `local stratum 10` so it keeps answering from xero's RTC while the internet is down. The Pi's timesyncd lists xero first, then the Debian pool, in `NTP=` (not `FallbackNTP=`, which timesyncd ignores whenever `NTP=` is set). Files and `deploy.sh`: `services/chrony/`. After a power cut the Pi now comes right as soon as xero is back up (it WoLs xero itself on boot), internet or not.
+#### Design
+
+chrony on xero (replaces timesyncd there) serves the LAN on UDP 123, with `local stratum 10` so it keeps answering from xero's RTC while the internet is down. The Pi's timesyncd lists xero first, then the Debian pool, in `NTP=` (not `FallbackNTP=`, which timesyncd ignores whenever `NTP=` is set). Files and `deploy.sh`: `services/chrony/`.
+
+#### Log
+- 2026-09-28: power cut then ISP outage; the Pi ran 15 minutes behind until the ISP came back at 14:54. chrony on xero shipped the same day.
 
 ### A clean HA dashboard, next to Overview rather than instead of it
 **Status:** Done
 
 **Why:** the default **Overview** is rigid and cluttered (noted 2026-09-19), and it cannot be curated without "taking control" of it, which stops it auto-adding new devices.
+**Outcome:** **shipped 2026-09-24: Home (`/dashboard-home`), now the default dashboard.** It started as a verbatim copy of Overview and was then edited by hand in the HA UI. Living Room and Bedroom became top-level tabs, and the dead `light.wled_main`/`segment_*` tiles and the Lights summary are gone. **Overview is untouched** and stays the complete, auto-updating index one click away. Details: `projects/ha-dashboard/README.md`. Left open: the stale Tinxy devices (their own backlog entry) still clutter Overview and the area pages.
 
-**Shipped 2026-09-24: Home (`/dashboard-home`), now the default dashboard.** It started as a verbatim copy of Overview and was then edited by hand in the HA UI. Living Room and Bedroom became top-level tabs, and the dead `light.wled_main`/`segment_*` tiles and the Lights summary are gone. **Overview is untouched** and stays the complete, auto-updating index one click away. Details: `projects/ha-dashboard/README.md`.
+#### Design decisions worth keeping
 
-**Design decisions worth keeping:**
 - **Storage mode, not YAML mode.** It was YAML mode from 2026-09-22 to 2026-09-24, tracked in git and bind-mounted. But HA then refuses UI edits ("The edit UI is not available when in YAML mode"), and the whole point was Overview plus changes made in the browser. `lovelace.yaml` now declares nothing (`dashboards: {}`); it is kept so the include and the mount stay valid.
 - **Git is still the record.** `projects/ha-dashboard/ui_dashboard.py export` copies the live dashboard into `dashboards/home.yaml` over the websocket API, with no restart. Run it and commit after UI edits. `restore` pushes the file back in, e.g. after a rebuild.
 - **Overview is not stored anywhere.** In HA 2026.9 it is the Home panel, generated in the browser by strategies. `dump_overview.sh` renders it in Playwright and prints the expanded config, which is how the copy was made; re-dump and diff to see what Overview picked up since.
@@ -1010,20 +1247,28 @@ Live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_A
 - **The default dashboard is per user/device**, set in Profile, not in the dashboard config. Set it again on any device that still opens Overview.
 - Helpers: `shot_dashboard.sh` screenshots a path and fails on error cards; `touched_entities.py` lists entities by how often a user changed them (recorder, 10 days).
 
-**Left for other entries:** the stale Tinxy devices (their own backlog entry) still clutter Overview and the area pages.
+#### Log
+- 2026-09-19: Overview's clutter noted.
+- 2026-09-22: Home built in YAML mode, tracked in git and bind-mounted.
+- 2026-09-24: switched to storage mode so it can be edited in the UI; shipped as the default dashboard.
 
 ### One page listing every endpoint we serve
 **Status:** Done
 
 **Why:** there was no single place answering "what is running here and where do I open it" (noted 2026-09-19). The endpoints were scattered - some behind Caddy on `xero.<tailnet>`, some on their own tailnet hostnames, some plain LAN ports, one on the Pi, one on an ESP32 - and the only way to find one was to remember it or grep the repo.
+**Outcome:** **shipped 2026-09-19 at `https://xero.<tailnet>/endpoints/`. 23 endpoints, 5 groups.** Option (A) from the original entry - a static page served by Caddy - and it stayed there: no new container, no RAM. Listing a service in `endpoints.toml` is now part of the definition of done in `CLAUDE.md`.
+- Deployed after the write-up: the Caddyfile change, the compose mount and the first `render_endpoints.py` run landed on xero (`git pull`, render, `docker compose up -d caddy`); Caddy serves the rendered page (checked 2026-10-14).
+- Left open: nothing enforces that the list matches reality; when a port moves, `endpoints.toml` is part of that work the way `docs/hardware.md` is.
+- Left open: `tools/diagrams/render.sh` uses `realpath -m`, which is GNU-only, so it cannot run on a Mac (see Notes).
 
-**Shipped 2026-09-19 at `https://xero.<tailnet>/endpoints/`. 23 endpoints, 5 groups.** Option (A) from the original entry - a static page served by Caddy - and it stayed there: no new container, no RAM.
+#### What it is
 
-**What it is:** `projects/endpoints/endpoints.toml` is the single machine-readable list (service, protocol, host, port, what speaks it), `render_endpoints.py` renders it to `site/index.html`, and Caddy's new `/endpoints` handle serves that directory off disk via a read-only bind mount. Setup and editing rules: `projects/endpoints/README.md`.
+`projects/endpoints/endpoints.toml` is the single machine-readable list (service, protocol, host, port, what speaks it), `render_endpoints.py` renders it to `site/index.html`, and Caddy's new `/endpoints` handle serves that directory off disk via a read-only bind mount. Setup and editing rules: `projects/endpoints/README.md`.
 
 **It covers more than HTTP, which was the point.** Web pages are the easy half; the ones that bite are MQTT (the broker *and* its topics), DNS, SMB, SSH, the WoL magic packet, and WLED's two UDP feeds. Anything a browser cannot open carries a **copyable connection string** instead of a link - that field is what stops the `mosquitto_sub` line and the DRGB packet layout being re-derived from `docker-compose.yml` every time.
 
-**Design decisions worth keeping:**
+#### Design decisions worth keeping
+
 - **TOML, not YAML or JSON.** `tomllib` is in the standard library from Python 3.11 (xero is on 3.12), **pyyaml is not installed here**, and a links page does not justify a dependency. JSON was out because the data file wanted comments as much as any other config in this repo.
 - **The rendered page is gitignored, the list is not.** `endpoints.toml` writes `{tailnet}` wherever the tailnet suffix belongs and the renderer substitutes it from `.env`, so the source stays safe to track and the output never enters git. Same split as `services/tailscale/`'s template - the difference is that one's output carries no secret, so it *is* tracked. **Consequence: a fresh clone 404s on `/endpoints` until the render is run.** That is documented in three places (the Caddyfile block, the compose mount, the README) because it is the one surprise this design buys.
 - **`uri strip_prefix` plus a trailing-slash redirect**, unlike the `/projects` and `/clawlight` handles which keep their prefix intact. There is no app behind this one to route on the prefix - just an `index.html` - and without the redirect `/endpoints` strips to an empty path that `file_server` has no `/` to resolve against. The same redirect `projects-ui`'s nginx.conf does, for the same reason.
@@ -1031,19 +1276,30 @@ Live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_A
 - **Web links open in a new tab (2026-09-19, after using it).** The page is a jumping-off point on a bookmark, so navigating away in place means coming back through history every time. Only `http(s)` gets `target=_blank`: `smb://` and `ssh://` are handed to the OS rather than navigated to, so the page is never left behind, and `_blank` on those opens a blank tab that never fills. `rel=noopener` with it.
 - **Kept apart from the private inventory on purpose.** Ports, protocols and the LAN addresses `docker-compose.yml` already publishes in the clear go on the page; credentials, full device specs and which panels lack auth stay in the gitignored `docs/hardware.md`.
 
-**It is now part of the definition of done (added 2026-09-19, at the user's ask).** A links page that nobody updates is worse than no page, so closing any project that serves something requires listing it in `endpoints.toml` first - a new rule in `CLAUDE.md`, deliberately shaped like the `docs/hardware.md` rule next to it, with `tools/repo-tools/check_endpoints_toml.sh` as the check. That script lists every host port `docker-compose.yml` publishes and every Caddyfile path the TOML does not mention. It reads the tracked config rather than the live machines, so it runs on any clone with no `.env` and no ssh - and so it is blind to the systemd `--user` units (clawlight on 8126), the Pi and the ESP32, which is called out in its header, its README row and the rule itself.
+#### Part of the definition of done
 
-**Verified:** `caddy adapt` on the real Caddyfile produces the expected route order (`/projects` -> `/clawlight` -> `/endpoints` -> Vaultwarden catch-all), and the page was screenshotted at desktop and phone widths in light and dark via `tools/diagrams/render.sh`'s Playwright image. The check script was negative-tested (a fake loopback-bound `127.0.0.1:9999:80` and a fake `/grafana` handle), which is what caught its first version silently reading `1` out of `127.0.0.1:8127:80` and never checking ntfy's port at all.
+A links page that nobody updates is worse than no page, so closing any project that serves something requires listing it in `endpoints.toml` first - a new rule in `CLAUDE.md`, deliberately shaped like the `docs/hardware.md` rule next to it, with `tools/repo-tools/check_endpoints_toml.sh` as the check. That script lists every host port `docker-compose.yml` publishes and every Caddyfile path the TOML does not mention. It reads the tracked config rather than the live machines, so it runs on any clone with no `.env` and no ssh - and so it is blind to the systemd `--user` units (clawlight on 8126), the Pi and the ESP32, which is called out in its header, its README row and the rule itself.
 
-**Left to do:** it has not been served yet - the Caddyfile change, the compose mount and the first `render_endpoints.py` run still have to land on xero (`git pull`, render, `docker compose up -d caddy`). Nothing enforces that the list matches reality either; when a port moves, `endpoints.toml` is part of that work the way `docs/hardware.md` is.
+#### Verification
+
+`caddy adapt` on the real Caddyfile produces the expected route order (`/projects` -> `/clawlight` -> `/endpoints` -> Vaultwarden catch-all), and the page was screenshotted at desktop and phone widths in light and dark via `tools/diagrams/render.sh`'s Playwright image. The check script was negative-tested (a fake loopback-bound `127.0.0.1:9999:80` and a fake `/grafana` handle), which is what caught its first version silently reading `1` out of `127.0.0.1:8127:80` and never checking ntfy's port at all.
+
+#### Notes worth keeping
 
 **One portability snag found on the way, not fixed:** `tools/diagrams/render.sh` uses `realpath -m`, which is GNU-only, so it cannot run on a Mac. Left alone as unrelated to this work - the underlying docker command was run by hand instead.
+
+#### Log
+- 2026-09-19: need noted; page built and verified (`caddy adapt`, screenshots, check script negative-tested); web links changed to open in a new tab after using it; the endpoints rule added to `CLAUDE.md` at the user's ask.
 
 ### A flashy colour for the toddler when she makes a noise
 **Status:** Done
 
-**Why:** the Tier 3 renderer already tells a ghanta from a clap from a voice (see "Sound-reactive aarti lights" in ✅ Done). The question was whether it can tell *whose* voice and give each person a colour - but the value is not evenly spread. Scoped down 2026-09-18 by the user, and the scoping is the most useful thing in this entry: **the 1-year-old getting her own flashy colour is the whole point, and everything else is good-to-have.** That is a happy accident, because she is by a distance the easiest of the four to detect and the only one whose case survives a room full of people singing. Build her band first and stop there if the rest never happens.
-**Feasibility answered 2026-09-18, measured rather than assumed. The short version: her colour is free and runs on the hardware already on the wall. A colour each for all four is the only part that ever needed a second mic, and it is closed - the user does not want to buy hardware, and it was the good-to-have anyway.**
+**Why:** the Tier 3 renderer already tells a ghanta from a clap from a voice (see "Sound-reactive aarti lights" in ✅ Done). The question was whether it can tell *whose* voice and give each person a colour - but the value is not evenly spread. Scoped down by the user, and the scoping is the most useful thing in this entry: **the 1-year-old getting her own flashy colour is the whole point, and everything else is good-to-have.** That is a happy accident, because she is by a distance the easiest of the four to detect and the only one whose case survives a room full of people singing. Build her band first and stop there if the rest never happens.
+**Outcome:** **shipped 2026-09-19 - her band, and only hers: a red flash across the whole strip each time she is detected.** It runs on the hardware already on the wall. Tier A's male colour stays a good-to-have and was not built; Tier B (a colour each for all four, needing a second mic) was closed 2026-09-18 on the user's "no new hardware". Left open: her voice *inside* a sung aarti has not been tested - if it misfires there, record a real aarti with `aarti-sound-lab.py record` and retune against that.
+
+#### Feasibility (measured, not assumed)
+
+The short version: her colour is free and runs on the hardware already on the wall. A colour each for all four is the only part that ever needed a second mic, and it is closed - the user does not want to buy hardware, and it was the good-to-have anyway.
 
 **The hard limit is what the board transmits, not the mic.** Probed live: WLED's sound-sync packet is 44 bytes at 44/s, carrying **16 bins of 8-bit spectral envelope** plus `FFT_MajorPeak` and `FFT_Magnitude`. It is analysis, never audio. Real speaker identification (ECAPA/x-vector embeddings) wants ~16kHz audio with 40-80 mel bands at 100 frames/s, so it cannot run on this stream at all - and the 8-bit bins arrive after gain and squelch have already discarded absolute level. `aarti-sound-lab.py`'s header has the other half of it: the only mic in the right room is the one on the ESP32, because *xero is in the wrong room*.
 
@@ -1054,12 +1310,20 @@ Live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_A
 
 So **Tier A** is a pitch-band split into toddler / male / adult-female - three colours, the two women sharing one - on the existing board, the existing mic and the existing stream. **No purchase, no rewiring, no flashing: it is a change to `aarti_audio.py` and the renderer and nothing else.** That covers the toddler's colour completely, which is the whole of what is actually wanted.
 
+#### Tier B: closed
+
 **Tier B (a colour each for all four) is closed, 2026-09-18, on the user's "no new hardware".** Recorded so it is not re-derived: separating the two women needs raw audio, and raw audio needs a mic that streams it - a second ESP32 + INMP441 as a WiFi mic over UDP (~₹550-900 local), or a spare Pi with a USB mic - then VAD -> speaker embedding -> cosine match against four enrolled prints on xero, which has the CPU for it. Two further reasons it is the right call beyond the money: "the aarti board freed after the festival" is **already spoken for twice**, by the WoL-on-an-ESP32 entry and the WiFi-synced analog clock, so this would be a third claim on one board. And the one genuinely purchase-free route to it - reflashing *this* board with custom firmware that streams its I2S mic instead of running WLED - costs WLED itself: the effects, the presets, the HA integration and the boot-preset fallback that keeps the decoration working when xero is down. Trading all of that for the ability to tell two family members apart is a bad deal in any currency.
 
-**Visitors: closest match, no visitor detection - decided 2026-09-18.** It sounds like the fallback and is actually the *easier* feature. A blanket "guest" colour needs open-set recognition: a calibrated rejection threshold saying "far enough from all four to be nobody", which is the fiddly part of speaker ID, needs impostor recordings to tune, and fails both ways - too strict and a family member with a cold is flagged as a visitor, too loose and no visitor ever is. Closest match is argmax over the enrolled set, i.e. the classifier's default behaviour and no extra code. On the Tier A route a blanket rule is not merely harder but **impossible**, since pitch bands hold no identities at all: a visitor lands in whatever band their voice falls in, a male visitor lighting the male colour, for free. If Tier B is ever built, prefer letting match confidence drive **saturation** over a binary guest/not-guest call - a weak match reads as a washed-out version of whoever they sound most like, which degrades gracefully instead of forcing a decision the system cannot make reliably.
+#### Visitors: closest match, no visitor detection
 
-**The caveat that outweighs all of the above: during an aarti everyone sings at once.** Both tiers assume one voice at a time. A mixture hands the pitch method whoever is loudest, and overlapping speech is exactly where speaker ID degrades worst - compounded by speaker models being trained on speech rather than singing, at 3m far-field, with a ghanta ringing over the top. If the goal is "each person's colour while the family sings together", that is the single worst case for this technology and it should be expected to look broken. **The toddler is the exception that makes the scoped-down version work:** she is the only one whose fundamental sits in a band no adult's does, so hers is the one voice with a chance of being picked out of a mixture. Not a free pass - adult singing puts *harmonics* right through her range - so the test has to be high-band energy together with a quiet low band, never high-band energy alone. If the goal is "the light reacts to whoever is talking in a calm room", it is genuinely buildable. A room with visitors is a crowded room, so visitor handling matters least exactly where it is hardest.
-**Shipped 2026-09-19 - her band, and only hers: a red flash across the whole strip each time she is detected.** Tier A's male colour stays a good-to-have and was not built.
+Decided 2026-09-18. It sounds like the fallback and is actually the *easier* feature. A blanket "guest" colour needs open-set recognition: a calibrated rejection threshold saying "far enough from all four to be nobody", which is the fiddly part of speaker ID, needs impostor recordings to tune, and fails both ways - too strict and a family member with a cold is flagged as a visitor, too loose and no visitor ever is. Closest match is argmax over the enrolled set, i.e. the classifier's default behaviour and no extra code. On the Tier A route a blanket rule is not merely harder but **impossible**, since pitch bands hold no identities at all: a visitor lands in whatever band their voice falls in, a male visitor lighting the male colour, for free. If Tier B is ever built, prefer letting match confidence drive **saturation** over a binary guest/not-guest call - a weak match reads as a washed-out version of whoever they sound most like, which degrades gracefully instead of forcing a decision the system cannot make reliably.
+
+#### The caveat: during an aarti everyone sings at once
+
+This outweighs all of the above. Both tiers assume one voice at a time. A mixture hands the pitch method whoever is loudest, and overlapping speech is exactly where speaker ID degrades worst - compounded by speaker models being trained on speech rather than singing, at 3m far-field, with a ghanta ringing over the top. If the goal is "each person's colour while the family sings together", that is the single worst case for this technology and it should be expected to look broken. **The toddler is the exception that makes the scoped-down version work:** she is the only one whose fundamental sits in a band no adult's does, so hers is the one voice with a chance of being picked out of a mixture. Not a free pass - adult singing puts *harmonics* right through her range - so the test has to be high-band energy together with a quiet low band, never high-band energy alone. If the goal is "the light reacts to whoever is talking in a calm room", it is genuinely buildable. A room with visitors is a crowded room, so visitor handling matters least exactly where it is hardest.
+
+#### What shipped
+
 - **The hypothesis held, worse than guessed.** Her first recording (`aarti-sound/kid.jsonl`) fired **12 claps and 4 ghantas** through the old classifier. Her centroid spans 2.9-7.7 - it straddles every threshold rather than sitting in the 4.5-5.5 gap, so no centroid carve-out could have worked.
 - **What does separate her is spectral shape, not centroid:** energy in bins 6-8 with bins 10-15 quiet. Voice never reaches bin 6, a clap lights all the way to 15, a bell piles into 14-15. Rule: bins 6-8 >= 350 and 10-15 <= 250 on 3 of the last 5 frames (`KID_*` in `aarti_audio.py`).
 - **Validated on a second take recorded after the thresholds were picked** (`kid2.jsonl`, her babbling with an older adult talking to her): 44 detections, and **zero** across the voice/clap/ghanta recordings. The adult's stretches of speech went to the amber voice layer with no red in them. Live on the service: 19 flashes in 20s, no false claps.
@@ -1067,58 +1331,88 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 - **Renderer:** red ducks the other layers by 80% rather than adding to them, or red over the amber glow reads orange. Decays in ~0.33s against detections every 0.3s, so babbling pulses. Both modes. `aarti-classify.py` keeps its own older copy of the rules and does not know about her.
 - **Not yet seen:** her voice *inside* a sung aarti. The caveat above stands - adult harmonics in a mixture may mask or mimic her - and it has not been tested. If it misfires there, record a real aarti with `aarti-sound-lab.py record` and retune against that.
 
+#### Log
+- 2026-09-18: scoped down by the user to her colour; feasibility answered by measurement (Tier A viable on the existing board); Tier B closed on "no new hardware"; visitors decided as closest match, no visitor detection.
+- 2026-09-19: shipped her red flash, tuned on `kid.jsonl` and validated on `kid2.jsonl`.
+
 ### Clawlight physical LED (Pi GPIO)
 **Status:** Done
 
 **Why:** the software clawlight (see below) only shows status while its browser tab or PiP window is actually visible. A LED on the wol-sender Pi's GPIO gives the always-visible physical light the parked ESP32 "Claw Light" idea was for, at ~₹20 of parts, because that Pi happens to sit next to the desk. Anywhere else this would still need the ESP32 version.
-**What shipped (software 2026-09-07, wired and deployed 2026-09-16):**
+**Outcome:** shipped - software 2026-09-07, wired and deployed 2026-09-16. A red/green LED on the Pi's GPIO13/19, driven by `clawlight-led.service` from retained MQTT state, showing green active · red waiting · dim steady amber idle · amber pulse = state unknown. Verified 2026-09-16. No further work planned.
+
+#### What shipped
 - **Part:** 3-leg common-cathode **red/green** bi-colour LED - bought as RGB, turned out RG. Long leg to GND (pin 39), red through 220R to GPIO13 (pin 33), green through 220R to GPIO19 (pin 35). Diagram, leg test and bench checks: `clawlight/led_wiring.html` (https://claude.ai/artifact/UDgsMP8uYK5FkHFydLMwP9).
 - **`clawlight-led.service`** on the Pi (system unit, `systemd/wol-sender/`), driven by `scripts/clawlight/clawlight-led.py` through gpiozero `LEDBoard` with PWM. Deployed from xero by `scripts/clawlight/deploy_clawlight_led_pi.sh`, which asks for the Pi's sudo password.
 - **Colours:** green active · red waiting · dim steady amber idle · amber pulse = state unknown. `AMBER = (0.5, 1.0)`, `IDLE_BRIGHTNESS = 0.3`, both picked by eye on the real LED.
 - **Bench tools:** `scripts/clawlight/tune_led.sh amber|idle` steps through values printed as ready-made code lines; `scripts/clawlight/show_led_states.sh` shows the pulse and idle on demand (stops the server, then hand-publishes idle, then restores); `scripts/clawlight/test_clawlight_led.py` checks pin output on gpiozero mock pins.
-**Design decisions:**
+
+#### Design decisions
 - **State reaches the Pi over retained MQTT, not the SSE endpoint the web page uses.** A hardware light must be correct the moment it powers on, and clawlight only emits on hook events - a subscriber starting cold during a quiet stretch would sit wrong for as long as the quiet lasted. `server.py` publishes the aggregate to `clawlight/state` retained, so the broker replays it on connect. Reuses the house MQTT pattern, and makes the state available to HA for free.
 - **An MQTT last-will means the light never lies.** If `server.py` dies the broker publishes `offline` on `clawlight/availability` and the LED pulses amber rather than holding a stale colour. Directly informed by the 2026-09-07 MirAIe outage, where something that looked healthy while reporting nothing went unnoticed for 29 hours.
 - **Idle is dim, not off** - so "nothing running" is distinguishable from "unplugged". Planned as dim white, which needs blue; on the RG LED it is dim steady amber (chosen over dim green). What keeps it apart from "unknown" is motion, not hue: only the unknown state ever pulses.
 - **GPIO13/19 (pins 33/35, GND on 39)** - a tidy corner block that leaves every pin `docs/gpio_pinout.md` lists as free-for-a-button untouched. GPIO26 (pin 37), planned for blue, stays free. Third GPIO process on this Pi, so it gets its own lgpio notify directory (see `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`).
-**Notes worth keeping:**
+
+#### Notes worth keeping
 - **gpiozero `LEDBoard` orders keyword pins alphabetically.** `LEDBoard(red=13, green=19)` takes values as (green, red), which would have swapped every colour. Pins are passed positionally; the mock-pin test caught it before any wiring.
 - **gpiozero's `pulse()` fades each pin from 0 to full,** which turns a red/green mix into yellow. The amber pulse scales both channels by one shared brightness instead.
 - **Tune colours only after checking plain red and green.** The legs were first wired to each other's pins, and the resulting "yellow" amber sent one retune the wrong way.
 - **Hue is the ratio, not the levels.** The green die is weak on 220R - even green at full with red at full read red-orange - so amber came from lowering red to 0.5 rather than swapping the green resistor to 100R. A 100R on green would still brighten green and amber if either ever looks weak; re-run `tune_led.sh amber` afterwards, since the ratio would move.
 - **The deploy script's install step had never run for real.** It ran sudo inside a heredoc over a terminal-less ssh, which cannot prompt for the Pi's password; only `--dry-run` had ever worked. Fixed with `ssh -t`, and it restarts rather than `enable --now` so a redeploy picks up new code.
 - **A plain `systemctl --user stop clawlight-server` trips the last-will** - the LED logged `offline` in the same second - so a clean stop is not mistaken for "still online".
-**Verified (2026-09-16):** the service starts at boot (survived a Pi reboot mid-bench with no redeploy) and shows the real aggregate within a second of starting; red, green, the amber pulse and dim amber idle each confirmed by eye, with the matching state transitions in the Pi's journal.
-**Next step:** none.
+
+#### Log
+- 2026-09-07: software shipped.
+- 2026-09-16: wired and deployed. Verified: the service starts at boot (survived a Pi reboot mid-bench with no redeploy) and shows the real aggregate within a second of starting; red, green, the amber pulse and dim amber idle each confirmed by eye, with the matching state transitions in the Pi's journal.
 
 ### scripts/ split into one folder per project
 **Status:** Done
 
 **Why:** `scripts/` had grown to 73 loose files across a dozen unrelated projects, with nothing saying which ones cron or a service depended on - the start of a big ball of mud.
-**What shipped (2026-09-15):** 14 project folders (`aarti-lights/`, `healthcheck/`, `notify/`, `miraie-ac/`, `spotifyd/`, `white-noise/`, `pi-buttons/`, `wol-sender/`, `clawlight/`, `network/`, `esp32-tools/`, `certs-backup/`, `dev-shell/`, `repo-tools/`), no loose files, and `scripts/README.md` saying where a new script goes. Done in two phases: the ~50 scripts nothing live calls first, then the cron- and systemd-called ones together with their callers, moved just after a cron tick with no job running.
-**Notes worth keeping:**
+**Outcome:** shipped 2026-09-15 - 14 project folders (`aarti-lights/`, `healthcheck/`, `notify/`, `miraie-ac/`, `spotifyd/`, `white-noise/`, `pi-buttons/`, `wol-sender/`, `clawlight/`, `network/`, `esp32-tools/`, `certs-backup/`, `dev-shell/`, `repo-tools/`), no loose files, and `scripts/README.md` saying where a new script goes.
+- Left open: four descriptions in HA's root-owned `automations.yaml` still say `scripts/scene-buttons-mqtt.py` / `scripts/white-noise-buttons-mqtt.py` (text only), and root's crontab was not checked (needs sudo).
+
+#### How it was done
+Two phases: the ~50 scripts nothing live calls first, then the cron- and systemd-called ones together with their callers, moved just after a cron tick with no job running.
+
+#### Notes worth keeping
 - **`tools/repo-tools/find_script_references.sh NAME` before moving or renaming anything.** It covers what `git grep` cannot see: the crontab via `cron/*.sh`, installed systemd units, HA's gitignored config, running processes.
 - **Installed user units are copies, not symlinks** - a repo edit changes nothing until re-copied, daemon-reloaded and restarted. spotifyd's `wait_for_network.sh` is `-` prefixed, so a missed copy would have silently brought back the boot race.
 - **Scripts are now two levels below the repo root.** One level short resolves to `scripts/` and fails only when it reaches for `.env*` or `HOMEASSISTANT_CONFIG/`.
 - **Nearly deleted the live healthcheck scripts.** Two healthcheck tests built a fake repo by symlinking each `scripts/` entry and then wrote stubs into it; once entries became folders the stubs would have gone through to the real cron-called scripts. Caught before the move; the tests now mirror real directories with per-file symlinks.
 - Found on the way, not caused by the move: the tmux installer's `mktemp -t` only worked on macOS, so its test failed 32/63 on `xero`. Fixed.
-**Verified:** every file parses; no reference uses an old flat path; all moved tests pass with real scripts byte-identical before and after; aarti-lights, white-noise-mqtt and volume-mqtt restarted and running from the new paths; the 14:20 power watchdog sourced `notify/` silently, and the 14:30 healthcheck advanced its retained `last_check` (08:30 -> 09:00 UTC) with no problems.
-**Not updated:** four descriptions in HA's root-owned `automations.yaml` still say `scripts/scene-buttons-mqtt.py` / `scripts/white-noise-buttons-mqtt.py`. Text only. Root's crontab was not checked (needs sudo).
-**Next step:** none.
+
+#### Verification
+Every file parses; no reference uses an old flat path; all moved tests pass with real scripts byte-identical before and after; aarti-lights, white-noise-mqtt and volume-mqtt restarted and running from the new paths; the 14:20 power watchdog sourced `notify/` silently, and the 14:30 healthcheck advanced its retained `last_check` (08:30 -> 09:00 UTC) with no problems.
+
+#### Log
+- 2026-09-15: split shipped and verified.
 
 ### Sound-reactive aarti lights (Ganapati decoration)
 **Status:** Done
 
 **Why:** festival decoration for Ganesh Chaturthi - a WS2812 backdrop behind the makhar that reacts to the aarti in real time. Chosen 2026-09-07 over the other ideas (fountain + mist bowl, ghanta striker, fiber-optic canopy, infinity mirror halo, water curtain) on wow-per-rupee and on being the only one whose long-lead part could still arrive in time. The first fully local light in the house - no cloud.
-**What shipped (2026-09-12 to 2026-09-14), built breadboard-first per `projects/aarti-lights/aarti_lights_setup.md`:**
+**Outcome:** shipped 2026-09-12 to 2026-09-14, built breadboard-first per `projects/aarti-lights/aarti_lights_setup.md`; closed as-is 2026-09-15 with two known limits accepted (see "Known limits"); packed away 2026-10-02 after Ganapati, hardware free for reuse (see "To bring it back").
+- Left open: that a real sound relights the strip from black was only proven in the test, not in the room - worth one look during the next aarti.
+
+#### What shipped
 - **Board:** ESP32 (D0WD-V3, 4MB) on **WLED 16.0.1 audioreactive**, static **192.168.1.125** / `wled-sound.local`. Strip data on GPIO4 through a 470R; INMP441 I2S mic on SD=32, WS=25, SCK=33 with `L/R` to GND.
 - **Wiring:** one diagram of the whole build - `projects/aarti-lights/wiring.html` (https://claude.ai/artifact/9htRRMwTKPzQxMk5Fmqbmb), with `wiring.svg` the inline copy shown in the setup doc.
 - **Strip:** ~3m / 180 LEDs cut from a locally bought 5m reel (~2m spare), bounced off the wall behind the makhar. Powered by the already-owned **5V 4A** over mains-wire offcuts, WLED cap 3400mA - all red at full draws 3411mA with nothing warm. No level shifter or far-end injection needed at 3m.
 - **Sound, three tiers:** boot preset 1 is WLED's own Gravimeter, so the strip comes up sound-reactive even if HA and `xero` are down. Tier 2 is a three-segment band split (vocals orange / presence and claps green / ghanta and cymbals blue), restored with `./projects/aarti-lights/wled.sh bands`. **Tier 3** (`projects/aarti-lights/aarti-render.py`, the default) classifies ghanta / clap / voice and renders every pixel itself over WLED realtime UDP (DRGB, port 21324, 40fps), running as `projects/aarti-lights/aarti-lights.service`. The protocol timeout hands the strip back to WLED's effects by itself if the renderer stops.
 - **Home Assistant:** four time-triggered automations (on 08:00, off 09:30, on 17:45, off 23:00) and three dashboard scripts (`aarti_lights_on`, `aarti_lights_bands`, `aarti_lights_off`). These live in the **gitignored** `HOMEASSISTANT_CONFIG/automations.yaml` and `scripts.yaml`, so this entry is their only tracked record.
-**Spend:** the strip and the mic. Everything else was owned or found at home - the 10A supply, 18AWG wire and level shifter on the original list were never needed.
-**Notes worth keeping:**
-- **Which HA light entity is the strip depends on the segment count, and it flips.** With more than one segment `light.wled` is segment 0 only and the whole board is `light.wled_main` - the 23:00 automation originally targeted `light.wled`, reported success, switched off one segment, and the strip stayed lit. But HA only creates `light.wled_main` *while* there is more than one segment: back on a single segment (where the board sits today) it goes unavailable and `light.wled` is the whole strip. It stays in the entity registry either way, so aiming at the wrong one never errors - it logs `Referenced entities light.wled_main are missing or not currently available` and does nothing. The four automations survive both worlds by acting on each in turn, which is why they still work; the cost is that today the `brightness_pct: 85` riding on the `light.wled_main` action of the 17:45/08:00 automations is silently dropped. Left alone 2026-09-18 - the strip is at 86% from an earlier manual set, so nothing looks wrong. **If reopened:** move `brightness_pct` onto the `light.wled` action, or set it on both.
+- **Spend:** the strip and the mic. Everything else was owned or found at home - the 10A supply, 18AWG wire and level shifter on the original list were never needed.
+
+#### Known limits (accepted at close, 2026-09-15)
+- **Calibration is accepted at the current squelch/gain.** It looks right in live use. If the room changes, re-measure with `./projects/aarti-lights/wled-audio-monitor.py --seconds 20` while the room is as loud as it is during the aarti. Check both directions afterwards: resting level reads 0, and a clap still reaches a few hundred.
+- **Clap detection over-fires; ghanta detection is accurate.** Observed on real aartis: the ghanta is classified reliably, but loud voice and similar sounds also get picked up as claps. That fits what testing showed - claps are separated from voice mainly by being short and loud, and the boundary was already soft (a 1.08s "clap" against a 1.2s ghanta threshold). Left alone for now. **If reopened:** record real aarti audio with loud singing via `projects/aarti-lights/aarti-sound-lab.py`, label the false claps, and retune the clap rules in `projects/aarti-lights/aarti_audio.py` against those recordings rather than the isolated test sounds.
+- **HA `brightness_pct` dropped on the 17:45/08:00 automations** (see the first note below). **If reopened:** move `brightness_pct` onto the `light.wled` action, or set it on both.
+
+#### To bring it back
+Plug it in, `systemctl --user enable --now aarti-lights`, turn the four automations on, and restore the WLED entries in `projects/endpoints/endpoints.toml` from git history. The board keeps its config, presets and boot preset.
+
+#### Notes worth keeping
+- **Which HA light entity is the strip depends on the segment count, and it flips.** With more than one segment `light.wled` is segment 0 only and the whole board is `light.wled_main` - the 23:00 automation originally targeted `light.wled`, reported success, switched off one segment, and the strip stayed lit. But HA only creates `light.wled_main` *while* there is more than one segment: back on a single segment (where the board sits today) it goes unavailable and `light.wled` is the whole strip. It stays in the entity registry either way, so aiming at the wrong one never errors - it logs `Referenced entities light.wled_main are missing or not currently available` and does nothing. The four automations survive both worlds by acting on each in turn, which is why they still work; the cost is that today the `brightness_pct: 85` riding on the `light.wled_main` action of the 17:45/08:00 automations is silently dropped. Left alone 2026-09-18 - the strip is at 86% from an earlier manual set, so nothing looks wrong.
 - **Audioreactive binaries are absent from WLED's GitHub release assets after 0.14.4**, which is what the runbook's 0.14.4 pin was based on - but current audioreactive builds do exist, and the board moved to 16.0.1 on 2026-09-14 with all config and effect indices intact. Only the multi-segment band split had to be re-applied, because **WLED's preset save captures segment 0 only**.
 - **WLED's ESP32 release `.bin` is the application image alone.** It goes at `0x10000` behind a bootloader at `0x1000` and a partition table at `0x8000`. Written to `0x0` after an erase it bootloops, while esptool still says "hash verified" - that only checks the bytes match, never that they boot.
 - **`xero` has a dead USB port.** An hour went on cables before the board was moved to a port with a known working device in it. Worth remembering before the door-sensor project flashes two more ESP32s - test against a known-good port first.
@@ -1129,163 +1423,185 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 - **The service omits `After=network-online.target`,** a silent no-op in a user unit; it waits for the board in `ExecStartPre` instead. And the renderer **stops sending while WLED is off**, because realtime UDP overrides everything - a renderer that always sent would make the light impossible to switch off.
 - **A dim glow with the room silent was the renderer's own idle floor, not the mic.** Chased 2026-09-18 at 01:20 with the fan running and the obvious suspect being fan pickup. It was not: `projects/aarti-lights/ambient-energy.py` (written for this) measures the number the classifier actually thresholds - the sum of the 16 FFT bins against `FLOOR_ENERGY` 450 - and a resting room ran median 294, max 371 over 1318 frames, never crossing it once. **The two floors are different scales:** WLED's squelch acts on `sampleRaw` and governs the built-in effects, while Tier 3 ignores squelch entirely. A squelch that looks right in the app says nothing about the classifier. The glow was `IDLE = 0.05` amber painted on every pixel unconditionally, deliberately, so an idle strip would not read as broken.
 - **The strip now goes dark after 20s of silence** (`IDLE_TIMEOUT_S`, 3s fade; `--idle-timeout 0` restores the old behaviour), because "never fully dark" also meant never off. It keeps **sending black frames** rather than stopping - going silent would let WLED's realtime timeout lapse and hand the strip back to its lit, sound-reactive Gravimeter boot preset, i.e. the opposite of off. Side effect: `sensor.wled_estimated_current` rests at ~300mA (WLED's fixed overhead plus 180 idle LEDs), not the ~120mA of a switched-off board, so estimated current no longer distinguishes "dark" from "on and glowing" - `/json/info`'s `live` and the renderer's own log do.
-**Verified:** Phase gates 0-5 each checked as they closed (pixels individually addressable, mic levels 0-254 with live FFT, 94% brightness stable at 3m, off gives `live=False` at 120mA quiescent). On 2026-09-15: renderer service active since 2026-09-14 21:09, board reachable on 16.0.1 with 180 LEDs, `select.wled_preset` present in HA's entity registry, and WLED's effect 132 spelled exactly `Gravimeter` - closing the two HA guesses that had been left unverified.
-**Closed as-is (2026-09-15), with two known limits accepted rather than fixed:**
-- **Calibration is accepted at the current squelch/gain.** It looks right in live use. If the room changes, re-measure with `./projects/aarti-lights/wled-audio-monitor.py --seconds 20` while the room is as loud as it is during the aarti. Check both directions afterwards: resting level reads 0, and a clap still reaches a few hundred.
-- **Clap detection over-fires; ghanta detection is accurate.** Observed on real aartis: the ghanta is classified reliably, but loud voice and similar sounds also get picked up as claps. That fits what testing showed - claps are separated from voice mainly by being short and loud, and the boundary was already soft (a 1.08s "clap" against a 1.2s ghanta threshold). Left alone for now. **If reopened:** record real aarti audio with loud singing via `projects/aarti-lights/aarti-sound-lab.py`, label the false claps, and retune the clap rules in `projects/aarti-lights/aarti_audio.py` against those recordings rather than the isolated test sounds.
-**Reopened briefly 2026-09-18** for the idle blackout above (the two notes on it, `ambient-energy.py`, `test_aarti_idle_blackout.sh`). Verified on the board: renderer live over UDP, WLED's estimated current dropped 394mA -> 300mA as the glow expired, and the renderer logged `dark` after the silence. **Unverified:** that a real sound relights it from black was only proven in the test, not in the room - nobody was going to clap at 01:30. Worth one look during the next aarti.
 
-**Reopened briefly 2026-09-24: a light switched on from HA went dark within ~2s.** Not the mic - 12s of speech measured with `ambient-energy.py` put 88% of frames over the floor, half of them voice. The idle clock simply did not know about the switch: a room quiet for 20s meant the renderer resumed black frames as soon as `PowerWatch` saw WLED on, until the next classified sound. `PowerWatch` now stamps an off->on switch and the render loop counts it as a sound, so the resting glow shows for the full timeout; covered by a second check in `test_aarti_idle_blackout.sh` (52fa0d8).
-**Packed away 2026-10-02**, after Ganapati. The board was already unplugged. `aarti-lights.service` is disabled and stopped, the four `automation.aarti_lights_*` schedules are turned off in HA (the three dashboard scripts are left; they do nothing without the board), and the three WLED endpoints are off the index. `clawlight-wled-mirror.service` (2026-09-25, `clawlight/README.md`) is stopped but left installed - see "Pegboard backlight as the clawlight". Board, strip, mic and the 5V 4A supply are free for reuse; the board keeps its config, presets and boot preset. **To bring it back:** plug it in, `systemctl --user enable --now aarti-lights`, turn the four automations on, and restore the WLED entries in `projects/endpoints/endpoints.toml` from git history.
-
-**Next step:** none.
+#### Log
+- 2026-09-07: chosen over the other decoration ideas.
+- 2026-09-12 to 2026-09-14: built and shipped; board moved to WLED 16.0.1 on 2026-09-14. Phase gates 0-5 each checked as they closed (pixels individually addressable, mic levels 0-254 with live FFT, 94% brightness stable at 3m, off gives `live=False` at 120mA quiescent).
+- 2026-09-15: verified renderer service active since 2026-09-14 21:09, board reachable on 16.0.1 with 180 LEDs, `select.wled_preset` present in HA's entity registry, and WLED's effect 132 spelled exactly `Gravimeter` - closing the two HA guesses that had been left unverified. Closed as-is with the two known limits above.
+- 2026-09-18: reopened briefly for the idle blackout (the two notes on it, `ambient-energy.py`, `test_aarti_idle_blackout.sh`). Verified on the board: renderer live over UDP, WLED's estimated current dropped 394mA -> 300mA as the glow expired, and the renderer logged `dark` after the silence. **Unverified:** that a real sound relights it from black was only proven in the test, not in the room - nobody was going to clap at 01:30. Same day: the `light.wled_main` brightness issue left alone.
+- 2026-09-24: reopened briefly - a light switched on from HA went dark within ~2s. Not the mic - 12s of speech measured with `ambient-energy.py` put 88% of frames over the floor, half of them voice. The idle clock simply did not know about the switch: a room quiet for 20s meant the renderer resumed black frames as soon as `PowerWatch` saw WLED on, until the next classified sound. `PowerWatch` now stamps an off->on switch and the render loop counts it as a sound, so the resting glow shows for the full timeout; covered by a second check in `test_aarti_idle_blackout.sh` (52fa0d8).
+- 2026-10-02: packed away, after Ganapati. The board was already unplugged. `aarti-lights.service` is disabled and stopped, the four `automation.aarti_lights_*` schedules are turned off in HA (the three dashboard scripts are left; they do nothing without the board), and the three WLED endpoints are off the index. `clawlight-wled-mirror.service` (2026-09-25, `clawlight/README.md`) is stopped but left installed - see "Pegboard backlight as the clawlight". Board, strip, mic and the 5V 4A supply are free for reuse; the board keeps its config, presets and boot preset.
 
 ### Claude Code and new iTerm tabs always land inside tmux
 **Status:** Done
 
-**Why:** A long Claude Code run in a bare terminal tab dies with the tab (and with any ssh carrying it), and there was no way back to a session you'd lost track of. Built by hand over 2026-09-10/11 in a `~/code/personal/scripts` session; packaged into this repo on 2026-09-12 so a second machine (or a reinstalled one) gets the same shell without reconstructing it from memory.
-**What shipped (2026-09-12):** `tools/dev-shell/setup-tmux-shell.sh`, installing three things from `tools/dev-shell/dotfiles/`:
+**Why:** A long Claude Code run in a bare terminal tab dies with the tab (and with any ssh carrying it), and there was no way back to a session you'd lost track of.
+**Outcome:** shipped 2026-09-12 - `tools/dev-shell/setup-tmux-shell.sh`, installing a session picker, tab-completing start directories, `claude` / `claude-local` wrappers and tmux binds from `tools/dev-shell/dotfiles/`. Applied to the MacBook and verified. Run it on any new machine after `new_machine_setup.sh`.
+- Left open: the untracked `~/code/personal/scripts/install-tmux-claude.sh` is superseded; delete it.
+
+#### What shipped
+`tools/dev-shell/setup-tmux-shell.sh`, installing three things from `tools/dev-shell/dotfiles/`:
 - **A session picker** (`tools/dev-shell/dotfiles/zsh/tmux-session-picker.zsh`) on every interactive iTerm shell that starts outside tmux. It deliberately **never auto-attaches** - an earlier version did, and silently dropping a new tab into whatever session happened to be first was worse than no tmux at all. It lists the running sessions (window count, attached/detached, last activity) and waits: a number attaches, `n` creates one you name, Enter gives a plain shell. Picking a session that's already open in another tab attaches an *independent view* of it (a tmux session group) rather than mirroring the other tab's window.
 - **Tab-completing start directories.** Typing an exact project path by hand was the friction that nearly sank the whole thing. The new-session prompt pre-fills a guess (found by name under `$TMUX_PROJECT_ROOT`, default `~/code`) and completes with Tab, via a private `tmuxdir` keymap and a `_tmuxdir_complete` widget so the global Tab binding is untouched. Completion is only initialised on the create-a-session path, so the common attach/plain-shell paths pay nothing.
 - **`claude` / `claude-local` wrappers** (`tools/dev-shell/dotfiles/zsh/claude-tmux.zsh`) that prompt before running outside tmux: Enter relaunches in a tmux window named after the current directory, `n` runs it here anyway, `q` aborts. `claude-local` (Claude Code against a local ollama) passes its env through `tmux -e` on the relaunch path, since the new session doesn't inherit the caller's exports.
 - Plus `~/.tmux.conf` binds so new panes and windows open in the current pane's directory, which tmux hasn't done by default since 1.9.
-**Installing it on another Mac:** `git clone git@github.com:pjangam/homelab.git && homelab/tools/dev-shell/setup-tmux-shell.sh`. For a machine that shouldn't have the repo, `tools/dev-shell/setup-tmux-shell.sh --bundle /tmp/install-tmux-shell.sh` emits **one self-contained file** with the three dotfiles appended to it as a payload (read back past an `exit 0`, so bash never parses them) - scp that over and run it. The bundle is generated from `tools/dev-shell/dotfiles/`, never hand-maintained, so it can't drift from the repo copy.
-**Notes worth keeping:**
+
+#### Installing it on another Mac
+`git clone git@github.com:pjangam/homelab.git && homelab/tools/dev-shell/setup-tmux-shell.sh`. For a machine that shouldn't have the repo, `tools/dev-shell/setup-tmux-shell.sh --bundle /tmp/install-tmux-shell.sh` emits **one self-contained file** with the three dotfiles appended to it as a payload (read back past an `exit 0`, so bash never parses them) - scp that over and run it. The bundle is generated from `tools/dev-shell/dotfiles/`, never hand-maintained, so it can't drift from the repo copy.
+
+#### Notes worth keeping
 - The picker's source line **has to sit above powerlevel10k's instant-prompt block** - anything that reads from the console does - so the installer maintains two separate managed blocks in `~/.zshrc` rather than appending one.
 - Re-running is the update path: managed blocks are replaced, anything outside them is left alone, and the hand-edited original is migrated out of `~/.zshrc` so the two copies can't drift. It refuses to write a `~/.zshrc` that fails `zsh -n`, restoring the backup instead - a broken one is a broken login shell.
 - **Two installers briefly existed for this.** A resumed session wrote a self-contained `~/code/personal/scripts/install-tmux-claude.sh` and applied it to the live dotfiles while this repo-tracked version was being built. This one now strips that one's managed blocks and its `claude-tmux-guard.zsh` on every run, so the machine converges on the repo copy no matter which ran last. The untracked script is superseded; delete it.
 - Escape hatches: `NO_TMUX=1` skips the picker entirely, and answering `n` runs Claude outside tmux anyway.
-**Verified:** `tools/dev-shell/test_setup_tmux_shell.sh` - 63 checks against throwaway `$HOME` files (fresh machine, migration, foreign-installer takeover, idempotent re-run, `--dry-run`, refusing a `~/.zshrc` that wouldn't parse, and a bundle installing with no repo anywhere near it). Applied to the MacBook and confirmed stable across repeated runs.
-**Next step:** none. Run it on any new machine after `new_machine_setup.sh`.
+
+#### Verification
+`tools/dev-shell/test_setup_tmux_shell.sh` - 63 checks against throwaway `$HOME` files (fresh machine, migration, foreign-installer takeover, idempotent re-run, `--dry-run`, refusing a `~/.zshrc` that wouldn't parse, and a bundle installing with no repo anywhere near it). Applied to the MacBook and confirmed stable across repeated runs.
+
+#### Log
+- 2026-09-10/11: built by hand in a `~/code/personal/scripts` session.
+- 2026-09-12: packaged into this repo so a second machine (or a reinstalled one) gets the same shell without reconstructing it from memory; shipped and verified.
 
 ### spotifyd stopped advertising as a Connect device - boot race, not the old Docker-network bug
 **Status:** Done
 
 **Why:** `script.play_bedroom_track` failed with `Could not find media_player.xero_..._spotcast in the managed integrations`, while `spotifyd.service` showed `active (running)` with 5 days uptime and a clean authenticated session. Same visible symptom as the 2026-09-02 zeroconf bug, different cause.
-**What happened (2026-09-11):**
-- **Root cause:** spotifyd's `libmdns` zeroconf server enumerates interfaces once at startup and never retries. At the 2026-09-06 boot it started at 11:56:02, two seconds before `enp1s0` got carrier at 11:56:04, logged one non-fatal `Setting up dns-sd failed: No such device (os error 19)` and ran happily for five days without ever advertising. No advertisement → `xero` absent from Spotify's device list → spotcast's entity never became available → the HA script errored. Four layers between cause and symptom.
+**Outcome:** fixed and verified 2026-09-11 - spotifyd now waits for the network in `ExecStartPre`, its unit is tracked in `systemd/user/`, the watchdog restarts on the libmdns error, and `projects/spotifyd/check_spotifyd_advertising.sh` alerts if `xero` stops being discoverable. Full writeup: `docs/incidents/2026-09-11-spotifyd-zeroconf-lost-to-boot-race.md`.
+- Left open: worth watching whether the ESP32/remote-control projects hit the same user-unit-network trap.
+
+#### Root cause
+- spotifyd's `libmdns` zeroconf server enumerates interfaces once at startup and never retries. At the 2026-09-06 boot it started at 11:56:02, two seconds before `enp1s0` got carrier at 11:56:04, logged one non-fatal `Setting up dns-sd failed: No such device (os error 19)` and ran happily for five days without ever advertising. No advertisement → `xero` absent from Spotify's device list → spotcast's entity never became available → the HA script errored. Four layers between cause and symptom.
 - **The unit's `After=network-online.target` was a no-op the whole time.** It's a `systemd --user` unit, and that target only exists in the system manager - the user manager reports it `not-found` and silently drops the ordering. It had looked like it waited for the network for months and never did.
 - **Not a regression of the 2026-09-02 fix** - `docker network ls` is clean. That fix was applied by restarting spotifyd by hand long after boot, which is exactly why it worked and exactly why this race stayed hidden until the next reboot.
 - **The watchdog was blind to it:** `projects/spotifyd/watchdog_spotifyd.sh` only looked for the 2026-08-04 hang signature (`CLOSE-WAIT` with `Recv-Q > 0`). Here the sockets were perfectly healthy; only the mDNS advertisement was missing.
+
+#### Fix
 - **Fixed three ways:** new `projects/spotifyd/wait_for_network.sh` waits for a global-scope IPv4 address, wired in as `ExecStartPre=-` (dash so a dead network degrades to "start anyway"); `spotifyd.service` is now tracked in `systemd/user/` (it lived only in `~/.config` and was version-controlled nowhere) with the misleading `After=` replaced by a comment explaining why it can't work; the watchdog now greps the current MainPID's journal for the libmdns error and restarts on sight, scoped by `_PID=` so a stale error can't retrigger forever, with no threshold wait because this state never self-heals.
 - **Also cleared:** 36 × `429 Too Many Requests` and a websocket dead since Sep 10 00:54 - the known 2026-08-17 staleness pattern, independent of the above, fixed by the same restart.
-- **Verified:** `avahi-browse -rt _spotify-connect._tcp` shows `xero` advertising; spotcast device sensor 2 → 3; the entity went `unavailable` → `off`. Full writeup: `docs/incidents/2026-09-11-spotifyd-zeroconf-lost-to-boot-race.md`.
-- **Closed the detection gap too (same day).** The fixes above prevent and auto-heal it, but nothing would have *said* anything - every spotifyd signal on the dashboard was watchdog-derived, so all five silent days read green. Added `projects/spotifyd/check_spotifyd_advertising.sh`, which asks the end-state question (is it actually discoverable?) rather than looking for a known log line, so it catches future causes too. **No new cron** - it rides the existing `*/15` healthcheck. Alerts after two consecutive misses (a single miss is just the ~10s window during a watchdog restart), while the dashboard flag flips on the first. New tile `binary_sensor.homelab_healthcheck_homelab_spotifyd_connect_advertising`; alerts reuse `problems[]`, so email + ntfy fire through the existing dedup with no new alerting path. 19 checks across two test scripts, with alert senders and the MQTT publisher stubbed so tests never mail, push, or write a fake red tile.
-**Next step:** none for the fix itself. Worth watching whether the ESP32/remote-control projects hit the same user-unit-network trap.
+- **Detection gap closed.** The fixes above prevent and auto-heal it, but nothing would have *said* anything - every spotifyd signal on the dashboard was watchdog-derived, so all five silent days read green. Added `projects/spotifyd/check_spotifyd_advertising.sh`, which asks the end-state question (is it actually discoverable?) rather than looking for a known log line, so it catches future causes too. **No new cron** - it rides the existing `*/15` healthcheck. Alerts after two consecutive misses (a single miss is just the ~10s window during a watchdog restart), while the dashboard flag flips on the first. New tile `binary_sensor.homelab_healthcheck_homelab_spotifyd_connect_advertising`; alerts reuse `problems[]`, so email + ntfy fire through the existing dedup with no new alerting path. 19 checks across two test scripts, with alert senders and the MQTT publisher stubbed so tests never mail, push, or write a fake red tile.
+
+#### Verification
+`avahi-browse -rt _spotify-connect._tcp` shows `xero` advertising; spotcast device sensor 2 → 3; the entity went `unavailable` → `off`.
+
+#### Log
+- 2026-09-06: boot race - spotifyd started before `enp1s0` had carrier and never advertised for five days.
+- 2026-09-11: diagnosed, fixed three ways, 429s/websocket cleared by the same restart, verified. Same day: detection gap closed with `check_spotifyd_advertising.sh`.
 
 ### iOS push notifications via self-hosted ntfy (clawlight, and reusable for other alerts)
 **Status:** Done
 
-**Why:** clawlight (see ✅ Done) only shows status while the PiP light is actually visible - there's no alert if you're not glancing at it, so a session sitting at a permission prompt can go unnoticed. Explored what it'd take to add a real push alert on the `waiting` transition. **Evaluation only (2026-09-02) - nothing built, deliberately parked.**
+**Why:** clawlight (see ✅ Done) only shows status while the PiP light is actually visible - there's no alert if you're not glancing at it, so a session sitting at a permission prompt can go unnoticed. Explored what it'd take to add a real push alert on the `waiting` transition.
+**Outcome:** shipped 2026-09-04 - option 4, self-hosted ntfy on xero with real auth, wired into clawlight; split into three topics (`clawlight`, `homelab-health`, `homelab-updates`) on 2026-09-11. Server, auth and clawlight wiring all done and verified end-to-end on xero.
+- Left open: install the iOS app and confirm a real push lands on the phone (needs Tailscale up on the phone to fetch message content - the APNs wake-up itself is contentless by design), **and subscribe to `homelab-health` and `homelab-updates` as well as `clawlight`** - logging in grants access but doesn't subscribe, so those pushes land nowhere until that's done.
 
+#### What shipped
+- **`ntfy` container on xero** (`binwiederhier/ntfy` 2.28.0), config in `services/ntfy/server.yml`. Bound to `127.0.0.1:8127` only - it is not on the LAN at all, so basic-auth credentials never cross it in plaintext.
+- **Its own tailnet hostname, `ntfy.<tailnet>`, via an `ntfy-tailscale` sidecar** - the same pattern HA already used, now factored into a shared `x-tailscale-sidecar` anchor in `docker-compose.yml` plus `services/tailscale/serve-config.template.json` + `tools/network/render_ts_serve_config.sh`. The template was verified to reproduce HA's existing `serve-config.json` byte-for-byte before adoption, so HA was a no-op.
+- **Not behind Caddy, deliberately.** ntfy cannot be hosted under a sub-path: upstream declined the feature outright (binwiederhier/ntfy#1009, closed 2026-06-08 - *"it cuts too deep into all the apps and features"*), and setting a sub-path in `base-url` makes the container refuse to start. A second Caddy listener on `:8443` was validated as workable but rejected in favour of the sidecar, which also gets an **auto-renewing** cert instead of depending on the static, unrotated files in `certs/`.
+- **Real auth, which was the point of self-hosting:** `auth-default-access: deny-all`; user `pramod` read-write (the phone logs in as this), user `clawlight` **write-only** via a non-expiring token (what publishes). Verified: publish-with-token 200, read-with-token 403, anonymous 403. Created by `tools/notify/setup_ntfy_users.sh`, which is idempotent and re-runnable; secrets live in gitignored `.env.ntfy` (mode 600).
+- **clawlight wired in** (`clawlight/server.py`): edge-triggered per session, never per-poll, with a 60s cooldown so a run of permission prompts is one interruption rather than several. Publishes over loopback, so no TLS dependency and the token stays on the host. Respects the existing background-task rule - a session at `waiting` with a subagent still running does **not** alert. Covered by `scripts/clawlight/test_clawlight_notify.py` and, end to end against the live topic, by `scripts/clawlight/verify_clawlight_notify.sh`.
+- **Topics:** `clawlight` (agent pings), `homelab-health` (health alerts, via a separate write-only `healthcheck` principal) and `homelab-updates` (Watchtower container updates, priority 2 (low), own write-only `watchtower` principal). `tools/notify/verify_ntfy_topics.sh` proves each token is refused the others' topics in both directions. See Log 2026-09-10 and 2026-09-11 for the narrowing and the split.
+
+#### Options evaluated (2026-09-02)
 **Option 1: `clawlight-cli` (`brew install clawlight/tap/clawlight`), the official clawlight.dev software - ruled out as a replacement.** It's a genuinely more feature-rich per-machine tool (multi-agent: Claude Code/opencode/Codex/Copilot, jump-to-terminal, native OS notifications, official ESP32 firmware driver via `clawlight led`), but it's strictly local - a menu bar/tray icon + TUI, no web server, no remote dashboard, no phone visibility, and can't run meaningfully on `xero` at all (headless server, no display). Doesn't solve "one dashboard, viewable from phone, across two machines" - the actual requirement our build was made for. Its ESP32 support (`clawlight led`) would be the right driver to reuse if the parked hardware version above is ever built.
 
 **Option 2: Home Assistant mobile app push, via Nabu Casa - evaluated, not worth it for now.** HA's mobile push (`notify.mobile_app_*`) requires a Nabu Casa subscription ($6.50/mo or $65/yr, 31-day trial) - confirmed already blocked once before for the same reason on the `healthcheck.sh` project (see Done below), which is why that ended up on Gmail SMTP email instead. Evaluated what the subscription actually buys: remote access and cloud backup/restore are both redundant here (already solved for free via Tailscale and the existing rclone-to-Dropbox backups) - realistically the $65/yr would be paying for exactly one feature, push notifications, though that unlock would apply to every existing email-based alert (`healthcheck.sh`, power watchdog), not just clawlight. **Decision: not worth it for now.**
 
 **Option 3: Web Push from clawlight's own page - feasible but nontrivial, iOS-restricted.** `clawlight/web/index.html` already runs on valid HTTPS (via Tailscale/Caddy), which Web Push requires, so no new infra needed there. But it needs a service worker, VAPID key generation, and server-side per-device subscription storage (a step up from the stdlib-only `server.py` - would need `pywebpush` or hand-rolled signing). **iOS-specific blocker:** Web Push there only works for a page "Added to Home Screen" from actual Safari - third-party iOS browsers (confirmed specifically for Arc, which is what's used day to day) are WebKit-based like all iOS browsers but don't get Safari's installable-PWA-with-push capability; only Safari itself does (an EU-only DMA exception doesn't apply here). Not ruled out, just more work than option 4 and requires a one-time Safari-specific install step.
 
-**Option 4: ntfy.sh - the leading candidate, not yet built.**
+**Option 4: ntfy.sh - the leading candidate at evaluation time (built 2026-09-04, self-hosted).**
 - **Public server (`ntfy.sh`), free, near-zero setup:** POST to `ntfy.sh/<topic>` on the `waiting` transition, official iOS/Android app subscribes to that topic, real native push, no account needed. Caveat: no auth on the public server by default - "the topic name is your password." A long random topic plus the server's own rate-limiting/fail2ban makes brute-forcing impractical, but a leaked topic (git, screenshot, log) is fully compromised, same as a credential. Practical risk is a **notification-flood/attention-DoS** (attacker spams junk alerts until the real one gets buried or notifications get muted), not a literal service-denial - our own publishing wouldn't be blocked. The server also sees plaintext message content (cached 12h by default) and relays through Google FCM (Android) / Apple APNs (iOS) in transit - no end-to-end privacy. Mitigation: keep the push payload minimal (state + host/label only, matching what's already shown on the light - no cwd contents, no prompt text, no PII), same trust boundary as any third-party webhook.
 - **Self-hosted ntfy (open source, `binwiederhier/ntfy`) - closes the gaps above, still free.** Would just be another container on `xero`, matching the existing self-host-everything pattern. Gets real per-user credentials + ACLs (not just "topic name = password"). For iOS specifically, no self-hosted server (ntfy's or anyone's) can wake an iOS app without relaying through Apple's APNs - that's an Apple platform restriction, not an ntfy limitation - so a self-hosted instance still needs `upstream-base-url` pointed at `ntfy.sh` as the APNs relay. Confirmed via ntfy's own docs: only a poll signal (message ID + a SHA256 hash of the topic URL) goes to `ntfy.sh` upstream, **not the actual message content** - the iOS device gets a generic wake-up push, then fetches the real message directly from the self-hosted server (over Tailscale, in our case). So self-hosting keeps message content off `ntfy.sh`'s servers entirely, at the cost of one remaining dependency (`ntfy.sh` staying up as the relay) - same shape of dependency as the Nabu Casa option, just free and open-source instead of paid.
 - **Community sentiment (checked 2026-09-02):** solidly positive - actively maintained, widely used in the self-hosted/homelab community, praised for zero-friction setup and good iOS/Android apps. Commonly compared against Pushover (commercial, ~$5 one-time, best-in-class for alerts you truly cannot miss via repeat-until-acknowledged/DND-bypass, but not self-hostable) and Gotify (self-hosted only, no iOS app, no ACLs, simpler token-only auth). For a "glance and check" alert like clawlight's, ntfy sits as the commonly-recommended middle ground. No real complaints found about the public server's reliability or trustworthiness - criticism found was about self-hosted setup friction (CLI-only user management), not the service itself.
 
-
-
-**What shipped (2026-09-04):** option 4, self-hosted, as evaluated above.
-- **`ntfy` container on xero** (`binwiederhier/ntfy` 2.28.0), config in `services/ntfy/server.yml`. Bound to `127.0.0.1:8127` only - it is not on the LAN at all, so basic-auth credentials never cross it in plaintext.
-- **Its own tailnet hostname, `ntfy.<tailnet>`, via an `ntfy-tailscale` sidecar** - the same pattern HA already used, now factored into a shared `x-tailscale-sidecar` anchor in `docker-compose.yml` plus `services/tailscale/serve-config.template.json` + `tools/network/render_ts_serve_config.sh`. The template was verified to reproduce HA's existing `serve-config.json` byte-for-byte before adoption, so HA was a no-op.
-- **Not behind Caddy, deliberately.** ntfy cannot be hosted under a sub-path: upstream declined the feature outright (binwiederhier/ntfy#1009, closed 2026-06-08 - *"it cuts too deep into all the apps and features"*), and setting a sub-path in `base-url` makes the container refuse to start. A second Caddy listener on `:8443` was validated as workable but rejected in favour of the sidecar, which also gets an **auto-renewing** cert instead of depending on the static, unrotated files in `certs/`.
-- **Real auth, which was the point of self-hosting:** `auth-default-access: deny-all`; user `pramod` read-write (the phone logs in as this), user `clawlight` **write-only** via a non-expiring token (what publishes). Verified: publish-with-token 200, read-with-token 403, anonymous 403. Created by `tools/notify/setup_ntfy_users.sh`, which is idempotent and re-runnable; secrets live in gitignored `.env.ntfy` (mode 600).
-- **clawlight wired in** (`clawlight/server.py`): edge-triggered per session, never per-poll, with a 60s cooldown so a run of permission prompts is one interruption rather than several. Publishes over loopback, so no TLS dependency and the token stays on the host. Respects the existing background-task rule - a session at `waiting` with a subagent still running does **not** alert. Covered by `scripts/clawlight/test_clawlight_notify.py` and, end to end against the live topic, by `scripts/clawlight/verify_clawlight_notify.sh`.
-- **Narrowed to "actually stuck on you" (2026-09-10)** - as first built, the push fired on the aggregate entering `waiting`, and `Stop` fires at the end of every message, so it was a buzz per message: a notification that arrives every time carries no information about when to look. Now only `Notification`/`PermissionRequest` (reported as the new `input_needed` state) can send, and only after a 20s delay with a re-check that the light is *still* red - a background shell finishing or a permission answered on the spot flips it green again within seconds and should never have buzzed. Same red light as before either way; only the push got pickier.
-
-**Gotchas worth remembering:**
+#### Gotchas worth remembering
 - `containerboot` hard-deadlines `tailscale up` at **60 seconds**, so interactive browser login is a race it usually loses - it then SIGTERMs, restarts, mints a new nodekey and invalidates the URL, leaving an orphan machine record squatting the DNS name. Use `TS_AUTHKEY` for these sidecars, never the login URL.
 - The sidecar sets `hostname: ntfy` for its tailnet identity, which **shadows the `ntfy` service** in Docker's embedded DNS - `http://ntfy:80` from inside the sidecar resolves to the sidecar itself and 502s. Hence the `ntfy-server` network alias. tailscaled also writes `search <tailnet>` + `ndots:0` into the sidecar's `resolv.conf`, so bare names can hit MagicDNS before Docker DNS.
 - `ntfy user add` reads `NTFY_PASSWORD`, but `docker exec` does not forward host env - it needs an explicit `-e`, or the command silently blocks on a password prompt.
 - `ntfy token add --expires=never` is not valid ("unable to parse duration"); omitting `--expires` is the never-expiring form.
 - `config.js` reporting `"base_url": ""` is **normal** (the web app uses relative URLs), not a lost setting - confirmed via absolute attachment URLs, and by ntfy refusing to start at all when `upstream-base-url` is set without `base-url`.
 
-**Split into two topics (2026-09-11):** health alerts and clawlight pings shared `/clawlight`, so muting agent notifications while working also muted infrastructure alerts. `healthcheck.sh`/watchdogs now publish to `homelab-health` via a separate write-only `healthcheck` principal; `tools/notify/verify_ntfy_topics.sh` proves each token is refused the other's topic in both directions rather than trusting the printed ACLs.
-**Third topic, `homelab-updates` (2026-09-11):** Watchtower container updates, published at priority 2 (low) by its own write-only `watchtower` principal. Separate from `homelab-health` because an update is informational, not a fault - it has to be mutable without silencing real alerts. This is the first token consumed by a *container* rather than a host script, so `setup_ntfy_users.sh` also mirrors it into `.env` (the only env file docker compose auto-loads) instead of just `.env.ntfy`. `verify_ntfy_topics.sh` now covers all three topics in both directions, plus that the container's token cannot read even its own history.
-**State:** server, auth and clawlight wiring all done and verified end-to-end on xero. Remaining: install the iOS app and confirm a real push lands on the phone (needs Tailscale up on the phone to fetch message content - the APNs wake-up itself is contentless by design), **and subscribe to `homelab-health` and `homelab-updates` as well as `clawlight`** - logging in grants access but doesn't subscribe, so those pushes land nowhere until that's done.
+#### Log
+- 2026-09-02: evaluation only - nothing built, deliberately parked. Four options compared (see "Options evaluated"); ntfy the leading candidate.
+- 2026-09-04: shipped option 4, self-hosted, as evaluated.
+- 2026-09-10: narrowed to "actually stuck on you" - as first built, the push fired on the aggregate entering `waiting`, and `Stop` fires at the end of every message, so it was a buzz per message: a notification that arrives every time carries no information about when to look. Now only `Notification`/`PermissionRequest` (reported as the new `input_needed` state) can send, and only after a 20s delay with a re-check that the light is *still* red - a background shell finishing or a permission answered on the spot flips it green again within seconds and should never have buzzed. Same red light as before either way; only the push got pickier.
+- 2026-09-11: split into two topics - health alerts and clawlight pings shared `/clawlight`, so muting agent notifications while working also muted infrastructure alerts. `healthcheck.sh`/watchdogs now publish to `homelab-health` via a separate write-only `healthcheck` principal; `tools/notify/verify_ntfy_topics.sh` proves each token is refused the other's topic in both directions rather than trusting the printed ACLs.
+- 2026-09-11: third topic, `homelab-updates` - Watchtower container updates, published at priority 2 (low) by its own write-only `watchtower` principal. Separate from `homelab-health` because an update is informational, not a fault - it has to be mutable without silencing real alerts. This is the first token consumed by a *container* rather than a host script, so `setup_ntfy_users.sh` also mirrors it into `.env` (the only env file docker compose auto-loads) instead of just `.env.ntfy`. `verify_ntfy_topics.sh` now covers all three topics in both directions, plus that the container's token cannot read even its own history.
 
 ### Claw Light (clawlight.dev) - agent status indicator, software-only version
 **Status:** Done
 
 **Why:** a desk light that shows at-a-glance status for coding agent sessions (Claude Code, Opencode, Codex CLI, GitHub Copilot CLI) via color-coded signal - green for active work, red when input is needed - so a running session doesn't need active alt-tabbing to check on.
-**What shipped (`clawlight/`, 2026-09-02):** no hardware - a web page (`clawlight/web/index.html`) served by `clawlight/server.py` on xero (port 8126, proxied at `/clawlight` by Caddy), showing green/red/gray states. "Always on top" is done via native video Picture-in-Picture (canvas → `captureStream()` → PiP), which works the same way on desktop Safari/Chrome and iOS Safari - one page covers both Mac and iOS, no OS-level always-on-top tooling needed. Confirmed floating and readable on both.
+**Outcome:** shipped 2026-09-02 as software only (`clawlight/`): a web page with a PiP "always on top" light, driven by Claude Code hooks, aggregating sessions across xero and the Macs. Jump to console added 2026-09-09; done and working end-to-end on both machines (2026-09-09). The Mac runs it from a git clone since 2026-09-16; a second Mac (`mbp19`) joined 2026-09-19. Hardware version not started (see "Possible future scope").
+
+#### What shipped
+No hardware - a web page (`clawlight/web/index.html`) served by `clawlight/server.py` on xero (port 8126, proxied at `/clawlight` by Caddy), showing green/red/gray states. "Always on top" is done via native video Picture-in-Picture (canvas → `captureStream()` → PiP), which works the same way on desktop Safari/Chrome and iOS Safari - one page covers both Mac and iOS, no OS-level always-on-top tooling needed. Confirmed floating and readable on both.
 - Status is driven by 10 Claude Code hooks (`UserPromptSubmit`→active, `Stop`→waiting, `Notification`/`PermissionRequest`→input_needed, `PostToolUse`→active, `SessionEnd`→end, `SubagentStart`/`TaskCreated`→task_start, `SubagentStop`/`TaskCompleted`→task_end) calling `clawlight/set-status.sh`, which POSTs to the server. The server aggregates across **all** reporting sessions, on **any** host (xero and the MacBook, over Tailscale) - red if any session needs input, green if any is active, gray otherwise. Both of the user's accounts (personal, enterprise) share one login per machine at a time, so no per-account tracking is needed.
 - Each session tracks a separate foreground (active/waiting) and background (subagent/task counter) state, so a forked/background agent still working doesn't falsely flip the light to "needs input" just because the main turn ended. `PostToolUse`→active closes a gap where approving a permission prompt had no dedicated "resolved" hook to flip the light back from red.
-- **Jump to console (added 2026-09-09), borrowed from `clawlight-cli`'s jump-to-terminal.** Clicking a session on the page switches that machine's terminal to the tmux pane it's running in, closing the "shows *which* console needs you, but you still have to go find it" gap. `set-status.sh` now reports `$TMUX`'s socket and `$TMUX_PANE`; a session started outside tmux is shown as **unreachable** rather than offering a jump that would quietly do nothing.
-  - **The server deliberately never runs tmux itself, not even for its own host.** xero's server can reach xero's tmux but never the MacBook's, so executing server-side would have meant two implementations of the same feature - and the one that matters most is the Mac's, where most sessions live. Instead every host runs `clawlight/focus-agent.sh`, which holds an SSE connection to `/api/focus-stream?host=<its host>` and runs the tmux commands locally; the server only routes. One code path, tested once, same script on Linux and macOS.
-  - **A click is refused outright when that host's agent isn't running** - the server counts live focus-stream subscribers per host, so the page reports "no focus agent running on mac" rather than flashing success at a jump that can't happen. A control that lies about having worked is worse than one that says it didn't - you stop trusting the honest cases too. An accepted request still expires after 15s, and only the newest per host is kept - a click is "take me there now", so a queued backlog that yanks the terminal minutes later is never what you want. Same "never act on stale state" rule as the MQTT last-will.
-  - tmux coordinates arrive over the network and end up as `tmux` arguments, so they're validated on ingest (pane must be `%<digits>`, socket an absolute path) and again in the agent.
-  - **A session reached over ssh is jumped on both machines.** Viewing a xero session through an ssh tab on the Mac means the pane lives on xero but the window you look at it through is a Mac terminal tab, and neither agent can see the other's world. The link is the ssh connection's **source port** - exactly one process on exactly one machine owns it. xero's agent reads `SSH_CONNECTION` from the tmux client's environment and announces it; the server broadcasts to every other host (the announcer knows the connection but not which host label is at the far end); each agent runs one `lsof` and only the true owner matches, then resolves that process to a tty - through a local tmux pane if the ssh itself runs inside tmux - and selects that terminal tab. Broadcasting avoids maintaining any address-to-host mapping, and the wrong machine simply no-ops.
-  - Covered by `scripts/clawlight/test_clawlight_focus.py` (27 checks: routing, staleness, malformed/injected coordinates) and `scripts/clawlight/test_clawlight_focus_e2e.sh`, which drives a throwaway tmux server with a real attached client against the live server. Verified on xero against a real live session.
-- **State:** done and working end-to-end on both machines (2026-09-09). `clawlight-server.service` and `clawlight-focus-agent.service` live on xero; the Mac runs the launchd focus agent. Verified: clicking a Mac session selects its iTerm tab, and clicking a xero session switches xero's tmux *and* surfaces the iTerm tab holding the ssh into it.
-- **The Mac runs clawlight from a git clone (switched from scp'd copies 2026-09-16).** Three separate debugging rounds went on stale scp'd copies in `/Users/pramod/code/personal/`. `clawlight/setup-mac-focus-agent.sh`, run from the clone, rewrites the hooks and the launchd plist to the clone's paths; after that `git pull` is the deploy (plus a `launchctl kickstart` for `focus-agent.sh`). The hooks hold the clone's `clawlight/` path, so the deferred move to `projects/clawlight/` needs the script re-run on the Mac.
-- **Amber for a turn that ended on its own background shells (2026-09-16).** Background Bash shells fire no hook, so a session whose turn ended while its tests ran in the background showed red "needs input" while it was really working. `set-status.sh` now checks at `Stop` whether the `claude` process still has shell-snapshot children and reports `shells` (amber on the page, green on the Pi LED, no push). Tested by `scripts/clawlight/test_clawlight_shells.py` on a fake process tree.
+- **Amber for a turn that ended on its own background shells.** Background Bash shells fire no hook, so a session whose turn ended while its tests ran in the background showed red "needs input" while it was really working. `set-status.sh` now checks at `Stop` whether the `claude` process still has shell-snapshot children and reports `shells` (amber on the page, green on the Pi LED, no push). Tested by `scripts/clawlight/test_clawlight_shells.py` on a fake process tree.
+- **State:** `clawlight-server.service` and `clawlight-focus-agent.service` live on xero; the Mac runs the launchd focus agent. Verified: clicking a Mac session selects its iTerm tab, and clicking a xero session switches xero's tmux *and* surfaces the iTerm tab holding the ssh into it.
+
+#### Jump to console
+Borrowed from `clawlight-cli`'s jump-to-terminal. Clicking a session on the page switches that machine's terminal to the tmux pane it's running in, closing the "shows *which* console needs you, but you still have to go find it" gap. `set-status.sh` now reports `$TMUX`'s socket and `$TMUX_PANE`; a session started outside tmux is shown as **unreachable** rather than offering a jump that would quietly do nothing.
+- **The server deliberately never runs tmux itself, not even for its own host.** xero's server can reach xero's tmux but never the MacBook's, so executing server-side would have meant two implementations of the same feature - and the one that matters most is the Mac's, where most sessions live. Instead every host runs `clawlight/focus-agent.sh`, which holds an SSE connection to `/api/focus-stream?host=<its host>` and runs the tmux commands locally; the server only routes. One code path, tested once, same script on Linux and macOS.
+- **A click is refused outright when that host's agent isn't running** - the server counts live focus-stream subscribers per host, so the page reports "no focus agent running on mac" rather than flashing success at a jump that can't happen. A control that lies about having worked is worse than one that says it didn't - you stop trusting the honest cases too. An accepted request still expires after 15s, and only the newest per host is kept - a click is "take me there now", so a queued backlog that yanks the terminal minutes later is never what you want. Same "never act on stale state" rule as the MQTT last-will.
+- tmux coordinates arrive over the network and end up as `tmux` arguments, so they're validated on ingest (pane must be `%<digits>`, socket an absolute path) and again in the agent.
+- **A session reached over ssh is jumped on both machines.** Viewing a xero session through an ssh tab on the Mac means the pane lives on xero but the window you look at it through is a Mac terminal tab, and neither agent can see the other's world. The link is the ssh connection's **source port** - exactly one process on exactly one machine owns it. xero's agent reads `SSH_CONNECTION` from the tmux client's environment and announces it; the server broadcasts to every other host (the announcer knows the connection but not which host label is at the far end); each agent runs one `lsof` and only the true owner matches, then resolves that process to a tty - through a local tmux pane if the ssh itself runs inside tmux - and selects that terminal tab. Broadcasting avoids maintaining any address-to-host mapping, and the wrong machine simply no-ops.
+- Covered by `scripts/clawlight/test_clawlight_focus.py` (27 checks: routing, staleness, malformed/injected coordinates) and `scripts/clawlight/test_clawlight_focus_e2e.sh`, which drives a throwaway tmux server with a real attached client against the live server. Verified on xero against a real live session.
+
+#### Setting up a machine
+- **The Mac runs clawlight from a git clone.** Three separate debugging rounds went on stale scp'd copies in `/Users/pramod/code/personal/`. `clawlight/setup-mac-focus-agent.sh`, run from the clone, rewrites the hooks and the launchd plist to the clone's paths; after that `git pull` is the deploy (plus a `launchctl kickstart` for `focus-agent.sh`). The hooks hold the clone's `clawlight/` path, so the deferred move to `projects/clawlight/` needs the script re-run on the Mac.
+- **`clawlight/setup-clawlight-hooks.sh` is the first step on a new machine:** it writes all ten hooks into the global `~/.claude/settings.json` with the correct state per event, is re-runnable (strips the old set-status.sh hooks first, so it re-points rather than duplicates), and works on macOS and Linux. It checks the server is reachable **before** writing and proves the report arrived **after**, because every failure on this path is silent by design - `set-status.sh` swallows errors so a hiccup can't break a turn, which makes a wrong URL and a wrong state argument both look like nothing at all. `setup-mac-focus-agent.sh` then reads the host and server back out of the hooks the new script wrote.
+
+#### Notes worth keeping
 - **Everything that broke during the build broke silently**, which is the pattern worth remembering: a wrong `CLAWLIGHT_FOCUS_APP`, a `$TMUX` read under launchd where it is unset, and finally `lsof` living in `/usr/sbin` - off a launchd agent's PATH - so the agent reported it "not installed" on a machine that had it. From the browser all three looked identical to a jump that worked. Every one of those paths now logs, and `clawlight/diagnose-mac-focus.sh` walks the four steps on the Mac and stops at the first break.
 - **A diagnostic must test the agent's environment, not the shell you type in.** The first version of that script checked `lsof` from the invoking shell, where it resolves fine, and so kept reporting everything healthy while the agent could not find it at all.
-- **A second Mac joined 2026-09-19: `mbp19`, the 2019 16" Intel MBP.** Onboarding it exposed a real gap - the README described the ten hooks in prose and left them to be hand-wired, and `setup-mac-focus-agent.sh` *reads* those hooks (it dies with "wire them first" and takes its server URL back out of them), so nothing in the repo could set up a machine clawlight had never seen. `clawlight/setup-clawlight-hooks.sh` is that missing first step: it writes all ten into the global `~/.claude/settings.json` with the correct state per event, is re-runnable (strips the old set-status.sh hooks first, so it re-points rather than duplicates), and works on macOS and Linux. It checks the server is reachable **before** writing and proves the report arrived **after**, because every failure on this path is silent by design - `set-status.sh` swallows errors so a hiccup can't break a turn, which makes a wrong URL and a wrong state argument both look like nothing at all. Exactly how the MacBook's hand-wired `Notification` hook sent `waiting` instead of `input_needed` and silently never pushed (2026-09-10).
-  - `setup-mac-focus-agent.sh` ran cleanly straight afterwards (it reads the host and server back out of the hooks the new script wrote) and the jump is **verified for real, not assumed**: requesting focus for a live session moved the active pane to that session's `%1` and brought iTerm forward, with the agent logging `focused home_tools (%1)`. Worth checking at that level here because all three of this feature's historical breakages looked identical to success from the browser. Two of them did not recur: `/usr/sbin/lsof` resolves under the plist's PATH, and the terminal detected as `iTerm2` - which the script's own comment warns is the name that fails - genuinely activates on this machine, as does `iTerm`, both resolving to the same app. That comment is stale for current iTerm2, not wrong about the past.
+- The script's own comment warning that `iTerm2` is the name that fails is stale for current iTerm2, not wrong about the past (see Log 2026-09-19).
 
-- Known limitation, not planned to be fixed: stale sessions from force-closed terminals (no graceful `SessionEnd`) only clear after a 30min timeout or a manual `systemctl --user restart clawlight-server.service` - user explicitly chose to leave the timeout as-is rather than shorten it.
+#### Known limitation
+Not planned to be fixed: stale sessions from force-closed terminals (no graceful `SessionEnd`) only clear after a 30min timeout or a manual `systemctl --user restart clawlight-server.service` - user explicitly chose to leave the timeout as-is rather than shorten it.
 
-**Possible future scope, not started: hardware version.** ESP32-C6, diffused RGB LED (3-lens beacon), USB-C powered, <0.5W. Open-source - firmware, CLI daemon, and hardware design all public on GitHub; sold pre-flashed but self-buildable/flashable too. Would replace "open a browser tab" with an always-visible physical light, same status source (could reuse `clawlight/server.py`'s API rather than needing its own daemon). Not proactive - revisit if the software version's browser-tab requirement becomes a real annoyance.
+#### Possible future scope, not started: hardware version
+ESP32-C6, diffused RGB LED (3-lens beacon), USB-C powered, <0.5W. Open-source - firmware, CLI daemon, and hardware design all public on GitHub; sold pre-flashed but self-buildable/flashable too. Would replace "open a browser tab" with an always-visible physical light, same status source (could reuse `clawlight/server.py`'s API rather than needing its own daemon). Not proactive - revisit if the software version's browser-tab requirement becomes a real annoyance.
 
-**Why we built this instead of using the official `clawlight-cli` (`brew install clawlight/tap/clawlight`) directly - checked after the fact (2026-09-02), not evaluated up front.** The original build was never actually compared against the real clawlight.dev software - "clawlight" was only used as the name/inspiration for the parked hardware idea. Checking `clawlight-cli`'s actual repo afterward confirmed the from-scratch build was still the right call, for reasons unrelated to code quality:
+#### Why we built this instead of using the official `clawlight-cli`
+`brew install clawlight/tap/clawlight` - checked after the fact (2026-09-02), not evaluated up front. The original build was never actually compared against the real clawlight.dev software - "clawlight" was only used as the name/inspiration for the parked hardware idea. Checking `clawlight-cli`'s actual repo afterward confirmed the from-scratch build was still the right call, for reasons unrelated to code quality:
 - It's a **local-only** menu bar/tray icon + TUI (macOS/Windows/Linux desktop), not a web server - no cross-machine dashboard, no remote/phone visibility at all.
 - `xero` is a **headless server** with no display - `clawlight-cli`'s entire UI model (a tray icon you click, a TUI you sit in front of) has nothing to attach to there.
 - No iOS story whatsoever - the core requirement (a light visible on the phone, "always on top" via PiP) has no equivalent in that tool.
-- It does have real advantages ours doesn't: multi-agent support (opencode/Codex CLI/Copilot CLI, not just Claude Code), native desktop notifications, and the official ESP32 firmware driver (`clawlight led`) for the hardware version above if it's ever built - worth revisiting standalone on the Mac if those specific features become wanted, but it was never a substitute for what this project needed. **Jump-to-terminal was on this list until 2026-09-09, when it was reimplemented here** (see above) - worth noting the borrowed idea landed differently than the original: `clawlight-cli` focuses a terminal window on the machine it runs on, whereas routing through the server means clicking on the phone can move the terminal on the Mac.
+- It does have real advantages ours doesn't: multi-agent support (opencode/Codex CLI/Copilot CLI, not just Claude Code), native desktop notifications, and the official ESP32 firmware driver (`clawlight led`) for the hardware version above if it's ever built - worth revisiting standalone on the Mac if those specific features become wanted, but it was never a substitute for what this project needed. **Jump-to-terminal was on this list until 2026-09-09, when it was reimplemented here** (see "Jump to console") - worth noting the borrowed idea landed differently than the original: `clawlight-cli` focuses a terminal window on the machine it runs on, whereas routing through the server means clicking on the phone can move the terminal on the Mac.
+
+#### Log
+- 2026-09-02: shipped (`clawlight/`). Same day, checked against the official `clawlight-cli` after the fact.
+- 2026-09-09: jump to console added; done and working end-to-end on both machines.
+- 2026-09-10: the MacBook's hand-wired `Notification` hook sent `waiting` instead of `input_needed` and silently never pushed.
+- 2026-09-16: the Mac switched from scp'd copies to a git clone. Same day: amber `shells` state for a turn that ended on its own background shells.
+- 2026-09-19: a second Mac joined: `mbp19`, the 2019 16" Intel MBP. Onboarding it exposed a real gap - the README described the ten hooks in prose and left them to be hand-wired, and `setup-mac-focus-agent.sh` *reads* those hooks (it dies with "wire them first" and takes its server URL back out of them), so nothing in the repo could set up a machine clawlight had never seen. `clawlight/setup-clawlight-hooks.sh` added as that missing first step.
+  - `setup-mac-focus-agent.sh` ran cleanly straight afterwards and the jump is **verified for real, not assumed**: requesting focus for a live session moved the active pane to that session's `%1` and brought iTerm forward, with the agent logging `focused home_tools (%1)`. Worth checking at that level here because all three of this feature's historical breakages looked identical to success from the browser. Two of them did not recur: `/usr/sbin/lsof` resolves under the plist's PATH, and the terminal detected as `iTerm2` - which the script's own comment warns is the name that fails - genuinely activates on this machine, as does `iTerm`, both resolving to the same app. That comment is stale for current iTerm2, not wrong about the past.
 
 ### Physical GPIO buttons (wol-sender Pi) - white noise start/stop + oju sleep/awake scenes
 **Status:** Done
 
 **Why:** the rest of the household and house help don't want to use the HA app/voice - physical buttons wired to the wol-sender Pi's GPIO give a simple, no-app way to trigger white noise and the sleep/awake scenes. This entry also closes the former parked umbrella project "Easier HA control for household + house help", which weighed three approaches: (1) a remote/buttons, (2) a cheap wall-mounted HA kiosk tablet plus a Claude/Alfred-style assistant client, (3) physical USB/GPIO buttons.
-**Outcome (2026-09-16):** these buttons (approach 1/3) worked for both the user's mother and the house help, so the need is met. The two threads still open under the umbrella project are closed as **not needed**: the tablet (approach 2, never explored) and ESP32/ESPHome buttons for locations away from the Pi (never built). Revisit only if one becomes a real need.
-**State:** four buttons across two bridge services, both confirmed working end-to-end against live HA switches/scenes (verified 2026-08-31).
+**Outcome (2026-09-16):** these buttons (approach 1/3) worked for both the user's mother and the house help, so the need is met. Four buttons across two bridge services, both confirmed working end-to-end against live HA switches/scenes (verified 2026-08-31). The two threads still open under the umbrella project are closed as **not needed**: the tablet (approach 2, never explored) and ESP32/ESPHome buttons for locations away from the Pi (never built). Revisit only if one becomes a real need.
+- Standing caveat: the scene buttons are currently unwired (noted 2026-09-04) - `scene-buttons-mqtt.service` still runs on the Pi with no buttons attached. Harmless now that the FIFO collision is fixed, but any future lgpio service on this Pi must get its own working directory - an idle bridge eats edge reports just as effectively as a busy one.
 
-- **First physical button in progress (2026-08-24):**
-  - User has a salvaged latching/toggle mechanical switch and jumper cables on hand - decided to wire it directly into the wol-sender Pi's GPIO (not xero, which has no GPIO; not ESP32, since this button's location is right next to a host already, the case where GPIO wins per the earlier build-effort discussion).
-  - `scripts/toggle-button-mqtt.py` written (committed) - publishes the switch's ON/OFF position as an HA `binary_sensor` via MQTT discovery (topic `homeassistant/binary_sensor/toggle_switch_1/config`), matching the existing `white-noise-mqtt.py` bridge style.
-  - Wiring: GPIO17 (physical pin 11) to GND (physical pin 9), no resistor (uses the Pi's internal pull-up).
+#### Current setup
+- **White noise:** GPIO17 (pin 11) starts white noise, GPIO18 (pin 12) stops it, both to GND, no resistor (Pi's internal pull-up). Bridge `scripts/pi-buttons/white-noise-buttons-mqtt.py`, automations `white_noise_button_start`/`_stop`. Details: `white_noise_buttons_setup.md`.
+- **Scenes:** `scripts/pi-buttons/scene-buttons-mqtt.py` (GPIO27/pin 13 → sleep, GPIO22/pin 15 → awake), running as `scene-buttons-mqtt.service` on the Pi; automations `scene_button_oju_sleep`/`_awake` for `scene.ojaswi_sleeping`/`scene.ojaswi_awake`.
+- Both bridges publish a plain non-retained MQTT message only on an actual press, no persisted state/availability topic - sidesteps the reconnect-loop bug class entirely.
+- Each script `chdir`s into its own `~/.lgpio/<script>/` before creating any `Button` (see the 2026-09-04 fix in the Log).
+- `docs/gpio_pinout.md` is the standing reference for the Pi's 40-pin header.
+- Tooling: `scripts/pi-buttons/diagnose_white_noise_buttons.sh`, `scripts/pi-buttons/capture_white_noise_button_presses.sh`, `scripts/pi-buttons/deploy_button_bridges_pi.sh`.
 
-- **PoC method until the real switch/housing exists (2026-08-25):**
-  - Couldn't find the salvaged switch right now - standing in for it by manually bridging GPIO17 (physical pin 11) to GND (physical pin 9) with a female-to-male jumper cable, plugging/unplugging by hand.
-  - Confirmed safe: that pin is 3.3V logic (not the 5V rail, which is separate physical pins 2/4), current-limited to microamps by the internal pull-up - fine for repeated manual make/break.
-  - This stands in for the real switch until it's found (or a replacement bought) and a housing is built.
+#### Design decisions
+- **GPIO on the wol-sender Pi** (not xero, which has no GPIO; not ESP32, since this button's location is right next to a host already, the case where GPIO wins per the earlier build-effort discussion).
+- **Two push buttons for the scenes, not a toggle:** considered a single two-position toggle (ON → sleep, OFF → awake) vs. two independent push buttons - **decided: two push buttons**, since sleep/awake are one-shot scene triggers, not a persisted state like white noise, so a toggle's resting position doesn't map cleanly onto them (re-triggering sleep via a toggle would mean flipping OFF→ON, firing the awake scene on the way through - the same spurious cross-firing already fought off for white noise).
+- **Momentary shape over retained state:** the scene bridge was deliberately a different shape from the toggle switch's bridge - a plain non-retained MQTT message only on an actual press, no persisted state/availability topic at all, sidestepping the whole reconnect-loop bug class rather than just this instance of it. The white-noise buttons were later rebuilt in the same shape.
+- **systemd fixes for lgpio bridges:** beyond the original `RPi.GPIO` → `rpi-lgpio` dependency swap: (a) `ExecStart` must call `uv` by full path (`/home/pramod/.local/bin/uv`), since systemd's default `PATH` excludes `~/.local/bin`; (b) `WorkingDirectory=/home/pramod` is required - `lgpio` writes a notification file into the process's current working directory at import time, which defaults to `/` under systemd (unwritable by `pramod`), and without `WorkingDirectory` set, `gpiozero` silently falls back to a broken legacy sysfs backend instead of raising a clear error.
 
-- **Running as a systemd service (2026-08-25):**
-  - Installed as `toggle-button-mqtt.service` on the Pi so it survives SSH sessions ending and reboots.
-  - Needed two systemd-specific fixes beyond the original `RPi.GPIO` → `rpi-lgpio` dependency swap: (a) `ExecStart` must call `uv` by full path (`/home/pramod/.local/bin/uv`), since systemd's default `PATH` excludes `~/.local/bin`; (b) `WorkingDirectory=/home/pramod` is required - `lgpio` writes a notification file into the process's current working directory at import time, which defaults to `/` under systemd (unwritable by `pramod`), and without `WorkingDirectory` set, `gpiozero` silently falls back to a broken legacy sysfs backend instead of raising a clear error.
-  - Service confirmed stable (`active`, 0 restarts).
-  - Wired to a first automation: `binary_sensor.toggle_switch_1` on/off now calls `switch.turn_on`/`turn_off` on `switch.white_noise` (`toggle1_white_noise_on`/`_off` in `HOMEASSISTANT_CONFIG/automations.yaml`) - edge-triggered on the switch's own state transitions only, so scenes/dashboard control of white noise are untouched unless the physical switch is also flipped.
-
-- **Reconnect-loop bug found and fixed (2026-08-25):**
-  - First automation test immediately turned white noise back off every time it was turned on via a scene, with the physical switch never touched.
-  - Root cause: `scripts/toggle-button-mqtt.py`'s manual MQTT reconnect loop (`while client.is_connected(): sleep(...)` right after `loop_start()`) was racy and reconnected on a ~5s cycle indefinitely (confirmed via Mosquitto's own log, not just the Pi's systemd restart count, which stayed at 0 the whole time since the process itself never crashed). Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire the `to: 'off'` automation trigger every 5 seconds.
-  - Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). Confirmed stable via Mosquitto's log (90+ seconds with zero reconnects) before re-enabling the automation.
-
-- **Working end-to-end (2026-08-26):** user confirmed the physical switch + automation combination now works correctly - flipping the switch reliably toggles white noise, and scene/dashboard control of `switch.white_noise` is no longer overridden by the switch's resting position.
-
-- **Scene buttons deployed (2026-08-26):**
-  - Two momentary push buttons for `scene.ojaswi_sleeping`/`scene.ojaswi_awake` (previously only reachable via NFC tag automations).
-  - Considered a single two-position toggle (ON → sleep, OFF → awake) vs. two independent push buttons - **decided: two push buttons**, since sleep/awake are one-shot scene triggers, not a persisted state like white noise, so a toggle's resting position doesn't map cleanly onto them (re-triggering sleep via a toggle would mean flipping OFF→ON, firing the awake scene on the way through - the same spurious cross-firing already fought off for white noise).
-  - `scripts/pi-buttons/scene-buttons-mqtt.py` (GPIO27/pin 13 → sleep, GPIO22/pin 15 → awake) deployed and running as `scene-buttons-mqtt.service` on the Pi.
-  - The two HA automations (`scene_button_oju_sleep`/`_awake`) applied to `automations.yaml` and confirmed working.
-  - Deliberately a different shape from the toggle switch's bridge: publishes a plain non-retained MQTT message only on an actual press, no persisted state/availability topic at all, sidestepping the whole reconnect-loop bug class rather than just this instance of it.
-  - `docs/gpio_pinout.md` added as a standing reference for the Pi's 40-pin header.
-
-- **GPIO17 toggle switch swapped for two momentary push buttons (2026-08-31):** the latching toggle switch was replaced with independent start/stop push buttons - GPIO17 (pin 11, existing) now starts white noise, GPIO18 (pin 12, newly wired) stops it, both to GND, no resistor. Rebuilt in the momentary-button shape already proven out for the scene buttons: `scripts/pi-buttons/white-noise-buttons-mqtt.py` (replaces `toggle-button-mqtt.py`) publishes a plain non-retained MQTT message per press, no retained `binary_sensor`/availability topic - sidesteps the reconnect-loop bug class entirely rather than just fixing this instance of it. New automations `white_noise_button_start`/`_stop` replace the dead `toggle1_white_noise_on`/`_off`. Details: `white_noise_buttons_setup.md`.
-- **Same-day, separate bug:** while debugging why the HA white-noise switch wasn't responding, found `white-noise-mqtt.py` (the switch's own MQTT bridge, unrelated to the physical buttons) had the identical unfixed reconnect race from before the 2026-08-25 fix - `whitenoise/available` was flapping offline/online every ~5s. Fixed the same way (`connect_async()` + `loop_forever()`); see `Readme.md`'s White Noise section.
-- **Confirmed working (2026-08-31):** user verified both the start and stop buttons correctly toggle `switch.white_noise` in HA.
-- **Broke after the 2026-09-03 reboot, fixed 2026-09-04:** buttons did nothing while both bridge services looked healthy (active, restart counter 0, MQTT connected for 21h). Cause was neither the wiring nor MQTT: `lgpio` puts its edge-notification FIFO (`.lgd-nfy<N>`) in the process's working directory, both bridges ran with `WorkingDirectory=/home/pramod`, and systemd started them in the same second at boot - and the number in that filename is lgpio's per-process handle counter, which always starts at 0 - so both bridges named their pipe `.lgd-nfy0` and shared one. Not a race: verified on the Pi that any two lgpio processes in one directory collide every time. The idle `scene-buttons-mqtt` process (no buttons wired to it right now) sat on the shared pipe eating a share of the white-noise bridge's edge reports; a pipe empties as it is read, so every swallowed event was a lost press. Presses mostly vanished, occasionally got through. Fixed by having each script `chdir` into its own `~/.lgpio/<script>/` before creating any `Button`, so no unit-file config can reintroduce the collision. Both scripts now also log (notify dir, watched pins, MQTT connect/disconnect, one line per press) - the total absence of logging is why this hid for a day. (The ~4-5% idle CPU each bridge uses was suspected to be part of this, but measured identical after the fix - it is just gpiozero+lgpio's resting cost on a Pi 3B.) Verified end to end after the fix. New tooling: `scripts/pi-buttons/diagnose_white_noise_buttons.sh`, `scripts/pi-buttons/capture_white_noise_button_presses.sh`, `scripts/pi-buttons/deploy_button_bridges_pi.sh`. Details: `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`.
-- **Scene buttons currently unwired (noted 2026-09-04):** `scene-buttons-mqtt.service` still runs on the Pi but has no buttons physically attached. Harmless now that the FIFO collision is fixed, but any future lgpio service on this Pi must get its own working directory - an idle bridge eats edge reports just as effectively as a busy one.
-
-**Approach 1 findings - dedicated remote/button device (superseded by the DIY GPIO build, kept for reference):**
+#### Approach 1 findings - dedicated remote/button device
+Superseded by the DIY GPIO build, kept for reference.
 - Preference throughout: WiFi/Bluetooth-native devices that join existing infra directly, over Zigbee/IR which need an extra gateway/coordinator.
 - **Shelly Plus i4** is discontinued; successor is **Shelly i4 Gen3** - WiFi-native 4-input scene controller, input-only (no relay/load-switching, unlike Tinxy where the module IS the switch), local API, native HA integration. Normally mounted behind a wall switch box.
 - **True Shelly cost is roughly double the bare-device price** once a surface board, switches, wiring, and casing are added - bare device alone isn't a fair comparison to a self-contained button.
@@ -1296,76 +1612,143 @@ So **Tier A** is a pitch-band split into toddler / male / adult-female - three c
 - **India availability blocker:** user confirmed neither Flic nor Shelly are reliably available as genuine local stock in India (Amazon.in listings suspected to be reseller/import markups, not real local retail) - this ruled out both as the primary recommendation despite fitting the spec well.
 - **DIY ESP32/ESP8266 + ESPHome button** was the recommendation pending user decision - not needed for the wol-sender Pi buttons since GPIO wired directly there instead, and the likely answer if a button location away from an existing host ever comes up.
 
+#### Log
+- 2026-08-24: **first physical button in progress.**
+  - User has a salvaged latching/toggle mechanical switch and jumper cables on hand - decided to wire it directly into the wol-sender Pi's GPIO.
+  - `scripts/toggle-button-mqtt.py` written (committed) - publishes the switch's ON/OFF position as an HA `binary_sensor` via MQTT discovery (topic `homeassistant/binary_sensor/toggle_switch_1/config`), matching the existing `white-noise-mqtt.py` bridge style.
+  - Wiring: GPIO17 (physical pin 11) to GND (physical pin 9), no resistor (uses the Pi's internal pull-up).
+- 2026-08-25: **PoC method until the real switch/housing exists.**
+  - Couldn't find the salvaged switch right now - standing in for it by manually bridging GPIO17 (physical pin 11) to GND (physical pin 9) with a female-to-male jumper cable, plugging/unplugging by hand.
+  - Confirmed safe: that pin is 3.3V logic (not the 5V rail, which is separate physical pins 2/4), current-limited to microamps by the internal pull-up - fine for repeated manual make/break.
+  - This stands in for the real switch until it's found (or a replacement bought) and a housing is built.
+- 2026-08-25: **running as a systemd service.**
+  - Installed as `toggle-button-mqtt.service` on the Pi so it survives SSH sessions ending and reboots.
+  - Needed the two systemd-specific fixes listed under Design decisions (`uv` by full path, `WorkingDirectory=/home/pramod`).
+  - Service confirmed stable (`active`, 0 restarts).
+  - Wired to a first automation: `binary_sensor.toggle_switch_1` on/off now calls `switch.turn_on`/`turn_off` on `switch.white_noise` (`toggle1_white_noise_on`/`_off` in `HOMEASSISTANT_CONFIG/automations.yaml`) - edge-triggered on the switch's own state transitions only, so scenes/dashboard control of white noise are untouched unless the physical switch is also flipped.
+- 2026-08-25: **reconnect-loop bug found and fixed.**
+  - First automation test immediately turned white noise back off every time it was turned on via a scene, with the physical switch never touched.
+  - Root cause: `scripts/toggle-button-mqtt.py`'s manual MQTT reconnect loop (`while client.is_connected(): sleep(...)` right after `loop_start()`) was racy and reconnected on a ~5s cycle indefinitely (confirmed via Mosquitto's own log, not just the Pi's systemd restart count, which stayed at 0 the whole time since the process itself never crashed). Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire the `to: 'off'` automation trigger every 5 seconds.
+  - Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). Confirmed stable via Mosquitto's log (90+ seconds with zero reconnects) before re-enabling the automation.
+- 2026-08-26: **working end-to-end** - user confirmed the physical switch + automation combination now works correctly - flipping the switch reliably toggles white noise, and scene/dashboard control of `switch.white_noise` is no longer overridden by the switch's resting position.
+- 2026-08-26: **scene buttons deployed.**
+  - Two momentary push buttons for `scene.ojaswi_sleeping`/`scene.ojaswi_awake` (previously only reachable via NFC tag automations).
+  - `scripts/pi-buttons/scene-buttons-mqtt.py` (GPIO27/pin 13 → sleep, GPIO22/pin 15 → awake) deployed and running as `scene-buttons-mqtt.service` on the Pi.
+  - The two HA automations (`scene_button_oju_sleep`/`_awake`) applied to `automations.yaml` and confirmed working.
+  - `docs/gpio_pinout.md` added as a standing reference for the Pi's 40-pin header.
+- 2026-08-31: **GPIO17 toggle switch swapped for two momentary push buttons** - the latching toggle switch was replaced with independent start/stop push buttons - GPIO17 (pin 11, existing) now starts white noise, GPIO18 (pin 12, newly wired) stops it, both to GND, no resistor. Rebuilt in the momentary-button shape already proven out for the scene buttons: `scripts/pi-buttons/white-noise-buttons-mqtt.py` (replaces `toggle-button-mqtt.py`) publishes a plain non-retained MQTT message per press, no retained `binary_sensor`/availability topic - sidesteps the reconnect-loop bug class entirely rather than just fixing this instance of it. New automations `white_noise_button_start`/`_stop` replace the dead `toggle1_white_noise_on`/`_off`. Details: `white_noise_buttons_setup.md`.
+- 2026-08-31 (same day, separate bug): while debugging why the HA white-noise switch wasn't responding, found `white-noise-mqtt.py` (the switch's own MQTT bridge, unrelated to the physical buttons) had the identical unfixed reconnect race from before the 2026-08-25 fix - `whitenoise/available` was flapping offline/online every ~5s. Fixed the same way (`connect_async()` + `loop_forever()`); see `Readme.md`'s White Noise section.
+- 2026-08-31: **confirmed working** - user verified both the start and stop buttons correctly toggle `switch.white_noise` in HA.
+- 2026-09-04: **broke after the 2026-09-03 reboot, fixed 2026-09-04.** Buttons did nothing while both bridge services looked healthy (active, restart counter 0, MQTT connected for 21h). Cause was neither the wiring nor MQTT: `lgpio` puts its edge-notification FIFO (`.lgd-nfy<N>`) in the process's working directory, both bridges ran with `WorkingDirectory=/home/pramod`, and systemd started them in the same second at boot - and the number in that filename is lgpio's per-process handle counter, which always starts at 0 - so both bridges named their pipe `.lgd-nfy0` and shared one. Not a race: verified on the Pi that any two lgpio processes in one directory collide every time. The idle `scene-buttons-mqtt` process (no buttons wired to it right now) sat on the shared pipe eating a share of the white-noise bridge's edge reports; a pipe empties as it is read, so every swallowed event was a lost press. Presses mostly vanished, occasionally got through.
+  - Fixed by having each script `chdir` into its own `~/.lgpio/<script>/` before creating any `Button`, so no unit-file config can reintroduce the collision. Both scripts now also log (notify dir, watched pins, MQTT connect/disconnect, one line per press) - the total absence of logging is why this hid for a day.
+  - (The ~4-5% idle CPU each bridge uses was suspected to be part of this, but measured identical after the fix - it is just gpiozero+lgpio's resting cost on a Pi 3B.)
+  - Verified end to end after the fix. New tooling: `scripts/pi-buttons/diagnose_white_noise_buttons.sh`, `scripts/pi-buttons/capture_white_noise_button_presses.sh`, `scripts/pi-buttons/deploy_button_bridges_pi.sh`. Details: `docs/incidents/2026-09-04-lgpio-notify-fifo-collision.md`.
+- 2026-09-04: **scene buttons currently unwired** - `scene-buttons-mqtt.service` still runs on the Pi but has no buttons physically attached (see Outcome caveat).
+- 2026-09-16: buttons confirmed to meet the need for the user's mother and the house help; umbrella project "Easier HA control for household + house help" closed (tablet and ESP32/ESPHome threads not needed).
+
 ### Spotcast fix (v4 -> v6 reinstall) + spotifyd zeroconf bug found and fixed
 **Status:** Done
 
 **Why:** spotcast (the HACS integration for triggering Spotify playback from HA) was broken account-wide - `spotcast.start` failing with `KeyError: 'serverTime'`. Initially assumed to be expired `sp_dc`/`sp_key` cookies (the known failure mode - see Readme/memory), but fresh cookies didn't fix it either, pointing at something deeper.
-**What shipped (2026-09-02):**
+**Outcome (2026-09-02):** spotcast reinstalled as v6 (OAuth, no cookies) and confirmed working end-to-end; a separate, deeper spotifyd zeroconf bug (orphaned Docker network) found and fixed; new `script.play_bedroom_track` button on the Bedroom area. Fully working. Worth keeping an eye on: spotcast v6 is still alpha, so future updates could introduce new breakage. The zeroconf half later regressed (see Log, 2026-09-11).
+
+#### What shipped
 - **Root cause found:** the failing call was to `open.spotify.com/server-time`, an unauthenticated endpoint hit *before* cookies are ever used - confirmed via direct `curl` that it now 404s for everyone. A known, actively-discussed upstream break: Spotify removed web-browser-based Chromecast device listing, which the installed spotcast v4.0.1 depended on. Not a cookie problem at all.
 - **Reinstalled spotcast v4.0.1 -> v6.0.0-a16** (alpha, ground-up rewrite for the new API shape) - old version backed up outside `custom_components/` (a first backup attempt left inside `custom_components/` with its own `manifest.json` caused a separate HA-loader import bug, since fixed). Also manually installed a missing `rapidfuzz` Python dependency that didn't auto-install.
 - **v6 replaces `sp_dc`/`sp_key` cookies entirely with OAuth** - reused the existing Spotify Developer app (same one behind the official Spotify integration) rather than creating a new one. Hit and fixed one more spotcast bug along the way: its "Desktop Token Authorization" step hardcodes `http://127.0.0.1:8080/login` as its redirect URI in spotcast's own source (not Spotify's) - patched to `8765` locally since 8080 was already in use on the user's Mac, and added that port to the Spotify Developer app's allowed redirect URIs. A small local relay script (run on the Mac, not xero) forwards that fixed loopback redirect on to HA's real Tailscale callback URL.
 - **Confirmed working end-to-end:** `sensor.spotcast_..._spotify_devices/playlists/liked_songs/product` all show real live account data (26 playlists, 587 liked songs, "premium") - previously came back empty/erroring.
 - **Separate, deeper bug found: spotifyd's local Spotify Connect discovery was silently broken since at least 2026-07-22** - `xero` never appeared as a Connect device in the Spotify app, on any device, despite spotifyd itself looking perfectly healthy. Root cause: an orphaned Docker network (`homelab_node-red-net`, leftover from the Node-RED -> Pi migration, 0 containers attached) broke spotifyd's `libmdns` interface enumeration entirely, silently aborting zeroconf setup on every single startup with no crash and no obvious symptom. Fixed by removing the orphaned network and restarting spotifyd - confirmed via `avahi-browse` that `xero` now genuinely advertises `_spotify-connect._tcp`. Full writeup: `docs/incidents/2026-09-02-spotifyd-zeroconf-broken-by-orphaned-docker-network.md`.
 - **New HA script/button:** `script.play_bedroom_track`, assigned to the Bedroom area (so it shows up automatically on the auto-generated Overview dashboard with no manual dashboard editing needed) - plays a specific track via `spotcast.play_media` targeting `media_player.xero_..._spotcast`. Confirmed working after the zeroconf fix.
-**Next step:** none - fully working. Worth keeping an eye on: spotcast v6 is still alpha, so future updates could introduce new breakage. **Update 2026-09-11:** the zeroconf half regressed after the 2026-09-06 reboot - same error line, different cause (a boot race, not the Docker network). See the entry at the top of Done.
+
+#### Log
+- 2026-07-22: earliest known date spotifyd's Spotify Connect discovery was already broken (found 2026-09-02).
+- 2026-09-02: root cause found, spotcast reinstalled v4.0.1 -> v6.0.0-a16, OAuth set up, zeroconf bug fixed, `script.play_bedroom_track` added - all confirmed working.
+- 2026-09-11: the zeroconf half regressed after the 2026-09-06 reboot - same error line, different cause (a boot race, not the Docker network). See the entry at the top of Done.
 
 ### xero boot SSD health check
 **Status:** Done
 
 **Why:** xero's boot drive is a budget Biwin NP202 128GB (DRAM-less class, no power-loss protection), and it has taken several uncontrolled power losses: the 2026-07 crash, a UPS that died under load on 2026-10-08, and frequent short power cuts since, with xero running off its own UPS for now. Cheap SSDs can corrupt or wear early under repeated sudden cuts, and nothing watches it.
+**Outcome (2026-10-09):** checked - healthy. SMART overall PASSED, no errors, wear about 1% (details below).
+- To watch: Power-Off_Retract_Count 439 against 469 power cycles - likely unclean power-offs, possibly inflated by normal shutdowns the drive counts too; re-read in a few months and compare the two.
+- Left open: a self-test (`smartctl -t short /dev/sdb`), the same check on `sda`, and a SMART check in `healthcheck.sh` (optional).
 
-**Checked 2026-10-09 - healthy.** The boot disk is `/dev/sdb` (SATA, M.2; model BIWIN CNF82NS1F00-128, fw T0910A0R); `datapool` is `/dev/sda`. `smartmontools` installed with `--no-install-recommends` (skips postfix). Overall PASSED, error log empty; reallocated / pending / uncorrectable sectors, program and erase fails, CRC errors all 0; reserve space 100. Wear about 1%: vendor attributes read as avg erase count 16 (167) of a rated 2000 (168), life left 100 (169) - consistent with Total_LBAs_Written 70754 being ~2TB in 32MiB units. 9665 power-on hours, 38°C. **To watch:** Power-Off_Retract_Count 439 against 469 power cycles - likely unclean power-offs, possibly inflated by normal shutdowns the drive counts too; re-read in a few months and compare the two. Not done: a self-test (`smartctl -t short /dev/sdb`), the same check on `sda`, and a SMART check in `healthcheck.sh` (optional).
+#### SMART readings (2026-10-09)
+The boot disk is `/dev/sdb` (SATA, M.2; model BIWIN CNF82NS1F00-128, fw T0910A0R); `datapool` is `/dev/sda`. `smartmontools` installed with `--no-install-recommends` (skips postfix). Overall PASSED, error log empty; reallocated / pending / uncorrectable sectors, program and erase fails, CRC errors all 0; reserve space 100. Wear about 1%: vendor attributes read as avg erase count 16 (167) of a rated 2000 (168), life left 100 (169) - consistent with Total_LBAs_Written 70754 being ~2TB in 32MiB units. 9665 power-on hours, 38°C.
 
-~~Next step~~ (was): on xero, `sudo smartctl -a /dev/nvme0` (or `/dev/sda`, whichever `findmnt /` says is the boot disk; `apt install smartmontools` if missing). Read "Unsafe Shutdowns", "Media and Data Integrity Errors", "Percentage Used" and "Available Spare". If they look fine, consider adding a SMART check to `healthcheck.sh` (needs a sudoers rule for smartctl, like the power watchdog's for shutdown). If not, plan a replacement - and check that `new_machine_setup.sh` plus the backups really rebuild xero.
+#### Original plan (the old Next step, now done)
+On xero, `sudo smartctl -a /dev/nvme0` (or `/dev/sda`, whichever `findmnt /` says is the boot disk; `apt install smartmontools` if missing). Read "Unsafe Shutdowns", "Media and Data Integrity Errors", "Percentage Used" and "Available Spare". If they look fine, consider adding a SMART check to `healthcheck.sh` (needs a sudoers rule for smartctl, like the power watchdog's for shutdown). If not, plan a replacement - and check that `new_machine_setup.sh` plus the backups really rebuild xero.
 
 ### xero cooling on the Skadis pegboard
 **Status:** Backlog
 **Priority:** P2
 
-**Why:** xero runs hot where it is mounted. memtest86+ hit 103°C there on 2026-10-08 (a RAM bit flipped), against 86°C on the desk with the fan side in open air. Mounted with the fan side facing the board, the only gap was its rubber feet. A memtester run that evening (2 x 10G, pegboard) climbed to 92-95°C even after two stopgaps: a makeshift stopper wedged between xero and the board for a gap (fragile), and the room AC turned down (not bearable as a permanent setting). Neither stays. Idle on the pegboard is 55-68°C, high for an N5105.
+**Why:** xero runs hot where it is mounted. memtest86+ hit 103°C there on 2026-10-08 (a RAM bit flipped), against 86°C on the desk with the fan side in open air. Mounted with the fan side facing the board, the only gap was its rubber feet. Idle on the pegboard is 55-68°C, high for an N5105.
+**State:** nothing built. Two stopgaps tried on 2026-10-08 (a makeshift stopper wedged between xero and the board for a gap - fragile; the room AC turned down - not bearable as a permanent setting); neither stays.
+**Next step:** pick from the options below (an external fan and better mounting are both on the table).
 
-**Options** (user, 2026-10-08: an external fan and better mounting are both on the table):
+#### Options
+User, 2026-10-08: an external fan and better mounting are both on the table.
 - **Sturdy standoffs** between xero and the board: M3/M4 nylon or brass standoffs, 3-4 cm, in xero's mounting holes (check the thread), or a Skadis shelf with xero standing on it, fan side out. Replaces the stopper.
 - **External USB fan** (user: manageable, 2026-10-08): a 5V 80-120mm USB fan (roughly ₹300-800) clipped to the pegboard, moving air through the gap behind xero - ideally pulling the hot exhaust out rather than blowing at the case. Powered from one of xero's USB ports, so it is on whatever UPS xero is on and runs whenever xero does. Pick a quiet one (low RPM or with a speed switch); it is in the room.
 - **New thermal paste** on the CPU (never redone; the 2026-08-21 clean was dust only). Likely the biggest single gain if idle stays in the 60s with good airflow.
 - **Turn the vented side away from the board** if a mount can be found (its mounting holes are on the fan side, which is why it faces the board now).
 
-**Done when:** a full-load run (memtester 2 x 10G or a build) on the pegboard, at normal room temperature, stays under ~85°C. The 90°C healthcheck alert covers it until then.
+#### Done when
+A full-load run (memtester 2 x 10G or a build) on the pegboard, at normal room temperature, stays under ~85°C. The 90°C healthcheck alert covers it until then.
+
+#### Log
+- 2026-08-21: CPU cleaned (dust only, thermal paste not redone).
+- 2026-10-08: memtest86+ hit 103°C on the pegboard (a RAM bit flipped), against 86°C on the desk. A memtester run that evening (2 x 10G, pegboard) climbed to 92-95°C even with both stopgaps in place.
 
 ### xero's UPS (CRU12V3A) dead - xero off until it is replaced
 **Status:** Active
 **Priority:** P1
 
-**What happened 2026-10-08:** a mains power cut earlier in the day (xero was off the UPS for memtest then), then xero went back on its RouterUPS (model CRU12V3A, 12V 3A). That afternoon the UPS did not charge, and at about 17:11 it cut out under a memtester full-load test, taking xero down uncontrolled (memtester had found 0 errors; the CPU was at 94°C and rising on the pegboard). Afterwards **all four of the UPS's LEDs stay off on mains**, with a different socket and a different adapter. So it is getting no input or has failed (fuse/charger), not just a flat battery. The power watchdog could not see this: mains stayed up, and it only watches for a mains outage.
+**Why:** xero's RouterUPS (model CRU12V3A, 12V 3A) failed on 2026-10-08 and took xero down uncontrolled. Without a UPS, a mains cut crashes xero uncontrolled.
+**State:** the UPS is dead (all four LEDs off on mains, with a different socket and a different adapter - getting no input or failed (fuse/charger), not just a flat battery). xero is running again **without a UPS** since about 19:15 on 2026-10-08, waiting on Resonate's warranty reply; may move the router's UPS to xero meanwhile. Power watchdog shutdown threshold is temporarily 10 min.
+**Next step:**
+- If the UPS has a power button, try it (held 2-3s) with mains in; else claim warranty or buy a 12V >=3A DC mini UPS.
+- When the replacement UPS arrives, restore a measured `DOWN_THRESHOLD_MIN`.
+- Do not re-run full-load tests on the pegboard (94°C and climbing).
+- Consider an alert for "UPS stopped charging" - the ESP32 UPS LED monitor idea would cover it.
 
-**Decision (user):** xero stays off rather than run without a UPS. Meanwhile: DNS falls back to the wol Pi's Pi-hole (LAN and, via the stopgap, the tailnet); HA, voice, Vaultwarden (clients keep an offline cache), ntfy, MirAIe-via-Mosquitto, cron jobs and backups are all down; healthchecks.io will alert on the missed heartbeat.
+#### Decision while the UPS is out (user)
+xero stays off rather than run without a UPS. Meanwhile: DNS falls back to the wol Pi's Pi-hole (LAN and, via the stopgap, the tailnet); HA, voice, Vaultwarden (clients keep an offline cache), ntfy, MirAIe-via-Mosquitto, cron jobs and backups are all down; healthchecks.io will alert on the missed heartbeat. (Superseded the same day - see Log: the user turned xero back on without a UPS.)
 
-**Update same day:** the user turned xero back on **without a UPS** at about 19:15 (waiting on Resonate's warranty reply; may move the router's UPS to xero meanwhile). Checked 21:14: `zpool status -x` healthy, all 16 containers up (pihole included), every HA integration loaded. A mains cut now crashes xero uncontrolled.
+#### Shutdown threshold
+`DOWN_THRESHOLD_MIN` in `watchdog_power.sh` cut 200 -> 10 min (user's call): frequent short cuts still ride through on whatever UPS xero is on; longer ones get a clean shutdown and rely on the wol Pi's WoL to boot xero after mains returns (xero's PSU never sees AC loss while a UPS holds it, so BIOS AC-restore will not). Side effect: an accidental extender switch-off (2026-08-28) now shuts xero down after 10 min instead of 200. Restore a measured threshold when the replacement UPS arrives.
 
-**Shutdown threshold cut 200 -> 10 min 2026-10-08** (`DOWN_THRESHOLD_MIN` in `watchdog_power.sh`, user's call): frequent short cuts still ride through on whatever UPS xero is on; longer ones get a clean shutdown and rely on the wol Pi's WoL to boot xero after mains returns (xero's PSU never sees AC loss while a UPS holds it, so BIOS AC-restore will not). Side effect: an accidental extender switch-off (2026-08-28) now shuts xero down after 10 min instead of 200. Restore a measured threshold when the replacement UPS arrives.
+#### Checks when xero is back on a UPS / after a power loss
+`zpool status` (uncontrolled power loss), check containers, start `pihole` if Docker leaves it stopped.
 
-**Next:** if the UPS has a power button, try it (held 2-3s) with mains in; else claim warranty or buy a 12V >=3A DC mini UPS. When xero is back: `zpool status` (uncontrolled power loss), check containers, start `pihole` if Docker leaves it stopped, and do not re-run full-load tests on the pegboard (94°C and climbing). Consider an alert for "UPS stopped charging" - the ESP32 UPS LED monitor idea would cover it.
+#### Log
+- 2026-10-08: a mains power cut earlier in the day (xero was off the UPS for memtest then), then xero went back on its RouterUPS. That afternoon the UPS did not charge, and at about 17:11 it cut out under a memtester full-load test, taking xero down uncontrolled (memtester had found 0 errors; the CPU was at 94°C and rising on the pegboard). Afterwards **all four of the UPS's LEDs stay off on mains**, with a different socket and a different adapter. The power watchdog could not see this: mains stayed up, and it only watches for a mains outage. Decision: xero stays off.
+- 2026-10-08: shutdown threshold cut 200 -> 10 min (`DOWN_THRESHOLD_MIN`).
+- 2026-10-08 (same day): the user turned xero back on **without a UPS** at about 19:15. Checked 21:14: `zpool status -x` healthy, all 16 containers up (pihole included), every HA integration loaded - the post-power-loss checks are done for this boot. A mains cut now crashes xero uncontrolled.
 
 ### Power-outage watchdog - real UPS runtime measured, threshold updated, armed
 **Status:** Done
 
 **Why:** this server runs on its own RouterUPS battery, separate from the router's UPS. An uncontrolled crash when the battery dies is the likely cause of the ZFS corruption found in `datapool` (see below) - a clean shutdown before that happens avoids torn writes entirely.
-**State:** `watchdog_power.sh` built and cron-wired (every 5 min), detects `enp1s0` losing carrier (proxy for "on battery," via the existing WiFi-failover extender). Defaults to dry-run (logs only, never shuts down) until armed via `touch ~/.power-watchdog-armed` - **armed** (see confirmation below).
+**Outcome:** `watchdog_power.sh` built, cron-wired (every 5 min) and **armed** (confirmed 2026-08-20), with the threshold at **200min** against a measured 288min of real UPS runtime (2026-07-31). Restart after a clean shutdown is solved by Wake-on-LAN from the wol-sender Pi (verified end-to-end 2026-08-20). Logging de-noised and an HA sensor added (2026-08-26, 2026-08-28).
+- Since 2026-10-08 the threshold is **10min**, not 200min, while xero's UPS is dead (`DOWN_THRESHOLD_MIN=10`; see "xero's UPS (CRU12V3A) dead"). The 200min figures below describe the setup on the old UPS.
+- Left open: carrier-loss/restore email notifications are a trial, not yet confirmed as the right approach (2026-08-28).
+- Left open: the ESP32 project above (now leaning toward an inline power sensor rather than reading the UPS's LEDs) would eventually replace the need for a fixed time threshold entirely.
+- Left open: optionally restore a full `cmdline.txt` line on the wol-sender Pi (see WoL sender Pi below).
+- Left open (good-to-have, revisit later): manual power-on during an ongoing outage gets killed by the watchdog - known limitation, deliberately not fixed (2026-09-06).
 
-**Real runtime measured (2026-07-31 live outage test).** Deliberately unplugged the UPS to measure actual runtime under load.
-- Outage started (carrier lost) at 16:55; a separate heartbeat logger (timestamping to local disk every 2s, independent of network state) proved the machine itself kept running until 21:43:40 - **~288 minutes (4h49m) of real runtime**, far more than the old "~3-4hr" rough guess.
-- Since the watchdog was still unarmed/dry-run the whole time, it never triggered a shutdown - the server crashed hard, uncontrolled, exactly the failure mode this project exists to prevent.
-- ZFS came back `all pools are healthy` afterward (likely thanks to `copies=2`/`sync=always`, though not something to rely on repeating).
-- Machine rebooted on its own around 22:30 with nobody touching the power button - **confirmed with the user (2026-08-26): genuinely automatic**, no manual press. Means BIOS "Restore on AC Power Loss" is already enabled by default on this board.
+#### How it works
+`watchdog_power.sh` (`projects/power-watchdog/watchdog_power.sh`) is cron-wired (every 5 min) and detects `enp1s0` losing carrier (proxy for "on battery," via the existing WiFi-failover extender). Defaults to dry-run (logs only, never shuts down) until armed via `touch ~/.power-watchdog-armed` - **armed**: `~/.power-watchdog-armed` exists, the sudoers rule is installed at `/etc/sudoers.d/power-watchdog`, and the cron entry is live (`*/5 * * * *`).
+- Threshold **200min**, giving ~88min of real margin below the confirmed 288min failure point - both numbers grounded in an actual measurement instead of a guess.
+- Logs immediately on carrier-lost/restored transitions and on first crossing the 200min threshold, and otherwise only at 30min milestones while waiting or while still past threshold in dry-run.
+- Emails on the two transition moments (`enp1s0 lost carrier` / `enp1s0 carrier restored`) via the shared `tools/notify/send_email.sh`, wrapped in `|| true` so an email failure can never block the shutdown logic (trial).
+- `down-since` lives in `~/.cache/power-watchdog/`; `projects/healthcheck/healthcheck.sh:153` reads the same `down-since` file to publish `power_on_battery`/`power_down_minutes` to HA.
+- The watchdog can't tell a real mains/UPS outage from an extender switch-off (its only signal is carrier-loss on `enp1s0`).
+- `touch ~/.power-watchdog-disabled` (flag already supported) holds it up.
 
-Threshold updated from 90min to **200min**, giving ~88min of real margin below the confirmed 288min failure point - both numbers now grounded in an actual measurement instead of a guess.
-**Confirmed armed (2026-08-20):** `~/.power-watchdog-armed` exists, the sudoers rule is installed at `/etc/sudoers.d/power-watchdog`, and the cron entry is live (`*/5 * * * *`) - the doc previously said "still unarmed" but that was stale. Log has been empty since arming (no outage since), consistent with no false triggers.
-**Logging noise - fixed (2026-08-26).** Previously printed a near-duplicate line every 5-minute cron tick for the whole outage (48+ lines for the 2026-07-31 test), burying the two moments that actually matter.
-- `projects/power-watchdog/watchdog_power.sh` now logs immediately on carrier-lost/restored transitions and on first crossing the 200min threshold, and otherwise only at 30min milestones while waiting or while still past threshold in dry-run.
-- Verified with an isolated test harness (fake `HOME`/carrier-sysfs-path/`logger`/`sudo`, never touching the real `~/.power-watchdog-*` flags, syslog, or invoking real `sudo shutdown`): a simulated 290min outage at 5min ticks now produces 11 log lines instead of 58, carrier-restore still clears state correctly, and the armed path still triggers exactly one real shutdown call.
-- The ESP32 project above (now leaning toward an inline power sensor rather than reading the UPS's LEDs) would eventually replace the need for a fixed time threshold entirely - that part remains open, unrelated to this logging fix.
-
-**New gap found (2026-07-31, during a live outage test):** a graceful shutdown doesn't actually solve "how does the server turn back on" the way it first seems to.
+#### Getting the server back on after a clean shutdown
+A graceful shutdown doesn't actually solve "how does the server turn back on" the way it first seems to (gap found 2026-07-31, during a live outage test).
 - The BIOS's "Restore on AC Power Loss" setting only fires on a genuine AC-loss-then-restore event at the server's own PSU - but since the UPS keeps supplying continuous power throughout (the server draws ~0W once off, so the remaining battery margin likely never depletes, and the UPS seamlessly switches back to mains once it returns), the PSU never actually sees an interruption at all.
 - That BIOS setting only would've helped in the uncontrolled-crash scenario this watchdog exists to avoid - it does nothing for a deliberate pre-emptive shutdown.
 
@@ -1378,53 +1761,16 @@ Real options to close this gap:
 2. **A relay on the motherboard's power-switch header**, driven by a small mains-powered (not UPS-powered) microcontroller that naturally loses power during the outage and pulses the relay the instant mains returns - the structurally "correct" fix, and could plausibly be combined with the ESP32 UPS-monitor project above.
 3. **Manual power button press** - the current real fallback until one of the above is built/verified.
 
-**WoL sender - interim Raspberry Pi build in progress, paused mid-setup (2026-08-01).** Decided to build the mains-powered WoL-sender idea on a spare Pi now, rather than wait on the ESP32 to arrive (ESP32 firmware already written and committed at `esp32/wol_on_boot/`, just needs the actual board purchased and PlatformIO/VSCode set up on the Mac - separate, still-pending thread). Reflashed the spare Pi (previously running HAOS) with Raspberry Pi OS Lite - hostname `wol-sender`, `192.168.1.103`, SSH key access from both `xero` and the user's Mac, reachable directly from `xero` over the LAN.
+#### WoL sender Pi
+Interim Raspberry Pi build of the mains-powered WoL-sender idea, on a spare Pi, rather than wait on the ESP32 to arrive (ESP32 firmware already written and committed at `esp32/wol_on_boot/`, just needs the actual board purchased and PlatformIO/VSCode set up on the Mac - separate, still-pending thread). Reflashed the spare Pi (previously running HAOS) with Raspberry Pi OS Lite - hostname `wol-sender`, SSH key access from both `xero` and the user's Mac, reachable directly from `xero` over the LAN. Address: static **`192.168.1.124`** (next to xero's own `.123`); all mentions of `192.168.1.103` in this entry are historical (its DHCP address, accurate as of when each test ran).
+- `wakeonlan` installed, a `wol-xero.service` systemd unit fires a magic packet at `xero` (`68:1D:EF:38:8C:72` via `192.168.1.255:9`) on every boot.
+- The sender (`update_wol_sender.sh`) waits for real connectivity (up to 2min, checking for an actual route rather than trusting `network-online.target` alone) and sends the packet 3x for reliability - the first version only did a fixed `sleep 3` before sending, which isn't safe for a real outage-recovery scenario since the home router/AP also lost power and can take 60-120s to fully boot - often longer than the Pi itself.
+- `scripts/wol-sender/wol_listener.py` (committed) - a standalone UDP:9 listener to run on `xero` that validates an incoming magic packet without needing to risk shutting the real server down.
+- The WoL sender only fires on the Pi's own boot.
+- **Overlay filesystem: not enabled** (reverted). Not an action item, just a standing risk if this is ever revisited: re-enabling it would need the actual boot-hang cause root-caused first, not just re-applied blindly, given it matters more than usual here since this device's whole job is repeatedly losing power abruptly.
+- `cmdline.txt` is a single newline, so the Pi boots on the firmware's built-in default cmdline (`root=/dev/mmcblk0p2 rootfstype=ext4 rootwait console=tty1`). Still open: optionally restore a full line (`console=serial0,115200 console=tty1 root=PARTUUID=5440b2e4-02 rootfstype=ext4 fsck.repair=yes rootwait`) at a time the SD card is reachable if it fails to boot.
 
-Done so far:
-- `wakeonlan` installed, a `wol-xero.service` systemd unit created to fire a magic packet at `xero` (`68:1D:EF:38:8C:72` via `192.168.1.255:9`) on every boot - confirmed working with a manual test run.
-- Caught a real gap in the first version: it only did a fixed `sleep 3` before sending, which isn't safe for a real outage-recovery scenario since the home router/AP also lost power and can take 60-120s to fully boot - often longer than the Pi itself.
-- Wrote an improved sender (`update_wol_sender.sh`) that waits for real connectivity (up to 2min, checking for an actual route rather than trusting `network-online.target` alone) and sends the packet 3x for reliability - **applied and verified (2026-08-05)**, ran interactively over SSH (`ssh -t` needed for the `sudo` password prompt).
-
-Also built `scripts/wol-sender/wol_listener.py` (committed) - a standalone UDP:9 listener to run on `xero` that validates an incoming magic packet without needing to risk shutting the real server down. **Run and confirmed (2026-08-05):** rebooted the Pi, listener on `xero` logged 3 valid magic packets arriving from `192.168.1.103` - the full boot→wait-for-network→send chain works end-to-end over the real LAN.
-
-**Read-only overlay filesystem attempted (2026-08-05) - caused a full boot hang, reverted (2026-08-20).**
-- Enabled via `raspi-config` (`cmdline.txt` gained `overlayroot=tmpfs`, initramfs regenerated same day). Went unnoticed until 2026-08-20, when the Pi was found completely unresponsive - display showed normal kernel/USB boot logs then went blank, no reaction to keyboard input.
-- Ruled out power first (red PWR LED was flickering, suggesting undervoltage - swapped to an 18W GaN charger + fresh cable, LED went solid, but the hang persisted unchanged).
-- Ruled out SD corruption (pulled the card into a USB reader on `xero`, ran a read-only `fsck.ext4 -n -f` on the root partition - came back completely clean).
-- Ruled out the Logitech USB wireless receiver (hang happened identically with it unplugged).
-- That left `cmdline.txt`'s `overlayroot=tmpfs` as the one real change from the working baseline. Removed it (script below), booted the Pi again - **confirmed fixed, boots normally**.
-
-Root cause not fully diagnosed (unclear whether it's the first-boot resize service, `wol-xero.service`/`update_wol_sender.sh` interacting badly with a read-only root, or something else in the boot chain) - just confirmed disabling the overlay resolves it. Fix/rollback automated at `scripts/wol-sender/fix_wol_sender_overlay_hang.sh` (mounts the SD card's boot partition from a USB reader on `xero`, backs up `cmdline.txt`, strips `overlayroot=tmpfs`).
-
-**Rollback was incomplete - found and finished 2026-09-19.** `apt install` failed with `Read-only file system` on `/boot/firmware`: raspi-config's overlay option had also added `ro` to the boot partition's `/etc/fstab` line, which the script above never touched. Removed it (`defaults,ro` -> `defaults`), remounted rw, `dpkg --configure -a` finished the stuck kernel/firmware packages, rebooted onto 6.18.50 cleanly. Same check found `cmdline.txt` is a single newline: its 2026-08-20 backup is 18 bytes, i.e. the file held *only* `overlayroot=tmpfs`, and stripping that left it empty. The Pi now boots on the firmware's built-in default cmdline (`root=/dev/mmcblk0p2 rootfstype=ext4 rootwait console=tty1`). That is also the likely real cause of the original hang (untested): a cmdline with no `root=` and no `console=tty1` matches "boot logs, then blank". Still open: optionally restore a full line (`console=serial0,115200 console=tty1 root=PARTUUID=5440b2e4-02 rootfstype=ext4 fsck.repair=yes rootwait`) at a time the SD card is reachable if it fails to boot.
-
-**Post-fix reboot test (2026-08-20):** with the overlay reverted, rebooted the Pi for real (`sudo reboot` over SSH, not just a manual power-cycle) with `wol_listener.py` running on `xero` beforehand. Pi came back up cleanly (pings normally, no hang), and the listener logged a **valid magic packet for `68:1D:EF:38:8C:72` received from `192.168.1.103`** - confirms the overlay fix holds on a real reboot and the full boot→wait-for-network→send chain still works end-to-end.
-
-**Full end-to-end recovery test: done (2026-08-20, ~23:17 IST) - see confirmation above.** `xero` shut down for real and the Pi's boot-time WoL sender brought it back on its own, 83s later.
-
-**IP pinned to static (2026-08-21):** the Pi had been reachable at `192.168.1.103` (its DHCP-assigned address) throughout everything above, but a lease renewal silently reassigned it to `.105` - a real risk once Node-RED depends on this Pi being reachable at a known address (see "Move some load to the Raspberry Pi" below). Rather than reuse `.103` - low DHCP addresses are more likely to get leased to some other device later and collide - pinned it static at **`192.168.1.124`** (next to xero's own `.123`) via `scripts/wol-sender/set_wol_sender_static_ip.sh` (nmcli, run interactively for the sudo password). Confirmed holding at `.124` with no `dynamic` flag on the interface. All mentions of `192.168.1.103` above are historical (accurate as of when each test ran) - the Pi's current address is `192.168.1.124`.
-
-**Note (not an action item, just a standing risk if this is ever revisited):** the overlay filesystem is back to **not enabled** (reverted) - re-enabling it would need the actual boot-hang cause root-caused first, not just re-applied blindly, given it matters more than usual here since this device's whole job is repeatedly losing power abruptly.
-
-**Pi power instability - resolved (2026-08-26).** The wall-mount power cable (the culprit identified on 2026-08-21 - flickering PWR LED tied specifically to that cable, not the Pi or adapter) has been replaced. Verified over SSH: `vcgencmd get_throttled` reports `0x0` (clean, no under-voltage now or since boot) and a full `dmesg` scan shows zero voltage/brownout entries across the current ~7h uptime. Caveat: the Pi has no persistent journal across reboots, so this only covers the current boot, not a multi-day history - but combined with the physical cable swap and no further flickering observed, treating this as closed.
-
-**False-positive trigger, no action item (2026-08-28).** `enp1s0` lost carrier at 17:26 when someone accidentally switched off the WiFi extender providing xero's ethernet uplink - not a real mains/UPS outage. The watchdog can't tell the difference (its only signal is carrier-loss on `enp1s0`), so it followed its normal logic: waited 200min, then ran a real clean shutdown at 20:50. Knock-on effect: `pihole` runs on xero, so LAN-wide DNS was down for the full ~2h10m xero was off. Neither auto-recovery path fired, because xero's own PSU never actually lost power: BIOS AC-restore has nothing to trigger on (no AC-loss-then-restore event at xero's PSU), and the Pi's WoL sender only fires on the Pi's own boot (the Pi never lost power either). Brought back by physically reinserting xero's power cable at 23:00. Since xero's outlet never lost power, `Wake-on: g` should have stayed live the whole time - a plain `wakeonlan 68:1D:EF:38:8C:72` from the Pi or any LAN box likely would have worked without touching the cable. Root cause was human error (extender switch), not a watchdog bug - no fix needed.
-
-**Two action items opened from that incident (2026-08-28):**
-
-1. **Carrier-loss/restore email notifications - trial, not yet confirmed as the right approach.** `projects/power-watchdog/watchdog_power.sh` now emails on the exact two transition moments it already logs (`enp1s0 lost carrier` / `enp1s0 carrier restored`), via a new shared `tools/notify/send_email.sh` (extracted from `projects/healthcheck/healthcheck.sh`'s inline sender, now used by both). Wrapped in `|| true` so an email failure can never block the shutdown logic. Verified: syntax-checked, a real test email sent through the new shared script, and a live no-op run of the script (carrier currently up, no state files) exits clean. **Explicitly a trial** - running for a few days to see if it's actually useful signal or just noise before deciding to keep it.
-2. **Power-watchdog HA sensor - shipped.** Confirmed no such sensor existed. Added `power_on_battery` (binary, reads `~/.cache/power-watchdog/down-since`) and `power_down_minutes` to `healthcheck.sh`'s existing MQTT publish (same discovery pattern as the `spotifyd` entity), surfacing as `binary_sensor.homelab_healthcheck_homelab_power_watchdog` and `sensor.homelab_healthcheck_power_watchdog_down_duration`. Deliberately dashboard-only, not added to `healthcheck.sh`'s `problems[]` array - action item 1 above already emails on the transition directly, so folding it into the problems list too would just double the alert. Added both as tiles to the "Homelab Health" section of the storage-mode Stats dashboard (`scripts/apply_power_watchdog_dashboard_tiles.sh`, same stop-HA/copy/restart pattern as the earlier Tailscale/HA dashboard edit) - confirmed live via the HA REST API and the dashboard's own card list.
-
-
-**Manual power-on during an outage gets killed by the watchdog - known limitation, deliberately not fixed (2026-09-06).** Mains went out ~05:40; the watchdog crossed 200min and cleanly shut xero down at 09:00:17, exactly as designed. The user then tried to bring the server back by hand while the outage was still ongoing and couldn't keep it alive - with no monitor available, it wasn't even possible to tell whether the console was prompting for a username or a password.
-
-What the journal actually shows: the server wasn't failing to boot, it was shutting *itself* off each time.
-- **11:33:18** boot (power button - `enp1s0: Link is Down` at boot, and the Pi was still dead, so WoL was not involved) -> **11:35:01** `enp1s0 down for 355m (>=200m) - shutting down cleanly`, off after 1m43s.
-- **11:43:01** boot -> **11:44:05** `systemd-logind: Power key pressed short` - a button press on an already-running machine, which powered it off rather than on.
-- **11:44:35** boot -> **11:45:01** watchdog again at 365m, off after 26 seconds.
-- **11:55:46** boot, stayed up; `enp1s0` link returned at 11:56:04 and the watchdog cleared the watch at 12:00:01.
-- **12:00:23-30** the Pi finally booted and fired its 3 magic packets - about 4.5min *after* xero was already up. WoL played no part in this recovery; every boot above was a manual button press.
-
+#### Known limitation: manual power-on during an outage
 Mechanism: `down-since` lives in `~/.cache/power-watchdog/` and survives reboots, and elapsed time is computed as wall-clock `now - down_since`, which keeps growing while the server is powered off. Any boot during an ongoing outage therefore reads an already-past-threshold timer and shuts down on the next 5-minute tick. Worth noting this errs in the safe direction - too early, never too late.
 
 Two candidate fixes discussed, neither applied:
@@ -1433,151 +1779,274 @@ Two candidate fixes discussed, neither applied:
 
 **Decision: not doing either for now.** Pressing the power button mid-outage is a rare one-off, the current behaviour is good enough and fails safe, and neither part is a quick fix - both need a full dry-run across every outage/reboot/carrier-flap scenario before touching a script whose whole job is preventing ZFS corruption. Filed as good-to-have, revisit later.
 
-Also observed the same morning, no action taken: `enp1s0` flapped repeatedly once mains returned (link up/down at 12:16, 12:17, 12:27 and 12:28), restarting the watch at 12:05 with a fresh clock.
+#### Log
+- 2026-07-31: **real runtime measured (live outage test).** Deliberately unplugged the UPS to measure actual runtime under load.
+  - Outage started (carrier lost) at 16:55; a separate heartbeat logger (timestamping to local disk every 2s, independent of network state) proved the machine itself kept running until 21:43:40 - **~288 minutes (4h49m) of real runtime**, far more than the old "~3-4hr" rough guess.
+  - Since the watchdog was still unarmed/dry-run the whole time, it never triggered a shutdown - the server crashed hard, uncontrolled, exactly the failure mode this project exists to prevent.
+  - ZFS came back `all pools are healthy` afterward (likely thanks to `copies=2`/`sync=always`, though not something to rely on repeating).
+  - Machine rebooted on its own around 22:30 with nobody touching the power button - **confirmed with the user (2026-08-26): genuinely automatic**, no manual press. Means BIOS "Restore on AC Power Loss" is already enabled by default on this board.
+  - Threshold updated from 90min to **200min**.
+  - New gap found during the same test: a graceful shutdown doesn't bring the server back on (see "Getting the server back on after a clean shutdown").
+- 2026-08-01: **WoL sender - interim Raspberry Pi build started, paused mid-setup.** Spare Pi reflashed with Raspberry Pi OS Lite, hostname `wol-sender`, `192.168.1.103`. `wakeonlan` installed and `wol-xero.service` created - confirmed working with a manual test run. Caught the fixed `sleep 3` gap in the first version.
+- 2026-08-05: improved sender (`update_wol_sender.sh`) **applied and verified**, ran interactively over SSH (`ssh -t` needed for the `sudo` password prompt).
+- 2026-08-05: `scripts/wol-sender/wol_listener.py` **run and confirmed** - rebooted the Pi, listener on `xero` logged 3 valid magic packets arriving from `192.168.1.103` - the full boot→wait-for-network→send chain works end-to-end over the real LAN.
+- 2026-08-05: **read-only overlay filesystem attempted** - enabled via `raspi-config` (`cmdline.txt` gained `overlayroot=tmpfs`, initramfs regenerated same day). Caused a full boot hang that went unnoticed until 2026-08-20.
+- 2026-08-20: **overlay reverted.** The Pi was found completely unresponsive - display showed normal kernel/USB boot logs then went blank, no reaction to keyboard input.
+  - Ruled out power first (red PWR LED was flickering, suggesting undervoltage - swapped to an 18W GaN charger + fresh cable, LED went solid, but the hang persisted unchanged).
+  - Ruled out SD corruption (pulled the card into a USB reader on `xero`, ran a read-only `fsck.ext4 -n -f` on the root partition - came back completely clean).
+  - Ruled out the Logitech USB wireless receiver (hang happened identically with it unplugged).
+  - That left `cmdline.txt`'s `overlayroot=tmpfs` as the one real change from the working baseline. Removed it, booted the Pi again - **confirmed fixed, boots normally**.
+  - Root cause not fully diagnosed (unclear whether it's the first-boot resize service, `wol-xero.service`/`update_wol_sender.sh` interacting badly with a read-only root, or something else in the boot chain) - just confirmed disabling the overlay resolves it. Fix/rollback automated at `scripts/wol-sender/fix_wol_sender_overlay_hang.sh` (mounts the SD card's boot partition from a USB reader on `xero`, backs up `cmdline.txt`, strips `overlayroot=tmpfs`).
+- 2026-08-20: **post-fix reboot test** - with the overlay reverted, rebooted the Pi for real (`sudo reboot` over SSH, not just a manual power-cycle) with `wol_listener.py` running on `xero` beforehand. Pi came back up cleanly (pings normally, no hang), and the listener logged a **valid magic packet for `68:1D:EF:38:8C:72` received from `192.168.1.103`** - confirms the overlay fix holds on a real reboot and the full boot→wait-for-network→send chain still works end-to-end.
+- 2026-08-20: **confirmed armed** - `~/.power-watchdog-armed`, `/etc/sudoers.d/power-watchdog` and the cron entry all in place - the doc previously said "still unarmed" but that was stale. Log has been empty since arming (no outage since), consistent with no false triggers.
+- 2026-08-20 (~23:17 IST): **full end-to-end recovery test done** - `xero` shut down for real and the Pi's boot-time WoL sender brought it back on its own, 83s later (details under Wake-on-LAN above).
+- 2026-08-21: **IP pinned to static.** The Pi had been reachable at `192.168.1.103` (its DHCP-assigned address) throughout everything above, but a lease renewal silently reassigned it to `.105` - a real risk once Node-RED depends on this Pi being reachable at a known address (see "Move some load to the Raspberry Pi" below). Rather than reuse `.103` - low DHCP addresses are more likely to get leased to some other device later and collide - pinned it static at **`192.168.1.124`** (next to xero's own `.123`) via `scripts/wol-sender/set_wol_sender_static_ip.sh` (nmcli, run interactively for the sudo password). Confirmed holding at `.124` with no `dynamic` flag on the interface.
+- 2026-08-21: flickering PWR LED on the Pi tied specifically to the wall-mount power cable, not the Pi or adapter.
+- 2026-08-26: **logging noise fixed.** Previously printed a near-duplicate line every 5-minute cron tick for the whole outage (48+ lines for the 2026-07-31 test), burying the two moments that actually matter. Now logs only on transitions, first threshold crossing and 30min milestones (see How it works). Verified with an isolated test harness (fake `HOME`/carrier-sysfs-path/`logger`/`sudo`, never touching the real `~/.power-watchdog-*` flags, syslog, or invoking real `sudo shutdown`): a simulated 290min outage at 5min ticks now produces 11 log lines instead of 58, carrier-restore still clears state correctly, and the armed path still triggers exactly one real shutdown call.
+- 2026-08-26: **`Wake-on: g` persistence done** (`wol-persist.service`, see Wake-on-LAN above).
+- 2026-08-26: **Pi power instability resolved.** The wall-mount power cable (the culprit identified on 2026-08-21) has been replaced. Verified over SSH: `vcgencmd get_throttled` reports `0x0` (clean, no under-voltage now or since boot) and a full `dmesg` scan shows zero voltage/brownout entries across the current ~7h uptime. Caveat: the Pi has no persistent journal across reboots, so this only covers the current boot, not a multi-day history - but combined with the physical cable swap and no further flickering observed, treating this as closed.
+- 2026-08-28: **false-positive trigger, no action item.** `enp1s0` lost carrier at 17:26 when someone accidentally switched off the WiFi extender providing xero's ethernet uplink - not a real mains/UPS outage. The watchdog can't tell the difference (its only signal is carrier-loss on `enp1s0`), so it followed its normal logic: waited 200min, then ran a real clean shutdown at 20:50. Knock-on effect: `pihole` runs on xero, so LAN-wide DNS was down for the full ~2h10m xero was off. Neither auto-recovery path fired, because xero's own PSU never actually lost power: BIOS AC-restore has nothing to trigger on (no AC-loss-then-restore event at xero's PSU), and the Pi's WoL sender only fires on the Pi's own boot (the Pi never lost power either). Brought back by physically reinserting xero's power cable at 23:00. Since xero's outlet never lost power, `Wake-on: g` should have stayed live the whole time - a plain `wakeonlan 68:1D:EF:38:8C:72` from the Pi or any LAN box likely would have worked without touching the cable. Root cause was human error (extender switch), not a watchdog bug - no fix needed.
+- 2026-08-28: **two action items opened from that incident:**
+  1. **Carrier-loss/restore email notifications - trial, not yet confirmed as the right approach.** `projects/power-watchdog/watchdog_power.sh` now emails on the exact two transition moments it already logs (`enp1s0 lost carrier` / `enp1s0 carrier restored`), via a new shared `tools/notify/send_email.sh` (extracted from `projects/healthcheck/healthcheck.sh`'s inline sender, now used by both). Wrapped in `|| true` so an email failure can never block the shutdown logic. Verified: syntax-checked, a real test email sent through the new shared script, and a live no-op run of the script (carrier currently up, no state files) exits clean. **Explicitly a trial** - running for a few days to see if it's actually useful signal or just noise before deciding to keep it.
+  2. **Power-watchdog HA sensor - shipped.** Confirmed no such sensor existed. Added `power_on_battery` (binary, reads `~/.cache/power-watchdog/down-since`) and `power_down_minutes` to `healthcheck.sh`'s existing MQTT publish (same discovery pattern as the `spotifyd` entity), surfacing as `binary_sensor.homelab_healthcheck_homelab_power_watchdog` and `sensor.homelab_healthcheck_power_watchdog_down_duration`. Deliberately dashboard-only, not added to `healthcheck.sh`'s `problems[]` array - action item 1 above already emails on the transition directly, so folding it into the problems list too would just double the alert. Added both as tiles to the "Homelab Health" section of the storage-mode Stats dashboard (`scripts/apply_power_watchdog_dashboard_tiles.sh`, same stop-HA/copy/restart pattern as the earlier Tailscale/HA dashboard edit) - confirmed live via the HA REST API and the dashboard's own card list.
+- 2026-09-06: **manual power-on during an outage gets killed by the watchdog.** Mains went out ~05:40; the watchdog crossed 200min and cleanly shut xero down at 09:00:17, exactly as designed. The user then tried to bring the server back by hand while the outage was still ongoing and couldn't keep it alive - with no monitor available, it wasn't even possible to tell whether the console was prompting for a username or a password. What the journal actually shows: the server wasn't failing to boot, it was shutting *itself* off each time.
+  - **11:33:18** boot (power button - `enp1s0: Link is Down` at boot, and the Pi was still dead, so WoL was not involved) -> **11:35:01** `enp1s0 down for 355m (>=200m) - shutting down cleanly`, off after 1m43s.
+  - **11:43:01** boot -> **11:44:05** `systemd-logind: Power key pressed short` - a button press on an already-running machine, which powered it off rather than on.
+  - **11:44:35** boot -> **11:45:01** watchdog again at 365m, off after 26 seconds.
+  - **11:55:46** boot, stayed up; `enp1s0` link returned at 11:56:04 and the watchdog cleared the watch at 12:00:01.
+  - **12:00:23-30** the Pi finally booted and fired its 3 magic packets - about 4.5min *after* xero was already up. WoL played no part in this recovery; every boot above was a manual button press.
+  - Mechanism, candidate fixes and the decision not to fix: see "Known limitation: manual power-on during an outage".
+  - Also observed the same morning, no action taken: `enp1s0` flapped repeatedly once mains returned (link up/down at 12:16, 12:17, 12:27 and 12:28), restarting the watch at 12:05 with a fresh clock.
+- 2026-09-19: **overlay rollback was incomplete - found and finished.** `apt install` failed with `Read-only file system` on `/boot/firmware`: raspi-config's overlay option had also added `ro` to the boot partition's `/etc/fstab` line, which `fix_wol_sender_overlay_hang.sh` never touched. Removed it (`defaults,ro` -> `defaults`), remounted rw, `dpkg --configure -a` finished the stuck kernel/firmware packages, rebooted onto 6.18.50 cleanly. Same check found `cmdline.txt` is a single newline: its 2026-08-20 backup is 18 bytes, i.e. the file held *only* `overlayroot=tmpfs`, and stripping that left it empty. The Pi now boots on the firmware's built-in default cmdline (`root=/dev/mmcblk0p2 rootfstype=ext4 rootwait console=tty1`). That is also the likely real cause of the original hang (untested): a cmdline with no `root=` and no `console=tty1` matches "boot logs, then blank".
 
 ### Clean dust with a blower
 **Status:** Done
 
-General preventive maintenance - dust buildup increases fan speed/noise and raises operating temperature over time, and this N5105 CPU already runs a tight thermal margin (idles ~65°C). Done (2026-08-21), during the same case-open as the RAM check above (see 🟢 Active) - fan didn't actually have much dust buildup, but cleaned out whatever was there anyway. Revisit opportunistically during a future case-open rather than as its own task.
+**Why:** general preventive maintenance - dust buildup increases fan speed/noise and raises operating temperature over time, and this N5105 CPU already runs a tight thermal margin (idles ~65°C).
+**Outcome:** done 2026-08-21, during the same case-open as the RAM check (see that entry). The fan didn't actually have much dust buildup, but whatever was there was cleaned out anyway. Revisit opportunistically during a future case-open rather than as its own task.
 
 ### UI to visualize PROJECTS.md
 **Status:** Done
 
 **Why:** this file is a flat markdown doc with a growing wall of text per project - a visual/interactive view could make it easier to scan state at a glance than scrolling raw markdown. Ruled out publishing it publicly (GitHub Pages / `pjangam.github.io`) since the file contains private LAN IPs, a MAC address, and family members' names - kept LAN-only instead, same exposure pattern as Pi-hole/Node-RED.
-**What shipped (2026-08-26):**
+**Outcome:** shipped 2026-08-26 as a read-only React app (`projects/projects-ui/`) in the `projects-ui` container on port 8125, LAN-only; a stale-content bind-mount bug was fixed the same day, and a two-pane layout replaced the expandable cards on 2026-09-15.
+- Left open, low priority: edit support and a Tailscale hostname for remote access (see Left for later). Neither needed right now.
+
+#### What shipped
 - A small React app (`projects/projects-ui/`, Vite + Vitest + React Testing Library) that fetches `PROJECTS.md` client-side and renders it grouped by status section, with search, per-status filter chips, and expand-all/collapse-all for the per-project `<details>` cards.
 - 20 tests (parsing logic, the fetch hook, component behavior, full-app integration), all passing.
 - Built as a multi-stage Docker image (`projects/projects-ui/Dockerfile`, `node:20-alpine` build → `nginx:alpine` serve) and added as a new `projects-ui` service in `docker-compose.yml`, port 8125, LAN-only.
 - `PROJECTS.md` is volume-mounted read-only into the container so edits show up on refresh without rebuilding the image.
 - Confirmed rendering correctly in a real browser at `http://192.168.1.123:8125`.
 
-**Stale-content bug found and fixed (2026-08-26):** the original mount bind-mounted the single file directly (`./PROJECTS.md:/usr/share/nginx/html/PROJECTS.md:ro`). That pins the bind to the file's inode at container-start time - any editor that saves via atomic replace (write a temp file, rename over the original, which is what this session's own Edit tool does) swaps the inode, silently freezing the container's view of the file until it's restarted.
-- Traced by comparing the container's served copy against the repo file directly (`docker exec projects-ui cat ... | diff`) and confirming matching/mismatched inodes with `stat`.
-- Fixed by bind-mounting the whole repo root read-only (`.:/data:ro`) and adding `projects/projects-ui/nginx.conf` with `location = /PROJECTS.md { alias /data/PROJECTS.md; }` - directory bind mounts resolve paths fresh on every request, so a rename inside them doesn't go stale.
-- Verified the fix survives a simulated atomic-replace edit with no container restart, and confirmed no other repo file is servable over HTTP (unmatched paths fall through to the SPA's `index.html`, not the real file - `/data` itself is never used as an nginx `root`).
-**Two-pane layout (2026-09-15):** replaced the expand-in-place `<details>` cards (and expand-all/collapse-all) with a left pane of titles grouped by status and a right pane showing the selected project; each pane scrolls on its own. The shopping list stays at the top as a collapsible panel whose summary line keeps the item count and total, with the open/collapsed state remembered across reloads. Below 760px wide the panes take turns (list, then detail with a back button). `projects/projects-ui/scripts/screenshot.sh` screenshots the live app at desktop and phone widths via the Playwright image, since xero has no browser or Node.
-**Left for later, low priority:** edit support (currently read-only - would need a real backend with filesystem write access, unlike today's static-file setup; scope depends on whether "edit" means quick status moves or full text editing, still undecided) and a Tailscale hostname for remote access (same pattern as HA's `ha.${TAILNET_SUFFIX}` above) if LAN-only ever stops being enough. Neither needed right now.
+#### Left for later
+Low priority: edit support (currently read-only - would need a real backend with filesystem write access, unlike today's static-file setup; scope depends on whether "edit" means quick status moves or full text editing, still undecided) and a Tailscale hostname for remote access (same pattern as HA's `ha.${TAILNET_SUFFIX}` in the HA Tailscale entry) if LAN-only ever stops being enough.
+
+#### Log
+- 2026-08-26: shipped (see What shipped).
+- 2026-08-26: stale-content bug found and fixed. The original mount bind-mounted the single file directly (`./PROJECTS.md:/usr/share/nginx/html/PROJECTS.md:ro`). That pins the bind to the file's inode at container-start time - any editor that saves via atomic replace (write a temp file, rename over the original, which is what this session's own Edit tool does) swaps the inode, silently freezing the container's view of the file until it's restarted.
+  - Traced by comparing the container's served copy against the repo file directly (`docker exec projects-ui cat ... | diff`) and confirming matching/mismatched inodes with `stat`.
+  - Fixed by bind-mounting the whole repo root read-only (`.:/data:ro`) and adding `projects/projects-ui/nginx.conf` with `location = /PROJECTS.md { alias /data/PROJECTS.md; }` - directory bind mounts resolve paths fresh on every request, so a rename inside them doesn't go stale.
+  - Verified the fix survives a simulated atomic-replace edit with no container restart, and confirmed no other repo file is servable over HTTP (unmatched paths fall through to the SPA's `index.html`, not the real file - `/data` itself is never used as an nginx `root`).
+- 2026-09-15: two-pane layout. Replaced the expand-in-place `<details>` cards (and expand-all/collapse-all) with a left pane of titles grouped by status and a right pane showing the selected project; each pane scrolls on its own. The shopping list stays at the top as a collapsible panel whose summary line keeps the item count and total, with the open/collapsed state remembered across reloads. Below 760px wide the panes take turns (list, then detail with a back button). `projects/projects-ui/scripts/screenshot.sh` screenshots the live app at desktop and phone widths via the Playwright image, since xero has no browser or Node.
 
 ### Expose Home Assistant via Tailscale with its own clean hostname
 **Status:** Done
 
 **Why:** Caddy only reverse-proxied Vaultwarden (`xero.{$TAILNET_SUFFIX}`); HA is the service most worth reaching remotely and already has its own login. Path-based routing (`/ha`) was rejected since HA's frontend/plugins assume a root-relative path.
-**What shipped (2026-08-26):** a `tailscale/tailscale` sidecar (`ha-tailscale` in `docker-compose.yml`, userspace networking - xero's own native `tailscaled` rules out host-mode) joins the tailnet under its own hostname `ha`, and `tailscale serve` (via `TS_SERVE_CONFIG` → `services/tailscale/ha/serve-config.json`) terminates TLS and reverse-proxies to HA at `192.168.1.123:8123`. Caddy untouched. `https://ha.{$TAILNET_SUFFIX}` confirmed working from inside the home network; LAN access unaffected. **Not yet tested from outside the home network / off Wi-Fi** - should work automatically over the tailnet like any other Tailscale node, but hasn't been verified.
+**Outcome:** shipped 2026-08-26 - a `tailscale/tailscale` sidecar gives HA its own tailnet hostname `ha`, and `https://ha.{$TAILNET_SUFFIX}` was confirmed working from inside the home network; LAN access unaffected, Caddy untouched.
+- Left open: **not yet tested from outside the home network / off Wi-Fi** - should work automatically over the tailnet like any other Tailscale node, but hasn't been verified.
+- Left open, low priority: remove the stale offline `homeassistant` device (100.112.159.113, leftover from the Pi's old HAOS days) from the Tailscale admin console.
+
+#### Design
+`ha-tailscale` in `docker-compose.yml` uses userspace networking - xero's own native `tailscaled` rules out host-mode. It joins the tailnet under its own hostname `ha`, and `tailscale serve` (via `TS_SERVE_CONFIG` → `services/tailscale/ha/serve-config.json`) terminates TLS and reverse-proxies to HA at `192.168.1.123:8123`.
+
+#### Gotchas
 - `serve-config.json` gotcha: `AllowFunnel` is keyed per host:port, not a plain bool - a top-level `"AllowFunnel": false` crash-looped the container. Fix: omit it entirely (default off).
 - Bigger gotcha: HA rejected the proxied requests with 400 (`X-Forwarded-For header from an untrusted proxy 172.18.0.7`). HA's proxy-trust list is **not** read from `configuration.yaml` once migrated - newer HA stores it in `.storage/http` (`yaml_migration_done: true`, this instance migrated 2026-08-09 with `trusted_proxies: ["100.64.0.0/10"]`, apparently pre-staged for this project). A YAML `http:` block post-migration does nothing useful and, if malformed, fails the entire `http` integration at boot - which cascades into recovery mode (frontend/auth/api/mqtt all depend on it) and is what happened mid-session. The real fix: edit `/config/.storage/http`'s `stable.trusted_proxies` list directly (JSON) - final value `["100.64.0.0/10", "172.18.0.0/16"]`, adding the docker-compose bridge subnet the sidecar's requests originate from.
 - `configuration.yaml` and `.storage/http` are normally root-owned (privileged HA container); user chowned just those two files to themselves so edits don't need `sudo` each time - everything else in `HOMEASSISTANT_CONFIG` (secrets, tokens, DB) is still root-owned.
-**Left for later, low priority:** remove the stale offline `homeassistant` device (100.112.159.113, leftover from the Pi's old HAOS days) from the Tailscale admin console.
+
+#### Log
+- 2026-08-09: this HA instance migrated its `http` config to `.storage/http` with `trusted_proxies: ["100.64.0.0/10"]`.
+- 2026-08-26: sidecar shipped, the two gotchas above hit and fixed, `https://ha.{$TAILNET_SUFFIX}` confirmed working from the home network.
 
 ### Network/security audit across all containers (Mosquitto auth, SSH, rpcbind)
 **Status:** Done
 
-**Why:** triggered by moving Node-RED's admin editor from localhost-only to reachable over Wi-Fi (see above) - prompted a full re-evaluation of network exposure and auth across every host/service, not just Node-RED.
-**What shipped (2026-08-23):**
+**Why:** triggered by moving Node-RED's admin editor from localhost-only to reachable over Wi-Fi (see the Pi load migration entry) - prompted a full re-evaluation of network exposure and auth across every host/service, not just Node-RED.
+**Outcome:** shipped 2026-08-23 - Mosquitto auth with every client rewired, Node-RED `adminAuth`, Pi SSH key-only, `rpcbind` disabled on the Pi, credentials in Vaultwarden.
+- **Not changed (accepted status quo, not asked for):** Caddy only reverse-proxies Vaultwarden - HA, Pi-hole admin, and Node-RED remain plain HTTP on the LAN.
+
+#### What shipped
 - **Mosquitto auth.** `allow_anonymous false` + `password_file`, user `homelab`. Rewired every client: Node-RED's `ha-miraie-ac` node (via its "credentials" sub-object, not flat fields - flat fields are silently accepted as ordinary config and never reach the credential store, a real gotcha hit live), Home Assistant's own MQTT integration (patched directly into `.storage/core.config_entries` via `docker exec -u root homeassistant` since that file is root-owned and no local sudo was available - backed up first), `white-noise-mqtt.py`, `volume-mqtt.py`, `publish_healthcheck_mqtt.py` (all via a new gitignored `.env.mqtt` + `EnvironmentFile=` in their systemd units / sourced in `projects/healthcheck/healthcheck.sh`). Verified end-to-end post-rollout: HA's MQTT client connects and stays connected (checked via `mosquitto`'s own log, since it logs to a file not stdout), both Python bridges show `available: online`, the cron healthcheck publisher's MQTT step confirmed with a live triggered run (not just reasoned-correct), and Node-RED's local-broker + MirAIe-cloud connections both confirmed ESTABLISHED at the socket level.
 - **Node-RED `adminAuth`** enabled on the Pi's editor (username `pramod`, bcrypt hash) - it was previously unauthenticated, fine when only reachable from `xero` itself, not once exposed over the LAN post-migration.
 - **Pi SSH password auth disabled** (`PasswordAuthentication no` in `/etc/ssh/sshd_config`, confirmed reloaded via `journalctl` showing `SIGHUP`/reread at the same timestamp as the edit) - key-only access from here on.
 - **`rpcbind` disabled** on the Pi (`systemctl disable --now`) - unused attack surface.
 - Credentials (Node-RED admin, Mosquitto MQTT) pushed into Vaultwarden via `bw` CLI (user ran `bw unlock` themselves, shared only the session token - master password never seen by Claude) and deleted from scratchpad.
-**Not changed (accepted status quo, not asked for):** Caddy only reverse-proxies Vaultwarden - HA, Pi-hole admin, and Node-RED remain plain HTTP on the LAN.
 
 ### Git hooks: pre-commit PII/public-IP/PCI scan, reproducible hook install
 **Status:** Done
 
 **Why:** gitleaks (existing `pre-push` hook) only catches credential-shaped secrets - it wouldn't catch a public IP, a Tailscale hostname, a phone number, or a card number accidentally committed. Separately, that pre-push hook only ever lived in `.git/hooks/` (untracked, per-clone) with no install step anywhere - it would not have survived a fresh `git clone`.
-**What shipped (2026-08-23):** moved both hooks into tracked `.githooks/` and set `git config core.hooksPath .githooks` (now done automatically by `new_machine_setup.sh`). Added `.githooks/pre-commit`: scans staged added lines for public IPv4s (private/loopback ranges and well-known DNS resolvers like `8.8.8.8`/`1.1.1.1` allowlisted), Tailscale `*.ts.net` hostnames (the doc placeholder `tailXXXXX.ts.net` allowlisted), emails outside a small allowlist, phone numbers, and card numbers (Luhn-checked to cut noise on generic digit strings) - blocks the commit with `git commit --no-verify` as the documented bypass for a confirmed false positive. Dry-run tested against all currently-tracked repo content first to calibrate the allowlist before enabling; live-tested against both a deliberately planted leak (all four categories correctly caught) and a legitimate change (correctly passed clean). Documented in `Readme.md` under "Git hooks (leak scanning)".
+**Outcome:** shipped 2026-08-23 - both hooks tracked in `.githooks/` with `git config core.hooksPath .githooks` (set automatically by `new_machine_setup.sh`), plus a new `.githooks/pre-commit` leak scan. Documented in `Readme.md` under "Git hooks (leak scanning)".
+
+#### What the pre-commit hook does
+Scans staged added lines for public IPv4s (private/loopback ranges and well-known DNS resolvers like `8.8.8.8`/`1.1.1.1` allowlisted), Tailscale `*.ts.net` hostnames (the doc placeholder `tailXXXXX.ts.net` allowlisted), emails outside a small allowlist, phone numbers, and card numbers (Luhn-checked to cut noise on generic digit strings) - blocks the commit with `git commit --no-verify` as the documented bypass for a confirmed false positive.
+
+#### Verification
+Dry-run tested against all currently-tracked repo content first to calibrate the allowlist before enabling; live-tested against both a deliberately planted leak (all four categories correctly caught) and a legitimate change (correctly passed clean).
 
 ### White noise: HTTP polling → MQTT + systemd linger fix
 **Status:** Done
 
-Root cause of the unresponsive HA switch was `Linger=no` - `white-noise-api.service` (a `systemd --user` unit) died every time the SSH session that started it ended, and HA's `curl` polling failed silently. Replaced the HTTP API with an MQTT bridge (`projects/white-noise/white-noise-mqtt.py`, `uv run --script`) using HA discovery, and ran `loginctl enable-linger pramod` so `systemd --user` units survive logout/reboot. Confirmed fixed via a real logout test.
+**Why:** the HA white-noise switch was unresponsive. Root cause was `Linger=no` - `white-noise-api.service` (a `systemd --user` unit) died every time the SSH session that started it ended, and HA's `curl` polling failed silently.
+**Outcome:** replaced the HTTP API with an MQTT bridge (`projects/white-noise/white-noise-mqtt.py`, `uv run --script`) using HA discovery, and ran `loginctl enable-linger pramod` so `systemd --user` units survive logout/reboot. Confirmed fixed via a real logout test.
 
 ### getty@tty1 crash-loop
 **Status:** Done
 
-The console font setup baked a single hardcoded font choice into a static `getty@.service.d` drop-in from a one-time probe; a reboot that negotiated a different video mode broke it and crash-looped the console. Fixed by making the drop-in try fonts largest-to-smallest at every getty start instead - now installed automatically by `new_machine_setup.sh`'s N5105 block. (The standalone recovery script for this incident was removed once the preventive fix landed; recoverable from git history if it ever recurs.) (Initially, and wrongly, thought this was *why* the white-noise bug surfaced that day - it wasn't; see the correction in memory/git history.)
+**Why:** the console font setup baked a single hardcoded font choice into a static `getty@.service.d` drop-in from a one-time probe; a reboot that negotiated a different video mode broke it and crash-looped the console.
+**Outcome:** fixed by making the drop-in try fonts largest-to-smallest at every getty start instead - now installed automatically by `new_machine_setup.sh`'s N5105 block. The standalone recovery script for this incident was removed once the preventive fix landed; recoverable from git history if it ever recurs.
+
+#### Notes worth keeping
+Initially, and wrongly, thought this was *why* the white-noise bug surfaced that day - it wasn't; see the correction in memory/git history.
 
 ### Docker/Tailscale CVE patching + auto-update
 **Status:** Done
 
-Found real CVEs unpatched because `unattended-upgrades` only covers Ubuntu's own archive by default: Docker BuildKit command injection (fixed in 29.6.2) and a Tailscale SSH privilege-escalation bug, TS-2026-009 (fixed in 1.98.9). Patched via a one-off dated script (since removed - the patch is applied, nothing left to re-run); the ongoing fix extending the twice-daily `unattended-upgrades` run to also cover the Docker and Tailscale repos is now installed automatically by `new_machine_setup.sh`, instead of a separate cron job.
+**Why:** found real CVEs unpatched because `unattended-upgrades` only covers Ubuntu's own archive by default: Docker BuildKit command injection (fixed in 29.6.2) and a Tailscale SSH privilege-escalation bug, TS-2026-009 (fixed in 1.98.9).
+**Outcome:** patched via a one-off dated script (since removed - the patch is applied, nothing left to re-run). The ongoing fix, extending the twice-daily `unattended-upgrades` run to also cover the Docker and Tailscale repos, is now installed automatically by `new_machine_setup.sh` instead of a separate cron job.
 
 ### Synthetic healthcheck + email/heartbeat notifications
 **Status:** Done
 
-`healthcheck.sh` (cron, every 15 min): checks Docker containers, `systemctl --user`/system failed units, ZFS pool health, disk space, and linger. Alerts via Gmail SMTP to the user's own email (HA mobile push doesn't work without a Nabu Casa subscription - confirmed by testing), with state-based dedup so an unresolved problem alerts once, not every run. Also pings a healthchecks.io dead-man's-switch every run, to catch a total machine freeze that a script running on the machine itself could never detect about itself. Caught a real bug in its own construction: `systemctl --user` fails silently under cron's stripped environment without `XDG_RUNTIME_DIR` set.
+**Why:** problems on xero needed to be noticed without someone looking, including a total machine freeze.
+**Outcome:** `healthcheck.sh` (cron, every 15 min) checks Docker containers, `systemctl --user`/system failed units, ZFS pool health, disk space, and linger, alerts by email, and pings a healthchecks.io dead-man's-switch every run.
+
+#### Design
+- Alerts via Gmail SMTP to the user's own email (HA mobile push doesn't work without a Nabu Casa subscription - confirmed by testing), with state-based dedup so an unresolved problem alerts once, not every run.
+- The healthchecks.io dead-man's-switch catches a total machine freeze that a script running on the machine itself could never detect about itself.
+- Caught a real bug in its own construction: `systemctl --user` fails silently under cron's stripped environment without `XDG_RUNTIME_DIR` set.
 
 ### ZFS `copies=2` on Immich datasets
 **Status:** Done
 
-Found real, previously-unnoticed data corruption in `datapool` (6 blocks, from a 2026-07-12 scrub that was never surfaced) while building the ZFS check above. Set `copies=2` on `datapool/immich-upload` and `datapool/immich-db` - free, uses existing hardware, gives real self-healing for isolated corruption (exactly what was found) going forward. Does not fix the already-corrupted blocks (still recoverable from the intact Takeout zips whenever needed) or protect against full-disk failure (needs the real mirror project above).
+**Why:** found real, previously-unnoticed data corruption in `datapool` (6 blocks, from a 2026-07-12 scrub that was never surfaced) while building the ZFS check in the healthcheck entry.
+**Outcome:** set `copies=2` on `datapool/immich-upload` and `datapool/immich-db` - free, uses existing hardware, gives real self-healing for isolated corruption (exactly what was found) going forward. Does not fix the already-corrupted blocks (still recoverable from the intact Takeout zips whenever needed) or protect against full-disk failure (needs the real mirror project).
 
 ### ZFS `sync=always` on Immich datasets
 **Status:** Done
 
-Surfaced while brainstorming graceful-shutdown options for the power watchdog: a different strategic angle from detection entirely - instead of getting better at *detecting* power loss, reduce the *impact* when it happens anyway. Set `sync=always` on `datapool/immich-upload` and `datapool/immich-db` (same scope as `copies=2` above), forcing every write to commit synchronously instead of buffering, shrinking the window of in-flight data that could be corrupted by an abrupt loss. Explicitly complementary, not a replacement: still need real power-loss detection (the ESP32/power-watchdog projects above), and sudden power loss can still damage hardware itself regardless of filesystem-level mitigation. Only applies to `datapool` - the OS root disk isn't ZFS, so this doesn't cover it.
+**Why:** surfaced while brainstorming graceful-shutdown options for the power watchdog: a different strategic angle from detection entirely - instead of getting better at *detecting* power loss, reduce the *impact* when it happens anyway.
+**Outcome:** set `sync=always` on `datapool/immich-upload` and `datapool/immich-db` (same scope as `copies=2`), forcing every write to commit synchronously instead of buffering, shrinking the window of in-flight data that could be corrupted by an abrupt loss.
+
+#### Limits
+- Explicitly complementary, not a replacement: still need real power-loss detection (the ESP32/power-watchdog projects), and sudden power loss can still damage hardware itself regardless of filesystem-level mitigation.
+- Only applies to `datapool` - the OS root disk isn't ZFS, so this doesn't cover it.
 
 ### ZFS corruption on `datapool` fully resolved
 **Status:** Done
 
-All 6 originally-corrupted blocks (2026-07-12 scrub) dealt with. 2 "library" originals were recovered earlier from intact Takeout zips. Of the remaining 4 (found via `zpool status -v`, surfaced on the new MQTT dashboard as "Homelab ZFS Pool" going red): 2 were cached Immich thumbnail previews (no real data loss - deleted, Immich regenerates them automatically) and 2 were video originals under Immich's managed `upload/` path with no corresponding database row at all (confirmed via a temporary read-only query against a one-off `database` container started against the real `datapool/immich-db` volume) - meaning Immich had already forgotten these assets regardless of corruption. Identified which two Takeout videos they were by matching `photoTakenTime` timestamps from Takeout JSON sidecars against the corrupted files' own embedded metadata (still fully readable despite the corruption) - duration matched to the microsecond, confirming identity beyond doubt. File sizes differed substantially (Takeout originals ~1.4-3x larger) because Immich had transcoded them on upload, so the recovered copies are actually higher quality than what was lost. Moved to a new, separate, hardened dataset (`datapool/recovered-media`, `copies=2`/`sync=always`) rather than restored into the orphaned Immich path, since Immich can't reference them either way until manually re-uploaded once it's back online. Corrupted files deleted, `zpool clear` + fresh scrub run - confirmed "0 errors", "No known data errors".
+**Why:** the 2026-07-12 scrub had found 6 corrupted blocks in `datapool`.
+**Outcome:** all 6 originally-corrupted blocks dealt with. Corrupted files deleted, `zpool clear` + fresh scrub run - confirmed "0 errors", "No known data errors". The two recovered videos sit in a separate hardened dataset, `datapool/recovered-media`.
+
+#### How each block was resolved
+- 2 "library" originals were recovered earlier from intact Takeout zips.
+- The remaining 4 were found via `zpool status -v`, surfaced on the new MQTT dashboard as "Homelab ZFS Pool" going red:
+  - 2 were cached Immich thumbnail previews (no real data loss - deleted, Immich regenerates them automatically).
+  - 2 were video originals under Immich's managed `upload/` path with no corresponding database row at all (confirmed via a temporary read-only query against a one-off `database` container started against the real `datapool/immich-db` volume) - meaning Immich had already forgotten these assets regardless of corruption.
+
+#### Identifying the two videos
+Identified which two Takeout videos they were by matching `photoTakenTime` timestamps from Takeout JSON sidecars against the corrupted files' own embedded metadata (still fully readable despite the corruption) - duration matched to the microsecond, confirming identity beyond doubt. File sizes differed substantially (Takeout originals ~1.4-3x larger) because Immich had transcoded them on upload, so the recovered copies are actually higher quality than what was lost. Moved to a new, separate, hardened dataset (`datapool/recovered-media`, `copies=2`/`sync=always`) rather than restored into the orphaned Immich path, since Immich can't reference them either way until manually re-uploaded once it's back online.
 
 ### Tinxy watchdog: two-tier recovery + entity-based down-detection
 **Status:** Done
 
-2026-07-27 ISP outage exposed two gaps in `watchdog_tinxy.sh`.
-- **(1) Detection only grepped MQTT connect/disconnect log lines** - blind to a stalled integration setup that logged nothing distinctive after one of the watchdog's own restarts. Fixed by adding a second signal: querying actual Tinxy entity availability via the HA API, tripping at >=90% unavailable (had to be that high since ~60% of registered entities are *always* unavailable already, from old/decommissioned devices - see backlog item above).
-- **(2) Recovery jumped straight to a full `docker restart homeassistant`** - now tries a lighter config-entry reload first (what actually fixed the outage) at 20min, only escalating to a full restart at 35min if that doesn't clear it.
+**Why:** the 2026-07-27 ISP outage exposed two gaps in `watchdog_tinxy.sh`.
+**Outcome:** both gaps fixed - entity-availability detection added alongside the log grep, and recovery now reloads the config entry before escalating to a full restart. All three tiers (start watch, reload, escalate to restart) tested live against the real script and real data, including one real end-to-end restart.
 
-All three tiers (start watch, reload, escalate to restart) tested live against the real script and real data, including one real end-to-end restart.
+#### The two gaps and fixes
+- **(1) Detection only grepped MQTT connect/disconnect log lines** - blind to a stalled integration setup that logged nothing distinctive after one of the watchdog's own restarts. Fixed by adding a second signal: querying actual Tinxy entity availability via the HA API, tripping at >=90% unavailable (had to be that high since ~60% of registered entities are *always* unavailable already, from old/decommissioned devices - see the backlog item for those).
+- **(2) Recovery jumped straight to a full `docker restart homeassistant`** - now tries a lighter config-entry reload first (what actually fixed the outage) at 20min, only escalating to a full restart at 35min if that doesn't clear it.
 
 ### Monitor for silent backup failures
 **Status:** Done
 
-`backup_vaultwarden.sh`/`backup_homeassistant.sh` run daily via cron and log to `backup.log`, but nothing checked whether they actually succeeded - an expired rclone token or full remote could fail them silently for weeks. Extended `healthcheck.sh` to check the age of the last success line for each (>=30h flags a problem - daily cadence plus slack, not tied to time-of-day). Tested against the real log (correctly clean), a simulated stale log, and a missing-log case.
+**Why:** `backup_vaultwarden.sh`/`backup_homeassistant.sh` run daily via cron and log to `backup.log`, but nothing checked whether they actually succeeded - an expired rclone token or full remote could fail them silently for weeks.
+**Outcome:** extended `healthcheck.sh` to check the age of the last success line for each (>=30h flags a problem - daily cadence plus slack, not tied to time-of-day). Tested against the real log (correctly clean), a simulated stale log, and a missing-log case.
 
 ### iPhone → ZFS video uploads via local SMB share
 **Status:** Done
 
-Immich (the normal ingestion path) is currently disabled, but videos still needed to get off the phone. Rejected a Dropbox-relay approach as an unnecessary cloud round-trip since phone and server share the same LAN. Set up a `dperson/samba` container serving a new, separate ZFS dataset (`datapool/phone-uploads`, deliberately isolated from Immich's managed datasets) over SMB. Credentials pushed into Vaultwarden (not relayed through chat) for retrieval via the Bitwarden mobile app. Confirmed the container is healthy and the share config (`valid users = phoneupload`, `read only = No`) is correct; connects from iOS via Files app → Connect to Server → `smb://192.168.1.123`.
+**Why:** reclaiming phone storage, which was running low. Immich (the normal ingestion path) is currently disabled, but videos still needed to get off the phone - this is a plain file dump, not photo management.
+**Outcome:** a `dperson/samba` container serves a new, separate ZFS dataset (`datapool/phone-uploads`) over SMB; first real batch of 53 videos moved off the phone 2026-07-31. Explicitly a stopgap: it loses the AI features (face/object search, memories, etc.) that Google Photos/Immich provide, so it's not a replacement for Immich re-enablement (the parked Immich entry), just what's usable in the meantime.
 
-Actual driving need: reclaiming phone storage, which was running low - this is a plain file dump, not photo management. Explicitly a stopgap: it loses the AI features (face/object search, memories, etc.) that Google Photos/Immich provide, so it's not a replacement for Immich re-enablement (parked above), just what's usable in the meantime. First real batch: 53 large video files uploaded and moved off the phone (2026-07-31), all verified non-corrupt via `ffprobe`.
+#### Setup
+- Rejected a Dropbox-relay approach as an unnecessary cloud round-trip since phone and server share the same LAN.
+- `datapool/phone-uploads` is deliberately isolated from Immich's managed datasets.
+- Credentials pushed into Vaultwarden (not relayed through chat) for retrieval via the Bitwarden mobile app.
+- Confirmed the container is healthy and the share config (`valid users = phoneupload`, `read only = No`) is correct; connects from iOS via Files app → Connect to Server → `smb://192.168.1.123`.
+
+#### Log
+- 2026-07-31: first real batch - 53 large video files uploaded and moved off the phone, all verified non-corrupt via `ffprobe`.
 
 ### Consolidated status dashboard
 **Status:** Done
 
-Previously the only way to know something's wrong was a `healthcheck.sh` email after the fact. Extended `healthcheck.sh` to publish its check results (containers, systemd units, ZFS pool health, disk usage, backup freshness) to MQTT with HA discovery, grouped under a "Homelab Healthcheck" device - 9 entities total, published on every 15min cron run independent of the email-alert path so a publish failure can't suppress a real alert. Added a "Homelab Health" section to the existing "Stats" Lovelace dashboard with tile cards for all 9 entities (required stopping HA briefly to hand-edit the storage-mode dashboard file directly, since it's UI-managed rather than YAML). Verified end-to-end: entities confirmed live via the HA REST API, dashboard confirmed intact after restart with no lovelace-related errors in logs.
+**Why:** previously the only way to know something's wrong was a `healthcheck.sh` email after the fact.
+**Outcome:** `healthcheck.sh` publishes its check results to MQTT with HA discovery, and a "Homelab Health" section on the "Stats" Lovelace dashboard shows them. Verified end-to-end: entities confirmed live via the HA REST API, dashboard confirmed intact after restart with no lovelace-related errors in logs.
+
+#### Design
+- Check results published: containers, systemd units, ZFS pool health, disk usage, backup freshness - grouped under a "Homelab Healthcheck" device, 9 entities total.
+- Published on every 15min cron run independent of the email-alert path, so a publish failure can't suppress a real alert.
+- The "Homelab Health" section has tile cards for all 9 entities. Adding it required stopping HA briefly to hand-edit the storage-mode dashboard file directly, since it's UI-managed rather than YAML.
 
 ### Move some load to the Raspberry Pi
 **Status:** Done
 
 **Why:** the `wol-sender` Pi previously only sent a boot-time magic packet to `xero` - a trivially light job for a whole Pi, real spare capacity going unused.
+**Outcome:** Node-RED moved to the Pi (2026-08-22), its watchdog redesigned (2026-08-23), and the rollback volume on `xero` confirmed gone (2026-09-02). Vaultwarden was the only other live candidate and stays deliberately deprioritized to last resort (2026-08-20 decision, see git history) rather than an open action item - re-open only if real headroom pressure shows up on the Pi.
 
-**Node-RED migrated (2026-08-22)** - flows/credentials/Miraie AC config copied to the Pi, started via plain `docker run`, both required MQTT connections (local HA broker, MirAIe cloud broker) confirmed live at the socket level. Removed `node-red` from `xero`'s `docker-compose.yml`.
+#### Constraint: no battery backup on the Pi
+Identified along the way: the Pi has no battery backup (unlike `xero`, on the UPS), but the LAN/router stays up during an outage - so anything actively network-depended-on during an outage can't move here without the Pi also getting battery backup. Ruled out Pi-hole, Mosquitto, Caddy, and Home Assistant on those grounds. Also ruled out: Watchtower (can only manage the Pi's own containers via its local Docker socket, not `xero`'s), Samba (storage lives on `xero`'s ZFS pool, moving just the container adds a network round-trip or needs real separate storage on the Pi).
 
-**Constraint identified along the way:** the Pi has no battery backup (unlike `xero`, on the UPS), but the LAN/router stays up during an outage - so anything actively network-depended-on during an outage can't move here without the Pi also getting battery backup. Ruled out Pi-hole, Mosquitto, Caddy, and Home Assistant on those grounds. Also ruled out: Watchtower (can only manage the Pi's own containers via its local Docker socket, not `xero`'s), Samba (storage lives on `xero`'s ZFS pool, moving just the container adds a network round-trip or needs real separate storage on the Pi).
-
-**Watchdog fixed and redesigned (2026-08-23)** - the Mosquitto-auth security pass broke `watchdog_nodered.sh` (no credentials passed), which surfaced a deeper pre-existing bug: its `AC_TOPIC` never matched what the `ha-miraie-ac` node actually publishes, and that data isn't retained anyway (only sent once per reconnect). Rewrote to check the container's own `/proc/net/tcp` for ESTABLISHED connections instead - independent of the AC's power state. Documented in `Readme.md` under "Node-RED Watchdog (MQTT bridge health)".
-
-**Closed out (2026-09-02):** the old `homelab_node-red-data` volume on `xero`, left as a rollback net, is confirmed gone (`docker volume ls` no longer lists it). Vaultwarden was the only other live candidate and stays deliberately deprioritized to last resort (2026-08-20 decision, see git history) rather than an open action item - re-open only if real headroom pressure shows up on the Pi.
+#### Log
+- 2026-08-20: decided Vaultwarden stays deprioritized to last resort (see git history).
+- 2026-08-22: Node-RED migrated - flows/credentials/Miraie AC config copied to the Pi, started via plain `docker run`, both required MQTT connections (local HA broker, MirAIe cloud broker) confirmed live at the socket level. Removed `node-red` from `xero`'s `docker-compose.yml`.
+- 2026-08-23: watchdog fixed and redesigned - the Mosquitto-auth security pass broke `watchdog_nodered.sh` (no credentials passed), which surfaced a deeper pre-existing bug: its `AC_TOPIC` never matched what the `ha-miraie-ac` node actually publishes, and that data isn't retained anyway (only sent once per reconnect). Rewrote to check the container's own `/proc/net/tcp` for ESTABLISHED connections instead - independent of the AC's power state. Documented in `Readme.md` under "Node-RED Watchdog (MQTT bridge health)".
+- 2026-09-02: closed out - the old `homelab_node-red-data` volume on `xero`, left as a rollback net, is confirmed gone (`docker volume ls` no longer lists it).
 
 ### Offsite copy of docs/hardware.md (Dropbox, encrypted)
 **Status:** Done
 
-**Why:** `docs/hardware.md` is gitignored, so the master on xero was its only copy; the Mac once had an scp'd copy, but it is gone and nothing kept it in step anyway. Decided 2026-09-30: back it up to Dropbox only, and leave the Mac without a copy - no Dropbox or rclone on the work laptop.
-**What shipped (2026-09-30):** `projects/certs-backup/backup_hardware_md.sh`, the Vaultwarden backup's shape reused: GPG with `BACKUP_PASSPHRASE` from `.env.backup`, `rclone copy` to `backup:homelab-hardware`, keep 7, and skip when the file's sha256 matches the last successful upload. Cron 03:30 daily on xero (also in `new_machine_setup.sh`), logging to `backup.log`. Verified: first run uploaded, second skipped, and the Dropbox copy decrypts byte-identical to xero's file. **Restore:** `rclone cat backup:homelab-hardware/<newest> | gpg -d > docs/hardware.md`.
-**Not covered:** `healthcheck.sh` checks backup freshness only for Vaultwarden and HA, not this one.
+**Why:** `docs/hardware.md` is gitignored, so the master on xero was its only copy; the Mac once had an scp'd copy, but it is gone and nothing kept it in step anyway.
+**Outcome:** shipped 2026-09-30 - `projects/certs-backup/backup_hardware_md.sh` uploads a GPG-encrypted copy to Dropbox daily. Verified: first run uploaded, second skipped, and the Dropbox copy decrypts byte-identical to xero's file.
+- Left open: `healthcheck.sh` checks backup freshness only for Vaultwarden and HA, not this one.
+
+#### Design
+`projects/certs-backup/backup_hardware_md.sh`, the Vaultwarden backup's shape reused: GPG with `BACKUP_PASSPHRASE` from `.env.backup`, `rclone copy` to `backup:homelab-hardware`, keep 7, and skip when the file's sha256 matches the last successful upload. Cron 03:30 daily on xero (also in `new_machine_setup.sh`), logging to `backup.log`.
+
+#### Restore
+`rclone cat backup:homelab-hardware/<newest> | gpg -d > docs/hardware.md`
+
+#### Log
+- 2026-09-30: decided to back it up to Dropbox only, and leave the Mac without a copy - no Dropbox or rclone on the work laptop. Shipped and verified the same day.
 
 ### Baby-cry alert via ntfy (replace SMS Shortcut)
 **Status:** Active
 **Priority:** P3
 
-**Why:** a baby-cry alert already exists, but it goes out as an SMS. An iPhone Shortcut fires on Sound Recognition's "Baby Crying" and texts a number. The plan is to move the listening to a **different, dedicated iPhone** that stays near the baby, and have it publish to the self-hosted ntfy on xero instead of SMS. That gives a real push to every subscribed phone, at a priority that can break through, with no carrier involved. Noted 2026-10-02.
+**Why:** a baby-cry alert already exists, but it goes out as an SMS. An iPhone Shortcut fires on Sound Recognition's "Baby Crying" and texts a number. The plan is to move the listening to a **different, dedicated iPhone** that stays near the baby, and have it publish to the self-hosted ntfy on xero instead of SMS. That gives a real push to every subscribed phone, at a priority that can break through, with no carrier involved.
+**State:** reopened 2026-10-05 after a Done close on 2026-10-03. Server side and the SE's Shortcut work end to end, but the SE has sent no cry alerts in real use. Its mic hears the cry (Alfred on the SE keeps sending its own baby-cry alerts), so the likely suspect is Alfred holding the mic, with iOS pausing Sound Recognition while another app records. The SE was updated to iOS 26 on 2026-10-05 and is being observed for a few days.
+**Next step:**
+- Observe the SE on iOS 26 for a few days.
+- If it still sends nothing: (1) check whether the SE shows its own Sound Recognition banner when a crying clip plays. No banner means recognition is not running; a banner but no ntfy alert means the Shortcut or Tailscale is at fault. (2) Repeat with Alfred closed. If it then fires, Alfred and Sound Recognition cannot share the SE, so either Alfred moves to another phone or the iPhone 14 becomes the listener.
+- Still outstanding from the 2026-10-03 close: check that it fires with the SE locked on its charger while Alfred holds the mic, and turn off (not delete) the SMS automation on the iPhone 14 once ntfy has carried a few real cries.
 
-**State:** reopened 2026-10-05: the SE has sent no cry alerts in real use. ntfy's cache, which holds 12h, had nothing on `baby-cry`. Over the same days Alfred on the SE kept sending its own baby-cry alerts, and the iPhone 14 still detects the cry. So the SE's mic hears the cry, and the likely suspect is Alfred holding the mic, with iOS pausing Sound Recognition while another app records. The SE was updated to iOS 26 on 2026-10-05; observe for a few days. If it still sends nothing: (1) check whether the SE shows its own Sound Recognition banner when a crying clip plays. No banner means recognition is not running; a banner but no ntfy alert means the Shortcut or Tailscale is at fault. (2) Repeat with Alfred closed. If it then fires, Alfred and Sound Recognition cannot share the SE, so either Alfred moves to another phone or the iPhone 14 becomes the listener. Earlier: closed as Done 2026-10-03. The SE's Shortcut publishes to `baby-cry` and the notification arrives on the phone. Closed at the user's call before the soak: they still need to check, informally, that it fires with the SE locked on its charger while Alfred holds the mic, and to turn off (not delete) the SMS automation on the iPhone 14 once ntfy has carried a few real cries. If either check fails, reopen. History follows: server side done 2026-10-03. The `baby-cry` topic, the write-only `babycry` user and its token (`NTFY_BABYCRY_TOKEN` in `.env.ntfy`) exist via `tools/notify/setup_ntfy_users.sh`. `tools/notify/verify_ntfy_topics.sh` passes all 26 checks, including the babycry token being refused on every other topic and unable to read its own. A Shortcut-shaped JSON POST to `https://ntfy.{tailnet}/` returned 200. Also 2026-10-03: `everyone` has read-only on `baby-cry`, so every account, including ones made later, and anonymous tailnet clients receive it. Only `babycry` and `pramod` can publish. The Shortcut published end to end on 2026-10-03, with the notification received on the phone. The first 403s were the header typed as `Authorisation` with no `Bearer ` prefix: ntfy accepts only `Authorization: Bearer tk_…`, and a trailing slash (`/baby-cry/`) returns 404. Listener decided 2026-10-03: the **iPhone SE that already runs Alfred Camera** by the cot (in `docs/hardware.md` as `iphone_se`). The SMS automation it replaces runs on the iPhone 14. So the Alfred mic-sharing question below is now live: confirm that Sound Recognition still fires while Alfred is running, and that Alfred still alerts. `endpoints.toml` lists the fourth topic and has been re-rendered. Still to do: run the locked-screen test on the SE, with Alfred running, (Effort step 1), build the Shortcut with the token, subscribe the receiving phones to `baby-cry`, and retire the SMS automation once ntfy is proven. Decided 2026-10-03: the listener reaches ntfy over Tailscale (VPN On Demand). If Tailscale proves flaky on that phone, the fallback is to also publish ntfy on xero's LAN address (`192.168.1.123:8127`, plain HTTP, publish-only token).
+#### Feasibility
+**Yes, and nothing has to be bought if a second iPhone is at hand.** Shortcuts has a **Sound Recognition** personal-automation trigger, and the automation can be set to run without asking ([Apple: run automations automatically](https://support.apple.com/guide/shortcuts/apd602971e63/ios)). "Baby Crying" is one of the built-in sounds ([iPhone Life](https://iphonelife.com/content/how-to-enable-use-sound-recognition-iphone-ios-14), [iMore](https://imore.com/how-set-and-use-sound-recognition-iphone-and-ipad)). The existing SMS automation already proves the trigger works; only the action changes. Recognition happens on the phone itself. The ntfy POST only needs the tailnet, so it survives an ISP outage while the LAN is up and xero is on the UPS.
 
-**Feasibility: yes, and nothing has to be bought if a second iPhone is at hand.** Shortcuts has a **Sound Recognition** personal-automation trigger, and the automation can be set to run without asking ([Apple: run automations automatically](https://support.apple.com/guide/shortcuts/apd602971e63/ios)). "Baby Crying" is one of the built-in sounds ([iPhone Life](https://iphonelife.com/content/how-to-enable-use-sound-recognition-iphone-ios-14), [iMore](https://imore.com/how-set-and-use-sound-recognition-iphone-and-ipad)). The existing SMS automation already proves the trigger works; only the action changes. Recognition happens on the phone itself. The ntfy POST only needs the tailnet, so it survives an ISP outage while the LAN is up and xero is on the UPS.
-
-**Design notes:**
+#### Design notes
 - **The action:** replace "Send Message" with "Get Contents of URL", method POST, to the ntfy **root** URL `https://ntfy.{tailnet}/`. The body is JSON `{"topic":"baby-cry","title":...,"message":...,"priority":5,"tags":["baby"]}`, with `priority` as a number, not a string. The header is `Authorization: Bearer tk_...`. Set the automation to **Run Immediately**.
 - **New topic `baby-cry`, with its own write-only principal** (e.g. `babycry`) and token. Add it to `tools/notify/setup_ntfy_users.sh` the same way as `clawlight`, `healthcheck` and `watchtower`, give `pramod` read-write on it, and extend `tools/notify/verify_ntfy_topics.sh` to cover it in both directions. **Do not put the `pramod` password in the Shortcut:** it reads every topic, and a Shortcut can be shared or exported.
 - **Receiving phones subscribe to `baby-cry` at high/urgent priority.** The listener publishes at priority 5 (urgent). In the ntfy app, check that the subscription is not muted and that the alert sound is set, so the push actually makes a noise. It is its own topic, so muting `clawlight` or `homelab-updates` never silences it.
@@ -1587,13 +2056,18 @@ Previously the only way to know something's wrong was a `healthcheck.sh` email a
 - **Mains-dependent.** In a long power cut the listener runs on its battery, then dies, and the Wi-Fi drops with it. Note this; at night it matters.
 - **Supplementary only.** Apple says Sound Recognition must not be relied on where someone could be harmed. This is a convenience alert, not a safety monitor.
 - **Unverified on the listener:** older iOS disables "Hey Siri" while Sound Recognition is on. Whether Sound Recognition still hears anything while another app (Alfred) holds the mic is also unknown.
+- **Shortcut gotchas (found 2026-10-03):** ntfy accepts only `Authorization: Bearer tk_…` - the header typed as `Authorisation` with no `Bearer ` prefix gave 403s - and a trailing slash (`/baby-cry/`) returns 404.
+- **Access:** `everyone` has read-only on `baby-cry`, so every account, including ones made later, and anonymous tailnet clients receive it. Only `babycry` and `pramod` can publish.
+- **Network route:** the listener reaches ntfy over Tailscale (VPN On Demand). If Tailscale proves flaky on that phone, the fallback is to also publish ntfy on xero's LAN address (`192.168.1.123:8127`, plain HTTP, publish-only token).
 
-**Overlaps:**
-- **Baby monitor, Alfred Camera** (`Readme.md`, "Baby Monitor (Alfred Camera -> Home Assistant)"; `iphone_se` in `docs/hardware.md`). Alfred already sends cloud sound alerts from the SE. If the dedicated listener turns out to be the phone running Alfred, check that the two do not fight over the mic. This entry is also the local route for the Readme's "bridge Alfred alerts via Shortcuts" idea. That plan's "App -> Alfred -> Notification received" trigger does not appear to exist in Shortcuts, whereas the Sound Recognition trigger does.
+#### Overlaps
+- **Baby monitor, Alfred Camera** (`Readme.md`, "Baby Monitor (Alfred Camera -> Home Assistant)"; `iphone_se` in `docs/hardware.md`). Alfred already sends cloud sound alerts from the SE. If the dedicated listener turns out to be the phone running Alfred, check that the two do not fight over the mic (it is: see the Log for 2026-10-03). This entry is also the local route for the Readme's "bridge Alfred alerts via Shortcuts" idea. That plan's "App -> Alfred -> Notification received" trigger does not appear to exist in Shortcuts, whereas the Sound Recognition trigger does.
 - **"ESP32 UPS LED monitor"** considers listening for a UPS low-battery beep. A second automation on the same listener phone (iOS 16+ can be trained on a custom alarm sound) could cover that later, on its own topic.
 
-**Readymade alternatives:** Alfred, already in use, is cloud-dependent. A dedicated baby monitor with cry detection is a second device, cloud-tied or limited in range, and cannot be pointed at xero. The current SMS route works, but it is a single recipient, depends on the carrier and costs per message. On a phone already owned, the ntfy route wins.
+#### Readymade alternatives
+Alfred, already in use, is cloud-dependent. A dedicated baby monitor with cry detection is a second device, cloud-tied or limited in range, and cannot be pointed at xero. The current SMS route works, but it is a single recipient, depends on the carrier and costs per message. On a phone already owned, the ntfy route wins.
 
+#### Parts
 ```parts
 qty | item | est | note
 1 | iPhone as the dedicated listener | 0 | a spare one already owned - confirm which; nothing to buy if it exists
@@ -1602,105 +2076,142 @@ qty | item | est | note
 
 **Cost:** ₹0 on a spare iPhone and charger already owned.
 
-**Effort:** ~1 hour. (1) 15min: on the listener phone, turn on Sound Recognition "Baby Crying" with an automation that only shows a notification, then play a crying clip from a speaker with the **phone locked and on the charger**. This decides the project, and it is the step that will overrun (finding where the phone sits so it hears the cot, and an awake/locked workaround if needed). (2) 15min: `baby-cry` topic, `babycry` user and token in `setup_ntfy_users.sh`, plus `verify_ntfy_topics.sh`. (3) 15min: swap the test action for the ntfy POST, and subscribe the receiving phones at urgent priority. (4) 15min: update `projects/endpoints/endpoints.toml`'s ntfy entry (`desc` lists three topics, `who` the publishers) and re-render with `render_endpoints.py`. Add the listener iPhone to `docs/hardware.md` as a new device (never commit that file). Then run alongside SMS, and disable the SMS automation once proven.
+#### Effort
+~1 hour. (1) 15min: on the listener phone, turn on Sound Recognition "Baby Crying" with an automation that only shows a notification, then play a crying clip from a speaker with the **phone locked and on the charger**. This decides the project, and it is the step that will overrun (finding where the phone sits so it hears the cot, and an awake/locked workaround if needed). (2) 15min: `baby-cry` topic, `babycry` user and token in `setup_ntfy_users.sh`, plus `verify_ntfy_topics.sh`. (3) 15min: swap the test action for the ntfy POST, and subscribe the receiving phones at urgent priority. (4) 15min: update `projects/endpoints/endpoints.toml`'s ntfy entry (`desc` lists three topics, `who` the publishers) and re-render with `render_endpoints.py`. Add the listener iPhone to `docs/hardware.md` as a new device (never commit that file). Then run alongside SMS, and disable the SMS automation once proven.
 
-**Next step:** pick the listener iPhone, then run step 1 on it locked and charging. If it fires from a locked screen, the rest is mechanical, and the project is meant to be built.
+#### Log
+- 2026-10-02: idea noted. Original next step: pick the listener iPhone, then run Effort step 1 on it locked and charging; if it fires from a locked screen, the rest is mechanical, and the project is meant to be built.
+- 2026-10-03: listener decided - the **iPhone SE that already runs Alfred Camera** by the cot (in `docs/hardware.md` as `iphone_se`). The SMS automation it replaces runs on the iPhone 14. So the Alfred mic-sharing question became live: confirm that Sound Recognition still fires while Alfred is running, and that Alfred still alerts. Also decided: the listener reaches ntfy over Tailscale (VPN On Demand), with the LAN fallback in Design notes.
+- 2026-10-03: server side done. The `baby-cry` topic, the write-only `babycry` user and its token (`NTFY_BABYCRY_TOKEN` in `.env.ntfy`) exist via `tools/notify/setup_ntfy_users.sh`. `tools/notify/verify_ntfy_topics.sh` passes all 26 checks, including the babycry token being refused on every other topic and unable to read its own. A Shortcut-shaped JSON POST to `https://ntfy.{tailnet}/` returned 200. `everyone` given read-only on `baby-cry`. `endpoints.toml` lists the fourth topic and has been re-rendered. Still to do at that point: run the locked-screen test on the SE, with Alfred running, (Effort step 1), build the Shortcut with the token, subscribe the receiving phones to `baby-cry`, and retire the SMS automation once ntfy is proven.
+- 2026-10-03: the SE's Shortcut published to `baby-cry` end to end, with the notification received on the phone (after fixing the 403s from the `Authorisation` header, see Design notes).
+- 2026-10-03: closed as Done at the user's call before the soak. They still needed to check, informally, that it fires with the SE locked on its charger while Alfred holds the mic, and to turn off (not delete) the SMS automation on the iPhone 14 once ntfy has carried a few real cries. If either check failed, reopen.
+- 2026-10-05: reopened - the SE has sent no cry alerts in real use. ntfy's cache, which holds 12h, had nothing on `baby-cry`. Over the same days Alfred on the SE kept sending its own baby-cry alerts, and the iPhone 14 still detects the cry. The SE was updated to iOS 26 the same day; observe for a few days (see Next step).
 
 ### Local voice control (HA Assist)
 **Status:** Active
 **Priority:** P3
 
 **Why:** turn lights, white noise, fans and the AC on/off and set the AC temperature by voice. Doesn't need to be smart: a fixed set of English commands is enough. An HA voice add-on tried a year or two ago never worked - almost certainly because HA here is a plain Docker container, where add-ons cannot be installed. Assist itself is built into HA and needs only the speech pieces run as containers. Details: `projects/voice-assistant/README.md`.
+**State:** voice works from the phone app and from the first ESP32 satellite (192.168.1.125, HA area Bedroom, current firmware on the board), tested end to end in the living room; in the bedroom the white-noise hiss drowns commands. Live wake word is `hey_jarvis`; community models `andromeda` and `dumbledore` are preloaded but untested. The second board's config (`voice-living-room.yaml`) is ready, waiting on its INMP441. speech-to-phrase has twice got stuck until restarted (possibly xero's bad RAM).
+**Next step:**
+- Flash the living room board from the Mac once its INMP441 arrives.
+- Try `andromeda` / `dumbledore` against `hey_jarvis` and keep the best (to try: `WAKE_WORD_ID` in `setup_assist.py`, run it, restart speech-to-phrase, temporary `--debug` on openwakeword). Train on Colab only if neither works.
+- If speech-to-phrase gets stuck again after the RAM swap (done 2026-10-08; the 32GB stick passed memtester on 2026-10-09), treat it as a software bug: investigate then, and add a healthcheck that sends a test phrase and restarts speech-to-phrase on an empty result.
 
-**Done 2026-10-05 (phone-app stage):**
-- `speech-to-phrase` container (legacy v1.4 Kaldi image, `127.0.0.1:10300`), added through the Wyoming integration and set as the STT of the preferred "Home Assistant" pipeline (`prefer_local_intents` on). Retrains in ~4s.
-- `setup_assist.py`: exposes 13 live entities with spoken aliases, un-exposes 21 stale ones (the unavailable bedroom/master-bedroom Tinxy duplicates, dishwasher, dead Spotcast players) whose names clashed, puts the live Tinxy boards in Bedroom / Living Room ("hall" alias).
-- `packages/voice_commands.yaml`, bind-mounted as an HA package: sentence triggers for AC on/off, AC temperature 16-30, fan presets for the bedroom and hall fans.
-- Verified by text (`conversation/process`) and by audio round-trip (`test_stt.sh`, HA's Google TTS -> STT): all test phrases transcribed and executed. Caught on the way: "AC" is transcribed "A C", which HA does not match - the triggers accept both.
+#### Two rooms
+The user has a second ESP32 and is buying a second INMP441. Config is split into `voice-satellite-common.yaml` plus per-board files; the first board (`voice-satellite.yaml`, .125) is assigned to HA area **Bedroom** (2026-10-06); `voice-living-room.yaml` (192.168.1.126, own API key `api_key_living_room` in secrets.yaml) is ready for the second board: wire as `wiring.html`, `build_on_mac.sh living` over USB, add in HA, set its area to Living Room. A board's room is its HA area, nothing in the firmware. Room-agnostic commands must keep working ("turn off the bedroom light" from the living room) - only commands without a room/device name use the satellite's area. Place the bedroom board away from the white-noise speaker.
 
-**Phone app voice confirmed working 2026-10-05:** after adding Piper (`127.0.0.1:10200`) as the pipeline's TTS. Without it the iOS app's voice mode did nothing at all - it requests a spoken reply, and HA rejects a run whose pipeline has no TTS before any audio is sent (README Gotchas). "turn off/on living room light" by voice: transcribed exactly, switched, spoken reply. The iPhone app also kept failing `/auth/token` refreshes from 192.168.1.103 throughout, unrelated to voice; re-adding the server in the app should clear it.
-
-**Stage 2 wiring drawn 2026-10-05:** `projects/voice-assistant/wiring.html` (https://claude.ai/artifact/UWMZYLRTNdLTgHvdU6Vz6m) - same ESP32 + INMP441 pins as the aarti build, 8 LEDs from the spare reel on GPIO4 via the 470R, USB-powered (1-2A charger, or a xero USB port - xero is on the UPS; not the Pi, which already under-volts). Wake word decided: "Alejandro", a custom openWakeWord model (train with the openWakeWord notebook), run on xero. Breadboard build planned for the weekend.
-
-**Stage 2 progress 2026-10-06:** ESPHome config written and validated (`projects/voice-assistant/esphome/voice-satellite.yaml`: INMP441 on 32/25/33, onboard LED GPIO2 as status, static 192.168.1.125, server-side wake word; WS2812 stick skipped for now). Wi-Fi + generated keys in the gitignored `esphome/secrets.yaml`. `openwakeword` container added (`127.0.0.1:10400`, `ok_nabu` until "Alejandro" is trained) and set as the pipeline's wake word by `setup_assist.py`; phone voice re-verified afterwards. **The firmware compile on xero died with `internal compiler error: Segmentation fault` in gcc** - the same symptom as the 2026-09-23 oops (suspect RAM), so the build was stopped and the user chose to run memtest86+ first. The board was never plugged in; WLED backup not yet taken.
-
-**Flashed and in HA 2026-10-06 (evening):** built on the personal MacBook with `esphome/build_on_mac.sh` (ESPHome 2026.9.1 in a venv; xero not used for the compile), flashed over USB there. On Wi-Fi at 192.168.1.125 (weak signal, -75 dBm, 250-370 ms ping) and added to HA as "Voice Satellite" (ESPHome integration, preferred pipeline). **The WLED `cfg.json`/`presets.json` backup was never taken, so the aarti WLED setup is lost** and will need redoing by hand to go back. `dns2: 192.168.1.124` (secondary Pi-hole) committed in the YAML but not yet flashed.
-
-**Tested 2026-10-06 night:** works end to end in the living room ("living room fan medium/slow/fast", "turn on living room light"). In the bedroom the white-noise hiss drowns the command after the wake word. Fixed on the way: the pipeline's wake word id is `okay_nabu` (openWakeWord's name, not `ok_nabu`); speech-to-phrase must be restarted after `setup_assist.py`; "bedroom LED" can't be recognised (the model hears the word "led"), "bedroom bulb" works. Firmware committed but **not yet flashed** (run `build_on_mac.sh` on the Mac): WS2812 status strip on GPIO4 (optional, works unplugged), dns2, and the listening-start fix - until then the board goes idle after every HA/xero restart and only an open `esphome.sh logs` connection restarts it (closing that connection stops it again).
-
-**Two rooms:** the user has a second ESP32 and is buying a second INMP441. Config is split into `voice-satellite-common.yaml` plus per-board files; the first board (`voice-satellite.yaml`, .125) is assigned to HA area **Bedroom** (2026-10-06); `voice-living-room.yaml` (192.168.1.126, own API key `api_key_living_room` in secrets.yaml) is ready for the second board: wire as `wiring.html`, `build_on_mac.sh living` over USB, add in HA, set its area to Living Room. A board's room is its HA area, nothing in the firmware. Room-agnostic commands must keep working ("turn off the bedroom light" from the living room) - only commands without a room/device name use the satellite's area. Place the bedroom board away from the white-noise speaker.
-
-**Speech-to-phrase got stuck 2026-10-07** (every request "decoded no frames" / "No text recognized", fan speed phrases unrecognised even with synthetic audio) until `docker restart speech-to-phrase`; same as 2026-10-06. Possibly xero's bad RAM (bit 34 already crashed this decoder once). Decision (user, 2026-10-07): wait for the new RAM (arriving 2026-10-08); if it recurs after the swap, it is a software bug - investigate then, and add a healthcheck that sends a test phrase and restarts speech-to-phrase on an empty result. Also 2026-10-07: satellite "finished speaking detection" set to relaxed (commands were cut off after ~1s); `replay_recordings.sh` re-tests saved commands. Board SNR measured 11-21 dB vs the phone's 31-37 dB - placement and white noise matter.
-
-**Wake word switched to `hey_jarvis` 2026-10-08** ("Hey Jarvis", one of openWakeWord's built-ins: alexa, hey_jarvis, hey_mycroft, hey_rhasspy, okay_nabu) until "Alejandro" is trained; xero-side only, no reflash. **The firmware fixes are on the board** (checked 2026-10-08: HA reports sw_version `2026.9.1 (2026-10-06 23:43:36 +0530)`, built after the listening-start fix, WS2812 and dns2 commits), so the "not yet flashed" note above is stale; no reflash is pending for this board. After xero's boot the same day HA was streaming its audio to openwakeword ("Error processing audio stream" when that container was recreated at 16:40).
-
-**Debug settings removed 2026-10-09:** the `--debug` on `openwakeword` (it was never committed; reverted on xero) and `assist_pipeline: debug_recording_dir` in HA's configuration.yaml (copy of the old file at `~/configuration.yaml.bak.20261009-debug` on xero); HA restarted, all integrations loaded, satellite connected, `test_stt.sh` fine. **The recordings had filled Dropbox:** they lived in HA's config folder, so the daily HA backups grew 0.04 -> 0.4 -> 1.9 -> 2.8GB, Dropbox (2.75GiB free tier) went over quota and the 2026-10-09 `hardware.md` backup failed. Recordings (4.1GB) moved to `~/archive/assist_recordings-2026-10` on xero (`RECORDINGS=` for `replay_recordings.sh`); the bloated backups deleted locally and in Dropbox; a fresh 40MB HA backup made and uploaded, `hardware.md` re-backed-up. Dropbox at 1.69/2.75GiB.
-
-**Wake word candidates 2026-10-11:** "Alejandro" was only picked for being memorable and unused around the house, so instead of training it, two ready-made community models (https://github.com/fwartner/home-assistant-wakewords-collection) are in `wakewords/` and preloaded by `openwakeword`: `andromeda` and `dumbledore` (no "pomegranate" there). `hey_jarvis` stays live until the user tests them (to try: `WAKE_WORD_ID` in `setup_assist.py`, run it, restart speech-to-phrase, temporary `--debug` on openwakeword). Train on Colab only if neither works.
-
-**Next step:** flash the living room board from the Mac once its INMP441 arrives; try `andromeda` / `dumbledore` against `hey_jarvis` and keep the best. (Debug settings: removed 2026-10-09, see above.)
+#### Log
+- 2026-10-05: phone-app stage done.
+  - `speech-to-phrase` container (legacy v1.4 Kaldi image, `127.0.0.1:10300`), added through the Wyoming integration and set as the STT of the preferred "Home Assistant" pipeline (`prefer_local_intents` on). Retrains in ~4s.
+  - `setup_assist.py`: exposes 13 live entities with spoken aliases, un-exposes 21 stale ones (the unavailable bedroom/master-bedroom Tinxy duplicates, dishwasher, dead Spotcast players) whose names clashed, puts the live Tinxy boards in Bedroom / Living Room ("hall" alias).
+  - `packages/voice_commands.yaml`, bind-mounted as an HA package: sentence triggers for AC on/off, AC temperature 16-30, fan presets for the bedroom and hall fans.
+  - Verified by text (`conversation/process`) and by audio round-trip (`test_stt.sh`, HA's Google TTS -> STT): all test phrases transcribed and executed. Caught on the way: "AC" is transcribed "A C", which HA does not match - the triggers accept both.
+- 2026-10-05: phone app voice confirmed working after adding Piper (`127.0.0.1:10200`) as the pipeline's TTS. Without it the iOS app's voice mode did nothing at all - it requests a spoken reply, and HA rejects a run whose pipeline has no TTS before any audio is sent (README Gotchas). "turn off/on living room light" by voice: transcribed exactly, switched, spoken reply. The iPhone app also kept failing `/auth/token` refreshes from 192.168.1.103 throughout, unrelated to voice; re-adding the server in the app should clear it.
+- 2026-10-05: stage 2 wiring drawn: `projects/voice-assistant/wiring.html` (https://claude.ai/artifact/UWMZYLRTNdLTgHvdU6Vz6m) - same ESP32 + INMP441 pins as the aarti build, 8 LEDs from the spare reel on GPIO4 via the 470R, USB-powered (1-2A charger, or a xero USB port - xero is on the UPS; not the Pi, which already under-volts). Wake word decided: "Alejandro", a custom openWakeWord model (train with the openWakeWord notebook), run on xero. Breadboard build planned for the weekend.
+- 2026-10-06: stage 2 progress. ESPHome config written and validated (`projects/voice-assistant/esphome/voice-satellite.yaml`: INMP441 on 32/25/33, onboard LED GPIO2 as status, static 192.168.1.125, server-side wake word; WS2812 stick skipped for now). Wi-Fi + generated keys in the gitignored `esphome/secrets.yaml`. `openwakeword` container added (`127.0.0.1:10400`, `ok_nabu` until "Alejandro" is trained) and set as the pipeline's wake word by `setup_assist.py`; phone voice re-verified afterwards. **The firmware compile on xero died with `internal compiler error: Segmentation fault` in gcc** - the same symptom as the 2026-09-23 oops (suspect RAM), so the build was stopped and the user chose to run memtest86+ first. The board was never plugged in; WLED backup not yet taken.
+- 2026-10-06 (evening): flashed and in HA. Built on the personal MacBook with `esphome/build_on_mac.sh` (ESPHome 2026.9.1 in a venv; xero not used for the compile), flashed over USB there. On Wi-Fi at 192.168.1.125 (weak signal, -75 dBm, 250-370 ms ping) and added to HA as "Voice Satellite" (ESPHome integration, preferred pipeline). **The WLED `cfg.json`/`presets.json` backup was never taken, so the aarti WLED setup is lost** and will need redoing by hand to go back. `dns2: 192.168.1.124` (secondary Pi-hole) committed in the YAML but not yet flashed at that point.
+- 2026-10-06 (night): tested - works end to end in the living room ("living room fan medium/slow/fast", "turn on living room light"). In the bedroom the white-noise hiss drowns the command after the wake word. Fixed on the way: the pipeline's wake word id is `okay_nabu` (openWakeWord's name, not `ok_nabu`); speech-to-phrase must be restarted after `setup_assist.py`; "bedroom LED" can't be recognised (the model hears the word "led"), "bedroom bulb" works. Firmware committed but not yet flashed at that point (run `build_on_mac.sh` on the Mac): WS2812 status strip on GPIO4 (optional, works unplugged), dns2, and the listening-start fix - until then the board went idle after every HA/xero restart and only an open `esphome.sh logs` connection restarted it (closing that connection stopped it again). Superseded 2026-10-08: these fixes turned out to be on the board.
+- 2026-10-06: split into two rooms (see Two rooms); the first board assigned to HA area Bedroom.
+- 2026-10-07: speech-to-phrase got stuck (every request "decoded no frames" / "No text recognized", fan speed phrases unrecognised even with synthetic audio) until `docker restart speech-to-phrase`; same as 2026-10-06. Possibly xero's bad RAM (bit 34 already crashed this decoder once). Decision (user): wait for the new RAM (arriving 2026-10-08); if it recurs after the swap, it is a software bug - investigate then, and add the test-phrase healthcheck (see Next step).
+- 2026-10-07: satellite "finished speaking detection" set to relaxed (commands were cut off after ~1s); `replay_recordings.sh` re-tests saved commands. Board SNR measured 11-21 dB vs the phone's 31-37 dB - placement and white noise matter.
+- 2026-10-08: wake word switched to `hey_jarvis` ("Hey Jarvis", one of openWakeWord's built-ins: alexa, hey_jarvis, hey_mycroft, hey_rhasspy, okay_nabu) until "Alejandro" is trained; xero-side only, no reflash.
+- 2026-10-08: **the firmware fixes are on the board** - HA reports sw_version `2026.9.1 (2026-10-06 23:43:36 +0530)`, built after the listening-start fix, WS2812 and dns2 commits, so the 2026-10-06 "not yet flashed" notes are stale; no reflash is pending for this board. After xero's boot the same day HA was streaming its audio to openwakeword ("Error processing audio stream" when that container was recreated at 16:40).
+- 2026-10-09: debug settings removed - the `--debug` on `openwakeword` (it was never committed; reverted on xero) and `assist_pipeline: debug_recording_dir` in HA's configuration.yaml (copy of the old file at `~/configuration.yaml.bak.20261009-debug` on xero); HA restarted, all integrations loaded, satellite connected, `test_stt.sh` fine.
+  - **The recordings had filled Dropbox:** they lived in HA's config folder, so the daily HA backups grew 0.04 -> 0.4 -> 1.9 -> 2.8GB, Dropbox (2.75GiB free tier) went over quota and the 2026-10-09 `hardware.md` backup failed. Recordings (4.1GB) moved to `~/archive/assist_recordings-2026-10` on xero (`RECORDINGS=` for `replay_recordings.sh`); the bloated backups deleted locally and in Dropbox; a fresh 40MB HA backup made and uploaded, `hardware.md` re-backed-up. Dropbox at 1.69/2.75GiB.
+- 2026-10-11: wake word candidates. "Alejandro" was only picked for being memorable and unused around the house, so instead of training it, two ready-made community models (https://github.com/fwartner/home-assistant-wakewords-collection) are in `wakewords/` and preloaded by `openwakeword`: `andromeda` and `dumbledore` (no "pomegranate" there). `hey_jarvis` stays live until the user tests them.
 
 ### Grafana for all stats
 **Status:** Done
 **Priority:** P3
 
 **Why:** HA's dashboards show one series per tile and only what the sensor gives (averages, until 2026-10-09); asked for 2026-10-11 to see everything side by side with percentiles.
-**State:** running since 2026-10-11 at `https://xero.<tailnet>/grafana/` (`services/grafana/README.md`): Prometheus (5s scrapes, 90d/8GB), node_exporter on xero and the wol Pi, cAdvisor for containers, Grafana 13.2.3 with two generated dashboards (Hosts, Containers). Every panel is max/p95 of 5s samples per interval. Checks: `services/grafana/check_queries.py` (every query returns data) and `services/grafana/shot_grafana.sh` (screenshots; fails if Grafana does not boot or a panel shows no data). Overhead ~10% of one core, ~0.7GB RAM.
-**Next step:** maybe HA's `prometheus:` integration (needs an HA restart) and Immich's job-queue metrics, so those land in Grafana too.
+**Outcome:** running since 2026-10-11 at `https://xero.<tailnet>/grafana/` (`services/grafana/README.md`). Every panel is max/p95 of 5s samples per interval. Left open: maybe HA's `prometheus:` integration (needs an HA restart) and Immich's job-queue metrics, so those land in Grafana too.
+
+#### What runs
+- Prometheus (5s scrapes, 90d/8GB), node_exporter on xero and the wol Pi, cAdvisor for containers, Grafana 13.2.3 with two generated dashboards (Hosts, Containers).
+- Checks: `services/grafana/check_queries.py` (every query returns data) and `services/grafana/shot_grafana.sh` (screenshots; fails if Grafana does not boot or a panel shows no data).
+- Overhead ~10% of one core, ~0.7GB RAM.
+
+#### Log
+- 2026-10-11: asked for, and running the same day.
 
 ### xero stats as percentiles (xero-stats)
 **Status:** Done
 **Priority:** P3
 
 **Why:** the HA dashboards showed xero's CPU as System Monitor's average over its poll, CPU pressure as the kernel's 10s average and temperature as one reading a minute, so spikes never showed; the user, 2026-10-09: "never use average use percentiles". The wol Pi's tiles were averages too (its CPU read ~5% while the same minute's p95 was 35%, max 75%).
-**State:** done 2026-10-09. `tools/host-stats/host_stats.py` samples every second; `projects/xero-stats/xero-stats-mqtt.py` (systemd --user on xero) publishes CPU, temperature, memory used and CPU pressure p95/max per minute to `homelab/xero/stats`, and `projects/pi-health` uses the same sampler (its old average entities were deleted). Stats and Home dashboards switched over (`add_stats_dashboard_tile.py --replace` added for it); `healthcheck.sh` takes its temperature peak from `sensor.xero_cpu_temperature_max_1_min`. Disk usage stays a plain reading - it is a level, not something averaged.
+**Outcome:** done 2026-10-09. xero and the wol Pi publish p95/max per minute from 1s samples, and the Stats and Home dashboards use them.
+
+#### What shipped
+- `tools/host-stats/host_stats.py` samples every second.
+- `projects/xero-stats/xero-stats-mqtt.py` (systemd --user on xero) publishes CPU, temperature, memory used and CPU pressure p95/max per minute to `homelab/xero/stats`.
+- `projects/pi-health` uses the same sampler (its old average entities were deleted).
+- Stats and Home dashboards switched over (`add_stats_dashboard_tile.py --replace` added for it).
+- `healthcheck.sh` takes its temperature peak from `sensor.xero_cpu_temperature_max_1_min`.
+- Disk usage stays a plain reading - it is a level, not something averaged.
+
+#### Log
+- 2026-10-09: the user asked for percentiles; done the same day.
 
 ### wol Pi health monitoring
 **Status:** Done
 
 **Why:** the Pi plays the bedroom white noise and Spotify, and has had under-voltage on two supplies. Nothing on xero could see the Pi's health except a temporary 15-minute ssh poll, and nothing recorded *when* a dip happened. Asked for 2026-10-06 as permanent monitoring, power first, with CPU, memory and temperature to follow.
+**Outcome:** shipped 2026-10-06: `projects/pi-health/pi-health-mqtt.py` on the Pi publishes power, CPU, memory, temperature and disk to HA every 60s, shown in the "wol Pi" section of the Stats dashboard; `healthcheck.sh` alerts on under-voltage and on the Pi going unavailable. Left open: **dashboard only - nothing alerts on CPU, memory, temperature or disk yet;** if that is wanted, healthcheck.sh is where it goes (e.g. temperature, or disk over 90%).
 
-**Shipped 2026-10-06:** `projects/pi-health/pi-health-mqtt.py` runs on the Pi as `pi-health-mqtt.service` (systemd --user, enabled; deploy with `projects/pi-health/deploy_pi_health.sh` from xero). Every 60s it publishes one retained JSON object to `homelab/wol_pi/state` on xero's Mosquitto, with a last-will on `homelab/wol_pi/available`. HA discovery makes a **wol Pi** device: Under-voltage (now / since boot), Throttled (now / since boot), Under-voltage events since boot (kernel log lines), Last under-voltage (timestamp), and diagnostics get_throttled, Booted, Last report. HA's history on these is the dashboard. Six of them are tiles in their own "wol Pi" section of the Stats dashboard (`add_stats_dashboard_tile.py --section-title "wol Pi"` adds more there): Under-voltage since boot, Under-voltage, Last under-voltage, Under-voltage events since boot, Throttled, Last report.
+#### Design
+- `projects/pi-health/pi-health-mqtt.py` runs on the Pi as `pi-health-mqtt.service` (systemd --user, enabled; deploy with `projects/pi-health/deploy_pi_health.sh` from xero).
+- Every 60s it publishes one retained JSON object to `homelab/wol_pi/state` on xero's Mosquitto, with a last-will on `homelab/wol_pi/available`.
+- HA discovery makes a **wol Pi** device: Under-voltage (now / since boot), Throttled (now / since boot), Under-voltage events since boot (kernel log lines), Last under-voltage (timestamp), and diagnostics get_throttled, Booted, Last report. HA's history on these is the dashboard.
+- Six of them are tiles in their own "wol Pi" section of the Stats dashboard (`add_stats_dashboard_tile.py --section-title "wol Pi"` adds more there): Under-voltage since boot, Under-voltage, Last under-voltage, Under-voltage events since boot, Throttled, Last report.
+- CPU, memory, temperature and disk (same publisher, same 60s): CPU usage % (from `/proc/stat` deltas, so unknown for the first minute after a restart), Memory usage % (MemAvailable-based), CPU temperature °C, Disk usage % of `/` (the SD card). All have `state_class: measurement`, so HA keeps long-term statistics. Tiles in the "wol Pi" section.
 
-**Alerting:** `healthcheck.sh` (xero, 15min) reads the entities back from HA. Under-voltage since boot = on alerts once per Pi boot; unavailable (the Pi off the network or the daemon dead) alerts too. Both tested: stopping the service took the entities to unavailable within seconds.
+#### Alerting
+`healthcheck.sh` (xero, 15min) reads the entities back from HA. Under-voltage since boot = on alerts once per Pi boot; unavailable (the Pi off the network or the daemon dead) alerts too. Both tested: stopping the service took the entities to unavailable within seconds.
 
-**Gotcha found on the way:** kernel 6.18 logs "Undervoltage detected!" (hwmon), not "Under-voltage" - the old cron watch's `grep -ci under-voltage` would have counted 0 forever. The daemon matches both spellings. Its kernel count only covers the current boot: the Pi's journal is volatile.
+#### Gotcha
+Kernel 6.18 logs "Undervoltage detected!" (hwmon), not "Under-voltage" - the old cron watch's `grep -ci under-voltage` would have counted 0 forever. The daemon matches both spellings. Its kernel count only covers the current boot: the Pi's journal is volatile.
 
-**CPU, memory, temperature and disk added 2026-10-06** (same publisher, same 60s): CPU usage % (from `/proc/stat` deltas, so unknown for the first minute after a restart), Memory usage % (MemAvailable-based), CPU temperature °C, Disk usage % of `/` (the SD card). All have `state_class: measurement`, so HA keeps long-term statistics. Tiles in the "wol Pi" section. First readings matched `free`, `df`, `vcgencmd measure_temp` and `top` on the Pi: CPU ~3%, memory ~50% of 905MB, 52.6°C, disk 34%. **Dashboard only - nothing alerts on them yet;** if that is wanted, healthcheck.sh is where it goes (e.g. temperature, or disk over 90%).
+#### Adding a metric
+Set the field in `collect()` and add one line to `ENTITIES` in `pi-health-mqtt.py`, re-run `deploy_pi_health.sh`, then `add_stats_dashboard_tile.py <entity> --section-title "wol Pi"`.
 
-**Adding a metric:** set the field in `collect()` and add one line to `ENTITIES` in `pi-health-mqtt.py`, re-run `deploy_pi_health.sh`, then `add_stats_dashboard_tile.py <entity> --section-title "wol Pi"`.
-
+#### Log
+- 2026-10-06: asked for. Power monitoring shipped (under-voltage and throttling entities, Stats dashboard tiles, `healthcheck.sh` alerting).
+- 2026-10-06: CPU, memory, temperature and disk added. First readings matched `free`, `df`, `vcgencmd measure_temp` and `top` on the Pi: CPU ~3%, memory ~50% of 905MB, 52.6°C, disk 34%.
 
 ### Secondary Pi-hole on the wol Pi
 **Status:** Done
 
 **Why:** xero runs the only Pi-hole, so xero down = the whole house without DNS (2026-08-28 was ~2h of it). xero is now suspected of bad RAM (gcc segfaults, the 2026-09-23 oops) and memtest means planned downtime. Decided 2026-10-06: a *second* Pi-hole on the wol Pi, with the router handing out xero as DNS 1 and the Pi as DNS 2. This does not reopen "RPi load migration", which ruled out *moving* Pi-hole to the Pi for lack of a UPS: xero stays primary and stays up on its UPS in a power cut.
+**Outcome:** deployed 2026-10-06 (`services/pihole-secondary/`, README there); the router hands out both Pi-holes and LAN fallback was verified 2026-10-08. Left open: devices running Tailscale did not fall back (fix tracked in "Tailscale on the wol Pi, as the tailnet's second DNS server").
 
-**Deployed 2026-10-06** (`services/pihole-secondary/`, README there): containers `pihole` (DNS :53, admin http://192.168.1.124:8081/admin, host networking) and `nebula-sync` (xero -> Pi every 6h, then gravity) on the Pi, via `deploy_pi.sh` from xero; password in `~/pihole-secondary.env` on the Pi (600). No sudo needed. ~20MB RSS together; the Pi's available memory went 457 -> 429MB.
+#### Deployment
+Containers `pihole` (DNS :53, admin http://192.168.1.124:8081/admin, host networking) and `nebula-sync` (xero -> Pi every 6h, then gravity) on the Pi, via `deploy_pi.sh` from xero; password in `~/pihole-secondary.env` on the Pi (600). No sudo needed. ~20MB RSS together; the Pi's available memory went 457 -> 429MB.
 - Forced on the Pi with `FTLCONF_`: web port 8081, listeningMode LOCAL (host networking), Pi-hole's NTP server off (would take :123), DHCP off. `--dns 1.1.1.1` for the container, since the Pi's resolv.conf points at xero.
 - **Gotcha:** nebula-sync `FULL_SYNC=true` fails with 400 on `/api/config` - Pi-hole refuses API changes to env-forced keys (dns.listeningMode, ntp.*, webserver.port). Switched to selective sync: all gravity tables + dns (minus listeningMode), resolver, database, misc. `diag_config_patch.py` reproduces a sync section by section.
-- Verified from xero: `dig @192.168.1.124 example.com` resolves, `doubleclick.net` -> `0.0.0.0`, query log shows real client IPs, adlists match xero (1, StevenBlack) and gravity counts match (72234 each), nebula-sync "Sync completed".
 
-**Router step done, fallback verified 2026-10-08.** The Airtel router's DHCP hands out `192.168.1.123, 192.168.1.124` (seen on the MacBook's lease), and LAN clients' queries now show up in both Pi-holes' logs. With xero's `pihole` container stopped, xero refused on :53 and the Pi answered, both from xero and from the Mac (`dig @192.168.1.124 google.com`).
+#### Gap: devices running Tailscale do not fall back
+With xero's Pi-hole stopped, `ping google.com` on the Mac still failed, and the Mac sent the Pi no queries. Tailscale's "Override local DNS" is on with one global nameserver, xero's `100.70.215.25`, so a tailnet device sends every lookup to `100.100.100.100`, which forwards only to xero; the DHCP pair is never tried. Devices without Tailscale are fine. Fix tracked in "Tailscale on the wol Pi, as the tailnet's second DNS server".
 
-**Gap: devices running Tailscale do not fall back.** With xero's Pi-hole stopped, `ping google.com` on the Mac still failed, and the Mac sent the Pi no queries. Tailscale's "Override local DNS" is on with one global nameserver, xero's `100.70.215.25`, so a tailnet device sends every lookup to `100.100.100.100`, which forwards only to xero; the DHCP pair is never tried. Devices without Tailscale are fine. Fix tracked in "Tailscale on the wol Pi, as the tailnet's second DNS server".
+#### Testing tip
+Stop just the container (`docker stop pihole`, then `docker start pihole`), not the whole of xero. And `dig 192.168.1.124 google.com` without the `@` queries the system resolvers, not the Pi.
 
-**Testing tip:** stop just the container (`docker stop pihole`, then `docker start pihole`), not the whole of xero. And `dig 192.168.1.124 google.com` without the `@` queries the system resolvers, not the Pi.
+#### Log
+- 2026-10-06: decided and deployed. Verified from xero: `dig @192.168.1.124 example.com` resolves, `doubleclick.net` -> `0.0.0.0`, query log shows real client IPs, adlists match xero (1, StevenBlack) and gravity counts match (72234 each), nebula-sync "Sync completed".
+- 2026-10-08: router step done, fallback verified. The Airtel router's DHCP hands out `192.168.1.123, 192.168.1.124` (seen on the MacBook's lease), and LAN clients' queries now show up in both Pi-holes' logs. With xero's `pihole` container stopped, xero refused on :53 and the Pi answered, both from xero and from the Mac (`dig @192.168.1.124 google.com`). Found the Tailscale gap (above).
 
 ### Tailscale on the wol Pi, as the tailnet's second DNS server
 **Status:** Done
 
 **Why:** tailnet devices lose DNS whenever xero's Pi-hole is down, even at home with the secondary Pi-hole running (found 2026-10-08, see "Secondary Pi-hole on the wol Pi"). Tailscale's DNS settings have "Override local DNS" on with a single global nameserver, xero's `100.70.215.25`, so the Tailscale resolver on each device (`100.100.100.100`) forwards only to xero and never reaches the DHCP-provided Pi.
+**Outcome:** done 2026-10-08: Tailscale runs on the Pi as `wol-sender` (`100.127.187.58`), its Pi-hole listens on the tailnet, and the tailnet's global nameservers are xero's `100.70.215.25`, then the Pi's `100.127.187.58`. Fallback tested from the Mac with xero's `pihole` stopped. Left open: not tested on a phone on mobile data; the log does not record step 6's `docs/hardware.md` update or the check-script re-run.
 
-**Rejected: adding the Pi's LAN IP `192.168.1.124` as the second global nameserver.** The setting applies tailnet-wide, wherever a device is, and Tailscale may query nameservers in parallel rather than only on failure. A laptop on an office or cafe LAN would then also send its lookups to whatever host has `192.168.1.124` there - a very common subnet - which could see or answer them.
+#### Options rejected
+- **Adding the Pi's LAN IP `192.168.1.124` as the second global nameserver.** The setting applies tailnet-wide, wherever a device is, and Tailscale may query nameservers in parallel rather than only on failure. A laptop on an office or cafe LAN would then also send its lookups to whatever host has `192.168.1.124` there - a very common subnet - which could see or answer them.
+- **Turning "Override local DNS" off.** At home it would work through DHCP's pair, but away from home it drops Pi-hole ad-blocking, and the Mac DNS work assumes tailnet-wide DNS.
 
-**Stopgap in place since 2026-10-08:** the user added `192.168.1.124` as the second global nameserver anyway, for now. Tested the same day: with xero's `pihole` stopped, the Mac's lookups reached the Pi (from `192.168.1.4`). It carries the foreign-LAN risk above until step 4 swaps it out.
-
-**Rejected: turning "Override local DNS" off.** At home it would work through DHCP's pair, but away from home it drops Pi-hole ad-blocking, and the Mac DNS work assumes tailnet-wide DNS.
-
-**Progress 2026-10-08:** steps 1-2 done by the user (Tailscale up on the Pi as `wol-sender`, `100.127.187.58`; key expiry off). Step 3 done: listeningMode ALL deployed with `deploy_pi.sh`; before it, `dig @100.127.187.58 google.com` from the Mac timed out, after it resolves and `doubleclick.net` gives `0.0.0.0`; LAN still answers; nebula-sync "Sync completed". `endpoints.toml` updated. Step 4 done by the user the same evening: the Mac's `tailscale dns status` lists resolvers `100.70.215.25`, then `100.127.187.58`; the LAN stopgap is gone. **Step 5 passed 22:38:** with xero's `pihole` stopped, the Mac's lookups of google.com still resolved and `ping google.com` worked, and the Pi's `pihole.log` shows the queries arriving from the Mac's tailnet address `100.74.192.33`. xero's `pihole` started again straight after. Not tested: a phone on mobile data.
-
-**Plan:**
+#### Plan
 1. Install Tailscale on the Pi (needs `sudo` - the user runs it from a real terminal with `ssh -t`, a `!` command has no tty): `curl -fsSL https://tailscale.com/install.sh | sh`, then `sudo tailscale up --accept-dns=false` (the Pi must keep resolving through its own resolv.conf, not loop through MagicDNS). Note its `100.x` address.
 2. In the admin console, disable key expiry for the Pi, so the fallback does not silently die months later.
 3. Pi-hole on the Pi: listeningMode `LOCAL` -> `ALL` in `services/pihole-secondary/run_containers.sh`, since LOCAL refuses queries from `100.x` sources (tailscale0 is a /32, not a local subnet). With host networking ALL means anyone on the LAN or the tailnet, and the Pi is not port-forwarded. Redeploy with `deploy_pi.sh`; update the README's listeningMode rationale.
@@ -1708,17 +2219,30 @@ qty | item | est | note
 5. Test: `docker stop pihole` on xero, then `ping -c 3 google.com` on the Mac (and a phone on mobile data with Tailscale on), check the Pi's log shows the queries from `100.x` addresses, then `docker start pihole`.
 6. Update `docs/hardware.md` (the Pi's tailnet name and address, tailscaled) and `projects/endpoints/endpoints.toml` (the Pi's DNS on the tailnet), and re-run both check scripts.
 
-**Cost:** tailscaled is about 30-40MB RSS; the Pi has about 380MB available with Node-RED and both Pi-hole containers running (2026-10-08).
+#### Cost
+tailscaled is about 30-40MB RSS; the Pi has about 380MB available with Node-RED and both Pi-hole containers running (2026-10-08).
+
+#### Log
+- 2026-10-08: gap found (see "Secondary Pi-hole on the wol Pi").
+- 2026-10-08: stopgap - the user added `192.168.1.124` as the second global nameserver anyway, for now, carrying the foreign-LAN risk above until step 4 swapped it out. Tested the same day: with xero's `pihole` stopped, the Mac's lookups reached the Pi (from `192.168.1.4`).
+- 2026-10-08: steps 1-2 done by the user (Tailscale up on the Pi as `wol-sender`, `100.127.187.58`; key expiry off).
+- 2026-10-08: step 3 done: listeningMode ALL deployed with `deploy_pi.sh`; before it, `dig @100.127.187.58 google.com` from the Mac timed out, after it resolves and `doubleclick.net` gives `0.0.0.0`; LAN still answers; nebula-sync "Sync completed". `endpoints.toml` updated.
+- 2026-10-08: step 4 done by the user the same evening: the Mac's `tailscale dns status` lists resolvers `100.70.215.25`, then `100.127.187.58`; the LAN stopgap is gone.
+- 2026-10-08: **step 5 passed 22:38:** with xero's `pihole` stopped, the Mac's lookups of google.com still resolved and `ping google.com` worked, and the Pi's `pihole.log` shows the queries arriving from the Mac's tailnet address `100.74.192.33`. xero's `pihole` started again straight after. Not tested: a phone on mobile data.
 
 ### Automatic pour-over coffee (dose by weight, timed spiral pour, bell at the end)
 **Status:** Backlog
 **Priority:** P3
 
 **Why:** seen 2026-10-12 in an [Instagram reel](https://www.instagram.com/reel/DeW8QpPs0S4/) of a DIY machine that grinds and pours. The user wants the pour-over part only, so a good cup happens without standing over the kettle. Captured quickly and on purpose: a rough budget only, with no deep research done.
+**State:** idea only, nothing built. Scope decided 2026-10-12; feasible (a known build); rough budget **₹3,500-6,500** and effort **30-45h**.
+**Next step:** none planned. If it is picked up, start with the water half alone: a pump into a cup on a load cell, to check the pump's hot-water rating and how accurately it pours by weight.
 
-**Scope (decided 2026-10-12):** no grinder and no water heating. **Hopper 1** takes pre-ground coffee, and the machine drops an exact weight (e.g. 15g) into the dripper cone. **Reservoir 2** takes water the user has already heated, and the machine pumps measured amounts on a pour schedule (a bloom, then pulses, e.g. the 4:6 method) in a circular or spiral motion. It **rings a bell** when the brew timer ends.
+#### Scope (decided 2026-10-12)
+No grinder and no water heating. **Hopper 1** takes pre-ground coffee, and the machine drops an exact weight (e.g. 15g) into the dripper cone. **Reservoir 2** takes water the user has already heated, and the machine pumps measured amounts on a pour schedule (a bloom, then pulses, e.g. the 4:6 method) in a circular or spiral motion. It **rings a bell** when the brew timer ends.
 
-**Feasibility: yes, it is a known build.** [An Instructables build](https://www.instructables.com/Automatic-Pour-Over-Coffee-Machine/) ([summary](https://jpralves.net/post/2023/05/25/automatic-pour-over-coffee-machine.html)) uses food-safe 12V peristaltic pumps with silicone tubing, plus an HX711 load cell in the drip tray. A [2020 Berkeley student build](https://edg.berkeley.edu/wp-content/uploads/2020/12/2020Fall_ME102B_borzillerievan.pdf) does the spiral pour from an ESP32. Notes for later, none of them researched in depth:
+#### Feasibility
+**Yes, it is a known build.** [An Instructables build](https://www.instructables.com/Automatic-Pour-Over-Coffee-Machine/) ([summary](https://jpralves.net/post/2023/05/25/automatic-pour-over-coffee-machine.html)) uses food-safe 12V peristaltic pumps with silicone tubing, plus an HX711 load cell in the drip tray. A [2020 Berkeley student build](https://edg.berkeley.edu/wp-content/uploads/2020/12/2020Fall_ME102B_borzillerievan.pdf) does the spiral pour from an ESP32. Notes for later, none of them researched in depth:
 - **Water:** a peristaltic pump with silicone tubing keeps the hot water off the mechanism, but **confirm that the pump itself is rated for ~95°C** before buying it. Weigh the water with a load cell under the server rather than a flow meter. An unheated reservoir cools over a 3-4min brew, so it should be insulated, for example a thermos.
 - **Spiral:** the simplest is probably a turntable rotating the dripper under a fixed off-centre spout, rather than an arm that moves.
 - **Coffee dosing is the risky half:** an auger on a stepper, with a load cell for feedback, is the usual approach. Ground coffee clumps, sticks with static and bridges in the hopper. Build it last.
@@ -1726,10 +2250,10 @@ qty | item | est | note
 - **Board:** the aarti ESP32, packed away since 2026-10-02, is already claimed by the WoL-to-ESP32 move and named in the clock and wall-display entries. Assume a new ESP32 at ₹400-600.
 - **Readymade:** the Fellow Aiden (~$365, about ₹30k landed if it can be imported at all) and xBloom do the water half and more. Neither turned up at an Indian retailer, and neither doses pre-ground coffee from a hopper.
 
+#### Budget and effort
 **Budget (rough estimate, not priced against listings):** **₹3,500-6,500.** That covers the ESP32, a 12V peristaltic pump, a stepper and driver for the turntable, a load cell and HX711, a 12V supply, a buzzer, and a frame or enclosure. The auger and its stepper add ~₹800-1,500 of that. **Without coffee dosing, around ₹2,500-4,500.**
 
 **Effort (rough estimate):** **30-45h, about 4-6 weekends.** Water pour, scale and timer are 1-2 weekends; the spiral turntable is 1 weekend; coffee dosing is 2-3 weekends. The mechanical work (spout alignment, hopper and auger) will overrun, not the code.
 
-When built: add the board to `docs/hardware.md` and its MQTT topic to `endpoints.toml`.
-
-**Next step:** none planned. If it is picked up, start with the water half alone: a pump into a cup on a load cell, to check the pump's hot-water rating and how accurately it pours by weight.
+#### When built
+Add the board to `docs/hardware.md` and its MQTT topic to `endpoints.toml`.
