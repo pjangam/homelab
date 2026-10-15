@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseParts, parseCost, mergeParts, formatRange } from './parts'
+import { parseParts, parseCost, mergeParts, formatRange, selectedParts } from './parts'
 
 const AARTI = parseParts(`qty | item | est | note
 1 | INMP441 I2S mic | 150-300 | digital, NOT analog
@@ -83,5 +83,35 @@ describe('formatRange', () => {
   it('collapses an exact estimate', () => {
     expect(formatRange(185, 185)).toBe('₹185')
     expect(formatRange(150, 300)).toBe('₹150-300')
+  })
+})
+
+describe('options', () => {
+  const parts = parseParts(`qty | item | est | note
+1 | Charger | 200 |
+# Option 1 - robot
+1 | Robot | 6000 |
+# Option 2 - pulley
+1 | Motor | 400 |
+2 | Microswitch | 40 |`)
+  const curtains = { id: 'curtains', title: 'Curtains', parts }
+
+  it('tags rows under a # line with that option, and leaves rows above it untagged', () => {
+    expect(parts.map((r) => r.group)).toEqual([undefined, 'Option 1 - robot', 'Option 2 - pulley', 'Option 2 - pulley'])
+  })
+
+  it('puts one option plus the shared rows on the list', () => {
+    const [picked] = selectedParts([curtains], new Set(['curtains#Option 2 - pulley']))
+    expect(picked.title).toBe('Curtains (Option 2 - pulley)')
+    expect(picked.parts.map((r) => r.item)).toEqual(['Charger', 'Motor', 'Microswitch'])
+  })
+
+  it('still puts every part on the list for a whole-project pick', () => {
+    const [picked] = selectedParts([curtains], new Set(['curtains']))
+    expect(picked.parts).toHaveLength(4)
+  })
+
+  it('leaves unpicked projects off', () => {
+    expect(selectedParts([curtains], new Set(['other']))).toEqual([])
   })
 })

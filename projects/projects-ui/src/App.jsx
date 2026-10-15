@@ -3,7 +3,7 @@ import { useProjects } from './hooks/useProjects'
 import { StatusSection } from './components/StatusSection'
 import { ProjectDetail } from './components/ProjectDetail'
 import { ShoppingList } from './components/ShoppingList'
-import { mergeParts } from './lib/parts'
+import { mergeParts, selectedParts } from './lib/parts'
 import { PRIORITIES } from './lib/parseProjects'
 import './App.css'
 
@@ -86,7 +86,7 @@ export default function App() {
   // or a search term must not silently drop items from the list you are
   // standing in a shop holding.
   const selectedProjects = useMemo(
-    () => sections.flatMap((section) => section.projects).filter((p) => listIds.has(p.id)),
+    () => selectedParts(sections.flatMap((section) => section.projects), listIds),
     [sections, listIds],
   )
   const merged = useMemo(() => mergeParts(selectedProjects), [selectedProjects])
@@ -216,8 +216,8 @@ export default function App() {
                 <ProjectDetail
                   project={selectedProject}
                   section={selectedSection}
-                  inList={listIds.has(selectedProject.id)}
-                  onToggleInList={(id) => toggleInSet(setListIds, id)}
+                  listIds={listIds}
+                  onToggleInList={(key) => toggleInSet(setListIds, key)}
                 />
               )}
               {!view && <p className="detail-placeholder">Pick a project from the list.</p>}

@@ -33,11 +33,39 @@ describe('ProjectDetail', () => {
   it('calls onToggleInList with the project id when the checkbox is ticked', async () => {
     const onToggleInList = vi.fn()
     render(
-      <ProjectDetail project={withParts} section={section} inList={false} onToggleInList={onToggleInList} />,
+      <ProjectDetail project={withParts} section={section} listIds={new Set()} onToggleInList={onToggleInList} />,
     )
 
     await userEvent.click(screen.getByLabelText(/add to shopping list/i))
 
     expect(onToggleInList).toHaveBeenCalledWith('a-project')
+  })
+
+  const withOptions = {
+    ...project,
+    parts: [
+      { qty: '1', item: 'Charger', est: '200', note: '' },
+      { qty: '1', item: 'Robot', est: '6000', note: '', group: 'Option 1 - robot' },
+      { qty: '1', item: 'Motor', est: '400', note: '', group: 'Option 2 - pulley' },
+    ],
+  }
+
+  it('gives each option its own checkbox, keyed by project and option', async () => {
+    const onToggleInList = vi.fn()
+    render(
+      <ProjectDetail project={withOptions} section={section} listIds={new Set()} onToggleInList={onToggleInList} />,
+    )
+
+    expect(screen.queryByLabelText('Add to shopping list')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByLabelText('Add Option 2 - pulley to shopping list'))
+
+    expect(onToggleInList).toHaveBeenCalledWith('a-project#Option 2 - pulley')
+  })
+
+  it('keeps the whole-project checkbox while an old whole-project pick is on the list', () => {
+    render(
+      <ProjectDetail project={withOptions} section={section} listIds={new Set(['a-project'])} onToggleInList={() => {}} />,
+    )
+    expect(screen.getByLabelText('Add to shopping list')).toBeChecked()
   })
 })

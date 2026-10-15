@@ -20,12 +20,27 @@ async function shoot(page, name) {
   await page.locator('.project-link', { has: page.locator('.parts-badge') }).first().click()
   await shoot(page, 'desktop-2-selected')
 
-  const add = page.getByLabel(/add to shopping list/i)
+  const add = page.getByLabel(/add to shopping list/i).first()
   if (!(await add.isChecked())) await add.check()
   await shoot(page, 'desktop-3-shopping-list-open')
 
   await page.getByRole('complementary', { name: /shopping list/i }).locator('summary').click()
   await shoot(page, 'desktop-4-shopping-list-collapsed')
+  await page.close()
+}
+
+// Options: a parts list with "# Option" groups gets a checkbox per option,
+// and ticking one puts only that option (plus shared rows) on the list.
+{
+  const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
+  await page.goto(url)
+  await page.getByRole('navigation').getByRole('button').first().waitFor()
+  await page.getByPlaceholder(/search/i).fill('curtains')
+  await page.locator('.project-link', { has: page.locator('.parts-badge') }).first().click()
+  const groups = page.locator('.parts-group input[type=checkbox]')
+  await groups.last().check()
+  await page.locator('.parts').scrollIntoViewIfNeeded()
+  await shoot(page, 'desktop-5-option-picked')
   await page.close()
 }
 

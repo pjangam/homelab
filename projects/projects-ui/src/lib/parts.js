@@ -7,17 +7,55 @@
 // "what do I need to walk out with today" across the two or three projects
 // being started at once - which is what mergeParts answers.
 
+// A "# ..." line inside a block starts a group of alternatives, e.g.
+// "# Option 1 - clip-on robot", so one option can go on the shopping list
+// without the other. Rows above the first such line belong to every option.
 export function parseParts(text) {
-  return text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#'))
-    .map((line) => {
-      const [qty = '', item = '', est = '', note = ''] = line.split('|').map((f) => f.trim())
-      return { qty, item, est, note }
-    })
+  const rows = []
+  let group = null
+  for (const raw of text.split('\n')) {
+    const line = raw.trim()
+    if (!line) continue
+    if (line.startsWith('#')) {
+      group = line.replace(/^#+\s*/, '') || null
+      continue
+    }
+    const [qty = '', item = '', est = '', note = ''] = line.split('|').map((f) => f.trim())
     // Drop the optional header row, and any line with no item to buy.
-    .filter((row) => row.item && row.qty.toLowerCase() !== 'qty')
+    if (!item || qty.toLowerCase() === 'qty') continue
+    rows.push(group ? { qty, item, est, note, group } : { qty, item, est, note })
+  }
+  return rows
+}
+
+export function partGroups(parts) {
+  return [...new Set((parts ?? []).map((row) => row.group).filter(Boolean))]
+}
+
+// Shopping-list selection ids: a project's id stands for all of its parts,
+// `${id}#${group}` for one option of it.
+export function listKey(projectId, group) {
+  return group ? `${projectId}#${group}` : projectId
+}
+
+// What a set of selection ids puts on the list, as {title, parts} for
+// mergeParts. A project picked by option carries the shared rows plus the
+// rows of the options picked, and names them in its title.
+export function selectedParts(projects, listIds) {
+  const picked = []
+  for (const project of projects) {
+    if (listIds.has(project.id)) {
+      picked.push({ title: project.title, parts: project.parts })
+      continue
+    }
+    const chosen = partGroups(project.parts).filter((g) => listIds.has(listKey(project.id, g)))
+    if (chosen.length === 0) continue
+    picked.push({
+      title: `${project.title} (${chosen.join(', ')})`,
+      parts: project.parts.filter((row) => !row.group || chosen.includes(row.group)),
+    })
+  }
+  return picked
 }
 
 // '150-300' -> {low:150, high:300}; '400' -> {low:400, high:400}; '' -> null.
