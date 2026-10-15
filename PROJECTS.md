@@ -2113,7 +2113,7 @@ qty | item | est | note
 1 | INMP441 I2S mic | 150-300 | for the living room satellite; digital I2S, NOT analog MAX4466
 1 | Soldering iron, temperature-controlled (~60W) | 500-800 | replaces the current one, which no longer works properly; the INMP441's header pins need soldering
 2 | MAX98357A I2S amplifier breakout | 300-600 | one per satellite, for spoken replies; I2S digital in, 3W class-D out, runs off the board's 5V VIN
-2 | Speaker, 4 or 8 ohm, 3W, ~40mm | 100-250 | one per satellite; a small round full-range driver, wired to the amp's screw terminal
+2 | Speaker driver, 4 ohm, 3W, 40-50mm | 100-350 | one per satellite; a bare driver, not a powered/Bluetooth speaker. Example: amazon.in/dp/B0GTZ5DD6P (2 inch, 4 ohm 3W, bracket + wires, Rs 169 each, 2026-10-15); cut its connector off if it does not fit the amp. Put it in a small box with holes in front
 ```
 
 #### Speaker (planned 2026-10-15)
