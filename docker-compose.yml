@@ -46,8 +46,10 @@ services:
       - --path.rootfs=/host
       - --web.listen-address=127.0.0.1:9100
       - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|var/lib/docker/.+|host/var/lib/docker/.+)($$|/)
+      - --collector.textfile.directory=/textfile
     volumes:
       - /:/host:ro,rslave
+      - ./services/node-exporter/textfile:/textfile:ro
     restart: unless-stopped
 
   cadvisor:

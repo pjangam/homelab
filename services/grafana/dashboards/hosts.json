@@ -812,8 +812,8 @@
     {
       "id": 10,
       "type": "timeseries",
-      "title": "Filesystem used",
-      "description": "",
+      "title": "SSD used",
+      "description": "xero's two SSDs. Kingston = the whole ZFS pool incl. snapshots, from `zfs list` (services/node-exporter/zpool_textfile.sh, cron every minute); 100% is when writes stop. Its datasets are copies=2, so each GB of new data costs 2 GB here.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -882,8 +882,17 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "max_over_time((100 * (1 - node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|vfat\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs|vfat\"}))[$__interval:5s])",
-          "legendFormat": "{{host}} {{mountpoint}}"
+          "expr": "max_over_time((100 * (1 - node_filesystem_avail_bytes{host=\"xero\",mountpoint=\"/\"} / node_filesystem_size_bytes{host=\"xero\",mountpoint=\"/\"}))[$__interval:5s])",
+          "legendFormat": "BIWIN boot SSD (/)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "B",
+          "expr": "max_over_time((100 * homelab_zpool_used_bytes{zpool=\"datapool\"} / (homelab_zpool_used_bytes{zpool=\"datapool\"} + homelab_zpool_avail_bytes{zpool=\"datapool\"}))[$__interval:5s])",
+          "legendFormat": "Kingston SSD (datapool)"
         }
       ]
     },

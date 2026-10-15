@@ -16,6 +16,19 @@ show one series at a time.
 | `cadvisor` | xero, compose | 127.0.0.1:8088 | per-container CPU, memory, network |
 | `grafana` | xero, compose | 127.0.0.1:3000 | the UI; datasource and dashboards are provisioned from `provisioning/` and `dashboards/` |
 
+## SSD used
+
+The "SSD used" panel shows xero's two SSDs only: the BIWIN boot SSD (`/`)
+and the Kingston, as the whole `datapool` ZFS pool. Per-dataset `df` numbers
+are useless for the pool (each dataset's "size" is its own data plus the
+shared free space, and snapshots count nowhere), so
+`services/node-exporter/zpool_textfile.sh` (xero's crontab, every minute) writes
+`zfs list` used/avail for the pool to `services/node-exporter/textfile/`, which
+node-exporter's textfile collector exports as `homelab_zpool_used_bytes` /
+`homelab_zpool_avail_bytes`. used / (used + avail) is 100% when writes stop
+(avail is after the ~1/32 slop reserve). The datasets are `copies=2`, so each
+GB of new data costs 2 GB of that.
+
 ## No averages
 
 Every panel plots the **max** and **p95** of each graph interval, never an

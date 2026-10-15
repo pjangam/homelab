@@ -46,3 +46,6 @@ services/albums/accounts.conf
 projects/voice-assistant/esphome/secrets.yaml
 projects/voice-assistant/esphome/.esphome/
 projects/voice-assistant/esphome/build-out/
+
+# node-exporter textfile output - written every minute by services/node-exporter/zpool_textfile.sh
+services/node-exporter/textfile/

@@ -117,10 +117,16 @@ hosts.append(panel("Network (max)", [
     (peak(counter_rate(f'node_network_receive_bytes_total{{{net_dev}}}'))[0], "{{host}} {{device}} rx"),
     (peak(counter_rate(f'node_network_transmit_bytes_total{{{net_dev}}}'))[0], "{{host}} {{device}} tx"),
 ], "Bps", 0, y, desc="xero's wired link negotiated 100Mb/s (~12MB/s) as of 2026-10-09."))
-hosts.append(panel("Filesystem used", [
-    (peak('100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|vfat"} / '
-          'node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|vfat"})')[0], "{{host}} {{mountpoint}}"),
-], "percent", 12, y, max_=100))
+hosts.append(panel("SSD used", [
+    (peak('100 * (1 - node_filesystem_avail_bytes{host="xero",mountpoint="/"} / '
+          'node_filesystem_size_bytes{host="xero",mountpoint="/"})')[0], "BIWIN boot SSD (/)"),
+    (peak('100 * homelab_zpool_used_bytes{zpool="datapool"} / '
+          '(homelab_zpool_used_bytes{zpool="datapool"} + homelab_zpool_avail_bytes{zpool="datapool"})')[0],
+     "Kingston SSD (datapool)"),
+], "percent", 12, y, max_=100,
+    desc="xero's two SSDs. Kingston = the whole ZFS pool incl. snapshots, from `zfs list` "
+         "(services/node-exporter/zpool_textfile.sh, cron every minute); 100% is when writes stop. "
+         "Its datasets are copies=2, so each GB of new data costs 2 GB here."))
 y += 8
 hosts.append(panel("ZFS ARC size (xero, max)", [(peak('node_zfs_arc_size')[0], "ARC")], "bytes", 0, y))
 
