@@ -2112,7 +2112,12 @@ The user has a second ESP32 and is buying a second INMP441. Config is split into
 qty | item | est | note
 1 | INMP441 I2S mic | 150-300 | for the living room satellite; digital I2S, NOT analog MAX4466
 1 | Soldering iron, temperature-controlled (~60W) | 500-800 | replaces the current one, which no longer works properly; the INMP441's header pins need soldering
+2 | MAX98357A I2S amplifier breakout | 300-600 | one per satellite, for spoken replies; I2S digital in, 3W class-D out, runs off the board's 5V VIN
+2 | Speaker, 4 or 8 ohm, 3W, ~40mm | 100-250 | one per satellite; a small round full-range driver, wired to the amp's screw terminal
 ```
+
+#### Speaker (planned 2026-10-15)
+The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satellites have no way to play it, so today a command only shows on the LED. Adding a MAX98357A + small speaker per board gives spoken replies and confirmation tones. It goes on its own I2S bus (the ESP32 has two), not shared with the mic: LRC GPIO26, BCLK GPIO27, DIN GPIO22 - all free and none of them strapping pins - with VIN to 5V, GND, and SD left unconnected (amp on). Firmware: a second `i2s_audio` bus, an `i2s_audio` speaker, and `speaker:` on `voice_assistant`; ESPHome mutes the mic while the reply plays, so the board does not hear itself. Not wired or flashed yet.
 
 #### Log
 - 2026-10-05: phone-app stage done.
