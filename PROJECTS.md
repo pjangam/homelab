@@ -2101,6 +2101,13 @@ qty | item | est | note
 #### Two rooms
 The user has a second ESP32 and is buying a second INMP441. Config is split into `voice-satellite-common.yaml` plus per-board files; the first board (`voice-satellite.yaml`, .125) is assigned to HA area **Bedroom** (2026-10-06); `voice-living-room.yaml` (192.168.1.126, own API key `api_key_living_room` in secrets.yaml) is ready for the second board: wire as `wiring.html`, `build_on_mac.sh living` over USB, add in HA, set its area to Living Room. A board's room is its HA area, nothing in the firmware. Room-agnostic commands must keep working ("turn off the bedroom light" from the living room) - only commands without a room/device name use the satellite's area. Place the bedroom board away from the white-noise speaker.
 
+#### Parts
+```parts
+qty | item | est | note
+1 | INMP441 I2S mic | 150-300 | for the living room satellite; digital I2S, NOT analog MAX4466
+1 | Soldering iron, temperature-controlled (~60W) | 500-800 | replaces the current one, which no longer works properly; the INMP441's header pins need soldering
+```
+
 #### Log
 - 2026-10-05: phone-app stage done.
   - `speech-to-phrase` container (legacy v1.4 Kaldi image, `127.0.0.1:10300`), added through the Wyoming integration and set as the STT of the preferred "Home Assistant" pipeline (`prefer_local_intents` on). Retrains in ~4s.
