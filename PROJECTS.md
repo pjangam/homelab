@@ -433,6 +433,12 @@ All "always-on" numbers above are spec/datasheet estimates, not measured - could
 **State:** not started. Needs a physical second disk (same/larger than 894GB) and `zpool attach`.
 **Next step:** decide on and buy a second disk, whenever justified.
 
+#### Parts
+```parts
+qty | item | est | note
+1 | 2.5" SATA SSD, 1TB (960GB or larger) | 5000-8000 | the mirror half for `sda`; must be at least 894.3GB (`zpool attach` refuses a smaller disk). Prefer a DRAM-cached one (Crucial MX500 / Samsung 870 EVO class) over another SA400; price is a guess under the chip-price spike
+1 | USB 3 SATA enclosure (UASP) | 500-900 | only if xero has no free internal bay - both its SATA slots look taken (SA400 + Biwin boot); check when the case is open
+```
 ### Offsite backup for Immich photo data
 **Status:** Parked
 **Priority:** P3
