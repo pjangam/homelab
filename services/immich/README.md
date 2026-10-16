@@ -17,8 +17,11 @@ the version is pinned in `.env` as `IMMICH_VERSION`.
   container: H.264 and VP9 sources to 720p H.264 in about a second per 30s of
   video; Jasper Lake only has the low-power encoder (`EncSliceLP`) and ffmpeg
   picks it by itself. QSV failed (`h264_qsv` error -22) - use VAAPI.
-- `immich_machine_learning` is capped at `cpus: 2` so the ML backlog cannot
-  pin all four N5105 cores (xero has reached 103°C under full load).
+- `immich_machine_learning` is capped at `cpus: 1` so the ML backlog cannot
+  pin all four N5105 cores (xero has reached 103°C under full load). It was
+  `cpus: 2` until 2026-10-16, when face detection on a 37-photo upload still
+  took xero to 89°C; one core halves ML throughput (about 10 minutes for a
+  batch that size).
 
 ## Load guard
 
