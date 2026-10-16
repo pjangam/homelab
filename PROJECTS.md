@@ -2277,3 +2277,68 @@ No grinder and no water heating. **Hopper 1** takes pre-ground coffee, and the m
 
 #### When built
 Add the board to `docs/hardware.md` and its MQTT topic to `endpoints.toml`.
+
+### Diwali lights 2026
+**Status:** Backlog
+**Priority:** P2
+
+**Why:** festival decoration for Diwali, raised 2026-10-16 about three weeks out. The Ganapati WS2812B strip and the WLED software are still here, but the board that ran them is now the bedroom voice satellite. The question is whether to bring the aarti build back with plain warm effects or to try something new. **Diwali 2026 is Sun 8 Nov (Lakshmi Puja that evening), Dhanteras Fri 6 Nov, Bhai Dooj Tue 10 Nov** ([dekhopanchang](https://dekhopanchang.com/en/festivals/diwali), [101planners](https://www.101planners.com/diwali-countdown/), [kissht](https://www.kissht.com/blog/diwali-2026-date-and-lakshmi-puja-timing); some BankBazaar pages say 20 Oct, which is wrong and does not agree with itself). Lights should be up by Dhanteras, so the build deadline is **Thu 5 Nov**.
+**State:** options researched, **user has not chosen**. Recommendation given 2026-10-16: Option 1 (plain reuse) plus the LED akash kandil; add the mic only if the Lakshmi Puja aarti should be sound-reactive. Nothing bought.
+**Next step:** user picks the option(s). Then, in one Pimpri trip combined with the voice satellite parts (INMP441, 2x MAX98357A, 2x speaker on "Local voice control (HA Assist)"), buy the ESP32 devkit (plus a C3 SuperMini if the kandil is in) and flash WLED on the bench. Measure the doorway or wall run before cutting any strip.
+
+#### Feasibility
+**Yes, and most of it is already built.** Everything except the board survives from Ganapati: the strip, the 5V 4A supply, `projects/aarti-lights/` (Tier 3 renderer `aarti-render.py`, `aarti-lights.service` disabled, `wled.sh`, `aarti_lights_setup.md` with the WLED flashing gotcha), and in HA the three dashboard scripts and four schedule automations, turned off in the gitignored `HOMEASSISTANT_CONFIG/automations.yaml`. **The WLED config was not saved:** the `cfg.json`/`presets.json` backup was skipped when the board was reflashed on 2026-10-06, so presets, segments, LED count and the current cap get set up again by hand. `wled.sh` does most of that from the command line. Ordinary WLED on a new classic ESP32 is a known build with no unknowns.
+
+#### What is on hand (checked 2026-10-16)
+- **Board: none.** The user has two ESP32s and both are voice satellites: the old aarti board is the bedroom one at **192.168.1.125**, and the second is for the living room (192.168.1.126). WLED runs on no board now. **A new ESP32 has to be bought for this whatever the option.**
+- **Pixels: ~284 / ~4.7m.** The 180-LED / 3m Ganapati strip, plus the spare ~2m (~120 px) reel minus the 16 claimed for the voice satellites (8 per room, recorded on that entry). The pegboard backlight is Parked and takes none.
+- **Supply:** the 5V 4A is free.
+- **Mic:** the only INMP441 goes to the living-room satellite, so a sound-reactive Diwali needs a second one.
+- **`docs/hardware.md` is stale on this** (gitignored, local only): it still lists `wled-sound` at .125 as "packed away", has no voice-satellite entry, and its Parts on hand says the ESP32 and the mic are "in use on the aarti board". Not fixed in this entry; fix it with the satellite work or when this board ships.
+
+#### Options
+- **Option 1 - plain reuse (recommended).** New classic ESP32 devkit, plain WLED (no audioreactive build needed), the strip as before. Warm, diya-like effects: **Candle Multi**, or **Fire Flicker** in amber/orange, at low brightness. Repoint the HA schedules from the aarti times to **sunset to 23:00** (HA's `sun` trigger), Dhanteras to Bhai Dooj. Voice control comes free: the bedroom satellite (and the living-room one once built) can switch an exposed `light.wled` through Assist, with no firmware work. Cheapest and lowest-risk.
+- **Option 2 - sound back for the Lakshmi Puja aarti.** Option 1 on the audioreactive WLED build, plus a second INMP441 wired as before (SD=32, WS=25, SCK=33). The Tier 3 renderer and the toddler's red flash ("A flashy colour for the toddler", Done) come back unchanged. Worth it only for the one evening's aarti; the rest of the week is warm static effects anyway. The mic's thresholds were measured for the Ganapati room and bell. If the strip goes somewhere else, re-check with `ambient-energy.py` before trusting it.
+- **New idea A - door outline.** A standard ~2.1m x 0.9m door needs ~5.1m of strip (2.1 + 0.9 + 2.1) against ~4.7m on hand, so it is **~0.4m short**. Stop each side ~20cm above the floor rather than buying more strip. That is fine visually and keeps the ends away from feet and mopping. Measure the actual door first.
+- **New idea B - LED akash kandil.** A 12-24 px ring of the spare strip inside a paper akash kandil (bought, or made), on a second cheap board such as an **ESP32-C3 SuperMini**, powered from a USB charger. **WLED UDP sync** makes it follow the main strip's effect and colour. Small, cheap, and the most "Diwali" of the ideas. Pixels come from the same ~284 pool, so a kandil plus a door outline makes the door shorter still.
+- **New idea C - fireworks / starburst on a dashboard button.** WLED's built-in **Starburst** / **Fireworks** effects, saved as a preset and bound to an HA dashboard button (or "Alejandro, fireworks" through Assist). No new code; it is a WLED preset plus one HA script.
+
+#### Design notes and traps
+- **The old address is taken, and the old software still points at it.** `192.168.1.125` is now the bedroom voice satellite. `aarti-render.py` (`WLED_IP`), `aarti-lights.service` (its `ExecStartPre` wait loop), `wled.sh` (default `WLED_HOST`) and `clawlight/wled-mirror.py` all default to .125. Give the new board the next free static (e.g. .127, which is free as far as the docs know) and change those defaults before enabling anything. Otherwise the renderer would be aiming realtime UDP at the voice satellite.
+- **HA will see a new WLED device, not the old one.** The old WLED integration entry (for the board at .125) is probably still in HA. Delete it before adding the new board so the entities come back as `light.wled` / `light.wled_main` and the four automations and three scripts keep working. If that is skipped they become `light.wled_2` and the old automations point at nothing without erroring. The `light.wled` vs `light.wled_main` segment-count flip (aarti entry, "Notes worth keeping") still applies.
+- **Power at ~284 px / ~4.7m.** Keep the WLED current cap at **~3400mA** on the 5V 4A supply. Warm, dim effects never get near it, but a full-white preset would be capped hard. **Inject 5V at both ends**, or the middle if it is fed in two runs. The 3m Ganapati run needed no injection, but 4-5m of 60/m strip shows visible voltage drop (pink/orange tail on white) without it. Injection wire is mains-wire offcuts as before, never a breadboard or duponts (the aarti 1A-through-jumpers lesson).
+- **Power cuts are frequent, and this is mains-only.** That is fine for decoration. The trap is the boot preset: set a warm effect as **boot preset 1** so the strip comes back right after a cut without HA or xero, the same pattern as the aarti Gravimeter boot preset.
+- **Flash at 0x10000.** WLED's ESP32 release `.bin` is the app image alone (the gotcha in `aarti_lights_setup.md`). And `xero` has a dead USB port, so flash from a known-good port or from the personal MacBook, as the satellites were.
+- **ESP32-C3 SuperMini for the kandil:** WLED has official ESP32-C3 builds, and a kandil needs no audioreactive. Its pins are few and some are strapping pins, so confirm the data GPIO against WLED's C3 notes before soldering.
+
+#### Readymade alternatives
+- **Plain Diwali serial lights ("ladi"), local, ~Rs 100-300 per string (estimate).** For pure decoration this is honestly cheaper and zero-effort. The case for the WLED build is only that the strip, supply and software are already owned and the result is schedulable, voice-controllable and local. If the user only wants "lights on the balcony", buy ladis and skip this.
+- **Ready-made LED akash kandils, local, ~Rs 200-600 (estimate).** Fixed patterns, no sync with the strip. A good fallback if the C3 build slips past 5 Nov.
+- **Smart RGB strips (Wipro, Philips Wiz and similar):** cloud apps that break in an ISP outage and cannot be pointed at xero - the Tinxy lesson. Rejected.
+
+#### Parts
+
+```parts
+qty | item | est | note
+1 | ESP32 classic devkit (ESP32-WROOM-32, 4MB) | 350-450 | local, Pimpri - estimate, not a fetched listing. Needed for every option; buy on the voice satellite parts trip
+284 | WS2812B pixels (~4.7m) | 0 | owned: 180 px Ganapati strip + ~104 px left on the spare reel after 16 for the voice satellites
+1 | 5V 4A power supply | 0 | owned, free since Ganapati
+1 | 470R resistor + 1000uF 10V capacitor | 20 | local, or owned (assumed in the drawer from the aarti build)
+# Option 2 - sound-reactive Lakshmi Puja aarti
+1 | INMP441 I2S mic | 150-250 | local; a second one, since the first goes to the living-room satellite. Digital I2S, NOT analog MAX4466
+# New idea B - LED akash kandil
+1 | ESP32-C3 SuperMini | 200-300 | local if stocked, else online (order by ~25 Oct); estimate
+1 | Paper akash kandil | 100-300 | local, any festival stall; or make one
+1 | USB charger 5V 1-2A | 0 | probably owned (estimate); a 12-24 px ring at low brightness draws well under 1A
+```
+
+**Cost:** **Option 1 about Rs 350-450 (just the ESP32).** Option 1 + kandil ~Rs 650-1050; + mic (Option 2) adds ~Rs 150-250. All estimates, local prices.
+
+**Effort:** **Option 1 ~4-6h:** flash WLED and bench-test on 30 px (1h), set count/cap/presets/boot preset with `wled.sh` (1h), HA re-add and sunset schedules (1h), mounting and power injection (2-3h). **Mounting is the phase that overruns**, especially a door outline: corners, adhesive on paint, and the injection wire's route. The firmware does not. Kandil +2-3h (most of it the paper-and-ring fit). Option 2 +2h (mic wiring, re-pointing the renderer, a squelch check in the new spot).
+
+**After Diwali:** the new ESP32 frees up again. "Move WoL to an ESP32", "WiFi-synced analog clock" and "Big wall display" still cost themselves against "the aarti board freed after the festival" ("Automatic pour-over coffee" already assumes a new one). That board is gone to the bedroom satellite, so this one is the only spare they can count on, and only once the lights come down.
+
+**When built:** `docs/hardware.md` gets a new entry (and loses the stale `wled-sound` one); the WLED endpoints go back into `projects/endpoints/endpoints.toml` with the new address.
+
+#### Log
+- 2026-10-16: noted. Diwali date confirmed as 8 Nov. Board situation, pixel count and the .125 address clash checked against the repo. Options and recommendation given; user to choose.
