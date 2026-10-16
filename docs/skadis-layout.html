@@ -1,0 +1,157 @@
+<title>Skadis Network Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one to-scale board drawing (1 cm = 10 units) beside a short placement table */
+:root {
+  --bg: #f3f4f1; --fg: #1f2421; --muted: #5d665f; --line: #c9cec8;
+  --board: #e4dccb; --slot: #b9ad94; --edge: #a89a7c;
+  --dev: #ffffff; --dev-stroke: #2d3a33;
+  --hot: #c2492f; --pwr: #b8860b; --net: #2f6fb0;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #171a18; --fg: #e6e9e4; --muted: #9aa39c; --line: #343a36;
+  --board: #3a3427; --slot: #221e16; --edge: #5a4f3a;
+  --dev: #262b28; --dev-stroke: #cfd6d0;
+  --hot: #e2725a; --pwr: #d9a93a; --net: #6aa6e0; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #171a18; --fg: #e6e9e4; --muted: #9aa39c; --line: #343a36;
+  --board: #3a3427; --slot: #221e16; --edge: #5a4f3a;
+  --dev: #262b28; --dev-stroke: #cfd6d0;
+  --hot: #e2725a; --pwr: #d9a93a; --net: #6aa6e0; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 40px; }
+main { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
+h1 { font-size: 1.5rem; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; }
+.wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } }
+.fig { overflow-x: auto; }
+svg { width: 100%; max-width: 460px; height: auto; display: block; margin: 0 auto; font-family: var(--mono); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 8px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+td.m { font-family: var(--mono); white-space: nowrap; }
+h2 { font-size: 1rem; margin: 18px 0 6px; }
+ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.key { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.key span::before { content: ""; display: inline-block; width: 18px; height: 0; border-top: 2px dashed currentColor; vertical-align: middle; margin-right: 6px; }
+.k-p { color: var(--pwr); } .k-n { color: var(--net); } .k-h { color: var(--hot); }
+</style>
+
+<main>
+  <header>
+    <h1>Skadis network board</h1>
+    <p class="sub">36 × 50 cm, front view, drawn to scale. All positions in cm from the board's top-left corner.</p>
+  </header>
+
+  <div class="wrap">
+    <div class="fig">
+      <svg viewBox="-46 -34 460 590" role="img" aria-label="Board layout: router top left, mini PC top right, fibre adapter and mini UPS in the middle row, power strip along the bottom">
+        <!-- board -->
+        <rect x="0" y="0" width="360" height="500" rx="6" fill="var(--board)" stroke="var(--edge)" stroke-width="2"/>
+        <!-- Skadis slots: 4 cm pitch, alternate rows offset 2 cm (approximate) -->
+        <g fill="var(--slot)" id="slots"></g>
+
+        <!-- dimension lines -->
+        <g stroke="var(--muted)" stroke-width="1" fill="var(--muted)" font-size="12">
+          <line x1="0" y1="-16" x2="360" y2="-16"/><line x1="0" y1="-22" x2="0" y2="-10"/><line x1="360" y1="-22" x2="360" y2="-10"/>
+          <text x="180" y="-22" text-anchor="middle" stroke="none">36 cm</text>
+          <line x1="-16" y1="0" x2="-16" y2="500"/><line x1="-22" y1="0" x2="-10" y2="0"/><line x1="-22" y1="500" x2="-10" y2="500"/>
+          <text x="-24" y="250" text-anchor="middle" stroke="none" transform="rotate(-90 -24 250)">50 cm</text>
+        </g>
+
+        <!-- cables -->
+        <g fill="none" stroke-width="2" stroke-dasharray="5 4">
+          <path d="M100 430 V 380 H 270 V 330" stroke="var(--pwr)"/>           <!-- strip -> UPS -->
+          <path d="M290 250 V 210 H 300 V 160" stroke="var(--pwr)"/>           <!-- UPS -> mini PC (barrel) -->
+          <path d="M250 290 H 225 V 230 H 120 V 200" stroke="var(--pwr)"/>     <!-- UPS -> router 12V -->
+          <path d="M180 290 H 160" stroke="var(--pwr)"/>                        <!-- UPS -> ONT -->
+          <path d="M60 250 V 200" stroke="var(--net)"/>                          <!-- ONT -> router WAN -->
+          <path d="M170 60 H 210" stroke="var(--net)"/>                          <!-- router LAN -> mini PC -->
+          <path d="M30 330 V 470 H -6" stroke="var(--net)" stroke-dasharray="2 4"/> <!-- fibre in -->
+        </g>
+
+        <!-- heat zone above mini PC -->
+        <g stroke="var(--hot)" fill="none" stroke-width="1.6">
+          <path d="M240 26 v-14 m-4 5 l4 -5 l4 5"/><path d="M275 26 v-14 m-4 5 l4 -5 l4 5"/><path d="M310 26 v-14 m-4 5 l4 -5 l4 5"/>
+        </g>
+
+        <!-- devices -->
+        <g stroke="var(--dev-stroke)" stroke-width="2" fill="var(--dev)">
+          <rect x="20" y="20" width="150" height="180" rx="5"/>
+          <rect x="210" y="30" width="130" height="130" rx="8"/>
+          <rect x="30" y="250" width="130" height="80" rx="4"/>
+          <rect x="230" y="250" width="80" height="80" rx="4"/>
+          <rect x="50" y="430" width="260" height="50" rx="5"/>
+        </g>
+        <!-- strip sockets -->
+        <g fill="var(--dev-stroke)" opacity=".55">
+          <rect x="72" y="447" width="22" height="16" rx="3"/><rect x="112" y="447" width="22" height="16" rx="3"/>
+          <rect x="152" y="447" width="22" height="16" rx="3"/><rect x="192" y="447" width="22" height="16" rx="3"/>
+          <rect x="232" y="447" width="22" height="16" rx="3"/><circle cx="285" cy="455" r="8"/>
+        </g>
+
+        <!-- labels -->
+        <g fill="var(--fg)" font-size="13" text-anchor="middle" font-weight="500">
+          <text x="95" y="105">Router</text>
+          <text x="275" y="92">Mini PC</text>
+          <text x="95" y="290">Fibre adapter</text>
+          <text x="270" y="290">Mini</text><text x="270" y="306">UPS</text>
+          <text x="180" y="418">Power strip</text>
+        </g>
+        <g fill="var(--muted)" font-size="11" text-anchor="middle">
+          <text x="95" y="122">15 × 18</text>
+          <text x="275" y="109">13 × 13 (xero)</text>
+          <text x="95" y="307">13 × 8</text>
+          <text x="270" y="322">8 × 8</text>
+          <text x="180" y="500" dy="-6" fill="var(--dev-stroke)">26 × 5</text>
+          <text x="275" y="146" fill="var(--hot)">vents clear</text>
+        </g>
+        <!-- below-board note -->
+        <text x="180" y="530" fill="var(--muted)" font-size="11" text-anchor="middle">fibre drops in bottom-left · cables run in the 5 cm gaps</text>
+      </svg>
+    </div>
+
+    <div>
+      <table>
+        <thead><tr><th>Item</th><th>Size (w × h)</th><th>Top-left (x, y)</th></tr></thead>
+        <tbody>
+          <tr><td>Router</td><td class="m">15 × 18</td><td class="m">2, 2</td></tr>
+          <tr><td>Mini PC (xero)</td><td class="m">13 × 13</td><td class="m">21, 3</td></tr>
+          <tr><td>Fibre adapter</td><td class="m">13 × 8</td><td class="m">3, 25</td></tr>
+          <tr><td>Mini UPS</td><td class="m">8 × 8</td><td class="m">23, 25</td></tr>
+          <tr><td>Power strip</td><td class="m">26 × 5</td><td class="m">5, 43</td></tr>
+        </tbody>
+      </table>
+
+      <div class="key" style="margin-top:12px">
+        <span class="k-p">power</span><span class="k-n">network / fibre</span>
+      </div>
+
+      <h2>Why this order</h2>
+      <ul>
+        <li><b>Router high</b> for Wi-Fi range. The top of the board is where the antennas reach furthest.</li>
+        <li><b>Mini PC top right with nothing above it.</b> xero runs hot, so its exhaust rises into open air instead of into another device. 4 cm gap from the router so the two don't share heat. Mount it on standoffs, not flat against the board.</li>
+        <li><b>Fibre adapter straight under the router.</b> Shortest WAN patch cable, and the fibre comes in from below without a tight bend.</li>
+        <li><b>Mini UPS in the middle row</b>, between the strip and the devices it feeds, so its DC leads stay short. It sits below the mini PC, out of the warm air.</li>
+        <li><b>Power strip at the bottom</b>, switches reachable, plugs pointing down. Leaves a free 9 cm band (y 34–43) for coiling excess cable and power bricks.</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Skadis-style slot grid: 4 cm column pitch, rows every 2 cm, alternate rows offset by 2 cm.
+  const g = document.getElementById("slots"), NS = "http://www.w3.org/2000/svg";
+  for (let r = 0, y = 12; y <= 480; r++, y += 20) {
+    for (let x = (r % 2 ? 40 : 20); x <= 340; x += 40) {
+      const s = document.createElementNS(NS, "rect");
+      s.setAttribute("x", x - 2.5); s.setAttribute("y", y - 7);
+      s.setAttribute("width", 5); s.setAttribute("height", 14); s.setAttribute("rx", 2.5);
+      g.appendChild(s);
+    }
+  }
+</script>
