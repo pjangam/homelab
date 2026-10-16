@@ -1047,7 +1047,7 @@ qty | item | est | note
 - 2026-09-16: idea noted, for after Ganapati.
 
 ### Pegboard backlight as the clawlight (leftover WS2812B on Pi GPIO13)
-**Status:** Backlog
+**Status:** Parked
 **Priority:** P3
 
 **Why:** the shipped clawlight LED is not noticeable enough by day. There is leftover WS2812B strip, probably the ~2m spare from the aarti lights reel. Mounted on the back of the pegboard the wol-sender Pi already hangs on, it would throw clawlight state onto the wall as a glow visible across the room. It would replace the single red/green LED on the same pins.
@@ -1103,6 +1103,7 @@ When built: update `docs/gpio_pinout.md` (GPIO13 = strip data, GPIO19 free), `do
 - 2026-09-16: noted; started as "a bias light behind the monitor" and moved to the pegboard in the same conversation. Checked that nothing plays audio on the Pi.
 - 2026-09-25: `clawlight-wled-mirror.service` set the aarti strip to the clawlight colour.
 - 2026-10-02: aarti strip packed away; the mirror unit stopped, left installed.
+- 2026-10-16: parked (user): the clawlight stays on the single common-cathode LED, no move to a strip planned. The spare reel's pixels are spoken for instead: 16 for the voice satellites (8 each), the rest for Diwali lights.
 
 ### Homelab health LED (Pi GPIO) - the whole healthcheck as one light
 **Status:** Backlog
@@ -2110,6 +2111,7 @@ The user has a second ESP32 and is buying a second INMP441. Config is split into
 #### Parts
 ```parts
 qty | item | est | note
+16 | WS2812B pixels | 0 | owned: cut from the spare aarti reel, 8 per satellite
 1 | INMP441 I2S mic | 150-300 | for the living room satellite; digital I2S, NOT analog MAX4466
 1 | Soldering iron, temperature-controlled (~60W) | 500-800 | replaces the current one, which no longer works properly; the INMP441's header pins need soldering
 2 | MAX98357A I2S amplifier breakout | 300-600 | one per satellite, for spoken replies; I2S digital in, 3W class-D out, runs off the board's 5V VIN
