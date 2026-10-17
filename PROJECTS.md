@@ -2073,6 +2073,13 @@ Identified along the way: the Pi has no battery backup (unlike `xero`, on the UP
 - **Baby monitor, Alfred Camera** (`Readme.md`, "Baby Monitor (Alfred Camera -> Home Assistant)"; `iphone_se` in `docs/hardware.md`). Alfred already sends cloud sound alerts from the SE. If the dedicated listener turns out to be the phone running Alfred, check that the two do not fight over the mic (it is: see the Log for 2026-10-03). This entry is also the local route for the Readme's "bridge Alfred alerts via Shortcuts" idea. That plan's "App -> Alfred -> Notification received" trigger does not appear to exist in Shortcuts, whereas the Sound Recognition trigger does.
 - **"ESP32 UPS LED monitor"** considers listening for a UPS low-battery beep. A second automation on the same listener phone (iOS 16+ can be trained on a custom alarm sound) could cover that later, on its own topic.
 
+#### Phase 2: the touch-button mister (optional, decide later)
+A smart plug only restores power; this mister then waits for a touch press. Options, in order of preference:
+- **Test first.** Some touch-button units remember their last state across a power cut. Press it on, unplug, replug: if it comes back misting, a plug is enough after all.
+- **Simulate the touch.** Open it up and find the touch pad (usually a copper pad behind the plastic wired to a TTP223-style touch IC, or a plain tactile switch under the panel). Have the ESP32 short the IC's output/the button's two contacts through a **PC817 optocoupler** (~Rs 10), so the mister's circuit stays isolated from the ESP32. Pulse it ~200ms after power-up via the smart plug, or leave the mister permanently powered and toggle with the button. Feasible because most ultrasonic misters run off a **24V DC adapter**, so the board is low voltage - **check this first; if it is mains inside, do not open it.** Two catches: a press usually cycles modes (off -> low -> high -> off), so the automation must know the state, and water near the hacked board.
+- **Swap the mister** for one with a mechanical rocker switch (~Rs 800-1,500, estimate) that starts on power - then only the plug is needed.
+- **Skip it.** If phase 1 (AC dry mode) is all that matters in practice, drop phase 2. The bedroom problem is usually too humid, not too dry.
+
 #### Readymade alternatives
 Alfred, already in use, is cloud-dependent. A dedicated baby monitor with cry detection is a second device, cloud-tied or limited in range, and cannot be pointed at xero. The current SMS route works, but it is a single recipient, depends on the carrier and costs per message. On a phone already owned, the ntfy route wins.
 
@@ -2350,8 +2357,8 @@ qty | item | est | note
 **Priority:** P3
 
 **Why:** raised 2026-10-17: turn the AC (dehumidify) on above a humidity level, or a mister/humidifier on below one, automatically. Amazon lists DHT sensors at Rs 85-300, and the question was which sensor is actually worth buying.
-**State:** researched in conversation 2026-10-17, nothing bought. Sensor and architecture decided (below). **Room: Bedroom.** **Board: a new dedicated ESP32** (user's call, 2026-10-17). **Mister:** the user owns a non-smart one (brand not remembered yet); it will be switched by a bought smart plug or a home-built smart switch. Not decided: whether the mister restarts on power-up, and whether the AC side means dry mode.
-**Next step:** check the mister: note its brand/model, set its switch on, unplug and replug it - if it starts by itself, a plug can automate it. Buy an ESP32 (or ESP32-C3 SuperMini) and one SHT41 or SHT31 breakout locally; bench the sensor beside a known hygrometer for a day before writing any automation.
+**State:** researched in conversation 2026-10-17, nothing bought. Sensor and architecture decided (below). **Room: Bedroom.** **Board: a new dedicated ESP32** (user's call, 2026-10-17). **AC:** has dry mode (user, 2026-10-17); still confirm `dry` is in the MirAIe entity's `hvac_modes` in HA. **Mister:** the user owns a non-smart one (brand not remembered yet) with a **touch button** that most likely has to be pressed after power-up, so a smart plug alone cannot automate it. **Plan: build in two phases** - phase 1 is sensor + AC dry mode only; phase 2 (mister) is optional and decided later between hacking the touch button and skipping it.
+**Next step:** phase 1 only. Buy an ESP32 (or ESP32-C3 SuperMini) and one SHT41 or SHT31 breakout locally; bench the sensor beside a known hygrometer for a day before writing any automation.
 
 #### Feasibility
 **Yes, a known build with no unknowns.** ESPHome has first-class components for both recommended sensors ([SHT3x-D](https://esphome.io/components/sensor/sht3xd/), [SHT4x](https://esphome.io/components/sensor/sht4x/)); they show up in HA as ordinary temperature and humidity entities. The AC is already in HA via MirAIe ("Miraie AC self-healing"), so the AC half is an HA automation, not hardware.
@@ -2372,7 +2379,7 @@ qty | item | est | note
 - **Placement decides accuracy.** Put the sensor on a 15-30cm lead outside the satellite's box: the ESP32 and amplifier warm their enclosure and would read low RH. Keep it **1-2m from the mister's spray** (or it reads the plume, not the room) and **out of the AC's airflow** (or it reads the coil's dry air and switches the AC off early).
 - **The mister must be a "dumb" one.** Switched by a plug or relay, it only works if the mister starts when power is applied (mechanical switch left on). Most button-start ultrasonic humidifiers come up off after power returns and cannot be automated this way. The user owns a non-smart mister (brand not remembered, 2026-10-17): test it before buying the plug.
 - **Switching the mister:** a local smart plug (ESPHome/Tasmota-flashed, or Shelly), or a home-built switch from "In-house smart switch to replace Tinxy" if that lands first - the user is open to either. **Not a Tinxy or other cloud plug** - the Tinxy lesson, same reasoning as "In-house smart switch to replace Tinxy". A relay switching mains on a breadboard-built satellite is the wrong place to learn mains wiring; prefer a plug.
-- **AC dry mode is unverified.** Whether the MirAIe climate entity exposes `dry` in its `hvac_modes` is not checked; if not, "cool at 26C" is the fallback dehumidify. Check the entity's attributes in HA before writing the automation.
+- **AC dry mode:** the AC has it (user, 2026-10-17). Confirm the MirAIe climate entity lists `dry` in `hvac_modes` before writing the automation; if HA does not expose it, "cool at 26C" is the fallback dehumidify.
 - **Power cuts:** the satellite and mister are mains-only, which is fine; the AC also loses power. When mains returns, HA re-evaluates the automation on the sensor's next reading - write the automation with a `homeassistant: start` / sensor-state trigger, not only a threshold crossing, so it does not wait for the next crossing.
 - **Build firmware on the 2019 MacBook** with `projects/voice-assistant/esphome/build_on_mac.sh`, never on xero (bad RAM history, see the system incidents memory).
 
@@ -2400,3 +2407,4 @@ qty | item | est | note
 #### Log
 - 2026-10-17: noted. Sensor and architecture decided in conversation; voice satellites identified as the likely host board (no new ESP32). Open: room, mister ownership and type, AC dry mode in the MirAIe entity.
 - 2026-10-17: room is the Bedroom; a new dedicated ESP32 instead of the voice satellite; user owns a non-smart mister (brand TBD), to be switched by a bought or home-built smart switch.
+- 2026-10-17: AC has dry mode. Mister has a touch button and likely will not start on power-up - split into phase 1 (sensor + AC) and optional phase 2 (hack the touch button, swap mister, or skip).
