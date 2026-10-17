@@ -4,6 +4,11 @@
 # uncontrolled power loss can cause (found in datapool on 2026-07-12,
 # most likely from the 2026-06-29 kernel-lockup hard power cycle).
 #
+# BLIND SINCE 2026-10-17: xero is now cabled to the Airtel router and on
+# its UPS, so carrier never drops in an outage. Needs the ping signal
+# (PROJECTS.md "Pi audio move follow-ups", step 3). The context below
+# describes the extender setup this was written for.
+#
 # Context: enp1s0 connects through a WiFi extender with no battery backup
 # of its own (see the WiFi failover step in new_machine_setup.sh). When it loses carrier, mains
 # power is very likely out, and this server is separately running on its

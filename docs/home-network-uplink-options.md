@@ -11,9 +11,12 @@ from the router to the desk". All prices are rough estimates for local shops.
 - **The router:** an Airtel fibre router (login page `http://192.168.1.1/admin/login.asp`)
   and the house's only internet gateway. It has its own UPS. It handles DHCP;
   Pi-hole only does DNS.
-- **xero's link:** xero (`192.168.1.123`) is wired to the **TP-Link Wi-Fi extender**,
-  and the extender reaches the router over **2.4GHz Wi-Fi**. Everything xero
-  sends crosses that one wireless hop. The extender has no UPS.
+- **xero's link:** since **2026-10-17** xero (`192.168.1.123`) is cabled
+  straight into the router (section 2, done), on the router's mini UPS. The
+  link still runs at 100Mb/s because the cable makes the NIC downshift from
+  gigabit; a better cable fixes that. Before, it was wired to the **TP-Link
+  Wi-Fi extender**, which reaches the router over **2.4GHz Wi-Fi**, so
+  everything xero sent crossed that one wireless hop.
 - **The internet plan:** 40 Mbps today, maybe 100 Mbps later. Nothing faster
   is planned.
 
@@ -35,6 +38,9 @@ addresses, though, and a monitor that groups by MAC would then lump them
 together.
 
 ## 2. Moving xero next to the router (a cable straight into it)
+
+**Done 2026-10-17**, before the watchdog fix below, so the watchdog is blind
+until it lands. Sections 3 and 4 are no longer needed for xero's link.
 
 This would work: a gigabit cable makes xero-as-gateway workable. It is **not**
 free, though:

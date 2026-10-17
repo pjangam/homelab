@@ -136,8 +136,8 @@ The speaker is on the Pi's **3.5mm jack** (card 1 `Headphones`, control `PCM`) t
 **Priority:** P3
 
 **Why:** white noise and Spotify moved to the wol Pi on 2026-09-24 (see "Move white noise and spotifyd from xero to the wol Pi" in Done). The cutover is done, but nothing watches the Pi's audio, and xero still carries the disabled copies.
-**State:** nothing started. Nothing alerts if spotifyd or a bridge breaks on the Pi; xero's spotifyd tile stays green only because its check now exits "not applicable".
-**Next step:** monitoring (step 1 below) - the real gap.
+**State:** xero moved to the router on 2026-10-17 (step 3), ahead of the watchdog change it was waiting on, so **the power watchdog is blind**: xero shares the router's mini UPS, the carrier never drops in an outage, and a long cut runs the UPS flat under xero. Steps 1-2 not started: nothing alerts if spotifyd or a bridge breaks on the Pi; xero's spotifyd tile stays green only because its check now exits "not applicable".
+**Next step:** the watchdog's ping signal (step 3) - it is what keeps a power cut from killing xero uncontrolled. Then monitoring (step 1).
 
 #### Steps
 1. **Monitoring - the real gap.**
@@ -145,7 +145,10 @@ The speaker is on the Pi's **3.5mm jack** (card 1 `Headphones`, control `PCM`) t
    - Point `check_spotifyd_advertising.sh`/the dashboard tile at `raspberrypi`. It is avahi over the LAN, so xero can watch the Pi.
    - Have `healthcheck.sh` alarm on the retained `whitenoise/available`/`volume/available` going `offline`.
 2. **xero cleanup:** remove the disabled `white-noise`, `white-noise-mqtt`, `volume-mqtt` and `spotifyd` units and spotifyd from xero; update the White Noise section of `Readme.md` and `white_noise_buttons_setup.md`, which still describe xero.
-3. **Then move xero to the router**, after the power-watchdog change described at the end of the Done entry (carrier loss stops meaning a mains outage once xero is on the router's UPS).
+3. **Move xero to the router - moved 2026-10-17, the watchdog change is still to do.** Carrier loss stopped meaning a mains outage once xero went on the router's UPS (see the end of the Done entry). Add "the wol Pi **and** the extender both stop answering pings for N checks" to `watchdog_power.sh`; the extender needs a pinned IP first (it answers ARP for several LAN addresses with one MAC, `c2:c9:e3:09:e6:be`, so find its own one in the router's DHCP table). Also replace the patch cable: the link downshifts from 1Gbps to 100Mbps (`check cabling!` in the kernel log), so xero still gets 100Mb/s.
+
+#### Log
+- 2026-10-17: xero moved onto the Skadis board next to the router (`docs/skadis-layout.html`), cabled into the router, powered from the router's mini UPS. Same IP, nothing else to re-point. Link 100Mb/s Full, downshifted from 1Gbps by the cable. The wol Pi and the bedroom voice satellite were unplugged in the move and were offline afterwards. `docs/hardware.md`, `docs/home-network-uplink-options.md`, `Readme.md` and the watchdog's header updated.
 
 ### wol Pi under-voltage: official 5.1V supply
 **Status:** Done
@@ -477,7 +480,7 @@ How the work laptop fits in - same policy-visibility risk that ruled out Dropbox
 **Priority:** P3
 
 **Why:** ~13k photos already migrated from Google Takeout, but Immich was disabled - 8GB RAM isn't enough with ML enabled.
-**State:** running again since 2026-10-09, on Immich v3.3.1 (32GB stick; `services/immich/README.md`). All 12,906 assets present; originals and thumbnails load. Only ~900 of 12,906 assets have smart search / faces. A sweep of every `originalPath` finds only `IMG-20191013-WA0002.jpg` missing. 5 animated GIFs still fail thumbnails with "Missing video metadata". Blocker to making it the primary photo app: speed (xero needs a direct cable to the router, see below). Google Takeout part `019` gap still unresolved.
+**State:** running again since 2026-10-09, on Immich v3.3.1 (32GB stick; `services/immich/README.md`). All 12,906 assets present; originals and thumbnails load. Only ~900 of 12,906 assets have smart search / faces. A sweep of every `originalPath` finds only `IMG-20191013-WA0002.jpg` missing. 5 animated GIFs still fail thumbnails with "Missing video metadata". Blocker to making it the primary photo app: speed (xero is on the router since 2026-10-17, but at 100Mb/s until its patch cable is replaced, see below). Google Takeout part `019` gap still unresolved.
 **Next step:**
 - The ML backlog: queue Smart Search and Face Detection ("Missing") in Administration -> Jobs with concurrency 1 and watch the guard's journal for the first hour.
 - Then: delete the `@pre-v3` snapshots once happy (the upload one holds 31G), upload the 2 videos in `datapool/recovered-media/`, and decide on LAN-only vs a Caddy/tailnet route for the phone app away from home.
@@ -487,7 +490,7 @@ Path taken: ZFS snapshots `@pre-v3` of both datasets and `rewrite_for_copies.sh`
 
 #### Blockers to making Immich the primary photo app (user, 2026-10-12)
 The server holds the load fine.
-1. **Speed: xero needs a direct cable to the router.** Today it gets two caps. The extender's Ethernet port is Fast Ethernet: the link partner advertises nothing above 100baseT, so the link negotiates 100Mb/s (~12MB/s) whatever cable is used. Behind that port, every byte crosses the extender's 2.4GHz Wi-Fi backhaul. The fix is already planned three ways, cheapest first:
+1. **Speed: xero needs a direct cable to the router.** **Update 2026-10-17:** xero is now cabled straight into the router, so the Wi-Fi hop is gone, but the link still runs at 100Mb/s: the NIC downshifts from gigabit on that cable (`check cabling!`). A good Cat5e/Cat6 patch cable should give 1Gbps. The rest of this item is how it was before. It got two caps. The extender's Ethernet port is Fast Ethernet: the link partner advertises nothing above 100baseT, so the link negotiates 100Mb/s (~12MB/s) whatever cable is used. Behind that port, every byte crosses the extender's 2.4GHz Wi-Fi backhaul. The fix is already planned three ways, cheapest first:
    - "Pi audio move follow-ups", step 3: move xero to the router. The speaker no longer ties it to its room. This needs `projects/power-watchdog/watchdog_power.sh` to get the ping signal first.
    - "Fibre or Cat6 from the router to the desk".
    - "Move the Airtel router to a central spot".
@@ -528,7 +531,7 @@ Three shapes, cheapest first:
 **Status:** Backlog
 **Priority:** P3
 
-**Why:** the router sits where Airtel's fibre drop enters the house, so the far rooms depend on the TP-Link extender. That includes xero, which reaches the router only through the extender's 2.4GHz Wi-Fi backhaul. A central router could cover the house on its own and give xero a short, direct link.
+**Why:** the router sits where Airtel's fibre drop enters the house, so the far rooms depend on the TP-Link extender. A central router could cover the house on its own. (It used to be about xero's link too; xero is cabled into the router since 2026-10-17, so that part is moot.)
 **State:** parked, nothing done. **Needs outside help:** Airtel has to re-route its fibre drop, or it has to be extended inside the house, and they may charge.
 **Next step:** answer the open questions below. Notes: `docs/home-network-uplink-options.md`, which covers all the options, costs and trade-offs, so none of it has to be worked out again.
 
@@ -545,12 +548,10 @@ Three shapes, cheapest first:
 - 2026-09-23: parked.
 
 ### Fibre or Cat6 from the router to the desk
-**Status:** Backlog
-**Priority:** P3
+**Status:** Closed
 
 **Why:** a real cable from the Airtel router to xero's desk replaces the extender's 2.4GHz Wi-Fi hop. It also keeps xero, its speaker and its screen where they are.
-**State:** parked, nothing done. **Needs outside help** (an electrician and/or a local FTTH technician). Two options, fibre or Cat6 (below).
-**Next step:** have the electrician check how full the conduit is and the state of the old wiring, then push a pull cord through. Pull nothing through a packed conduit or past brittle insulation.
+**Outcome:** closed 2026-10-17, not needed: xero moved to the router instead (cabled into it, on its UPS; "Pi audio move follow-ups", step 3). Nothing was bought or pulled. The notes below stay for reference if xero ever has to go back to the desk.
 
 #### The route
 An existing conduit that already carries 230V mains wiring and has many bends.
@@ -572,6 +573,7 @@ An existing conduit that already carries 230V mains wiring and has many bends.
 
 #### Log
 - 2026-09-23: parked.
+- 2026-10-17: closed - xero moved to the router instead.
 
 ### Miraie AC self-healing
 **Status:** Backlog
