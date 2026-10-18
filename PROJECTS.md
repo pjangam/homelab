@@ -1215,7 +1215,7 @@ That one also presents as "the internet is slow" and they overlapped on 2026-09-
 **Status:** Done
 
 **Why:** a public album for Ojaswi's 1st birthday, viewable without Tailscale.
-**Outcome:** live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_ALBUM_PATH` in `.env`), with review-first family uploads added the same day. Left open: when Immich comes back, move the album to an Immich shared link and retire this.
+**Outcome:** live since 2026-09-29 at `https://albums.<tailnet>/<secret>/` (secret: `OJASWI_ALBUM_PATH` in `.env`), with review-first family uploads added the same day. Left open: retire the public gallery once family stop opening it (the photos are in Immich as an external library since 2026-10-18; an Immich shared link was decided against, see Log).
 
 #### Setup
 
@@ -1227,6 +1227,7 @@ Review-first - per-person logins (`uploader.sh`) can only add photos/videos to a
 
 #### Log
 - 2026-09-29: album live over Funnel; family uploads (review-first) added.
+- 2026-10-18: the album folder is also an Immich external library (read-only mount, one copy; `services/immich/README.md`), for faces, favourites and an Immich album. The public copyparty link stays: moving it to an Immich shared link would mean putting all of Immich on Funnel, a far bigger exposure than one read-only folder. Retire the gallery once family stop opening it.
 
 ### LAN time server on xero, so the wol Pi's clock survives an ISP outage
 **Status:** Done

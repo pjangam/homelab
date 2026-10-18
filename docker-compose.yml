@@ -108,6 +108,10 @@ services:
       # Upstream mounts /data now; this library's DB stores every path under
       # /usr/src/app/upload (MediaLocation), so it keeps the old mount point.
       - ${UPLOAD_LOCATION}:/usr/src/app/upload
+      # External library (Administration -> External Libraries): the public
+      # album's files, read-only, so the albums gallery and Immich share one
+      # copy. Only the album folder - the uploads _inbox stays out.
+      - /datapool/albums/ojaswi-1st-birthday:/mnt/albums/ojaswi-1st-birthday:ro
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env

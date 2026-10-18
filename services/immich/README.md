@@ -11,6 +11,13 @@ the version is pinned in `.env` as `IMMICH_VERSION`.
   `/data`: the database records that path (`system_metadata.MediaLocation`)
   and every `asset.originalPath` starts with it. Do not "fix" the mount to
   match upstream's compose.
+- External library (2026-10-18): the public album's folder,
+  `datapool/albums/ojaswi-1st-birthday`, is mounted read-only at
+  `/mnt/albums/ojaswi-1st-birthday` and added under Administration ->
+  External Libraries, so Immich and the albums gallery (`services/albums/`)
+  share one copy. Favourites, faces and albums live in Immich's DB and work;
+  deleting such an asset in Immich never touches the file. Approved family
+  uploads land in the same folder and appear on the next library scan.
 - Video transcoding runs on the N5105's iGPU through **VAAPI** (`/dev/dri`
   passed to `immich_server`; set in Administration -> Settings -> Video
   Transcoding -> Hardware Acceleration). Tested 2026-10-09 inside the
