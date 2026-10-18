@@ -2411,12 +2411,12 @@ qty | item | est | note
 - 2026-10-17: host board back to the bedroom voice satellite (SDA GPIO21 / SCL GPIO19, sensor on a lead outside its box); no new ESP32.
 
 ### Use xero's spare RAM
-**Status:** Backlog
+**Status:** Active
 **Priority:** P3
 
 **Why:** with the 32GB stick in, xero sits under about 25% memory use (2026-10-18: 7.6G used, 23G available, swap untouched), so the question is whether the idle RAM can buy anything. It mostly cannot: xero is CPU-bound (load 20 on 4 cores, 0% idle while Immich's jobs ran), not memory-bound.
-**State:** options reviewed 2026-10-18; nothing changed yet. Waiting on the user, since the change needs sudo in a real terminal.
-**Next step:** raise the ZFS ARC cap from 1 GiB to 8 GiB (`sudo tools/zfs/arc_max.sh set 8`), then compare the hit rate and ghost hits after a few days of normal Immich use. Record the new cap in `docs/hardware.md`.
+**State:** ARC cap raised to 8 GiB on 2026-10-18 (live, `/etc/modprobe.d/zfs.conf` and initramfs all checked). The other options stay skipped or deferred.
+**Next step:** after a few days of normal Immich use, run `tools/zfs/arc_max.sh stats` and compare with the baseline in the Log (at a similar uptime - the counters reset on reboot). If the ghost hits stop climbing and the metadata hit rate rises, set Status to Done.
 
 #### Options
 - **Raise the ZFS ARC cap to 8 GiB - worth doing.** `/etc/modprobe.d/zfs.conf` still has `zfs_arc_max=1073741824`, a leftover from the 8GB stick. The ARC is the only read cache in front of `datapool` (the Immich library, its DB, albums, phone uploads); the Linux page cache does not cover ZFS. On 2026-10-18 after 22h of uptime: ~96% hit rate, but 137k metadata misses and ~23k MRU/MFU ghost hits (reads a bigger ARC would have served). Expect quicker timeline scrolling and thumbnail loads, and fewer disk seeks during Bhakti's Takeout import - helpful, not dramatic. Stop at 8G to leave room for the import, the ML backlog and a margin, given the bad-RAM history.
@@ -2436,3 +2436,4 @@ qty | item | est | note
 #### Log
 - 2026-10-18: noted. Options reviewed; ARC cap increase recommended, the rest skipped or deferred.
 - 2026-10-18: `tools/zfs/arc_max.sh` written (`stats`, and `sudo ... set <GiB>` for the live value, `/etc/modprobe.d/zfs.conf` and the initramfs). **Baseline at the 1 GiB cap**, 23h uptime: ARC 1.00 GiB full, hit rate 96.91%, metadata hit rate 98.30%, ghost hits 32,323. Compare after a few days at 8 GiB (counters reset on reboot, so compare like uptimes).
+- 2026-10-18 14:33: user ran `sudo tools/zfs/arc_max.sh set 8`. Checked: live `zfs_arc_max` 8589934592, conf updated, initramfs rebuilt; ARC already 1.13 GiB, MemAvailable ~25GB.
