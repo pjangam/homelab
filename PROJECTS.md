@@ -2416,7 +2416,7 @@ qty | item | est | note
 
 **Why:** with the 32GB stick in, xero sits under about 25% memory use (2026-10-18: 7.6G used, 23G available, swap untouched), so the question is whether the idle RAM can buy anything. It mostly cannot: xero is CPU-bound (load 20 on 4 cores, 0% idle while Immich's jobs ran), not memory-bound.
 **State:** options reviewed 2026-10-18; nothing changed yet. Waiting on the user, since the change needs sudo in a real terminal.
-**Next step:** raise the ZFS ARC cap from 1 GiB to 8 GiB (commands below), then compare the hit rate and ghost hits after a few days of normal Immich use. Record the new cap in `docs/hardware.md`.
+**Next step:** raise the ZFS ARC cap from 1 GiB to 8 GiB (`sudo tools/zfs/arc_max.sh set 8`), then compare the hit rate and ghost hits after a few days of normal Immich use. Record the new cap in `docs/hardware.md`.
 
 #### Options
 - **Raise the ZFS ARC cap to 8 GiB - worth doing.** `/etc/modprobe.d/zfs.conf` still has `zfs_arc_max=1073741824`, a leftover from the 8GB stick. The ARC is the only read cache in front of `datapool` (the Immich library, its DB, albums, phone uploads); the Linux page cache does not cover ZFS. On 2026-10-18 after 22h of uptime: ~96% hit rate, but 137k metadata misses and ~23k MRU/MFU ghost hits (reads a bigger ARC would have served). Expect quicker timeline scrolling and thumbnail loads, and fewer disk seeks during Bhakti's Takeout import - helpful, not dramatic. Stop at 8G to leave room for the import, the ML backlog and a margin, given the bad-RAM history.
@@ -2435,3 +2435,4 @@ qty | item | est | note
 
 #### Log
 - 2026-10-18: noted. Options reviewed; ARC cap increase recommended, the rest skipped or deferred.
+- 2026-10-18: `tools/zfs/arc_max.sh` written (`stats`, and `sudo ... set <GiB>` for the live value, `/etc/modprobe.d/zfs.conf` and the initramfs). **Baseline at the 1 GiB cap**, 23h uptime: ARC 1.00 GiB full, hit rate 96.91%, metadata hit rate 98.30%, ghost hits 32,323. Compare after a few days at 8 GiB (counters reset on reboot, so compare like uptimes).
