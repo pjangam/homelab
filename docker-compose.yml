@@ -128,6 +128,26 @@ services:
     healthcheck:
       disable: false
 
+  # Own tailnet name, https://immich.<tailnet>/, for the phone app and browsers
+  # off the home Wi-Fi. Tailnet only - no Funnel: the public album stays on
+  # copyparty (services/albums/). Proxies to immich-server over the compose
+  # network; the service name differs from this sidecar's hostname, so no
+  # alias is needed (unlike ntfy).
+  immich-tailscale:
+    <<: *tailscale-sidecar
+    container_name: immich-tailscale
+    hostname: immich
+    environment:
+      <<: *tailscale-sidecar-env
+      TS_AUTHKEY: ${TS_AUTHKEY_IMMICH}
+      TS_HOSTNAME: immich
+    volumes:
+      - immich-tailscale-state:/var/lib/tailscale
+      # Rendered by tools/network/render_ts_serve_config.sh.
+      - ./services/tailscale/immich:/config
+    depends_on:
+      - immich-server
+
   immich-machine-learning:
     container_name: immich_machine_learning
     image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION}
@@ -596,6 +616,7 @@ volumes:
   caddy_data:
   caddy_config:
   ha-tailscale-state:
+  immich-tailscale-state:
   stp-models:
   stp-train:
   piper-data:

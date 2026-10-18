@@ -194,7 +194,7 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   url = "http://192.168.1.123:2283"
   desc = "Photos (Immich v3.3.1, back since 2026-10-09 on the 32GB stick). Web UI and the mobile app's server URL."
   who = "You, in a browser or the Immich phone app, on the home Wi-Fi."
-  note = "LAN only for now - no Caddy route or tailnet name. services/immich/load_guard.sh stops it if xero overheats; re-arm with load_guard.sh --reset."
+  note = "Off the home Wi-Fi, use https://immich.{tailnet}/ (needs Tailscale). services/immich/load_guard.sh stops it if xero overheats; re-arm with load_guard.sh --reset."
 
 [[group]]
 name = "MQTT"
@@ -461,6 +461,16 @@ blurb = "Three names, three different ways of getting a certificate. Worth knowi
   desc = "The ntfy-tailscale sidecar, proxying to the ntfy container over the compose network."
   who = "ntfy, and the phone's instant delivery."
   note = "Same self-renewing cert as ha. The sidecar must reach ntfy by the alias ntfy-server, not ntfy - that name resolves to the sidecar itself."
+
+  [[group.endpoint]]
+  name = "immich.{tailnet}"
+  proto = "https"
+  host = "immich.{tailnet}"
+  port = 443
+  url = "https://immich.{tailnet}/"
+  desc = "The immich-tailscale sidecar, proxying to immich-server over the compose network. Tailnet only, no Funnel."
+  who = "The Immich phone app and browsers away from home."
+  note = "Same self-renewing cert as ha and ntfy. Needs TS_AUTHKEY_IMMICH in .env (an untagged key, not tag:funnel)."
 
   [[group.endpoint]]
   name = "albums.{tailnet}"
