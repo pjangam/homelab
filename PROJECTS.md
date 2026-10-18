@@ -447,14 +447,26 @@ qty | item | est | note
 **Priority:** P3
 
 **Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no offsite copy - only the ZFS pool itself (single disk, see above) and the original Google Takeout zips on a separate local disk. Wider than Immich: nothing on `datapool` has a copy off xero.
-**State:** reconsidered, not started. A naive rclone-to-Dropbox push (same pattern as Vaultwarden/HA) doesn't make sense here (see Approach).
-**Next step:** none for now - needs the compress + cold-storage approach worked out before this is worth starting, not just "run rclone".
+**State:** options re-reviewed 2026-10-18 (see "Options (2026-10-18)"); deferred by the user until hardware is bought. Scope is all of `datapool`, ~240G today, growing with Bhakti's Takeout.
+**Next step:** none until the hardware is bought; then pick the shape from the options below.
 
 #### Approach
 A naive rclone-to-Dropbox push doesn't actually make sense here: the whole point of self-hosting Immich is avoiding paying for cloud photo storage, so continuously syncing the full photo set to cloud storage undermines that. If pursued, needs a different shape - compress/archive first, and use a cold-storage tier (e.g. S3 Glacier / Glacier Deep Archive) priced for rarely-accessed disaster-recovery data rather than active-sync storage, not a Dropbox-style always-on sync.
 
+#### Options (2026-10-18)
+Two separate failures, two separate fixes:
+- **A dead SSD:** the ZFS mirror entry (a second 1TB SSD, ~Rs 5-8k). Local, so it does not help with fire, theft or a pool lost to a crash.
+- **Fire, theft, a lost pool:** an encrypted copy off the premises:
+  - restic to Backblaze B2: ~$6/TB/month, so ~Rs 130/month for 250G. Encrypted on xero, incremental, nightly cron, easy partial restores. Recommended in conversation; the restic password could reuse `BACKUP_PASSPHRASE`.
+  - restic to a Hetzner Storage Box: flat ~EUR 4/month for 1TB, over SSH. Similar value once it outgrows 500G.
+  - S3 Glacier Deep Archive: ~Rs 25/month to keep, but ~Rs 2,000 and up to 12h to restore, 180-day minimum. Last-resort copy only; restic fits it poorly.
+  - A disk at a relative's house: Pi + USB disk on Tailscale, restic or `zfs send`. No monthly cost, but another device to own and keep online.
+
+The "Approach" note above says cloud undermines self-hosting; the counter-argument from 2026-10-18 is that a cold backup for a couple of hundred rupees a month is still far cheaper than Google One, and nothing day-to-day depends on it. The first upload is ~240G at Airtel's upstream: half a day to a few days.
+
 #### Log
 - 2026-10-08/09: scope is wider than Immich - nothing on `datapool` has a copy off xero - `albums`, `phone-uploads` and `recovered-media` too, not just Immich's two datasets. All five have `copies=2`, which repairs bit rot (the 2026-10-08 scrub: 0B repaired, 0 errors) but not a dead disk, a fire, or a pool lost to an uncontrolled crash - and power cuts have become frequent while xero's UPS is away for warranty. If these photos exist nowhere else, this matters more than anything else on xero. Dropbox is no home for it: the free tier is 2.75GiB, and briefly overflowed on 2026-10-09 from 2.8GB of HA backups alone.
+- 2026-10-18: options re-reviewed (above); user deferred it until hardware is acquired.
 
 ### Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement
 **Status:** Parked
