@@ -69,3 +69,20 @@ videos then do not play on iPhones. Fixed 2026-10-12 for 953 videos by
 clearing `metadataExtractedAt` for videos with no `asset_video` row, then
 Extract Metadata -> Missing, Generate Thumbnails -> Missing, Transcode
 Videos -> Missing.
+
+## Importing a Google Takeout export
+
+`takeout_download.sh` downloads the zips straight to xero instead of through a
+browser, because Google allows 5 download attempts per part and the 2026-06
+admin export lost part 019 to broken browser downloads
+(`docs/google_takeout_missing.md`). It asks Takeout for each part once, resumes
+against the signed storage URL it gets back, tests every zip with `unzip -tq`,
+skips parts already done, and logs each Takeout request to
+`takeout-asks.log`. Usage and inputs are in the script's header;
+`test_takeout_download.sh` runs it against a fake Takeout.
+
+When exporting, pick **.zip** and the **50GB** part size: fewer parts means
+fewer links to go wrong, and resume makes a big part safe. Download into
+`/datapool/google-takeout/<user>/`, then import with immich-go
+(`~/bin/immich-go`) using an API key made by **that** user, so the photos land
+in their library and not admin's.
