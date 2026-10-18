@@ -2407,3 +2407,29 @@ qty | item | est | note
 - 2026-10-17: room is the Bedroom; a new dedicated ESP32 instead of the voice satellite; user owns a non-smart mister (brand TBD), to be switched by a bought or home-built smart switch.
 - 2026-10-17: AC has dry mode. Mister has a touch button and likely will not start on power-up - split into phase 1 (sensor + AC) and optional phase 2 (hack the touch button, swap mister, or skip).
 - 2026-10-17: host board back to the bedroom voice satellite (SDA GPIO21 / SCL GPIO19, sensor on a lead outside its box); no new ESP32.
+
+### Use xero's spare RAM
+**Status:** Backlog
+**Priority:** P3
+
+**Why:** with the 32GB stick in, xero sits under about 25% memory use (2026-10-18: 7.6G used, 23G available, swap untouched), so the question is whether the idle RAM can buy anything. It mostly cannot: xero is CPU-bound (load 20 on 4 cores, 0% idle while Immich's jobs ran), not memory-bound.
+**State:** options reviewed 2026-10-18; nothing changed yet. Waiting on the user, since the change needs sudo in a real terminal.
+**Next step:** raise the ZFS ARC cap from 1 GiB to 8 GiB (commands below), then compare the hit rate and ghost hits after a few days of normal Immich use. Record the new cap in `docs/hardware.md`.
+
+#### Options
+- **Raise the ZFS ARC cap to 8 GiB - worth doing.** `/etc/modprobe.d/zfs.conf` still has `zfs_arc_max=1073741824`, a leftover from the 8GB stick. The ARC is the only read cache in front of `datapool` (the Immich library, its DB, albums, phone uploads); the Linux page cache does not cover ZFS. On 2026-10-18 after 22h of uptime: ~96% hit rate, but 137k metadata misses and ~23k MRU/MFU ghost hits (reads a bigger ARC would have served). Expect quicker timeline scrolling and thumbnail loads, and fewer disk seeks during Bhakti's Takeout import - helpful, not dramatic. Stop at 8G to leave room for the import, the ML backlog and a margin, given the bad-RAM history.
+  ```
+  echo 8589934592 | sudo tee /sys/module/zfs/parameters/zfs_arc_max          # live
+  sudo sed -i 's/zfs_arc_max=1073741824/zfs_arc_max=8589934592/' /etc/modprobe.d/zfs.conf
+  sudo update-initramfs -u                                                    # survives reboot
+  ```
+  - ZFS 2.2 reports the ARC as "used", not cache, so memory graphs will climb to ~35-40% as it fills. That is cache, not pressure.
+  - The Immich load guard (`services/immich/load_guard.sh`) trips on MemAvailable < 1.5GB, and MemAvailable leaves the ARC out; an 8G cap still leaves ~15G available.
+  - Check it with `awk '/^(size|c_max|hits|misses|demand_metadata_misses|mru_ghost_hits|mfu_ghost_hits) /{print $1,$3}' /proc/spl/kstat/zfs/arcstats`.
+- **Postgres memory tuning - skip.** The Immich DB is ~500M and already fits in memory.
+- **A larger CLIP model for smart search - later.** It fits in RAM, but costs more CPU per asset, and ~12k assets have not yet been through ML. Reconsider once the backlog is done; switching models means re-running Smart Search on everything.
+- **Local LLM / other AI on xero - no.** Ruled out already (N5105, no GPU, see "Local Qwen (Ollama) delegation experiment"); more RAM does not change that.
+- **Longer Prometheus retention - not a RAM question.** It is bounded by disk (`retention.size=8GB`), not memory.
+
+#### Log
+- 2026-10-18: noted. Options reviewed; ARC cap increase recommended, the rest skipped or deferred.
