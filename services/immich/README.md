@@ -1,6 +1,8 @@
 # Immich
 
-Self-hosted photos at `http://192.168.1.123:2283` (LAN only). The compose
+Self-hosted photos at `http://192.168.1.123:2283` on the LAN, and
+`https://photos.<tailnet>/` over Tailscale (the `photos-tailscale` sidecar,
+since 2026-10-18; tailnet only, no Funnel). The compose
 block is the `### photos servers` section of the root `docker-compose.yml`;
 the version is pinned in `.env` as `IMMICH_VERSION`.
 
