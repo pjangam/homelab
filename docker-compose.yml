@@ -128,23 +128,24 @@ services:
     healthcheck:
       disable: false
 
-  # Own tailnet name, https://immich.<tailnet>/, for the phone app and browsers
+  # Own tailnet name, https://photos.<tailnet>/, for the phone app and browsers
   # off the home Wi-Fi. Tailnet only - no Funnel: the public album stays on
   # copyparty (services/albums/). Proxies to immich-server over the compose
   # network; the service name differs from this sidecar's hostname, so no
-  # alias is needed (unlike ntfy).
-  immich-tailscale:
+  # alias is needed (unlike ntfy). Named for what it is, not the app, so the
+  # URL survives a move off Immich.
+  photos-tailscale:
     <<: *tailscale-sidecar
-    container_name: immich-tailscale
-    hostname: immich
+    container_name: photos-tailscale
+    hostname: photos
     environment:
       <<: *tailscale-sidecar-env
-      TS_AUTHKEY: ${TS_AUTHKEY_IMMICH}
-      TS_HOSTNAME: immich
+      TS_AUTHKEY: ${TS_AUTHKEY_PHOTOS}
+      TS_HOSTNAME: photos
     volumes:
-      - immich-tailscale-state:/var/lib/tailscale
+      - photos-tailscale-state:/var/lib/tailscale
       # Rendered by tools/network/render_ts_serve_config.sh.
-      - ./services/tailscale/immich:/config
+      - ./services/tailscale/photos:/config
     depends_on:
       - immich-server
 
@@ -616,7 +617,7 @@ volumes:
   caddy_data:
   caddy_config:
   ha-tailscale-state:
-  immich-tailscale-state:
+  photos-tailscale-state:
   stp-models:
   stp-train:
   piper-data:
