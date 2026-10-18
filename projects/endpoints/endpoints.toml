@@ -312,6 +312,15 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "Loopback only; HA (host network) is its only client. projects/voice-assistant/README.md"
 
   [[group.endpoint]]
+  name = "openWakeWord (Wyoming wake word)"
+  proto = "tcp"
+  host = "127.0.0.1"
+  port = 10400
+  desc = "Wake-word detection for the ESP32 voice satellite, over the Wyoming protocol. The board is an original ESP32 with no on-device micro_wake_word, so it streams audio to HA continuously and this listens for the wake word."
+  who = "Home Assistant's Assist pipeline, for the voice satellite. The pipeline's WAKE_WORD_ID in setup_assist.py picks the live model."
+  note = "Loopback only; HA (host network) is its only client. Custom models go in projects/voice-assistant/wakewords/. projects/voice-assistant/README.md"
+
+  [[group.endpoint]]
   name = "NTP (chrony)"
   proto = "udp"
   host = "192.168.1.123"
