@@ -55,6 +55,9 @@ Snapshot first, with Immich stopped:
 
     sudo zfs snapshot datapool/immich-db@<name> datapool/immich-upload@<name>
 
+`upgrade.sh vX.Y.Z` does the stop, snapshot (`@pre-vX.Y.Z`), `.env` change
+and restart in one go; run it from a real terminal for the sudo prompt.
+
 2026-10-09: 2.7.5 -> 3.3.1 went through 2.7.5 on the
 `ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0` image first,
 because 3.0 dropped pgvecto.rs; the 2.7.5 server migrated the indexes to
