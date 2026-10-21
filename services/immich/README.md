@@ -63,6 +63,10 @@ and restart in one go; run it from a real terminal for the sudo prompt.
 because 3.0 dropped pgvecto.rs; the 2.7.5 server migrated the indexes to
 VectorChord on its first start. Snapshots `@pre-v3` were taken before it.
 
+2026-10-21: 3.3.1 -> 3.3.4 with `upgrade.sh` (snapshots `@pre-v3.3.4`). No
+compose or `example.env` changes; one migration, `AddAssetFaceAssetState`
+(denormalised owner/visibility columns on `asset_face`), ran in about a second.
+
 **v3 needs video metadata re-extracted.** 3.x stores video stream details in
 a new `asset_video` table, filled by metadata extraction. Videos extracted
 under 2.x have `asset_job_status."metadataExtractedAt"` set but no
