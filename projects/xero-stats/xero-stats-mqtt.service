@@ -1,5 +1,5 @@
 [Unit]
-Description=xero CPU, temperature, memory and CPU pressure over MQTT (p95 and max per minute)
+Description=xero CPU, temperature, memory, CPU pressure and SSD temperature over MQTT (p95 and max per minute), plus ZFS error counts
 
 [Service]
 EnvironmentFile=/home/pramod/code/homelab/.env.mqtt

@@ -2196,6 +2196,7 @@ The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satel
 
 #### Log
 - 2026-10-09: the user asked for percentiles; done the same day.
+- 2026-10-21: datapool's Kingston A400 stalled for 44s at 08:35 (ATA timeouts, link reset, 5 read / 2 write errors in `zpool status`; SMART, short self-test and CRC counters all clean, so a controller stall, not flash or cable). Added the SSD's temperature (p95/max, read every 10s in its own thread so a stalled drive cannot block the CPU samples; `projects/xero-stats/enable_drivetemp.sh` loads the module) and datapool's ZFS error counts, so a repeat shows when it happened and how hot the drive was. `healthcheck.sh` already alerts on an unhealthy pool via `zpool status -x`.
 
 ### wol Pi health monitoring
 **Status:** Done

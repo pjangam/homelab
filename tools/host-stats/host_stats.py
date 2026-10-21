@@ -14,10 +14,19 @@ Metrics, each over the samples since the previous report():
   memory        used % = 1 - MemAvailable/MemTotal (page cache is not "used")
   pressure      % of each second some task waited for CPU, from
                 /proc/pressure/cpu "total" (only where the kernel has PSI)
+  drive_temperature
+                °C of a SATA disk from the drivetemp hwmon (only when given
+                one), read every DRIVE_PERIOD seconds rather than every
+                second: each read is a SMART command to the drive, which
+                drains its NCQ queue, and a disk's temperature moves slowly
 """
+import glob
 import math
+import os
 import threading
 import time
+
+DRIVE_PERIOD = 10
 
 
 def percentile(values, pct):
@@ -30,7 +39,6 @@ def percentile(values, pct):
 
 def thermal_zone(zone_type=None):
     """Path of the temp file for a thermal zone of this type, else zone0."""
-    import glob
     for zone in sorted(glob.glob("/sys/class/thermal/thermal_zone*")):
         try:
             with open(f"{zone}/type") as f:
@@ -39,6 +47,21 @@ def thermal_zone(zone_type=None):
         except OSError:
             continue
     return "/sys/class/thermal/thermal_zone0/temp"
+
+
+def drive_temp_file(device):
+    """drivetemp's temp file for the disk holding a block device (/dev/sda1 or
+    sda), else None: the drivetemp module not loaded, or not a SATA disk."""
+    block = os.path.realpath(f"/sys/class/block/{os.path.basename(device)}")
+    if os.path.exists(f"{block}/partition"):
+        block = os.path.dirname(block)
+    found = glob.glob(f"{block}/device/hwmon/hwmon*/temp1_input")
+    return found[0] if found else None
+
+
+def _read_temp(path):
+    with open(path) as f:
+        return int(f.read()) / 1000
 
 
 def _cpu_counters():
@@ -68,13 +91,20 @@ def _memory_used_percent():
 
 
 class Sampler:
-    def __init__(self, temp_file, period=1.0):
+    def __init__(self, temp_file, period=1.0, drive_temp_file=None):
         self.temp_file = temp_file
+        self.drive_temp_file = drive_temp_file
         self.period = period
         self.has_pressure = _pressure_total() is not None
         self._lock = threading.Lock()
         self._samples = {"cpu": [], "temperature": [], "memory": [], "pressure": []}
+        if drive_temp_file:
+            self._samples["drive_temperature"] = []
         threading.Thread(target=self._run, daemon=True).start()
+        if drive_temp_file:
+            # Its own thread: a read waits on the drive, and a stalled drive
+            # (the 44s one of 2026-10-21) must not stop the CPU samples.
+            threading.Thread(target=self._run_drive, daemon=True).start()
 
     def _run(self):
         prev_idle, prev_total = _cpu_counters()
@@ -84,9 +114,7 @@ class Sampler:
             try:
                 idle, total = _cpu_counters()
                 psi, now = _pressure_total(), time.monotonic()
-                with open(self.temp_file) as f:
-                    temp = int(f.read()) / 1000
-                sample = {"temperature": temp, "memory": _memory_used_percent()}
+                sample = {"temperature": _read_temp(self.temp_file), "memory": _memory_used_percent()}
                 if total > prev_total:
                     sample["cpu"] = 100 * (1 - (idle - prev_idle) / (total - prev_total))
                 if psi is not None and prev_psi is not None and now > prev_t:
@@ -97,6 +125,16 @@ class Sampler:
                         self._samples[key].append(value)
             except Exception as e:  # one bad read must not kill sampling
                 print(f"sample failed: {e!r}", flush=True)
+
+    def _run_drive(self):
+        while True:
+            time.sleep(DRIVE_PERIOD)
+            try:
+                temp = _read_temp(self.drive_temp_file)
+                with self._lock:
+                    self._samples["drive_temperature"].append(temp)
+            except Exception as e:
+                print(f"drive sample failed: {e!r}", flush=True)
 
     def report(self):
         """{metric_p95, metric_max} over the samples since the last call; None when empty."""

@@ -236,7 +236,7 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
 
     [[group.endpoint.topic]]
     name = "homelab/xero/stats, /stats_available"
-    desc = "Retained. xero's CPU busy, CPU temperature, memory used and CPU pressure as p95 and max of per-second samples, every 60s, from xero-stats-mqtt.service (systemd --user on xero); /stats_available is its last-will. HA shows it as the xero device; the Stats and Home dashboards use it instead of System Monitor's averages."
+    desc = "Retained. xero's CPU busy, CPU temperature, memory used and CPU pressure as p95 and max of per-second samples (SSD temperature every 10s, since 2026-10-21), plus datapool's ZFS read/write/checksum error counts, every 60s, from xero-stats-mqtt.service (systemd --user on xero); /stats_available is its last-will. HA shows it as the xero device; the Stats and Home dashboards use it instead of System Monitor's averages."
 
     [[group.endpoint.topic]]
     name = "homeassistant/#"
