@@ -6,6 +6,10 @@
 # sum of them gives how full the pool really is. `zfs list` on the pool root
 # does: used includes children and snapshots, avail is after ZFS's ~1/32 slop
 # reserve, so used / (used + avail) reaches 100% exactly when writes stop.
+#
+# Also each vdev's read/write/checksum error counts (what `zpool status`
+# shows; they hold until `zpool clear`), since 2026-10-21 when datapool's
+# SSD stalled for 44s and logged 5 read and 2 write errors.
 set -eu
 dir="$(dirname "$0")/textfile"
 mkdir -p "$dir"
@@ -18,6 +22,14 @@ tmp="$dir/zpool.prom.$$"
   zfs list -Hp -d 0 -o name,used,avail | while read -r name used avail; do
     echo "homelab_zpool_used_bytes{zpool=\"$name\"} $used"
     echo "homelab_zpool_avail_bytes{zpool=\"$name\"} $avail"
+  done
+  echo "# HELP homelab_zpool_vdev_errors I/O errors on a vdev since the last zpool clear (zpool status counts)."
+  echo "# TYPE homelab_zpool_vdev_errors gauge"
+  for pool in $(zpool list -H -o name); do
+    zpool get -Hp read_errors,write_errors,checksum_errors "$pool" all-vdevs |
+      while read -r vdev prop value _source; do
+        echo "homelab_zpool_vdev_errors{zpool=\"$pool\",vdev=\"$vdev\",type=\"${prop%_errors}\"} $value"
+      done
   done
 } > "$tmp"
 mv "$tmp" "$dir/zpool.prom"

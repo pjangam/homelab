@@ -14,9 +14,9 @@ Metrics, each over the samples since the previous report():
   memory        used % = 1 - MemAvailable/MemTotal (page cache is not "used")
   pressure      % of each second some task waited for CPU, from
                 /proc/pressure/cpu "total" (only where the kernel has PSI)
-  drive_temperature
-                °C of a SATA disk from the drivetemp hwmon (only when given
-                one), read every DRIVE_PERIOD seconds rather than every
+  <name>_temperature
+                °C of each SATA disk given as {name: drive_temp_file()},
+                from the drivetemp hwmon, read every DRIVE_PERIOD seconds rather than every
                 second: each read is a SMART command to the drive, which
                 drains its NCQ queue, and a disk's temperature moves slowly
 """
@@ -91,20 +91,22 @@ def _memory_used_percent():
 
 
 class Sampler:
-    def __init__(self, temp_file, period=1.0, drive_temp_file=None):
+    def __init__(self, temp_file, period=1.0, drive_temp_files=None):
         self.temp_file = temp_file
-        self.drive_temp_file = drive_temp_file
         self.period = period
         self.has_pressure = _pressure_total() is not None
         self._lock = threading.Lock()
         self._samples = {"cpu": [], "temperature": [], "memory": [], "pressure": []}
-        if drive_temp_file:
-            self._samples["drive_temperature"] = []
+        drives = drive_temp_files or {}
+        for name in drives:
+            self._samples[f"{name}_temperature"] = []
         threading.Thread(target=self._run, daemon=True).start()
-        if drive_temp_file:
-            # Its own thread: a read waits on the drive, and a stalled drive
-            # (the 44s one of 2026-10-21) must not stop the CPU samples.
-            threading.Thread(target=self._run_drive, daemon=True).start()
+        for name, path in drives.items():
+            # A thread each: a read waits on the drive, and a stalled drive
+            # (the 44s one of 2026-10-21) must not stop the CPU samples or
+            # the other drive's.
+            threading.Thread(target=self._run_drive, args=(f"{name}_temperature", path),
+                             daemon=True).start()
 
     def _run(self):
         prev_idle, prev_total = _cpu_counters()
@@ -126,13 +128,13 @@ class Sampler:
             except Exception as e:  # one bad read must not kill sampling
                 print(f"sample failed: {e!r}", flush=True)
 
-    def _run_drive(self):
+    def _run_drive(self, key, path):
         while True:
             time.sleep(DRIVE_PERIOD)
             try:
-                temp = _read_temp(self.drive_temp_file)
+                temp = _read_temp(path)
                 with self._lock:
-                    self._samples["drive_temperature"].append(temp)
+                    self._samples[key].append(temp)
             except Exception as e:
                 print(f"drive sample failed: {e!r}", flush=True)
 

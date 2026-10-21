@@ -86,6 +86,8 @@ mem_used = '100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_byt
 psi = lambda kind, which: '100 * ' + counter_rate(f'node_pressure_{kind}_{which}_seconds_total')
 net_dev = 'device=~"enp.*|eth.*|wl.*|tailscale0"'
 disk_dev = 'device=~"sd[a-z]|nvme.*|mmcblk[0-9]"'
+# drivetemp's hwmon chips are named by SATA port: ata1 = sda, ata2 = sdb.
+ssd_temp = lambda port: f'node_hwmon_temp_celsius{{host="xero",chip="target{port}:0:0_{port}:0:0:0"}}'
 
 y = 0
 hosts = []
@@ -129,6 +131,21 @@ hosts.append(panel("SSD used", [
          "Its datasets are copies=2, so each GB of new data costs 2 GB here."))
 y += 8
 hosts.append(panel("ZFS ARC size (xero, max)", [(peak('node_zfs_arc_size')[0], "ARC")], "bytes", 0, y))
+hosts.append(panel("SSD temperature (xero)", [
+    *max_p95(ssd_temp(0), "Kingston (datapool)"),
+    *max_p95(ssd_temp(1), "BIWIN boot"),
+], "celsius", 12, y,
+    desc="drivetemp hwmon, loaded since 2026-10-21 (projects/xero-stats/enable_drivetemp.sh). "
+         "The Kingston A400 is rated to 70°C; SMART says it has reached 84°C. Chips are named by SATA "
+         "port, so moving a cable swaps the two."))
+y += 8
+hosts.append(panel("ZFS errors (xero, max)", [
+    (peak('sum by (zpool, type) (homelab_zpool_vdev_errors)')[0], "{{zpool}} {{type}}"),
+], "short", 0, y,
+    desc="Read / write / checksum errors summed over the pool's vdevs, as zpool status counts them "
+         "(services/node-exporter/zpool_textfile.sh, cron every minute). They hold until `zpool clear`, "
+         "so a step up marks when they happened. A level, so max only: a p95 would just repeat it. "
+         "Checksum errors with no read/write errors mean bad data, not a bad link."))
 
 # ---- Containers on xero (cAdvisor) -------------------------------------------
 c_cpu = '100 * sum by (name) (' + counter_rate('container_cpu_usage_seconds_total{name!=""}') + ')'

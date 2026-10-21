@@ -20,7 +20,9 @@ const { chromium } = require('playwright-core');
       console.log(`${uid}: Grafana did not boot`); bad = 1;
     }
     const nodata = (text.match(/No data/g) || []).length;
-    const errs = await page.locator('[data-testid*="error" i], [aria-label*="error" i]').count();
+    // Grafana's own marker for a failed query. Not any "error" in a test id
+    // or label: that matched the "ZFS errors" panel's title (2026-10-21).
+    const errs = await page.locator('[data-testid="data-testid Panel status error"]').count();
     console.log(`${uid}: "No data" x${nodata}, error markers x${errs}`);
     if (nodata || errs) bad = 1;
     await page.screenshot({ path: `/out/grafana-${uid}.png`, fullPage: true });

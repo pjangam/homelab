@@ -972,6 +972,187 @@
           "legendFormat": "ARC"
         }
       ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "SSD temperature (xero)",
+      "description": "drivetemp hwmon, loaded since 2026-10-21 (projects/xero-stats/enable_drivetemp.sh). The Kingston A400 is rated to 70\u00b0C; SMART says it has reached 84\u00b0C. Chips are named by SATA port, so moving a cable swaps the two.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "5s",
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*p95.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "max_over_time((node_hwmon_temp_celsius{host=\"xero\",chip=\"target0:0:0_0:0:0:0\"})[$__interval:5s])",
+          "legendFormat": "Kingston (datapool) max"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "B",
+          "expr": "quantile_over_time(0.95, (node_hwmon_temp_celsius{host=\"xero\",chip=\"target0:0:0_0:0:0:0\"})[$__interval:5s])",
+          "legendFormat": "Kingston (datapool) p95"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "C",
+          "expr": "max_over_time((node_hwmon_temp_celsius{host=\"xero\",chip=\"target1:0:0_1:0:0:0\"})[$__interval:5s])",
+          "legendFormat": "BIWIN boot max"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "D",
+          "expr": "quantile_over_time(0.95, (node_hwmon_temp_celsius{host=\"xero\",chip=\"target1:0:0_1:0:0:0\"})[$__interval:5s])",
+          "legendFormat": "BIWIN boot p95"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "ZFS errors (xero, max)",
+      "description": "Read / write / checksum errors summed over the pool's vdevs, as zpool status counts them (services/node-exporter/zpool_textfile.sh, cron every minute). They hold until `zpool clear`, so a step up marks when they happened. A level, so max only: a p95 would just repeat it. Checksum errors with no read/write errors mean bad data, not a bad link.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "5s",
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*p95.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "max_over_time((sum by (zpool, type) (homelab_zpool_vdev_errors))[$__interval:5s])",
+          "legendFormat": "{{zpool}} {{type}}"
+        }
+      ]
     }
   ],
   "editable": true

@@ -16,6 +16,7 @@ Idempotent: adding a tile that is already on the board changes nothing.
   projects/healthcheck/add_stats_dashboard_tile.py binary_sensor.foo --after binary_sensor.bar
   projects/healthcheck/add_stats_dashboard_tile.py sensor.foo --section-title "wol Pi"
   projects/healthcheck/add_stats_dashboard_tile.py sensor.new --replace sensor.old
+  projects/healthcheck/add_stats_dashboard_tile.py sensor.old --remove
 
 --section-title picks the section by its heading, creating it (as the last
 section) if there is none. A tile already in another section is moved
@@ -69,6 +70,7 @@ def main():
     ap.add_argument("--section-title", help="the section whose heading is this; created if missing")
     ap.add_argument("--after", help="place the new tile directly after this entity")
     ap.add_argument("--replace", help="put the tile where this entity's tile is, removing that one")
+    ap.add_argument("--remove", action="store_true", help="take the entity's tiles off the board instead")
     ap.add_argument("--url", default=os.environ.get("HA_URL", "http://localhost:8123"))
     args = ap.parse_args()
 
@@ -81,6 +83,19 @@ def main():
     (config,) = asyncio.run(ws_call(ws_url, token, [get]))
 
     sections = config["views"][0]["sections"]
+    if args.remove:
+        removed = 0
+        for sec in sections:
+            before = len(sec.get("cards", []))
+            sec["cards"] = [c for c in sec.get("cards", [])
+                            if not (c.get("type") == "tile" and c.get("entity") == args.entity)]
+            removed += before - len(sec["cards"])
+        if not removed:
+            print(f"{args.entity} is not on the board - nothing to do.")
+            return
+        save_config(args, ws_url, token, config)
+        print(f"removed: {args.entity}.")
+        return
     replaced = None
     if args.replace:
         for idx, sec in enumerate(sections):
@@ -135,6 +150,13 @@ def main():
     if not replaced:
         cards.insert(at, tile)
 
+    save_config(args, ws_url, token, config)
+    how = (f"replaced {args.replace}" if replaced else
+           f"moved from section {moved_from}" if moved_from is not None else "added")
+    print(f"{how}: {args.entity} at position {at} of section {args.section}.")
+
+
+def save_config(args, ws_url, token, config):
     # HA rewrites the storage file on save, so snapshot it first. Not into
     # .storage/ itself - that is root-owned by the HA container and not
     # writable here - but into the repo's gitignored backups/ dir.
@@ -143,14 +165,14 @@ def main():
         backup_dir = REPO / "backups" / "lovelace"
         backup_dir.mkdir(parents=True, exist_ok=True)
         backup = backup_dir / f"{live.name}.{datetime.now():%Y%m%d%H%M%S}"
-        shutil.copy2(live, backup)
-        print(f"snapshot: {backup.relative_to(REPO)}")
+        # Several edits in one second (a script of them) keep the first
+        # snapshot, the board as it was before any of them.
+        if not backup.exists():
+            shutil.copy2(live, backup)
+            print(f"snapshot: {backup.relative_to(REPO)}")
 
     save = {"type": "lovelace/config/save", "url_path": args.dashboard, "config": config}
     asyncio.run(ws_call(ws_url, token, [save]))
-    how = (f"replaced {args.replace}" if replaced else
-           f"moved from section {moved_from}" if moved_from is not None else "added")
-    print(f"{how}: {args.entity} at position {at} of section {args.section}.")
 
 
 if __name__ == "__main__":

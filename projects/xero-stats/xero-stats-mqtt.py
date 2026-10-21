@@ -13,11 +13,14 @@ object on STATE_TOPIC, with HA discovery. Same shape as
 projects/pi-health/pi-health-mqtt.py. Started 2026-10-09.
 
 Since 2026-10-21, after datapool's SSD stalled for 44s and logged 5 read and
-2 write errors: the temperature of the disk under ZFS_POOL (p95/max, needs
-the drivetemp module - enable_drivetemp.sh) and the pool's read, write and
-checksum error counts. The counts are levels read once a minute, like disk
+2 write errors: both SSDs' temperatures (needs the drivetemp module -
+enable_drivetemp.sh) and the pool's read, write and checksum error counts. The counts are levels read once a minute, like disk
 usage, not samples; they hold until `zpool clear`, so HA's history shows the
 minute they first went up.
+
+HA shows the high-level view and Grafana the detail (the user, 2026-10-21),
+so the SSDs get max-only entities; their p95 is still in the JSON, and in
+Grafana from node-exporter.
 """
 import datetime
 import json
@@ -37,6 +40,12 @@ PORT = 1883
 INTERVAL = 60
 ZFS_POOL = "datapool"
 ZPOOL = "/usr/sbin/zpool"
+# name in the state JSON -> how to find the disk; labels match Grafana's.
+DRIVES = {
+    "datapool_ssd": lambda: pool_device(ZFS_POOL),
+    "boot_ssd": lambda: subprocess.run(["findmnt", "-no", "SOURCE", "/"], capture_output=True,
+                                       text=True, check=True).stdout.strip(),
+}
 
 NODE = "homelab/xero"
 STATE_TOPIC = f"{NODE}/stats"
@@ -67,8 +76,9 @@ ENTITIES = [
     sensor("memory_max", "Memory used max (1 min)", "mdi:memory", **PCT),
     sensor("pressure_p95", "CPU pressure p95 (1 min)", "mdi:gauge", **PCT),
     sensor("pressure_max", "CPU pressure max (1 min)", "mdi:gauge-full", **PCT),
-    sensor("drive_temperature_p95", "SSD temperature p95 (1 min)", "mdi:harddisk", **DEG),
-    sensor("drive_temperature_max", "SSD temperature max (1 min)", "mdi:harddisk", **DEG),
+    sensor("datapool_ssd_temperature_max", "Kingston SSD (datapool) temperature max (1 min)",
+           "mdi:harddisk", **DEG),
+    sensor("boot_ssd_temperature_max", "BIWIN SSD (boot) temperature max (1 min)", "mdi:harddisk", **DEG),
     sensor("zfs_read_errors", "ZFS read errors", "mdi:alert-circle-outline"),
     sensor("zfs_write_errors", "ZFS write errors", "mdi:alert-circle-outline"),
     sensor("zfs_checksum_errors", "ZFS checksum errors", "mdi:alert-circle-outline"),
@@ -102,7 +112,13 @@ def zfs_errors(pool):
     return totals
 
 
+# Published earlier and replaced; an empty retained config makes HA delete them.
+RETIRED = ["drive_temperature_p95", "drive_temperature_max"]
+
+
 def publish_discovery(client):
+    for key in RETIRED:
+        client.publish(f"homeassistant/sensor/xero_{key}/config", "", retain=True)
     for key, cfg in ENTITIES:
         uid = f"xero_{key}"
         payload = {**cfg, "unique_id": uid, "object_id": uid, "state_topic": STATE_TOPIC,
@@ -119,10 +135,14 @@ def on_connect(client, userdata, flags, reason_code, properties):
 
 
 def main():
-    drive_temp = drive_temp_file(pool_device(ZFS_POOL))
-    if not drive_temp:
-        print(f"no drivetemp reading for {ZFS_POOL}'s disk; run enable_drivetemp.sh", flush=True)
-    sampler = Sampler(thermal_zone("x86_pkg_temp"), drive_temp_file=drive_temp)
+    drives = {}
+    for name, device in DRIVES.items():
+        path = drive_temp_file(device())
+        if path:
+            drives[name] = path
+        else:
+            print(f"no drivetemp reading for {name}; run enable_drivetemp.sh", flush=True)
+    sampler = Sampler(thermal_zone("x86_pkg_temp"), drive_temp_files=drives)
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="xero-stats")
     client.username_pw_set(os.environ["MQTT_USERNAME"], os.environ["MQTT_PASSWORD"])
     client.will_set(AVAILABILITY_TOPIC, "offline", retain=True)
@@ -135,7 +155,7 @@ def main():
         time.sleep(INTERVAL)
         try:
             state = {"ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                     "drive_temperature_p95": None, "drive_temperature_max": None,
+                     **{f"{name}_temperature_{stat}": None for name in DRIVES for stat in ("p95", "max")},
                      **sampler.report(), **zfs_errors(ZFS_POOL)}
             client.publish(STATE_TOPIC, json.dumps(state), retain=True)
         except Exception as e:  # one bad report must not kill the loop

@@ -29,6 +29,24 @@ node-exporter's textfile collector exports as `homelab_zpool_used_bytes` /
 (avail is after the ~1/32 slop reserve). The datasets are `copies=2`, so each
 GB of new data costs 2 GB of that.
 
+## SSD temperature and ZFS errors
+
+Added 2026-10-21 after datapool's Kingston stalled for 44s. **SSD
+temperature** is node-exporter's hwmon reading of the `drivetemp` module
+(loaded at boot by `/etc/modules-load.d/drivetemp.conf`,
+`projects/xero-stats/enable_drivetemp.sh`), max and p95 per drive. The chips
+are named by SATA port (`target0...` = ata1 = the Kingston, `target1...` =
+the BIWIN boot SSD), so moving a cable swaps the labels. **ZFS errors** are
+each vdev's read/write/checksum counts from `zpool get ... all-vdevs`, written
+by `zpool_textfile.sh` as `homelab_zpool_vdev_errors`; they hold until
+`zpool clear`, so a step up marks when errors happened.
+
+## HA vs Grafana
+
+Since 2026-10-21 HA's Stats dashboard is the high-level view (max tiles only,
+no p95) and Grafana holds the detail (max and p95 overlaid, per core, per
+device). New detail goes here; HA gets a tile only for what is worth a glance.
+
 ## No averages
 
 Every panel plots the **max** and **p95** of each graph interval, never an
