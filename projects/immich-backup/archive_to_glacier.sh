@@ -11,7 +11,9 @@
 # dozen objects, which is what Deep Archive bills per (requests and ~40KB of
 # overhead each); compressing would gain nothing on JPEG/HEIC/H.264.
 # "Already archived" is by Immich's SHA-1, not by path, because Immich moves
-# a file from upload/ to library/ after it lands. The newest of Immich's
+# a file from upload/ to library/ after it lands. (For external-library
+# assets - the birthday album - Immich's checksum hashes the path, not the
+# bytes: they are archived once per path, which is all a read-only album needs.) The newest of Immich's
 # nightly DB dumps (albums, faces, people) and the manifest go up with every
 # run. Objects are only ever added: Immich never rewrites an original, which
 # suits Deep Archive's 180-day minimum, and the key on xero cannot delete.
@@ -19,8 +21,11 @@
 #
 # State: backups/immich-archive/manifest.tsv (sha1, size, object, host path),
 # appended after each bundle's upload is verified, so a run that dies
-# resumes where it stopped. Bundles are written to backups/ on the boot SSD
-# first, since rclone needs a sized file to verify against.
+# resumes where it stopped. Bundles are streamed (tar | gpg | rclone rcat),
+# so the SSD is read only as fast as the upload goes (~3MB/s): written to a
+# file first, each 4G bundle was read in ~20s, a burst that took the
+# Kingston to 66C (it is rated to 70C; long bulk reads on 2026-10-22 had it
+# at 84-87C). tee counts the bytes for the size check.
 #
 # Restore (not with xero's key - it cannot restore or read; use an admin one):
 #   rclone backend restore "$REMOTE" -o priority=Bulk -o lifetime=14
@@ -92,12 +97,15 @@ bytes=$(awk -F'\t' '{s+=$2} END {print s+0}' "$work/new")
 log "$n originals to archive ($((bytes / 1000000)) MB)"
 [[ $dry == --dry-run ]] && { log "dry run, nothing uploaded"; exit 0; }
 
+check_size() {  # object name, expected bytes
+  local remote; remote=$("${RCLONE[@]}" lsf --format s "$REMOTE/$1")
+  [[ $remote == "$2" ]] || { log "ERROR: $1 is $remote bytes remote, $2 sent"; exit 1; }
+}
 upload() {   # local file, object name under $REMOTE
   "${RCLONE[@]}" copyto "$1" "$REMOTE/$2"
-  local remote; remote=$("${RCLONE[@]}" lsf --format s "$REMOTE/$2")
-  [[ $remote == "$(stat -c %s "$1")" ]] || { log "ERROR: $2 is $remote bytes remote, $(stat -c %s "$1") local"; exit 1; }
+  check_size "$2" "$(stat -c %s "$1")"
 }
-encrypt() {  # gpg stdin -> $1
+encrypt() {  # gpg stdin -> $1 (- for stdout)
   gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 \
       --symmetric --cipher-algo AES256 --compress-algo none --output "$1" 3<<<"$BACKUP_PASSPHRASE"
 }
@@ -115,13 +123,15 @@ for list in "$work"/bundle.*; do
   [[ -e $list ]] || break
   if [[ $MAX_BUNDLES -gt 0 && $uploaded -ge $MAX_BUNDLES ]]; then log "MAX_BUNDLES=$MAX_BUNDLES reached, the rest next run"; break; fi
   name=$(printf "bundles/%s-%05d.tar.gpg" "$stamp" "$seq"); seq=$((seq + 1))
-  tmp="$work/bundle.tar.gpg"
+  log "uploading $name ($(awk -F'\t' '{s+=$2} END {printf "%d", s/1e6}' "$list") MB, $(wc -l < "$list") files)"
+  rm -f "$work/count"
   cut -f3 "$list" | sed 's#^/##' | tr '\n' '\0' |
-    nice -n 10 ionice -c3 tar -C / --null -T - -cf - | encrypt "$tmp"
-  log "uploading $name ($(du -h "$tmp" | cut -f1), $(wc -l < "$list") files)"
-  upload "$tmp" "$name"
+    nice -n 10 ionice -c3 tar -C / --null -T - -cf - | encrypt - |
+    tee >(wc -c > "$work/count") | "${RCLONE[@]}" rcat "$REMOTE/$name"
+  for _ in {1..30}; do [[ -s $work/count ]] && break; sleep 1; done   # wc runs behind tee
+  check_size "$name" "$(cat "$work/count")"
   awk -F'\t' -v obj="$name" 'BEGIN {OFS="\t"} {print $1, $2, obj, $3}' "$list" >> "$MANIFEST"
-  rm -f "$tmp"; uploaded=$((uploaded + 1))
+  uploaded=$((uploaded + 1))
 done
 
 dump=$(ls -1 /datapool/immich-upload/backups/immich-db-backup-*.sql.gz 2>/dev/null | tail -1)
