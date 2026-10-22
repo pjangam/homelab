@@ -444,12 +444,12 @@ qty | item | est | note
 1 | USB 3 SATA enclosure (UASP) | 500-900 | only if xero has no free internal bay - both its SATA slots look taken (SA400 + Biwin boot); check when the case is open
 ```
 ### Offsite backup for Immich photo data
-**Status:** Parked
-**Priority:** P3
+**Status:** Active
+**Priority:** P2
 
-**Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no offsite copy - only the ZFS pool itself (single disk, see above) and the original Google Takeout zips on a separate local disk. Wider than Immich: nothing on `datapool` has a copy off xero.
-**State:** options re-reviewed 2026-10-18 (see "Options (2026-10-18)"); deferred by the user until hardware is bought. Scope is all of `datapool`, ~240G today, growing with Bhakti's Takeout.
-**Next step:** none until the hardware is bought; then pick the shape from the options below.
+**Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no copy off the Kingston SSD - the ZFS pool itself is a single disk (see above). Since 2026-10-22 it is the only copy of much of it: the Takeout zips and the phone-uploads copies were deleted once Immich had them, and the phone no longer has the May 2024 trip videos. Wider than Immich: nothing on `datapool` has a copy off xero.
+**State:** shape decided 2026-10-22 (see "Design (2026-10-22)"): a local copy on a 1TB Samsung SD card the user thinks they have, plus monthly encrypted tar bundles to S3 Glacier Deep Archive, read only if both the Kingston and the card fail. ~73G to protect today (originals + DB dumps). The old AWS account was suspended for inactivity; a new one is needed.
+**Next step:** user: find the SD card, buy a USB 3 card reader, plug it into xero; create a new AWS account (root MFA, $1 budget alert). Then: `f3probe` the card, ZFS pool on it with nightly `zfs send`; S3 bucket + upload-only key; bundle script + cron.
 
 #### Approach
 A naive rclone-to-Dropbox push doesn't actually make sense here: the whole point of self-hosting Immich is avoiding paying for cloud photo storage, so continuously syncing the full photo set to cloud storage undermines that. If pursued, needs a different shape - compress/archive first, and use a cold-storage tier (e.g. S3 Glacier / Glacier Deep Archive) priced for rarely-accessed disaster-recovery data rather than active-sync storage, not a Dropbox-style always-on sync.
@@ -465,9 +465,16 @@ Two separate failures, two separate fixes:
 
 The "Approach" note above says cloud undermines self-hosting; the counter-argument from 2026-10-18 is that a cold backup for a couple of hundred rupees a month is still far cheaper than Google One, and nothing day-to-day depends on it. The first upload is ~240G at Airtel's upstream: half a day to a few days.
 
+#### Design (2026-10-22)
+- **What:** Immich's `library/` (72G of originals) and the nightly DB dumps in `backups/` (~0.5G). Not `encoded-video/` (55G) or `thumbs/` (5.7G): Immich regenerates both from the originals. `albums` (6G) and `recovered-media` (0.9G) are small enough to ride along. `documents` already goes to Dropbox.
+- **Local - SD card (1TB Samsung, interim):** in a USB 3 reader on xero (no built-in slot). `f3probe` it first (fake-capacity cards are common). Own single-disk ZFS pool, nightly incremental `zfs send` of `immich-upload` and `immich-db` snapshots, monthly scrub (cards fail without SMART warning). Replace later with a 2TB USB HDD (~Rs 6-7k) or the mirror SSD above; same scripts. Covers a dead Kingston, not fire/theft.
+- **Off-site - S3 Glacier Deep Archive:** compression gains nothing (`compressratio` 1.01x: JPEG/HEIC/H.264 are already compressed), but bundling cuts ~18k files to a few dozen objects, which removes the per-object cost (~40KB billing overhead each, PUTs ~$0.05/1000). Monthly: the originals added since the last bundle -> one tar -> gpg (`BACKUP_PASSPHRASE`) -> one DEEP_ARCHIVE object; first run ~72G as ~5G bundles. Append-only (Immich never rewrites originals), which fits the 180-day minimum; deleted photos stay in the archive. Each upload carries the latest DB dump and the file -> bundle manifest. Key on xero is upload-only (no delete/overwrite). AISPL account (Indian address): INR billing, `ap-south-1`.
+- **Cost:** ~$1/TB/month: ~Rs 7/month at 75G, ~Rs 40 at 500G. Full restore of 75G: ~48h (bulk), ~$0.20 retrieval, egress inside the 100GB/month free tier. (The ~Rs 2,000 restore estimate above was for all 240G of `datapool`, mostly egress.) Compared 2026-10-22: B2 ~Rs 35/month, Google One 100GB ~Rs 130.
+
 #### Log
 - 2026-10-08/09: scope is wider than Immich - nothing on `datapool` has a copy off xero - `albums`, `phone-uploads` and `recovered-media` too, not just Immich's two datasets. All five have `copies=2`, which repairs bit rot (the 2026-10-08 scrub: 0B repaired, 0 errors) but not a dead disk, a fire, or a pool lost to an uncontrolled crash - and power cuts have become frequent while xero's UPS is away for warranty. If these photos exist nowhere else, this matters more than anything else on xero. Dropbox is no home for it: the free tier is 2.75GiB, and briefly overflowed on 2026-10-09 from 2.8GB of HA backups alone.
 - 2026-10-18: options re-reviewed (above); user deferred it until hardware is acquired.
+- 2026-10-22: shape decided with the user: SD card locally (interim for a USB HDD), monthly encrypted tar bundles to S3 Deep Archive off-site; re-activated as Active/P2 because Immich now holds the only copy of the May 2024 trip videos. Blocked on the card turning up and a new AWS account.
 
 ### Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement
 **Status:** Parked
