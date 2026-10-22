@@ -37,6 +37,8 @@ the FORWARD policy to DROP, and ufw is installed but **inactive** on xero, so
 a ufw rule does nothing (the first install's `ufw route allow` did exactly
 that, 2026-10-22: every forwarded packet hit Docker's DROP).
 
+`pin-phone-ips.md` is the checklist for fixing the phones' MACs and bedroom-WiFi IPs, so the dashboard names them.
+
 `diagnose.sh` shows where a device's packets stop (counters, FORWARD chain,
 a capture), when the gateway doesn't work.
 
