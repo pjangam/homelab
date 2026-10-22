@@ -11,7 +11,8 @@ itself, and checks Immich for it. Checked 2026-10-22: 15 not in Immich. The 11 p
 date and got the sidecar's `photoTakenTime` through the API. The 4 GoPro
 videos followed (each read through with ffmpeg first); they date
 themselves 2018-02-27 from their own metadata, as GOPR0274/0300 do, not the
-2018-03-02 Google shows. Only the two below remain. The
+2018-03-02 Google shows. The two below,
+found in Google Photos by name, went up last. **All 17 are in Immich.** The
 GoPro `.THM` thumbnails and the Anoushka Shankar concert video, listed here
 before, are not needed (THM) or already in Immich (the video).
 
@@ -34,7 +35,8 @@ before, are not needed (THM) or already in Immich (the video).
 | 2018-03-02 10:40 | `GOPR0297.MP4` | <https://photos.google.com/photo/AF1QipNIzsDCvWPHL_t4-ktljOuKmini1Un7JUwYg78I> |
 
 Two more were on the original list but have no sidecar in the remaining
-zips, so there is no link: search Google Photos for the file name.
+zips, so there was no link; they were found by searching Google Photos for
+the file name.
 
 | Taken (local) | File |
 |---|---|
