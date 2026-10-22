@@ -85,7 +85,11 @@ name_for() {  # $1 = ip
   echo "$counters" | awk 'NF == 3 { printf "homelab_lan_gateway_bytes_total{ip=\"%s\",direction=\"%s\"} %s\n", $1, $2, $3 }'
   echo "# HELP homelab_lan_device_info Display name of a LAN device IP (device-names, Tailscale, the router's hostname, else the IP)."
   echo "# TYPE homelab_lan_device_info gauge"
-  for ip in $(echo "$counters" | awk 'NF == 3 { print $1 }' | sort -u); do
+  # Name every IP with a counter now, plus every IP device-names or Tailscale
+  # knows: the dashboard joins names as of now, so a device that is quiet
+  # since the last reboot (counters gone) would otherwise show history by IP.
+  for ip in $( { echo "$counters" | awk 'NF == 3 { print $1 }'
+                 awk '$1 ~ /^192\.168\.1\.[0-9]+$/ { print $1 }' "$names" "$tsnames" 2>/dev/null; } | sort -u); do
     n=$(name_for "$ip" | sed 's/[\\"]//g')
     echo "homelab_lan_device_info{ip=\"$ip\",device=\"$n\"} 1"
   done
