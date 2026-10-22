@@ -1,7 +1,7 @@
 {
   "uid": "network-usage",
   "title": "Network usage (per device)",
-  "description": "Internet bytes per LAN device through xero as the gateway (projects/lan-gateway). Devices are shown by IP; only DHCP devices go through xero, fixed-IP ones (xero, the Pi, ESP32s) do not.",
+  "description": "Internet bytes per LAN device through xero as the gateway (projects/lan-gateway). Devices are named from projects/lan-gateway/device-names, else the router's hostname, else their IP; only DHCP devices go through xero, fixed-IP ones (xero, the Pi, ESP32s) do not.",
   "tags": [
     "homelab"
   ],
@@ -41,8 +41,10 @@
         "displayMode": "basic",
         "showUnfilled": true,
         "valueMode": "text",
-        "namePlacement": "top",
-        "sizing": "auto",
+        "namePlacement": "left",
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 16,
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -72,8 +74,8 @@
           "refId": "A",
           "instant": true,
           "range": false,
-          "expr": "sort_desc(sum by (ip, direction) (increase(homelab_lan_gateway_bytes_total[$__range])))",
-          "legendFormat": "{{ip}} {{direction}}"
+          "expr": "sort_desc(sum by (device, direction) (((increase(homelab_lan_gateway_bytes_total[$__range])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[$__range]), \"device\", \"$1\", \"ip\", \"(.*)\"))))",
+          "legendFormat": "{{device}} {{direction}}"
         }
       ]
     },
@@ -105,8 +107,10 @@
         "displayMode": "basic",
         "showUnfilled": true,
         "valueMode": "text",
-        "namePlacement": "top",
-        "sizing": "auto",
+        "namePlacement": "left",
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 16,
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -136,8 +140,8 @@
           "refId": "A",
           "instant": true,
           "range": false,
-          "expr": "sort_desc(sum by (ip, direction) (increase(homelab_lan_gateway_bytes_total[$__range])))",
-          "legendFormat": "{{ip}} {{direction}}"
+          "expr": "sort_desc(sum by (device, direction) (((increase(homelab_lan_gateway_bytes_total[$__range])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[$__range]), \"device\", \"$1\", \"ip\", \"(.*)\"))))",
+          "legendFormat": "{{device}} {{direction}}"
         }
       ]
     },
@@ -169,8 +173,10 @@
         "displayMode": "basic",
         "showUnfilled": true,
         "valueMode": "text",
-        "namePlacement": "top",
-        "sizing": "auto",
+        "namePlacement": "left",
+        "sizing": "manual",
+        "minVizHeight": 16,
+        "maxVizHeight": 16,
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -200,8 +206,8 @@
           "refId": "A",
           "instant": true,
           "range": false,
-          "expr": "sort_desc(sum by (ip, direction) (increase(homelab_lan_gateway_bytes_total[$__range])))",
-          "legendFormat": "{{ip}} {{direction}}"
+          "expr": "sort_desc(sum by (device, direction) (((increase(homelab_lan_gateway_bytes_total[$__range])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[$__range]), \"device\", \"$1\", \"ip\", \"(.*)\"))))",
+          "legendFormat": "{{device}} {{direction}}"
         }
       ]
     },
@@ -278,8 +284,8 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "sum by (ip, direction) (increase(homelab_lan_gateway_bytes_total[1d]))",
-          "legendFormat": "{{ip}} {{direction}}"
+          "expr": "sum by (device, direction) (((increase(homelab_lan_gateway_bytes_total[1d])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[1d]), \"device\", \"$1\", \"ip\", \"(.*)\")))",
+          "legendFormat": "{{device}} {{direction}}"
         }
       ],
       "timeFrom": "30d"
@@ -357,8 +363,8 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "sum by (ip, direction) (increase(homelab_lan_gateway_bytes_total[1h]))",
-          "legendFormat": "{{ip}} {{direction}}"
+          "expr": "sum by (device, direction) (((increase(homelab_lan_gateway_bytes_total[1h])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[1h]), \"device\", \"$1\", \"ip\", \"(.*)\")))",
+          "legendFormat": "{{device}} {{direction}}"
         }
       ],
       "timeFrom": "2d"
@@ -435,8 +441,8 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "max_over_time((sum by (ip) (rate(homelab_lan_gateway_bytes_total{direction=\"down\"}[2m])))[$__interval:1m])",
-          "legendFormat": "{{ip}} down"
+          "expr": "max_over_time((sum by (device) (((rate(homelab_lan_gateway_bytes_total{direction=\"down\"}[2m])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(rate(homelab_lan_gateway_bytes_total{direction=\"down\"}[2m]), \"device\", \"$1\", \"ip\", \"(.*)\"))))[$__interval:1m])",
+          "legendFormat": "{{device}} down"
         },
         {
           "datasource": {
@@ -444,8 +450,8 @@
             "uid": "prometheus"
           },
           "refId": "B",
-          "expr": "max_over_time((sum by (ip) (rate(homelab_lan_gateway_bytes_total{direction=\"up\"}[2m])))[$__interval:1m])",
-          "legendFormat": "{{ip}} up"
+          "expr": "max_over_time((sum by (device) (((rate(homelab_lan_gateway_bytes_total{direction=\"up\"}[2m])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(rate(homelab_lan_gateway_bytes_total{direction=\"up\"}[2m]), \"device\", \"$1\", \"ip\", \"(.*)\"))))[$__interval:1m])",
+          "legendFormat": "{{device}} up"
         }
       ]
     }

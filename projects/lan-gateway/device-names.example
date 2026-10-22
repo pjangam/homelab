@@ -1,0 +1,13 @@
+# Names for the "Network usage (per device)" Grafana dashboard.
+# Copy to device-names (gitignored, like docs/hardware.md: it maps the LAN's
+# addresses to what they are) and edit; usage_textfile.sh rereads it every
+# minute, no restart needed.
+#
+#   <ip or mac>  <name, may contain spaces>
+#
+# By MAC suits a phone or laptop on the router's own WiFi, which keeps its
+# MAC when DHCP gives it a new IP. Devices behind the TP-Link extender all
+# share the extender's MAC, so name those by IP and pin the IP on the router.
+# Anything not listed falls back to its router hostname, then its IP.
+192.168.1.124  wol Pi
+aa:bb:cc:dd:ee:ff  Someone's phone

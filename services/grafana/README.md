@@ -83,8 +83,11 @@ that return no data.
 ## Network usage (per device)
 
 Added 2026-10-22 with `projects/lan-gateway/`: bytes each LAN device sends
-and receives through xero as its internet gateway, by IP (DHCP devices only;
-xero, the Pi and the ESP32s have fixed IPs on the router). Today / this month
+and receives through xero as its internet gateway (DHCP devices only; xero,
+the Pi and the ESP32s have fixed IPs on the router). Devices are named by
+`homelab_lan_device_info{ip,device}`, joined on the names as of the
+dashboard's end time, so naming a device relabels its whole history: see
+`projects/lan-gateway/README.md` for where the names come from. Today / this month
 / last 30 days, per day, per hour, and per-minute throughput. The counters
 are written once a minute (`homelab_lan_gateway_bytes_total`), so a minute is
 the finest grain - the one place the 5s rule cannot apply. `increase()`

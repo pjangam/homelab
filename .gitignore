@@ -19,6 +19,8 @@ services/mosquitto/log/
 services/mosquitto/passwd
 client_secret*.json
 hardware.md
+# projects/lan-gateway: LAN IP/MAC -> device name, same reason as hardware.md
+projects/lan-gateway/device-names
 # Every GPG blob, wherever it lands. hardware.md was ignored by exact name only,
 # so a stray encrypted copy of it in the repo root (hardware_20260930_123947.md.gpg,
 # found 2026-09-30) was untracked but NOT ignored - one `git add -A` from being

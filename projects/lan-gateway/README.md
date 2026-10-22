@@ -17,6 +17,14 @@ usage monitoring" tracks the rollout.
   counter per device IP. Reloading it resets the counters.
 - `usage_textfile.sh` - writes the counters to
   `services/node-exporter/textfile/lan_gateway.prom` (root, every minute).
+- `device-names` (gitignored, copy `device-names.example`) - names for the
+  dashboard, one `<ip or mac> <name>` per line, reread every minute.
+  `usage_textfile.sh` also writes `homelab_lan_device_info{ip,device}`,
+  naming each IP from this file (by IP, or by MAC from `ip neigh`), else the
+  router's DHCP hostname (reverse DNS at `192.168.1.1`, cached an hour in
+  `/run`), else the IP. Devices behind the TP-Link extender all carry its
+  MAC and get no router hostname, so name them by IP and pin that IP on the
+  router.
 - `setup_lan_gateway.sh` - installs it all; `--remove` undoes it. Run from a
   real terminal on xero (sudo).
 

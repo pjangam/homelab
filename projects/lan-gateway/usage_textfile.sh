@@ -6,16 +6,55 @@
 #
 # Counters live in the kernel and restart at 0 when the table is reloaded or
 # xero reboots; Prometheus' rate()/increase() handle that reset.
+#
+# Names go in a separate info metric, homelab_lan_device_info{ip,device}, which
+# the dashboard joins on ip: renaming a device then relabels its history
+# instead of starting a new counter series. A name comes from, in order:
+#   1. device-names (gitignored, see device-names.example), by IP or by MAC
+#   2. the router's DHCP hostname (reverse DNS at 192.168.1.1), cached an hour
+#   3. the IP itself
+# Devices behind the TP-Link extender all show the extender's MAC, so only
+# their IP (pinned on the router) can name them.
 set -eu
-dir="$(dirname "$0")/../../services/node-exporter/textfile"
+here="$(cd "$(dirname "$0")" && pwd)"
+dir="$here/../../services/node-exporter/textfile"
+names="$here/device-names"
+cache=/run/lan-gateway-ptr.cache
 tmp="$dir/lan_gateway.prom.$$"
+
+counters=$(for d in up down; do
+  nft -j list set ip lan_gateway "$d" |
+    jq -r --arg d "$d" '.nftables[] | select(.set) | .set.elem[]? | "\(.elem.val) \($d) \(.elem.counter.bytes)"'
+done)
+
+# Drop the router-hostname cache hourly, so new or changed hostnames show up.
+[ -n "$(find "$cache" -mmin -60 2>/dev/null)" ] || : > "$cache"
+
+name_for() {  # $1 = ip
+  mac=$(ip neigh show "$1" | awk '{for (i = 1; i < NF; i++) if ($i == "lladdr") print $(i + 1)}')
+  n=$( [ -f "$names" ] && awk -v ip="$1" -v mac="$mac" '
+    /^[[:space:]]*(#|$)/ { next }
+    $1 == ip || (mac != "" && tolower($1) == mac) { $1 = ""; sub(/^ +/, ""); print; exit }' "$names")
+  if [ -z "$n" ]; then
+    if grep -q "^$1 " "$cache"; then
+      n=$(grep "^$1 " "$cache" | cut -d' ' -f2-)
+    else
+      n=$(dig +short +time=1 +tries=1 -x "$1" @192.168.1.1 2>/dev/null | head -1 | sed 's/\.$//')
+      echo "$1 $n" >> "$cache"
+    fi
+  fi
+  echo "${n:-$1}"
+}
+
 {
   echo "# HELP homelab_lan_gateway_bytes_total Bytes a LAN device sent (up) or received (down) through xero as its gateway."
   echo "# TYPE homelab_lan_gateway_bytes_total counter"
-  for dir_name in up down; do
-    nft -j list set ip lan_gateway "$dir_name" |
-      jq -r --arg d "$dir_name" '.nftables[] | select(.set) | .set.elem[]?
-        | "homelab_lan_gateway_bytes_total{ip=\"\(.elem.val)\",direction=\"\($d)\"} \(.elem.counter.bytes)"'
+  echo "$counters" | awk 'NF == 3 { printf "homelab_lan_gateway_bytes_total{ip=\"%s\",direction=\"%s\"} %s\n", $1, $2, $3 }'
+  echo "# HELP homelab_lan_device_info Display name of a LAN device IP (device-names, else the router's hostname, else the IP)."
+  echo "# TYPE homelab_lan_device_info gauge"
+  for ip in $(echo "$counters" | awk 'NF == 3 { print $1 }' | sort -u); do
+    n=$(name_for "$ip" | sed 's/[\\"]//g')
+    echo "homelab_lan_device_info{ip=\"$ip\",device=\"$n\"} 1"
   done
 } > "$tmp"
 chmod 644 "$tmp"
