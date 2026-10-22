@@ -9,6 +9,8 @@
 # so every daily HA backup carried them (0.04 -> 2.8GB in three days) and
 # filled Dropbox. The 2026-10-06..09 set is archived at
 # ~/archive/assist_recordings-2026-10 on xero (RECORDINGS=... to replay it).
+# Its wake-word captures (00_wake-*.wav, 4.1GB) were deleted 2026-10-22;
+# the 92 spoken commands (01_stt-*.wav) this script replays are kept.
 # If recording goes back on, turn it off and move the folder out of
 # HOMEASSISTANT_CONFIG within a day or two.
 #   set -a; . ./.env.healthcheck; set +a
