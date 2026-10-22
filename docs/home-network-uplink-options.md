@@ -12,7 +12,7 @@ from the router to the desk". All prices are rough estimates for local shops.
   and the house's only internet gateway. It has its own UPS. It handles DHCP;
   Pi-hole only does DNS.
 - **xero's link:** since **2026-10-17** xero (`192.168.1.123`) is cabled
-  straight into the router (section 2, done), on the router's mini UPS. The
+  straight into the router (section 2, done), on the mini UPS that used to back the router (the router has none until xero's own UPS is back from warranty). The
   link still runs at 100Mb/s because the cable makes the NIC downshift from
   gigabit; a better cable fixes that. Before, it was wired to the **TP-Link
   Wi-Fi extender**, which reaches the router over **2.4GHz Wi-Fi**, so
@@ -39,8 +39,9 @@ together.
 
 ## 2. Moving xero next to the router (a cable straight into it)
 
-**Done 2026-10-17**, before the watchdog fix below, so the watchdog is blind
-until it lands. Sections 3 and 4 are no longer needed for xero's link.
+**Done 2026-10-17**, before the watchdog fix below. The watchdog still works
+while the router has no UPS (2026-10-22: its UPS backs xero); it goes blind
+when the router gets one back, so the fix must land first. Sections 3 and 4 are no longer needed for xero's link.
 
 This would work: a gigabit cable makes xero-as-gateway workable. It is **not**
 free, though:

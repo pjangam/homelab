@@ -136,8 +136,8 @@ The speaker is on the Pi's **3.5mm jack** (card 1 `Headphones`, control `PCM`) t
 **Priority:** P3
 
 **Why:** white noise and Spotify moved to the wol Pi on 2026-09-24 (see "Move white noise and spotifyd from xero to the wol Pi" in Done). The cutover is done, but nothing watches the Pi's audio, and xero still carries the disabled copies.
-**State:** xero moved to the router on 2026-10-17 (step 3), ahead of the watchdog change it was waiting on, so **the power watchdog is blind**: xero shares the router's mini UPS, the carrier never drops in an outage, and a long cut runs the UPS flat under xero. Steps 1-2 not started: nothing alerts if spotifyd or a bridge breaks on the Pi; xero's spotifyd tile stays green only because its check now exits "not applicable".
-**Next step:** the watchdog's ping signal (step 3) - it is what keeps a power cut from killing xero uncontrolled. Then monitoring (step 1).
+**State:** xero moved to the router on 2026-10-17 (step 3), ahead of the watchdog change it was waiting on. The watchdog **still works for now**: the only working UPS backs xero and the router has none (user, 2026-10-22), so the router drops with mains and takes xero's carrier with it - it shut xero down cleanly in the 2026-10-22 outage. It goes blind the day the router is back on a UPS (when xero's CRU12V3A returns from warranty). Steps 1-2 not started: nothing alerts if spotifyd or a bridge breaks on the Pi; xero's spotifyd tile stays green only because its check now exits "not applicable".
+**Next step:** monitoring (step 1). The watchdog's ping signal (step 3) must land before the router gets a UPS back; the extender's IP for it is `192.168.1.7` (`TL-WA850RE` in the router's DNS), to be pinned on the router.
 
 #### Steps
 1. **Monitoring - the real gap.**
@@ -148,6 +148,7 @@ The speaker is on the Pi's **3.5mm jack** (card 1 `Headphones`, control `PCM`) t
 3. **Move xero to the router - moved 2026-10-17, the watchdog change is still to do.** Carrier loss stopped meaning a mains outage once xero went on the router's UPS (see the end of the Done entry). Add "the wol Pi **and** the extender both stop answering pings for N checks" to `watchdog_power.sh`; the extender needs a pinned IP first (it answers ARP for several LAN addresses with one MAC, `c2:c9:e3:09:e6:be`, so find its own one in the router's DHCP table). Also replace the patch cable: the link downshifts from 1Gbps to 100Mbps (`check cabling!` in the kernel log), so xero still gets 100Mb/s.
 
 #### Log
+- 2026-10-22: correction (user): xero is on the UPS, the router is **not** - the router's mini UPS was moved to xero while xero's CRU12V3A is out for warranty. So the watchdog was never blind in this setup; the 2026-10-22 outage proved it (carrier lost 15:12, clean shutdown 15:25).
 - 2026-10-17: xero moved onto the Skadis board next to the router (`docs/skadis-layout.html`), cabled into the router, powered from the router's mini UPS. Same IP, nothing else to re-point. Link 100Mb/s Full, downshifted from 1Gbps by the cable. The wol Pi and the bedroom voice satellite were unplugged in the move and were offline afterwards. `docs/hardware.md`, `docs/home-network-uplink-options.md`, `Readme.md` and the watchdog's header updated.
 
 ### wol Pi under-voltage: official 5.1V supply
@@ -1730,9 +1731,10 @@ A full-load run (memtester 2 x 10G or a build) on the pegboard, at normal room t
 **Priority:** P1
 
 **Why:** xero's RouterUPS (model CRU12V3A, 12V 3A) failed on 2026-10-08 and took xero down uncontrolled. Without a UPS, a mains cut crashes xero uncontrolled.
-**State:** the UPS is dead (all four LEDs off on mains, with a different socket and a different adapter - getting no input or failed (fuse/charger), not just a flat battery). xero is running again **without a UPS** since about 19:15 on 2026-10-08, waiting on Resonate's warranty reply; may move the router's UPS to xero meanwhile. Power watchdog shutdown threshold is temporarily 10 min.
+**State:** the UPS is dead (all four LEDs off on mains, with a different socket and a different adapter - getting no input or failed (fuse/charger), not just a flat battery). The router's mini UPS now backs xero, and the router and ONT run with **no UPS** (user, 2026-10-22); the CRU12V3A is with Resonate under warranty and the user is chasing them. Power watchdog shutdown threshold is temporarily 10 min.
 **Next step:**
-- If the UPS has a power button, try it (held 2-3s) with mains in; else claim warranty or buy a 12V >=3A DC mini UPS.
+- Chase Resonate for the CRU12V3A warranty repair (user, in progress 2026-10-22).
+- When it is back, before putting the router on a UPS again: land the watchdog's ping signal ("Pi audio move follow-ups" step 3), or the watchdog goes blind.
 - When the replacement UPS arrives, restore a measured `DOWN_THRESHOLD_MIN`.
 - Do not re-run full-load tests on the pegboard (94°C and climbing).
 - Consider an alert for "UPS stopped charging" - the ESP32 UPS LED monitor idea would cover it.
@@ -1749,6 +1751,7 @@ xero stays off rather than run without a UPS. Meanwhile: DNS falls back to the w
 #### Log
 - 2026-10-08: a mains power cut earlier in the day (xero was off the UPS for memtest then), then xero went back on its RouterUPS. That afternoon the UPS did not charge, and at about 17:11 it cut out under a memtester full-load test, taking xero down uncontrolled (memtester had found 0 errors; the CPU was at 94°C and rising on the pegboard). Afterwards **all four of the UPS's LEDs stay off on mains**, with a different socket and a different adapter. The power watchdog could not see this: mains stayed up, and it only watches for a mains outage. Decision: xero stays off.
 - 2026-10-08: shutdown threshold cut 200 -> 10 min (`DOWN_THRESHOLD_MIN`).
+- 2026-10-22 (user): the CRU12V3A is out for warranty with Resonate; xero runs on the router's mini UPS, the router on none. A ~56min outage that afternoon: watchdog shut xero down cleanly after 10min; WoL failed to bring it back (fixed, see "Power-outage watchdog" Log).
 - 2026-10-08 (same day): the user turned xero back on **without a UPS** at about 19:15. Checked 21:14: `zpool status -x` healthy, all 16 containers up (pihole included), every HA integration loaded - the post-power-loss checks are done for this boot. A mains cut now crashes xero uncontrolled.
 
 ### Power-outage watchdog - real UPS runtime measured, threshold updated, armed
