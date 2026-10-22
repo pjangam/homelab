@@ -2470,5 +2470,6 @@ qty | item | est | note
 - 2026-09-23: options worked out in `docs/home-network-uplink-options.md`.
 - 2026-10-22: given its own entry, so it shows on the projects dashboard.
 - 2026-10-22: first install did nothing: it allowed forwarding through ufw, which is **inactive** on xero, and Docker's FORWARD policy DROP ate every packet (`diagnose.sh` showed the 8,770 dropped = the 8,770 counted). Fixed with ACCEPT rules in `DOCKER-USER`. Re-run, the Pi test passed: HTTP 200, ping 1.1.1.1 ~18ms, a 10MB download in 6.7s from the Pi (Wi-Fi via the extender) against 2.8s from xero itself.
+- 2026-10-22: `compare_gateways.sh`, wol Pi, 3 alternating rounds, 10MB from proof.ovh.net: router 15.7/16.4/16.1 Mbps, via xero 13.9/15.6/14.2 Mbps (~10% less). Ping to 1.1.1.1 the same either way (p50 13-17ms; p95/max swing 18-108ms on both, Wi-Fi noise). The Pi's own Wi-Fi via the extender is the cap, not xero; re-test with a fast device near the router after the rollout. Pi left on the router.
 - 2026-10-22: the Airtel router's DHCP gateway field is editable, so no Pi-hole DHCP needed for the rollout.
 - 2026-10-22: user chose xero as the gateway for now, OpenWrt kept for later. `projects/lan-gateway/` written; the nft table could not be test-loaded without sudo (user namespaces are blocked), so `setup_lan_gateway.sh` checks it with `nft -c` before loading.
