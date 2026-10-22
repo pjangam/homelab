@@ -161,10 +161,63 @@ containers = [
     ], "Bps", 0, 30, w=24, h=10, desc="Host-networked containers (Caddy, Grafana, Prometheus, HA...) do not show here."),
 ]
 
+# ---- Network usage per LAN device (xero as gateway) ---------------------------
+# projects/lan-gateway: nft counts bytes per device IP; usage_textfile.sh writes
+# them for node-exporter once a minute, so a minute is the finest grain there is
+# (a 5s irate would read 0 between updates). Totals use increase(), which
+# handles the counter reset on every xero reboot or table reload.
+gw = 'homelab_lan_gateway_bytes_total'
+
+
+def usage_bars(title, time_from, x, y, w=8, h=10):
+    """Bytes per device and direction over a fixed window, largest first."""
+    return {
+        "id": next(_ids), "type": "bargauge", "title": title, "datasource": DS,
+        "timeFrom": time_from, "hideTimeOverride": False,
+        "gridPos": {"x": x, "y": y, "w": w, "h": h},
+        "fieldConfig": {"defaults": {"unit": "bytes", "min": 0, "decimals": 1}},
+        "options": {"orientation": "horizontal", "displayMode": "basic", "showUnfilled": True,
+                    "valueMode": "text", "namePlacement": "top", "sizing": "auto",
+                    "reduceOptions": {"calcs": ["lastNotNull"], "values": False}},
+        "transformations": [{"id": "sortBy", "options": {"sort": [{"field": "Value", "desc": True}]}}],
+        "targets": [{"datasource": DS, "refId": "A", "instant": True, "range": False,
+                     "expr": f'sort_desc(sum by (ip, direction) (increase({gw}[$__range])))',
+                     "legendFormat": "{{ip}} {{direction}}"}],
+    }
+
+
+usage = [
+    usage_bars("Today", "now/d", 0, 0),
+    usage_bars("This month", "now/M", 8, 0),
+    usage_bars("Last 30 days", "30d", 16, 0),
+    {**panel("Per day", [(f'sum by (ip, direction) (increase({gw}[1d]))', "{{ip}} {{direction}}")],
+             "bytes", 0, 10, w=24, h=10, stack=True,
+             desc="Bytes per device per day, stacked. Days are UTC days (05:30 to 05:30 IST): "
+                  "Prometheus aligns 1d steps to UTC, and a day's bar appears only once it has ended - "
+                  "the Today gauge covers the day so far."),
+     "interval": "1d", "timeFrom": "30d"},
+    {**panel("Per hour", [(f'sum by (ip, direction) (increase({gw}[1h]))', "{{ip}} {{direction}}")],
+             "bytes", 0, 20, w=24, h=10, stack=True,
+             desc="Bytes per device per hour, stacked, last 2 days. An hour's bar appears once it has ended."),
+     "interval": "1h", "timeFrom": "2d"},
+    panel("Throughput per device (max)", [
+        (f'max_over_time((sum by (ip) (rate({gw}{{direction="down"}}[2m])))[$__interval:1m])', "{{ip}} down"),
+        (f'max_over_time((sum by (ip) (rate({gw}{{direction="up"}}[2m])))[$__interval:1m])', "{{ip}} up"),
+    ], "Bps", 0, 30, w=24, h=10,
+        desc="The counters update once a minute, so this is each minute's rate and each point the max "
+             "of those minutes - no finer than a minute."),
+]
+for bars in usage[3:5]:
+    bars["fieldConfig"]["defaults"]["custom"].update({"drawStyle": "bars", "fillOpacity": 80})
+    bars["options"]["legend"]["calcs"] = ["sum", "max"]
+
 OUT.mkdir(exist_ok=True)
 for uid, title, panels, desc in [
     ("hosts", "Hosts", hosts, "xero and the wol Pi: max and p95 of 5s samples, never averages."),
     ("containers", "Containers (xero)", containers, "Per-container CPU, memory and network from cAdvisor."),
+    ("network-usage", "Network usage (per device)", usage,
+     "Internet bytes per LAN device through xero as the gateway (projects/lan-gateway). "
+     "Devices are shown by IP; only DHCP devices go through xero, fixed-IP ones (xero, the Pi, ESP32s) do not."),
 ]:
     path = OUT / f"{uid}.json"
     path.write_text(json.dumps(dashboard(uid, title, panels, desc), indent=2) + "\n")

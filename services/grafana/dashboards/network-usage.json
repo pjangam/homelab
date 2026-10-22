@@ -1,0 +1,454 @@
+{
+  "uid": "network-usage",
+  "title": "Network usage (per device)",
+  "description": "Internet bytes per LAN device through xero as the gateway (projects/lan-gateway). Devices are shown by IP; only DHCP devices go through xero, fixed-IP ones (xero, the Pi, ESP32s) do not.",
+  "tags": [
+    "homelab"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 18,
+      "type": "bargauge",
+      "title": "Today",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "timeFrom": "now/d",
+      "hideTimeOverride": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "decimals": 1
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "top",
+        "sizing": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Value",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "instant": true,
+          "range": false,
+          "expr": "sort_desc(sum by (ip, direction) (increase(homelab_lan_gateway_bytes_total[$__range])))",
+          "legendFormat": "{{ip}} {{direction}}"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "bargauge",
+      "title": "This month",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "timeFrom": "now/M",
+      "hideTimeOverride": false,
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "decimals": 1
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "top",
+        "sizing": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Value",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "instant": true,
+          "range": false,
+          "expr": "sort_desc(sum by (ip, direction) (increase(homelab_lan_gateway_bytes_total[$__range])))",
+          "legendFormat": "{{ip}} {{direction}}"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "bargauge",
+      "title": "Last 30 days",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "timeFrom": "30d",
+      "hideTimeOverride": false,
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "decimals": 1
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "top",
+        "sizing": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Value",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "instant": true,
+          "range": false,
+          "expr": "sort_desc(sum by (ip, direction) (increase(homelab_lan_gateway_bytes_total[$__range])))",
+          "legendFormat": "{{ip}} {{direction}}"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Per day",
+      "description": "Bytes per device per day, stacked. Days are UTC days (05:30 to 05:30 IST): Prometheus aligns 1d steps to UTC, and a day's bar appears only once it has ended - the Today gauge covers the day so far.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1d",
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 80,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal"
+            },
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*p95.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "sum",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (ip, direction) (increase(homelab_lan_gateway_bytes_total[1d]))",
+          "legendFormat": "{{ip}} {{direction}}"
+        }
+      ],
+      "timeFrom": "30d"
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Per hour",
+      "description": "Bytes per device per hour, stacked, last 2 days. An hour's bar appears once it has ended.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1h",
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 80,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal"
+            },
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*p95.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "sum",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (ip, direction) (increase(homelab_lan_gateway_bytes_total[1h]))",
+          "legendFormat": "{{ip}} {{direction}}"
+        }
+      ],
+      "timeFrom": "2d"
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Throughput per device (max)",
+      "description": "The counters update once a minute, so this is each minute's rate and each point the max of those minutes - no finer than a minute.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "5s",
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 24,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*p95.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "max_over_time((sum by (ip) (rate(homelab_lan_gateway_bytes_total{direction=\"down\"}[2m])))[$__interval:1m])",
+          "legendFormat": "{{ip}} down"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "B",
+          "expr": "max_over_time((sum by (ip) (rate(homelab_lan_gateway_bytes_total{direction=\"up\"}[2m])))[$__interval:1m])",
+          "legendFormat": "{{ip}} up"
+        }
+      ]
+    }
+  ],
+  "editable": true
+}

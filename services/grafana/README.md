@@ -80,6 +80,18 @@ that return no data.
   Grafana Cloud.
 - A Safari "Add to Home Screen" shortcut to `/grafana/` also works, no login.
 
+## Network usage (per device)
+
+Added 2026-10-22 with `projects/lan-gateway/`: bytes each LAN device sends
+and receives through xero as its internet gateway, by IP (DHCP devices only;
+xero, the Pi and the ESP32s have fixed IPs on the router). Today / this month
+/ last 30 days, per day, per hour, and per-minute throughput. The counters
+are written once a minute (`homelab_lan_gateway_bytes_total`), so a minute is
+the finest grain - the one place the 5s rule cannot apply. `increase()`
+counts from a device's first sample, so the bytes in its first minute (and
+the tests from before the dashboard existed) are not in the totals. Day bars
+are UTC days (05:30 IST) and appear once the day has ended.
+
 ## Not covered yet
 
 - **Home Assistant's own sensors** (Pi health, healthcheck, AC, room
