@@ -50,9 +50,13 @@ done
 REMOTE=${IMMICH_ARCHIVE_REMOTE:-":s3,provider=AWS,env_auth=true,region=us-east-1:$BUCKET/immich"}
 # 128M parts: Deep Archive bills every part as a request (~$0.05/1000), and
 # rclone's 5M default would make a 4G bundle 800 of them.
-RCLONE=(rclone --s3-storage-class DEEP_ARCHIVE --s3-no-check-bucket
+# --s3-no-head: rclone's read-back after an upload is refused by the
+# upload-only key (403, then a retry "succeeds" by finding the object); the
+# size check in upload() lists the object instead.
+RCLONE=(rclone --s3-storage-class DEEP_ARCHIVE --s3-no-check-bucket --s3-no-head
         --s3-chunk-size 128M --s3-upload-concurrency 2)
 BUNDLE_MAX=${BUNDLE_MAX:-4000000000}
+MAX_BUNDLES=${MAX_BUNDLES:-0}   # stop after this many bundles (0: no limit); the rest go next run
 STATE=${IMMICH_ARCHIVE_STATE:-"$REPO/backups/immich-archive"}
 MANIFEST="$STATE/manifest.tsv"
 U=$(env_val DB_USERNAME); D=$(env_val DB_DATABASE_NAME)
@@ -100,15 +104,16 @@ encrypt() {  # gpg stdin -> $1
 
 # Split into bundles; one file larger than BUNDLE_MAX gets a bundle to itself.
 awk -F'\t' -v max="$BUNDLE_MAX" -v dir="$work" '
-  { if (size > 0 && size + $2 > max) { b++; size = 0 }
-    size += $2; print > (dir "/bundle." sprintf("%03d", b)) }' "$work/new"
+  { if (size > 0 && size + $2 > max) { close(f); b++; size = 0 }
+    size += $2; f = dir "/bundle." sprintf("%03d", b); print > f }' "$work/new"
 
 stamp=$(date +%Y-%m-%d)
 # Numbering carries on from earlier runs, so no object name is ever reused.
-seq=$(cut -f3 "$MANIFEST" | grep '^bundles/' | sort -u | wc -l)
+seq=$(cut -f3 "$MANIFEST" | { grep '^bundles/' || true; } | sort -u | wc -l)
 uploaded=0
 for list in "$work"/bundle.*; do
   [[ -e $list ]] || break
+  if [[ $MAX_BUNDLES -gt 0 && $uploaded -ge $MAX_BUNDLES ]]; then log "MAX_BUNDLES=$MAX_BUNDLES reached, the rest next run"; break; fi
   name=$(printf "bundles/%s-%05d.tar.gpg" "$stamp" "$seq"); seq=$((seq + 1))
   tmp="$work/bundle.tar.gpg"
   cut -f3 "$list" | sed 's#^/##' | tr '\n' '\0' |
