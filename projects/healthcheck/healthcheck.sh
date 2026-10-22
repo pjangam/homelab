@@ -83,7 +83,7 @@ BACKUP_LOG="$SCRIPT_DIR/backup.log"
 MAX_BACKUP_AGE_HOURS=30  # daily cadence + generous slack, not tied to time-of-day
 
 check_backup_freshness() {
-  local label="$1" pattern="$2" outvar="$3"
+  local label="$1" pattern="$2" outvar="$3" max_hours="${4:-$MAX_BACKUP_AGE_HOURS}"
   local last_line last_ts last_epoch age_hours
   last_line=$(grep -F "$pattern" "$BACKUP_LOG" 2>/dev/null | tail -1)
   if [ -z "$last_line" ]; then
@@ -97,14 +97,17 @@ check_backup_freshness() {
   fi
   age_hours=$(( ($(date +%s) - last_epoch) / 3600 ))
   printf -v "$outvar" '%s' "$age_hours"
-  [ "$age_hours" -ge "$MAX_BACKUP_AGE_HOURS" ] && problems+=("🗄️ $label backup overdue (>${MAX_BACKUP_AGE_HOURS}h)"$'\n'"  last success $last_ts, ${age_hours}h ago")
+  [ "$age_hours" -ge "$max_hours" ] && problems+=("🗄️ $label backup overdue (>${max_hours}h)"$'\n'"  last success $last_ts, ${age_hours}h ago")
 }
 
 backup_vw_age_hours=""
 backup_ha_age_hours=""
+backup_immich_age_hours=""
 if [ -f "$BACKUP_LOG" ]; then
   check_backup_freshness "Vaultwarden" "Backup complete: vaultwarden_" backup_vw_age_hours
   check_backup_freshness "Home Assistant" "] Done." backup_ha_age_hours
+  # Monthly (cron on the 1st, projects/immich-backup): 33 days of slack.
+  check_backup_freshness "Immich Deep Archive" "Immich archive complete:" backup_immich_age_hours 792
 else
   problems+=("🗄️ backup.log missing"$'\n'"  $BACKUP_LOG - backup freshness unknown")
 fi
