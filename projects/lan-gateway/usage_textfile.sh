@@ -20,6 +20,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 dir="$here/../../services/node-exporter/textfile"
 names="$here/device-names"
 cache=/run/lan-gateway-ptr.cache
+macs=/run/lan-gateway-mac.cache   # last MAC seen per IP, for devices gone from ip neigh
 tmp="$dir/lan_gateway.prom.$$"
 
 counters=$(for d in up down; do
@@ -32,17 +33,25 @@ done)
 
 name_for() {  # $1 = ip
   mac=$(ip neigh show "$1" | awk '{for (i = 1; i < NF; i++) if ($i == "lladdr") print $(i + 1)}')
+  if [ -n "$mac" ]; then
+    { grep -v "^$1 " "$macs" 2>/dev/null || true; echo "$1 $mac"; } > "$macs.tmp" && mv "$macs.tmp" "$macs"
+  else
+    mac=$(awk -v ip="$1" '$1 == ip { print $2 }' "$macs" 2>/dev/null)
+  fi
   n=$( [ -f "$names" ] && awk -v ip="$1" -v mac="$mac" '
     /^[[:space:]]*(#|$)/ { next }
     $1 == ip || (mac != "" && tolower($1) == mac) { $1 = ""; sub(/^ +/, ""); print; exit }' "$names")
   if [ -z "$n" ]; then
     if grep -q "^$1 " "$cache"; then
       n=$(grep "^$1 " "$cache" | cut -d' ' -f2-)
-    else
-      n=$(dig +short +time=1 +tries=1 -x "$1" @192.168.1.1 2>/dev/null | head -1 | sed 's/\.$//')
+    # dig prints a timeout as ";; communications error ..." on stdout, so keep
+    # only a hostname line, and cache only an answer (a timeout retries next run).
+    elif ptr=$(dig +short +time=1 +tries=1 -x "$1" @192.168.1.1 2>/dev/null); then
+      n=$(echo "$ptr" | grep -m1 '^[A-Za-z0-9_-][A-Za-z0-9._-]*\.$' | sed 's/\.$//' || true)
       echo "$1 $n" >> "$cache"
     fi
   fi
+  case "$n" in *';'*) n= ;; esac   # a bad entry cached before 2026-10-22's fix
   echo "${n:-$1}"
 }
 
