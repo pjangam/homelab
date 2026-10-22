@@ -61,6 +61,13 @@ ssh -t wol-sender sudo ip route replace default via 192.168.1.1     # back to ro
   no global IPv6 address shows on xero, so the LAN looks IPv4-only, but check
   a device before trusting its numbers.
 - **Devices behind the TP-Link extender** keep their own IPs, so per-IP
-  counting still separates them (it rewrites their MACs).
+  counting still separates them, but naming them is weak. The extender
+  rewrites both their MAC (all `c2:c9:e3:09:e6:be`) and their DHCP hostname
+  (all `TL-WA850RE`), on the router as well as on xero (router status page,
+  2026-10-22). So the router cannot reserve an IP for one of them, and an
+  iPhone's own name never gets through. What does hold: a manual IP set on
+  the device itself (iPhone: Wi-Fi > (i) > Configure IP > Manual), the way
+  the wol Pi has `.124`, or moving the device to the router's own WiFi,
+  where its MAC names it.
 - **Link speed:** 100Mb/s full duplex until xero's patch cable is replaced -
   enough for the 40 Mbps plan, tight at 100.
