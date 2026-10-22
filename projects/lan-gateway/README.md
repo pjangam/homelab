@@ -21,9 +21,16 @@ usage monitoring" tracks the rollout.
   real terminal on xero (sudo).
 
 What setup changes on xero: `/etc/sysctl.d/90-lan-gateway.conf` (forwarding
-on, ICMP redirects off, or xero would tell devices to bypass it), one ufw
-route rule (`in on enp1s0 out on enp1s0 from 192.168.1.0/24`), and the system
-units `lan-gateway.service` and `lan-gateway-usage.timer`.
+on, ICMP redirects off, or xero would tell devices to bypass it), and the
+system units `lan-gateway.service` and `lan-gateway-usage.timer`. The service
+loads the nft table and adds two ACCEPT rules to iptables' `DOCKER-USER`
+chain (LAN -> internet, and its replies), after docker.service: Docker sets
+the FORWARD policy to DROP, and ufw is installed but **inactive** on xero, so
+a ufw rule does nothing (the first install's `ufw route allow` did exactly
+that, 2026-10-22: every forwarded packet hit Docker's DROP).
+
+`diagnose.sh` shows where a device's packets stop (counters, FORWARD chain,
+a capture), when the gateway doesn't work.
 
 ## Testing with one device (the wol Pi)
 
