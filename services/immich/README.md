@@ -110,5 +110,6 @@ Immich. 282 same-name rows were the same photos (time matched to the second;
 Takeout's copies smaller). 13 were really missing - the import's 90
 "pending": GoPro videos GOPR0103/0274/0300 and 10 photos from January 2018 -
 and were uploaded. Left only in the zips: 26 Google "-edited" copies, 10
-GoPro `.THM`/`.LRV` side files, and `Photos from 2023/IMG_4352.MOV`, damaged
-in the zip (bad CRC) and to be re-downloaded from Google Photos.
+GoPro `.THM`/`.LRV` side files. `Photos from 2023/IMG_4352.MOV`, damaged in
+the zip (bad CRC), was re-downloaded from Google Photos by hand (link from
+`takeout_photo_url.sh`) and uploaded the same day.
