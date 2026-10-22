@@ -2450,3 +2450,22 @@ qty | item | est | note
 - 2026-10-18: noted. Options reviewed; ARC cap increase recommended, the rest skipped or deferred.
 - 2026-10-18: `tools/zfs/arc_max.sh` written (`stats`, and `sudo ... set <GiB>` for the live value, `/etc/modprobe.d/zfs.conf` and the initramfs). **Baseline at the 1 GiB cap**, 23h uptime: ARC 1.00 GiB full, hit rate 96.91%, metadata hit rate 98.30%, ghost hits 32,323. Compare after a few days at 8 GiB (counters reset on reboot, so compare like uptimes).
 - 2026-10-18 14:33: user ran `sudo tools/zfs/arc_max.sh set 8`. Checked: live `zfs_arc_max` 8589934592, conf updated, initramfs rebuilt; ARC already 1.13 GiB, MemAvailable ~25GB.
+
+### Per-device network usage monitoring
+**Status:** Backlog
+**Priority:** P3
+
+**Why:** no way to see how much data each device uses, per day or per month. The Airtel router counts traffic per port and per band only, and Pi-hole sees DNS lookups, not bytes. Something has to sit in the path of all traffic to count it. Discussed 2026-09-23; until 2026-10-22 it lived only in `docs/home-network-uplink-options.md` (section 1) and as an "unlocks" line under "Fibre or Cat6 from the router to the desk", so it never showed on the dashboard.
+**State:** nothing started. xero has been cabled into the router since 2026-10-17, which removes the "every byte crosses the 2.4GHz hop twice" objection to xero as the gateway. The link is still 100Mb/s until the patch cable is replaced ("Pi audio move follow-ups", step 3).
+**Next step:** pick an option (below). The recommendation is an OpenWrt router with nlbwmon.
+
+#### Options (detail in `docs/home-network-uplink-options.md`, section 1)
+- **OpenWrt router behind the Airtel box, running nlbwmon** (~₹2,500-4,000: Xiaomi AX3000T, TP-Link Archer C6 v3/AX23). **Recommended.** Per-device daily and monthly usage out of the box, xero stays out of the internet path, better Wi-Fi control. Best with the Airtel box in bridge mode (ask Airtel, and get the PPPoE credentials). It also works double-NAT, as long as every device joins the new router's Wi-Fi.
+- **xero as the gateway** (IP forwarding + NAT, ntopng or vnstat), ₹0. Feasible now that it is on a cable, but xero becomes a single point of failure for the whole house's internet (reboots, Docker trouble). It also needs Pi-hole to take over DHCP and IPv6 switched off on the LAN, or IPv6 traffic bypasses it.
+- **Managed switch with port mirroring:** does not work. Wi-Fi devices talk to the Airtel box directly, so a switch never sees their traffic.
+
+**Caveat:** the TP-Link extender rewrites MAC addresses (several LAN IPs answer ARP with its one MAC, `c2:c9:e3:09:e6:be`), so anything that groups by MAC lumps the devices behind it together. Group by IP.
+
+#### Log
+- 2026-09-23: options worked out in `docs/home-network-uplink-options.md`.
+- 2026-10-22: given its own entry, so it shows on the projects dashboard.
