@@ -93,3 +93,22 @@ fewer links to go wrong, and resume makes a big part safe. Download into
 `/datapool/google-takeout/<user>/`, then import with immich-go
 (`~/bin/immich-go`) using an API key made by **that** user, so the photos land
 in their library and not admin's.
+
+immich-go 0.32 (the latest release) cannot read Immich 3.3's asset list
+(simulot/immich-go#1442), so until a fixed release exists, upload with
+`upload_from_takeout.sh` instead (curl to `/api/assets`, key from `.env`).
+
+### Checking an import is complete
+
+`verify_takeout.py` hashes every photo and video in the zips and looks each
+SHA-1 up in `asset.checksum`; `compare_takeout_dates.py` settles the rows
+where Immich has a file of the same name but other bytes, by capture time.
+Upload what is really missing with `upload_from_takeout.sh rows.tsv`.
+
+2026-10-22, admin's June export: 13,237 unique files, 12,906 already in
+Immich. 282 same-name rows were the same photos (time matched to the second;
+Takeout's copies smaller). 13 were really missing - the import's 90
+"pending": GoPro videos GOPR0103/0274/0300 and 10 photos from January 2018 -
+and were uploaded. Left only in the zips: 26 Google "-edited" copies, 10
+GoPro `.THM`/`.LRV` side files, and `Photos from 2023/IMG_4352.MOV`, damaged
+in the zip (bad CRC) and to be re-downloaded from Google Photos.
