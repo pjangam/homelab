@@ -3,11 +3,15 @@
 # addresses to what they are) and edit; usage_textfile.sh rereads it every
 # minute, no restart needed.
 #
-#   <ip or mac>  <name, may contain spaces>
+#   <ip, mac or tailscale label>  <name, may contain spaces>
 #
 # By MAC suits a phone or laptop on the router's own WiFi, which keeps its
 # MAC when DHCP gives it a new IP. Devices behind the TP-Link extender all
-# share the extender's MAC, so name those by IP and pin the IP on the router.
-# Anything not listed falls back to its router hostname, then its IP.
+# share the extender's MAC (the router cannot reserve IPs for them either),
+# so name those by Tailscale, or by IP set manually on the device.
+# A device running Tailscale is named by its MagicDNS label (iphone-14) with
+# no entry here; list the label to show a nicer name. Order: MAC, Tailscale,
+# IP, then the router's hostname, then the IP itself.
 192.168.1.124  wol Pi
 aa:bb:cc:dd:ee:ff  Someone's phone
+iphone-14  iPhone 14
