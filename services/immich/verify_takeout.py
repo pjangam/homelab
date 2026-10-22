@@ -11,8 +11,10 @@ counted by unique hash. Run on xero from the repo root, at low priority:
 Prints a summary and writes every unique hash Immich lacks to the report
 (default ~/takeout-verify.tsv): sha1, size, a same-name Immich asset if one
 exists (a sign of an edited or re-encoded copy rather than a lost one), then
-zip and entry. Immich assets that are in the trash count as present but are
-flagged, since emptying the trash would lose them. restore_from_takeout.sh
+zip and entry. Entries that fail the zip's own CRC (damaged when the zip was
+saved, not on ZFS) are listed too, with sha1 "bad-crc", and not checked.
+Immich assets that are in the trash count as present but are flagged, since
+emptying the trash would lose them. restore_from_takeout.sh
 needs an asset id, so it does not apply to photos Immich never had; upload
 those with immich-go instead.
 """
@@ -64,6 +66,7 @@ def main():
     print(f"Immich: {len(by_hash)} assets", flush=True)
 
     seen = {}  # sha1 -> (size, zip, entry) of its first occurrence
+    bad = []   # (size, zip, entry) whose bytes fail the zip's CRC
     entries = 0
     zips = sorted(ZIPS.glob("*.zip"))
     for i, z in enumerate(zips, 1):
@@ -72,7 +75,12 @@ def main():
                 if info.is_dir() or info.filename.lower().endswith((".json", ".html")):
                     continue
                 entries += 1
-                h = sha1(zf, info)
+                try:
+                    h = sha1(zf, info)
+                except zipfile.BadZipFile:
+                    bad.append((info.file_size, z.name, info.filename))
+                    print(f"  bad CRC: {info.filename}", flush=True)
+                    continue
                 seen.setdefault(h, (info.file_size, z.name, info.filename))
         print(f"[{i}/{len(zips)}] {z.name}: {entries} entries, "
               f"{len(seen)} unique so far", flush=True)
@@ -84,6 +92,9 @@ def main():
         for h, (size, z, entry) in sorted(missing.items(), key=lambda kv: kv[1][2]):
             same = "yes" if Path(entry).name.lower() in names else ""
             out.write(f"{h}\t{size}\t{same}\t{z}\t{entry}\n")
+        for size, z, entry in bad:
+            same = "yes" if Path(entry).name.lower() in names else ""
+            out.write(f"bad-crc\t{size}\t{same}\t{z}\t{entry}\n")
 
     lost = [v for v in missing.values() if Path(v[2]).name.lower() not in names]
     print(f"\n{entries} media entries, {len(seen)} unique by SHA-1")
@@ -93,6 +104,8 @@ def main():
     print(f"  same name exists in Immich: {len(missing) - len(lost)}")
     print(f"  no asset of that name:      {len(lost)} "
           f"({sum(v[0] for v in lost) / 1e9:.2f} GB)")
+    print(f"damaged in the zip (bad CRC): {len(bad)}, "
+          f"{sum(1 for v in bad if Path(v[2]).name.lower() not in names)} with no asset of that name")
     print(f"report: {report}")
 
 
