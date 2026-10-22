@@ -6,7 +6,9 @@ pjangam2015) and upload them to Immich; the links open each file directly.
 
 `services/immich/takeout_orphans.py` regenerates the first table: it lists
 every file the remaining zips have a sidecar JSON for but not the file
-itself, and checks Immich for it. Checked 2026-10-22: 15 not in Immich. The
+itself, and checks Immich for it. Checked 2026-10-22: 15 not in Immich. The 11 photos were re-downloaded and uploaded the same day
+(`services/immich/upload_files.sh` from phone-uploads); two had no EXIF
+date and got the sidecar's `photoTakenTime` through the API. The
 GoPro `.THM` thumbnails and the Anoushka Shankar concert video, listed here
 before, are not needed (THM) or already in Immich (the video).
 
