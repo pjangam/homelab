@@ -1,0 +1,38 @@
+#!/usr/sbin/nft -f
+# xero as the LAN's internet gateway, with per-device byte counters.
+# Loaded at boot by lan-gateway.service; see README.md.
+#
+# Only devices whose default gateway is 192.168.1.123 come through here; the
+# rest of the house still goes straight to the router. Masquerade is what
+# makes replies come back through xero: without it the router would answer
+# the device directly (same subnet) and the downloads would never be counted.
+# Forwarding itself is allowed by ufw (`ufw route allow`), not here - this
+# table only counts and NATs, its chains accept everything.
+
+table ip lan_gateway
+delete table ip lan_gateway
+
+table ip lan_gateway {
+	set up {
+		type ipv4_addr
+		size 512
+		flags dynamic
+	}
+
+	set down {
+		type ipv4_addr
+		size 512
+		flags dynamic
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy accept;
+		iifname "enp1s0" oifname "enp1s0" ip saddr 192.168.1.0/24 ip daddr != 192.168.1.0/24 add @up { ip saddr counter }
+		iifname "enp1s0" oifname "enp1s0" ip daddr 192.168.1.0/24 ip saddr != 192.168.1.0/24 add @down { ip daddr counter }
+	}
+
+	chain postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		iifname "enp1s0" oifname "enp1s0" ip saddr 192.168.1.0/24 ip daddr != 192.168.1.0/24 masquerade
+	}
+}

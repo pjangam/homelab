@@ -2452,12 +2452,12 @@ qty | item | est | note
 - 2026-10-18 14:33: user ran `sudo tools/zfs/arc_max.sh set 8`. Checked: live `zfs_arc_max` 8589934592, conf updated, initramfs rebuilt; ARC already 1.13 GiB, MemAvailable ~25GB.
 
 ### Per-device network usage monitoring
-**Status:** Backlog
+**Status:** Active
 **Priority:** P3
 
 **Why:** no way to see how much data each device uses, per day or per month. The Airtel router counts traffic per port and per band only, and Pi-hole sees DNS lookups, not bytes. Something has to sit in the path of all traffic to count it. Discussed 2026-09-23; until 2026-10-22 it lived only in `docs/home-network-uplink-options.md` (section 1) and as an "unlocks" line under "Fibre or Cat6 from the router to the desk", so it never showed on the dashboard.
-**State:** nothing started. xero has been cabled into the router since 2026-10-17, which removes the "every byte crosses the 2.4GHz hop twice" objection to xero as the gateway. The link is still 100Mb/s until the patch cable is replaced ("Pi audio move follow-ups", step 3).
-**Next step:** pick an option (below). The recommendation is an OpenWrt router with nlbwmon.
+**State:** going with **xero as the gateway, opt-in per device** for now (user, 2026-10-22); the OpenWrt router stays the long-term option. `projects/lan-gateway/` written (NAT + per-IP nft counters -> node-exporter textfile), not yet installed. The router stays everyone's DHCP gateway, so nothing changes until a device is pointed at xero. xero has been cabled into the router since 2026-10-17; the link is 100Mb/s until the patch cable is replaced, enough for the 40 Mbps plan.
+**Next step:** user runs `projects/lan-gateway/setup_lan_gateway.sh` on xero from a real terminal, then the one-device test with the wol Pi (`projects/lan-gateway/README.md`). Then decide how to roll out: per device by hand, or the router's DHCP handing out xero as the gateway (check whether the Airtel admin page allows it; if not, Pi-hole takes over DHCP). Update `docs/hardware.md` (xero's systemd units) once installed.
 
 #### Options (detail in `docs/home-network-uplink-options.md`, section 1)
 - **OpenWrt router behind the Airtel box, running nlbwmon** (~₹2,500-4,000: Xiaomi AX3000T, TP-Link Archer C6 v3/AX23). **Recommended.** Per-device daily and monthly usage out of the box, xero stays out of the internet path, better Wi-Fi control. Best with the Airtel box in bridge mode (ask Airtel, and get the PPPoE credentials). It also works double-NAT, as long as every device joins the new router's Wi-Fi.
@@ -2469,3 +2469,4 @@ qty | item | est | note
 #### Log
 - 2026-09-23: options worked out in `docs/home-network-uplink-options.md`.
 - 2026-10-22: given its own entry, so it shows on the projects dashboard.
+- 2026-10-22: user chose xero as the gateway for now, OpenWrt kept for later. `projects/lan-gateway/` written; the nft table could not be test-loaded without sudo (user namespaces are blocked), so `setup_lan_gateway.sh` checks it with `nft -c` before loading.
