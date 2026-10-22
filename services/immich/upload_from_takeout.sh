@@ -24,7 +24,9 @@ mkdir -p "$stage"
 trap 'rm -rf "$stage"' EXIT
 
 n=0
-while IFS=$'\t' read -r sum _ _ zip entry; do
+# Tabs become \037 first: read collapses runs of a whitespace IFS such as
+# tab, which would drop the empty same_name column and shift the rest.
+while IFS=$'\037' read -r sum _ _ zip entry; do
   [[ $sum == sha1 || $sum == bad-crc ]] && continue
   out="$stage/$(basename "$entry")"
   [[ -e $out ]] && { echo "duplicate name in list, skipped: $entry"; continue; }
@@ -33,7 +35,7 @@ while IFS=$'\t' read -r sum _ _ zip entry; do
     echo "SHA-1 mismatch, skipped: $entry"; rm -f "$out"; continue
   fi
   n=$((n + 1))
-done < "$rows"
+done < <(tr '\t' '\037' < "$rows")
 echo "$n files staged ($(du -sh "$stage" | cut -f1))"
 [[ $n -gt 0 ]] || exit 0
 
