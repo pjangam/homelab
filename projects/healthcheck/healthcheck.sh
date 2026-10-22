@@ -426,6 +426,52 @@ else
   rm -f "$CPU_TEMP_SPELL_FILE"
 fi
 
+# SSD temperatures, same shape as the CPU check: the 15-minute peak of
+# projects/xero-stats' per-minute max, sysfs (drivetemp) as the fallback, one
+# alert per hot spell. Both are consumer SATA SSDs rated to 70°C. On
+# 2026-10-22 long bulk reads (SHA-1 of 43G of zips, ffmpeg over 82 videos)
+# had the Kingston at 84-87°C for 20-50 minutes, and nothing said so; a 4G
+# burst read only reached 66°C, so warn sits a little above the rating.
+SSD_TEMP_WARN=75
+SSD_TEMP_URGENT=85
+check_ssd_temp() {  # label, HA entity, sysfs model match, spell file
+  local label=$1 entity=$2 model=$3 spell_file=$4 peak spell_peak="" spell_at="" when
+  peak=$(
+    {
+      curl -s --max-time 10 -H "Authorization: Bearer $HA_TOKEN" \
+        "http://localhost:8123/api/history/period/$cpu_temp_window_start?filter_entity_id=$entity&minimal_response&no_attributes" \
+        | jq -r '.[0][]?.state' 2>/dev/null
+      for dev in /sys/block/sd*; do
+        grep -qi "$model" "$dev/device/model" 2>/dev/null || continue
+        for t in "$dev"/device/hwmon/hwmon*/temp1_input; do
+          [ -r "$t" ] && echo $(( $(cat "$t") / 1000 ))
+        done
+      done
+    } | grep -E '^[0-9]+(\.[0-9]+)?$' | sort -n | tail -1
+  )
+  peak=${peak%.*}
+  if [ -z "$peak" ] || [ "$peak" -lt "$SSD_TEMP_WARN" ]; then
+    rm -f "$spell_file"; return
+  fi
+  [ -f "$spell_file" ] && read -r spell_peak spell_at < "$spell_file"
+  if [ -z "$spell_peak" ] || [ "$peak" -ge $(( spell_peak + CPU_TEMP_RENOTIFY_RISE )) ] \
+     || { [ "$spell_peak" -lt "$SSD_TEMP_URGENT" ] && [ "$peak" -ge "$SSD_TEMP_URGENT" ]; }; then
+    spell_peak=$peak; spell_at=$(date +%s)
+    mkdir -p "$(dirname "$spell_file")"
+    echo "$spell_peak $spell_at" > "$spell_file"
+  fi
+  when=$(date -d "@$spell_at" '+%H:%M')
+  if [ "$spell_peak" -ge "$SSD_TEMP_URGENT" ]; then
+    problems+=("🔥💽 URGENT $label ${spell_peak}°C at ${when}"$'\n'"  rated to 70°C; stop bulk reads/writes (backups, scans, imports) and check airflow")
+  else
+    problems+=("💽 $label ${spell_peak}°C at ${when}"$'\n'"  warn ≥${SSD_TEMP_WARN}°C (rated 70°C), re-alerts at +${CPU_TEMP_RENOTIFY_RISE}°C; a long read or write job is the usual cause")
+  fi
+}
+check_ssd_temp "Kingston SSD (datapool)" sensor.xero_kingston_ssd_datapool_temperature_max_1_min KINGSTON \
+  "$HOME/.cache/healthcheck/ssd-datapool-hot-spell"
+check_ssd_temp "BIWIN SSD (boot)" sensor.xero_biwin_ssd_boot_temperature_max_1_min BIWIN \
+  "$HOME/.cache/healthcheck/ssd-boot-hot-spell"
+
 # Heartbeat: proves this script ran to completion, regardless of what it
 # found. If the machine hard-locks (e.g. the ZFS+postgres freeze from
 # 2026-06-29) and cron itself stops running, this ping goes silent and
