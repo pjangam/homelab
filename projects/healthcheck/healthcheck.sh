@@ -45,13 +45,38 @@ while read -r name; do
   docker_bad_containers+=("$name")
 done < <(docker ps --filter health=unhealthy --format '{{.Names}}')
 
+# Failed units, one readable line each: "Ubuntu firmware update check
+# (fwupd-refresh)" instead of systemctl's "● fwupd-refresh.service loaded
+# failed failed Refresh fwupd metadata and update motd". Units not named
+# here fall back to their own description.
+unit_label() {
+  case "$1" in
+    fwupd-refresh) echo "Ubuntu firmware update check" ;;
+    fwupd)         echo "Ubuntu firmware updater" ;;
+    apt-daily|apt-daily-upgrade) echo "Ubuntu package update check" ;;
+    unattended-upgrades) echo "Ubuntu automatic security updates" ;;
+    motd-news)     echo "Ubuntu login message news" ;;
+    snapd*)        echo "Snap package service" ;;
+    getty@*)       echo "Console login on ${1#getty@}" ;;
+    *) return 1 ;;
+  esac
+}
+readable_failed() {
+  local unit desc
+  while read -r unit _ _ _ desc; do
+    [ -z "$unit" ] && continue
+    unit=${unit%.service}
+    echo "  $(unit_label "$unit" || echo "$desc") ($unit)"
+  done < <(sed 's/^[●* ]*//' <<< "$1")
+}
+
 # systemd --user failed units (this is what caught the white-noise/linger bug)
 user_failed=$(systemctl --user --failed --no-legend 2>/dev/null)
-[ -n "$user_failed" ] && problems+=("⚙️ systemd --user units failed"$'\n'"$(sed 's/^ */  /' <<< "$user_failed")")
+[ -n "$user_failed" ] && problems+=("⚙️ User services failed (systemctl --user)"$'\n'"$(readable_failed "$user_failed")")
 
 # systemd system failed units (would have caught the getty@tty1 crash-loop)
 sys_failed=$(systemctl --failed --no-legend 2>/dev/null)
-[ -n "$sys_failed" ] && problems+=("⚙️ systemd units failed"$'\n'"$(sed 's/^ */  /' <<< "$sys_failed")")
+[ -n "$sys_failed" ] && problems+=("⚙️ System services failed (systemctl)"$'\n'"$(readable_failed "$sys_failed")")
 
 # ZFS pool health
 zfs_status=$(zpool status -x 2>&1)
