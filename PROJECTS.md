@@ -2555,4 +2555,4 @@ Sources: [NUC 14 Pro India](https://varietyinfotech.com/product-tag/barebones-mi
 Moving to any new machine means moving Docker, ZFS (`zfs send` to the new pool), the systemd units, Tailscale identities, the crontab and the static IP `.123`; plan it as its own step when the box is chosen.
 
 #### Log
-- 2026-10-23: entry created from a conversation: load review (xero has headroom; the Pi is the tight box, see "RPi load migration"), machine options, local LLM, DIY build and idle power. Second SSD deferred because the S3 Deep Archive backup is now running.
+- 2026-10-23: entry created from a conversation: load review (xero has headroom; the Pi is the tight box, see "Move some load to the Raspberry Pi"), machine options, local LLM, DIY build and idle power. Second SSD deferred because the S3 Deep Archive backup is now running.
