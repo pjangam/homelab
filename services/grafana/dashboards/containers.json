@@ -17,12 +17,12 @@
       "id": 14,
       "type": "timeseries",
       "title": "Container CPU (max)",
-      "description": "100% = one full core; xero has 4. Each point is the max 5s value in its interval.",
+      "description": "100% = one full core; xero has 4. Each point is the max 5s value in its interval. Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 0,
@@ -71,11 +71,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -85,7 +88,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "max_over_time((100 * sum by (name) (irate(container_cpu_usage_seconds_total{name!=\"\"}[30s])))[$__interval:5s])",
+          "expr": "(max_over_time((100 * (sum by (name) (irate(container_cpu_usage_seconds_total{name!=\"\",name!~\"[a-z]+_[a-z]+\"}[30s])) or sum by (name) (irate(container_cpu_usage_seconds_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_cpu_usage_seconds_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__interval:5s])) and on (name) topk(8, max_over_time((100 * (sum by (name) (irate(container_cpu_usage_seconds_total{name!=\"\",name!~\"[a-z]+_[a-z]+\"}[30s])) or sum by (name) (irate(container_cpu_usage_seconds_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_cpu_usage_seconds_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__range:1m] @ ${__to:date:seconds}))",
           "legendFormat": "{{name}}"
         }
       ]
@@ -94,12 +97,12 @@
       "id": 15,
       "type": "timeseries",
       "title": "Container CPU (p95)",
-      "description": "",
+      "description": "Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 10,
@@ -148,11 +151,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -162,7 +168,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "quantile_over_time(0.95, (100 * sum by (name) (irate(container_cpu_usage_seconds_total{name!=\"\"}[30s])))[$__interval:5s])",
+          "expr": "(quantile_over_time(0.95, (100 * (sum by (name) (irate(container_cpu_usage_seconds_total{name!=\"\",name!~\"[a-z]+_[a-z]+\"}[30s])) or sum by (name) (irate(container_cpu_usage_seconds_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_cpu_usage_seconds_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__interval:5s])) and on (name) topk(8, max_over_time((100 * (sum by (name) (irate(container_cpu_usage_seconds_total{name!=\"\",name!~\"[a-z]+_[a-z]+\"}[30s])) or sum by (name) (irate(container_cpu_usage_seconds_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_cpu_usage_seconds_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__range:1m] @ ${__to:date:seconds}))",
           "legendFormat": "{{name}} p95"
         }
       ]
@@ -171,12 +177,12 @@
       "id": 16,
       "type": "timeseries",
       "title": "Container memory, working set (max)",
-      "description": "",
+      "description": "Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 20,
@@ -225,11 +231,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -239,7 +248,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "max_over_time((container_memory_working_set_bytes{name!=\"\"})[$__interval:5s])",
+          "expr": "(max_over_time(((sum by (name) (container_memory_working_set_bytes{name!=\"\",name!~\"[a-z]+_[a-z]+\"}) or sum by (name) (container_memory_working_set_bytes{name=~\"immich_.+\"}) or label_replace(sum (container_memory_working_set_bytes{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__interval:5s])) and on (name) topk(8, max_over_time(((sum by (name) (container_memory_working_set_bytes{name!=\"\",name!~\"[a-z]+_[a-z]+\"}) or sum by (name) (container_memory_working_set_bytes{name=~\"immich_.+\"}) or label_replace(sum (container_memory_working_set_bytes{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__range:1m] @ ${__to:date:seconds}))",
           "legendFormat": "{{name}}"
         }
       ]
@@ -247,17 +256,17 @@
     {
       "id": 17,
       "type": "timeseries",
-      "title": "Container network (max)",
-      "description": "Host-networked containers (Caddy, Grafana, Prometheus, HA...) do not show here.",
+      "title": "Container network received (max)",
+      "description": "Host-networked containers (caddy, grafana, homeassistant, node-exporter, prometheus) are left out: cAdvisor reports all of xero's traffic for each of them. Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 30,
-        "w": 24,
+        "w": 12,
         "h": 10
       },
       "fieldConfig": {
@@ -302,11 +311,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -316,20 +328,132 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "max_over_time((sum by (name) (irate(container_network_receive_bytes_total{name!=\"\"}[30s])))[$__interval:5s])",
-          "legendFormat": "{{name}} rx"
+          "expr": "(max_over_time(((sum by (name) (irate(container_network_receive_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus\"}[30s])) or sum by (name) (irate(container_network_receive_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_receive_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__interval:5s])) and on (name) topk(8, max_over_time(((sum by (name) (irate(container_network_receive_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus\"}[30s])) or sum by (name) (irate(container_network_receive_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_receive_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__range:1m] @ ${__to:date:seconds}))",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Container network sent (max)",
+      "description": "Host-networked containers (caddy, grafana, homeassistant, node-exporter, prometheus) are left out: cAdvisor reports all of xero's traffic for each of them. Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "$res",
+      "gridPos": {
+        "x": 12,
+        "y": 30,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
         },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*p95.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "hideZeros": true
+        }
+      },
+      "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "refId": "B",
-          "expr": "max_over_time((sum by (name) (irate(container_network_transmit_bytes_total{name!=\"\"}[30s])))[$__interval:5s])",
-          "legendFormat": "{{name}} tx"
+          "refId": "A",
+          "expr": "(max_over_time(((sum by (name) (irate(container_network_transmit_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus\"}[30s])) or sum by (name) (irate(container_network_transmit_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_transmit_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__interval:5s])) and on (name) topk(8, max_over_time(((sum by (name) (irate(container_network_transmit_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus\"}[30s])) or sum by (name) (irate(container_network_transmit_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_transmit_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__range:1m] @ ${__to:date:seconds}))",
+          "legendFormat": "{{name}}"
         }
       ]
     }
   ],
-  "editable": true
+  "editable": true,
+  "templating": {
+    "list": [
+      {
+        "type": "custom",
+        "name": "res",
+        "label": "Resolution",
+        "query": "5s,1m,5m,15m,1h",
+        "current": {
+          "text": "5s",
+          "value": "5s"
+        },
+        "options": [
+          {
+            "text": "5s",
+            "value": "5s",
+            "selected": true
+          },
+          {
+            "text": "1m",
+            "value": "1m",
+            "selected": false
+          },
+          {
+            "text": "5m",
+            "value": "5m",
+            "selected": false
+          },
+          {
+            "text": "15m",
+            "value": "15m",
+            "selected": false
+          },
+          {
+            "text": "1h",
+            "value": "1h",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  }
 }

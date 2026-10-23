@@ -15,6 +15,8 @@ Gauges (temperature, memory, disk) get max_over_time the same way.
 import json
 from pathlib import Path
 
+import yaml
+
 OUT = Path(__file__).resolve().parent / "dashboards"
 DS = {"type": "prometheus", "uid": "prometheus"}
 
@@ -35,7 +37,7 @@ def peak(expr):
 def panel(title, targets, unit, x, y, w=12, h=8, max_=None, desc="", stack=False):
     p = {
         "id": next(_ids), "type": "timeseries", "title": title, "description": desc,
-        "datasource": DS, "interval": "5s",
+        "datasource": DS, "interval": "$res",
         "gridPos": {"x": x, "y": y, "w": w, "h": h},
         "fieldConfig": {
             "defaults": {
@@ -51,8 +53,9 @@ def panel(title, targets, unit, x, y, w=12, h=8, max_=None, desc="", stack=False
             ],
         },
         "options": {
-            "legend": {"displayMode": "table", "placement": "right", "calcs": ["max", "lastNotNull"]},
-            "tooltip": {"mode": "multi", "sort": "desc"},
+            "legend": {"displayMode": "table", "placement": "right", "calcs": ["max", "lastNotNull"],
+                       "sortBy": "Max", "sortDesc": True},
+            "tooltip": {"mode": "multi", "sort": "desc", "hideZeros": True},
         },
         "targets": [{"datasource": DS, "refId": chr(65 + i), "expr": e, "legendFormat": l}
                     for i, (e, l) in enumerate(targets)],
@@ -67,12 +70,25 @@ def max_p95(expr, legend):
     return [(mx, f"{legend} max"), (p95, f"{legend} p95")]
 
 
+# The "Resolution" dropdown: the narrowest a graph point may get (each panel's
+# min interval). Grafana still widens points to fit the range - a week is ~10min
+# a point whatever this says - so 5s means "automatic"; a wider value smooths
+# short ranges, where 5s points make every panel a wall of spikes.
+RESOLUTION = {
+    "type": "custom", "name": "res", "label": "Resolution",
+    "query": "5s,1m,5m,15m,1h",
+    "current": {"text": "5s", "value": "5s"},
+    "options": [{"text": v, "value": v, "selected": v == "5s"} for v in ["5s", "1m", "5m", "15m", "1h"]],
+}
+
+
 def dashboard(uid, title, panels, desc):
     return {
         "uid": uid, "title": title, "description": desc, "tags": ["homelab"],
         "timezone": "browser", "refresh": "30s", "schemaVersion": 39,
         "time": {"from": "now-6h", "to": "now"},
         "panels": panels, "editable": True,
+        "templating": {"list": [RESOLUTION]},
     }
 
 
@@ -148,17 +164,56 @@ hosts.append(panel("ZFS errors (xero, max)", [
          "Checksum errors with no read/write errors mean bad data, not a bad link."))
 
 # ---- Containers on xero (cAdvisor) -------------------------------------------
-c_cpu = '100 * sum by (name) (' + counter_rate('container_cpu_usage_seconds_total{name!=""}') + ')'
-c_mem = 'container_memory_working_set_bytes{name!=""}'
+# Containers started with a bare `docker run` (builds, tests, one-off tools)
+# get Docker's adjective_surname names, and over two days they outnumbered the
+# real services (18 of 46 series on 2026-10-23). They are summed into one line.
+# Immich's compose names match the same shape, so they are let through first.
+AUTO_NAME = '[a-z]+_[a-z]+'
+ONE_OFF = "one-off (docker run)"
+TOP_N = 8
+
+
+# cAdvisor gives a host-networked container the host's own interfaces, so each
+# of them reports all of xero's traffic (five identical lines, 2026-10-23).
+# They are left out of the network panels; read from compose so it can't drift.
+_compose = yaml.safe_load((Path(__file__).resolve().parents[2] / "docker-compose.yml").read_text())
+HOST_NET = sorted(svc.get("container_name", name) for name, svc in _compose["services"].items()
+                  if svc.get("network_mode") == "host")
+
+
+def by_container(metric, wrap=lambda s: s, skip=()):
+    """sum by (name) of metric, with the one-off containers folded together."""
+    named = f'{metric}{{name!="",name!~"{"|".join([AUTO_NAME, *skip])}"}}'
+    immich = f'{metric}{{name=~"immich_.+"}}'
+    one_off = f'{metric}{{name=~"{AUTO_NAME}",name!~"immich_.+"}}'
+    return (f'(sum by (name) ({wrap(named)}) or sum by (name) ({wrap(immich)})'
+            f' or label_replace(sum ({wrap(one_off)}), "name", "{ONE_OFF}", "", ""))')
+
+
+def top(expr, graphed):
+    """Keep graphed only for the TOP_N containers by expr's peak over the whole
+    dashboard range. Ranked once, as of the range's end, so the set does not
+    change from point to point and the legend stays TOP_N long."""
+    return (f'({graphed}) and on (name) topk({TOP_N}, '
+            f'max_over_time(({expr})[$__range:1m] @ ${{__to:date:seconds}}))')
+
+
+c_cpu = '100 * ' + by_container('container_cpu_usage_seconds_total', counter_rate)
+c_mem = by_container('container_memory_working_set_bytes')
+c_rx = by_container('container_network_receive_bytes_total', counter_rate, HOST_NET)
+c_tx = by_container('container_network_transmit_bytes_total', counter_rate, HOST_NET)
+top_desc = f" Top {TOP_N} containers by peak over the selected range; `docker run` one-offs are one line."
 containers = [
-    panel("Container CPU (max)", [(peak(c_cpu)[0], "{{name}}")], "percent", 0, 0, w=24, h=10,
-          desc="100% = one full core; xero has 4. Each point is the max 5s value in its interval."),
-    panel("Container CPU (p95)", [(peak(c_cpu)[1], "{{name}} p95")], "percent", 0, 10, w=24, h=10),
-    panel("Container memory, working set (max)", [(peak(c_mem)[0], "{{name}}")], "bytes", 0, 20, w=24, h=10),
-    panel("Container network (max)", [
-        (peak('sum by (name) (' + counter_rate('container_network_receive_bytes_total{name!=""}') + ')')[0], "{{name}} rx"),
-        (peak('sum by (name) (' + counter_rate('container_network_transmit_bytes_total{name!=""}') + ')')[0], "{{name}} tx"),
-    ], "Bps", 0, 30, w=24, h=10, desc="Host-networked containers (Caddy, Grafana, Prometheus, HA...) do not show here."),
+    panel("Container CPU (max)", [(top(c_cpu, peak(c_cpu)[0]), "{{name}}")], "percent", 0, 0, w=24, h=10,
+          desc="100% = one full core; xero has 4. Each point is the max 5s value in its interval." + top_desc),
+    panel("Container CPU (p95)", [(top(c_cpu, peak(c_cpu)[1]), "{{name}} p95")], "percent", 0, 10, w=24, h=10,
+          desc=top_desc.strip()),
+    panel("Container memory, working set (max)", [(top(c_mem, peak(c_mem)[0]), "{{name}}")], "bytes", 0, 20,
+          w=24, h=10, desc=top_desc.strip()),
+    panel("Container network received (max)", [(top(c_rx, peak(c_rx)[0]), "{{name}}")], "Bps", 0, 30, h=10,
+          desc="Host-networked containers (" + ", ".join(HOST_NET) + ") are left out: cAdvisor reports all of xero's traffic for each of them." + top_desc),
+    panel("Container network sent (max)", [(top(c_tx, peak(c_tx)[0]), "{{name}}")], "Bps", 12, 30, h=10,
+          desc="Host-networked containers (" + ", ".join(HOST_NET) + ") are left out: cAdvisor reports all of xero's traffic for each of them." + top_desc),
 ]
 
 # ---- Network usage per LAN device (xero as gateway) ---------------------------

@@ -55,7 +55,19 @@ turns a counter into a 5s rate, and each point on a graph is
 `max_over_time` / `quantile_over_time(0.95, ...)` of the 5s values inside
 that point's `$__interval`. Zoomed out to a week a point covers about ten
 minutes and still shows the worst five seconds in it. p95 lines are dashed.
-Legends show the max and the last value, not the mean.
+Legends show the max and the last value, not the mean, sorted by max.
+
+**Resolution dropdown** (top left of every dashboard, since 2026-10-23): the
+narrowest a point may get. `5s` is automatic; pick `1m`/`5m`/`15m`/`1h` to
+smooth a short range. Each point is still the max (or p95) of the 5s samples
+it covers, so a wider point never hides a spike, it only merges neighbours.
+
+**Containers dashboard:** each panel shows the top 8 containers by peak over
+the selected range, so the legend stays short. Containers started with a bare
+`docker run` (Docker's random `adjective_surname` names) are summed into one
+`one-off (docker run)` line. Host-networked containers (read from
+`docker-compose.yml`) are left out of the network panels, because cAdvisor
+gives each of them all of xero's traffic.
 
 ## Changing dashboards
 

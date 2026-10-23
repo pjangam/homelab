@@ -14,7 +14,7 @@
   },
   "panels": [
     {
-      "id": 18,
+      "id": 19,
       "type": "bargauge",
       "title": "Today",
       "datasource": {
@@ -80,7 +80,7 @@
       ]
     },
     {
-      "id": 19,
+      "id": 20,
       "type": "bargauge",
       "title": "This month",
       "datasource": {
@@ -146,7 +146,7 @@
       ]
     },
     {
-      "id": 20,
+      "id": 21,
       "type": "bargauge",
       "title": "Last 30 days",
       "datasource": {
@@ -212,7 +212,7 @@
       ]
     },
     {
-      "id": 21,
+      "id": 22,
       "type": "timeseries",
       "title": "Per day",
       "description": "Bytes per device per day, stacked. Days are UTC days (05:30 to 05:30 IST): Prometheus aligns 1d steps to UTC, and a day's bar appears only once it has ended - the Today gauge covers the day so far.",
@@ -270,11 +270,14 @@
           "calcs": [
             "sum",
             "max"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -291,7 +294,7 @@
       "timeFrom": "30d"
     },
     {
-      "id": 22,
+      "id": 23,
       "type": "timeseries",
       "title": "Per hour",
       "description": "Bytes per device per hour, stacked, last 2 days. An hour's bar appears once it has ended.",
@@ -349,11 +352,14 @@
           "calcs": [
             "sum",
             "max"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -370,7 +376,7 @@
       "timeFrom": "2d"
     },
     {
-      "id": 23,
+      "id": 24,
       "type": "timeseries",
       "title": "Throughput per device (max)",
       "description": "The counters update once a minute, so this is each minute's rate and each point the max of those minutes - no finer than a minute.",
@@ -378,7 +384,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 30,
@@ -427,11 +433,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -456,5 +465,46 @@
       ]
     }
   ],
-  "editable": true
+  "editable": true,
+  "templating": {
+    "list": [
+      {
+        "type": "custom",
+        "name": "res",
+        "label": "Resolution",
+        "query": "5s,1m,5m,15m,1h",
+        "current": {
+          "text": "5s",
+          "value": "5s"
+        },
+        "options": [
+          {
+            "text": "5s",
+            "value": "5s",
+            "selected": true
+          },
+          {
+            "text": "1m",
+            "value": "1m",
+            "selected": false
+          },
+          {
+            "text": "5m",
+            "value": "5m",
+            "selected": false
+          },
+          {
+            "text": "15m",
+            "value": "15m",
+            "selected": false
+          },
+          {
+            "text": "1h",
+            "value": "1h",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  }
 }

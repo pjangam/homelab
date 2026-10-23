@@ -22,7 +22,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 0,
@@ -72,11 +72,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -109,7 +112,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 12,
         "y": 0,
@@ -158,11 +161,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -195,7 +201,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 8,
@@ -245,11 +251,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -273,7 +282,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 12,
         "y": 8,
@@ -322,11 +331,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -350,7 +362,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 16,
@@ -400,11 +412,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -437,7 +452,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 12,
         "y": 16,
@@ -486,11 +501,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -559,7 +577,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 24,
@@ -609,11 +627,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -646,7 +667,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 12,
         "y": 24,
@@ -695,11 +716,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -732,7 +756,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 32,
@@ -781,11 +805,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -818,7 +845,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 12,
         "y": 32,
@@ -868,11 +895,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -905,7 +935,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 40,
@@ -954,11 +984,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -982,7 +1015,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 12,
         "y": 40,
@@ -1031,11 +1064,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -1086,7 +1122,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "interval": "5s",
+      "interval": "$res",
       "gridPos": {
         "x": 0,
         "y": 48,
@@ -1135,11 +1171,14 @@
           "calcs": [
             "max",
             "lastNotNull"
-          ]
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "desc",
+          "hideZeros": true
         }
       },
       "targets": [
@@ -1155,5 +1194,46 @@
       ]
     }
   ],
-  "editable": true
+  "editable": true,
+  "templating": {
+    "list": [
+      {
+        "type": "custom",
+        "name": "res",
+        "label": "Resolution",
+        "query": "5s,1m,5m,15m,1h",
+        "current": {
+          "text": "5s",
+          "value": "5s"
+        },
+        "options": [
+          {
+            "text": "5s",
+            "value": "5s",
+            "selected": true
+          },
+          {
+            "text": "1m",
+            "value": "1m",
+            "selected": false
+          },
+          {
+            "text": "5m",
+            "value": "5m",
+            "selected": false
+          },
+          {
+            "text": "15m",
+            "value": "15m",
+            "selected": false
+          },
+          {
+            "text": "1h",
+            "value": "1h",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  }
 }
