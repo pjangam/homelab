@@ -2497,3 +2497,14 @@ qty | item | est | note
 - 2026-10-22: device names on the dashboard: `homelab_lan_device_info{ip,device}` from `device-names` (IP or MAC) or the router's reverse DNS, joined at the dashboard's end time so history relabels too. Two Grafana gotchas: a range query's `@ end()` is rounded down to the step (an hour back on the hourly panel), so it uses `@ ${__to:date:seconds}`; and a bar gauge with auto sizing hides the names once it has ~16 rows, so rows are fixed at 16px and scroll.
 - 2026-10-22: the Airtel router's DHCP gateway field is editable, so no Pi-hole DHCP needed for the rollout.
 - 2026-10-22: user chose xero as the gateway for now, OpenWrt kept for later. `projects/lan-gateway/` written; the nft table could not be test-loaded without sudo (user namespaces are blocked), so `setup_lan_gateway.sh` checks it with `nft -c` before loading.
+
+### Clawlight in CarPlay (HA sensor)
+**Status:** Active
+**Priority:** P3
+
+**Why:** to see clawlight in the car. CarPlay has no browser, so neither the clawlight page nor the Pi's clock screen can go there. iOS 26 CarPlay widgets would have allowed a clock-style widget, but the user's iPhone is not on iOS 26 (2026-10-23), so it goes through the HA app's CarPlay support.
+**State:** `server.py` publishes `clawlight/summary` with MQTT discovery, and HA has `sensor.clawlight_claude` ("Claude"), e.g. `Needs you: homelab:rebalance` (`clawlight/README.md`, "In the car"). Verified in HA's API 2026-10-23. Not yet seen in the car.
+**Next step:** user: HA app -> Settings -> Companion App -> CarPlay, turn it on, add "Claude" to Quick Access, check in the car whether the tile shows the sensor's value or only its name. If only the name, options are CarHA (third-party, shows values on buttons) or an HA notification on "Needs you", whose CarPlay visibility is also untested. If it works, close as Done.
+
+#### Log
+- 2026-10-23: sensor shipped and verified in HA. Considered and not pursued: a Scriptable widget like the clock's clawlight column (needs iOS 26 for CarPlay widgets, and widgets refresh only every 5-15 min anyway).

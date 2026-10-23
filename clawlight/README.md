@@ -483,6 +483,22 @@ Open on whatever device you want the light on:
 Click **Float** to pop it into Picture-in-Picture so it stays on top of other
 windows (desktop) or floats over other apps (iOS Safari).
 
+### In the car (CarPlay, via Home Assistant)
+
+CarPlay has no browser, so neither this page nor the Pi's clock screen can be
+shown there. Instead `server.py` publishes a human-readable summary to
+`clawlight/summary` (retained JSON) and announces it over MQTT discovery, so HA
+creates **`sensor.clawlight_claude`** ("Claude") by itself. Its state is one
+short line - `Needs you: homelab:rebalance`, `Working: ...`, `Shells running:
+...`, `Idle` or `No sessions` - naming only the sessions in the aggregate's
+state, with the same `dir:tmux-session` names as the clock. The full session
+list is in its `sessions` attribute. It goes unavailable with the server, via
+the same `clawlight/availability` last-will the LED uses. `clawlight/state` is
+unchanged, so the LED is not affected.
+
+To show it: HA app -> Settings -> Companion App -> CarPlay, turn CarPlay on,
+and add the sensor to the Quick Access list.
+
 ## Known limitations
 
 - One global aggregate light, not per-session - though it does show *which*

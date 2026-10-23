@@ -85,11 +85,36 @@ MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
 MQTT_STATE_TOPIC = os.environ.get("MQTT_STATE_TOPIC", "clawlight/state")
 MQTT_AVAILABILITY_TOPIC = os.environ.get("MQTT_AVAILABILITY_TOPIC", "clawlight/availability")
 
+# --- Home Assistant sensor (for CarPlay) -------------------------------------
+# CarPlay has no browser, so neither the page nor the Pi's clock screen can be
+# shown there - but the HA app can put a sensor on its CarPlay Quick Access
+# tab. clawlight/state is a bare colour word the LED depends on, so the
+# richer, human-readable version goes on its own retained topic and the LED's
+# contract stays untouched. Discovery makes HA create the entity by itself.
+MQTT_SUMMARY_TOPIC = os.environ.get("MQTT_SUMMARY_TOPIC", "clawlight/summary")
+HA_DISCOVERY_TOPIC = "homeassistant/sensor/clawlight/config"
+HA_DISCOVERY = {
+    # No entity name of its own: HA then shows just the device's name, so
+    # the CarPlay tile reads "Claude" rather than "Claude Claude".
+    "name": None,
+    "unique_id": "clawlight_summary",
+    "icon": "mdi:robot-outline",
+    "state_topic": MQTT_SUMMARY_TOPIC,
+    "value_template": "{{ value_json.text }}",
+    "json_attributes_topic": MQTT_SUMMARY_TOPIC,
+    "availability_topic": MQTT_AVAILABILITY_TOPIC,
+    "device": {"identifiers": ["clawlight"], "name": "Claude", "manufacturer": "homelab"},
+}
+# What the sensor's state says per aggregate. Short on purpose: a CarPlay tile
+# has room for a few words, and HA caps a state at 255 characters.
+SUMMARY_PREFIX = {"waiting": "Needs you", "active": "Working", "shells": "Shells running"}
+
 mqtt_client = None
 # Set to None to force a republish - used on (re)connect so a broker that lost
 # its retained store gets repopulated rather than staying blank until the next
 # state change, which during a quiet stretch could be hours away.
 last_published: str | None = None
+last_summary: str | None = None
 
 
 # --- jump-to-console (focus) -----------------------------------------------
@@ -491,10 +516,11 @@ def start_mqtt():
     import paho.mqtt.client as mqtt
 
     def on_connect(client, userdata, flags, reason_code, properties):
-        global last_published
+        global last_published, last_summary
         print(f"mqtt connected: {reason_code}")
+        client.publish(HA_DISCOVERY_TOPIC, json.dumps(HA_DISCOVERY), retain=True)
         client.publish(MQTT_AVAILABILITY_TOPIC, "online", retain=True)
-        last_published = None  # force a republish of the current state
+        last_published = last_summary = None  # force a republish of the current state
 
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="clawlight-server")
     client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
@@ -505,6 +531,28 @@ def start_mqtt():
     mqtt_client = client
 
 
+def session_name(s: dict) -> str:
+    # Same naming as the Pi's clock screen: directory, plus the tmux session
+    # when there is one, so the car and the wall read alike.
+    return f"{s['label']}:{s['session']}" if s["session"] else s["label"]
+
+
+def summary(snap: dict) -> dict:
+    agg = snap["state"]
+    sessions = [
+        {"name": session_name(s), "host": s["host"], "state": s["state"]}
+        for s in snap["sessions"]
+    ]
+    if agg in SUMMARY_PREFIX:
+        # Only the sessions in the aggregate's own state are named: when one
+        # needs you, that is the one to see, not the ones working fine.
+        names = sorted(s["name"] for s in sessions if s["state"] == agg)
+        text = f"{SUMMARY_PREFIX[agg]}: {', '.join(names)}"
+    else:
+        text = "Idle" if sessions else "No sessions"
+    return {"text": text[:255], "state": agg, "sessions": sessions}
+
+
 def publish_state_loop():
     """Publish the aggregate whenever it changes.
 
@@ -513,13 +561,18 @@ def publish_state_loop():
     disappears when prune_locked() ages it out. Polling catches both causes
     through one code path, and keeps MQTT work off the request threads.
     """
-    global last_published
+    global last_published, last_summary
     while True:
         try:
-            state = snapshot()["state"]
+            snap = snapshot()
+            state = snap["state"]
             if state != last_published and mqtt_client is not None:
                 mqtt_client.publish(MQTT_STATE_TOPIC, state, retain=True)
                 last_published = state
+            summary_json = json.dumps(summary(snap))
+            if summary_json != last_summary and mqtt_client is not None:
+                mqtt_client.publish(MQTT_SUMMARY_TOPIC, summary_json, retain=True)
+                last_summary = summary_json
         except OSError as exc:
             print(f"mqtt publish failed: {exc}")  # transient; the loop retries
         time.sleep(1)

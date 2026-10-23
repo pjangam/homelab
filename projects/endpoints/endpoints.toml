@@ -215,6 +215,10 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
     desc = "Retained. Current light colour. The Pi's LED subscribes and gets the current state replayed the moment it connects."
 
     [[group.endpoint.topic]]
+    name = "clawlight/summary"
+    desc = "Retained JSON: one-line summary plus the session list. Backs HA's sensor.clawlight_claude (MQTT discovery), which is how clawlight reaches CarPlay."
+
+    [[group.endpoint.topic]]
     name = "clawlight/availability"
     desc = "Retained, with a last-will. Goes to offline by itself if the clawlight server dies, which is how the LED knows to stop trusting the state above."
 
