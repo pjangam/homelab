@@ -2508,3 +2508,51 @@ qty | item | est | note
 
 #### Log
 - 2026-10-23: sensor shipped and verified in HA. Considered and not pursued: a Scriptable widget like the clock's clawlight column (needs iOS 26 for CarPlay widgets, and widgets refresh only every 5-15 min anyway).
+
+### Machine upgrades (whole-house UPS/inverter, second SSD, better machine)
+**Status:** Backlog
+**Priority:** P3
+
+**Why:** three hardware purchases the user has in mind, collected in one place because they affect each other (a bigger machine changes the UPS load and the drive plan). Nothing can be bought for a few months (user, 2026-10-23), so this records the options and reasoning so far, ready for when it can.
+**State:** options researched 2026-10-23 (below), nothing decided or bought. Standing rule for any machine: **no soldered RAM or storage** - the user wants to upgrade parts when needed. That rules out the Mac mini, Ryzen AI Max boxes and most N100/N150 mini PCs.
+**Next step:** when purchases are possible, pick the order. The UPS/inverter needs a load figure first: "Home power audit" has the device side; a new machine's idle draw adds to it.
+
+#### 1. UPS + inverter for the whole house
+Instead of today's DC mini UPSes on just the router and xero (one is dead, see "xero's UPS (CRU12V3A) dead").
+- Sizing depends on what it carries: the network stack alone is tiny; fridge, fans and lights are what set the battery size. Use "Home power audit" for the numbers.
+- Changeover time matters: xero, the router and the Pi must not reboot during the switch. Pick an inverter with a computer/"UPS mode" (narrow input window, faster switching), and consider keeping the DC mini UPS on xero/router behind it anyway as a gap-free last stage.
+- What it changes elsewhere: the wol Pi would stay up in an outage, so its boot-time WoL packet never fires and the reasoning in "Move WoL to an ESP32, put the Pi on the UPS" flips. And with the router on battery, the power watchdog's carrier signal goes blind - it needs the ping signal from "Pi audio move follow-ups" first.
+- Prices not researched yet.
+
+#### 2. Second SSD - deferred
+Deferred 2026-10-23: the monthly S3 Deep Archive run ("Offsite backup for Immich photo data") now gives an off-box copy, which was the urgent half. A second disk is still the only thing that survives the Kingston dying *without downtime* - see "ZFS mirror" for the parts. A new machine with two M.2 slots and a 2.5" bay changes this: buy the mirror disk with it rather than squeezing a USB enclosure onto xero.
+
+#### 3. Better machine
+xero today: Celeron N5105 (4c/4t), one DDR4 SO-DIMM slot (32GB fitted), 1 M.2 + 1 2.5", 1GbE. Load over the week of 2026-10-16 to 10-23: CPU p95 30% (mostly Immich ML on the import backlog, which will end), memory p95 42%, temperature max 90°C. **Capacity is not the problem; heat, one SSD and one RAM slot are.** So a better CPU is mainly for headroom and a possible local LLM, not today's load.
+
+Options (prices 2026-10-23; only the NUC has an Indian listing - the rest are US/EU prices converted plus ~20-30% import/GST, so check a local shop first):
+
+| Machine | CPU | RAM | Drives | Network | Approx. | Notes |
+|---|---|---|---|---|---|---|
+| Beelink EQ14 | N150 (4/4) | 1x DDR4 | 2 M.2 (2nd x1) | 2x 1GbE | ~₹20-25k est. | barely faster than xero; one RAM slot |
+| Lenovo ThinkCentre M75q/M70q Tiny (refurb) | Ryzen 5 PRO / i5-10400T (6/12) | 2x DDR4 | M.2 + 2.5" (by generation) | 1GbE | ~₹15-30k est. | best value: reuses the 32GB DDR4 stick and the Kingston; business-grade cooling |
+| ASUS NUC 14 Pro (tall) | Core Ultra 5 125H (14/18) | 2x DDR5, 96GB | M.2 + 2.5" bay | 2.5GbE Intel | ₹46k barebone + ~₹10k RAM | new, warranty, low idle |
+| GMKtec K8 Plus | Ryzen 7 8845HS (8/16) | 2x DDR5 | 2 M.2 (unconfirmed) | 2x 2.5GbE | ~₹45-55k est. | overkill; smaller brand |
+| Beelink SER8 | Ryzen 7 8745HS (8/16) | 2x DDR5 | 2 M.2 PCIe4 | 2.5GbE | ~₹50-60k est. | overkill; no 2.5" bay |
+| Minisforum UM890 Pro | Ryzen 9 8945HS (8/16) | 2x DDR5, 96GB | 2 M.2 PCIe4 | 2x 2.5GbE | ~₹60-70k est. | **OCuLink** for an external GPU later |
+| DIY micro-ATX build | e.g. i5-12400/14400 | 4x DDR5 DIMM | 2 M.2 + 4 SATA | 2.5GbE | ~₹50-70k, no GPU | most upgradeable; real PCIe x16 slot |
+
+Sources: [NUC 14 Pro India](https://varietyinfotech.com/product-tag/barebones-mini-pc/), [UM890 Pro](https://liliputing.com/minisforum-um890-pro-mini-pc-with-ryzen-9-8945hs-launches-globally-for-479-and-up/), [SER8](https://www.notebookcheck.net/Excellent-Beelink-SER8-mini-PC-with-AMD-Ryzen-7-8745HS-APU-and-32-GB-RAM-now-discounted-to-lowest-ever-price.1086220.0.html), [EQ14](https://liliputing.com/beelink-eq14-mini-pc-is-powered-by-an-unannounced-intel-n150-processor/), [M75q refurb](https://boingboing.net/2026/10/08/your-monitors-may-take-up-more-space-than-this-tiny-lenovo-pc.html).
+
+**Pick, by goal:** homelab only -> refurb ThinkCentre Tiny (cheapest) or NUC 14 Pro (new). Local LLM as a real goal -> UM890 Pro (OCuLink) or the DIY build. The Ryzen 8000 boxes are several times the CPU the homelab uses.
+
+**Local LLM.** Speed is set by memory bandwidth, not CPU. Rough 4-bit estimates (not measured): DDR4 CPU-only ~5-8 tok/s on a 7-8B model; DDR5 iGPU ~10-15 tok/s on 7-8B, ~3 on 32B; an RTX 3060 12GB ~40-60 tok/s on 7-8B, ~25 on 14B. The fast unified-memory machines (Ryzen AI Max+ 395, Mac mini) have soldered memory, so they are out under the rule above - the upgradeable path to speed is a GPU (in a PCIe slot, or over OCuLink). Best use here: a local conversation agent for HA Assist (speech-to-phrase and piper are already local), summaries, tagging. Not a substitute for Claude on coding. Related: "Local Qwen (Ollama) delegation experiment".
+
+**DIY build.** User has never built one; friends have. Pick parts with them, then build together or let the local shop assemble. Common first-build misses: front-panel header wiring, XMP left off, RAM or cooler not seated. Rough parts (estimates, not checked against Indian prices; RAM prices volatile): CPU i5-12400/14400 ₹12-18k (Quick Sync for Immich), B760 micro-ATX board with 2x M.2/4x SATA/2.5GbE ₹12-16k, 2x16GB DDR5 ₹8-12k, 550-650W 80+ Gold PSU ₹6-8k, case + tower cooler ₹6-9k, 1TB NVMe for the mirror ₹6-8k; later a used RTX 3060 12GB ₹18-25k. xero's DDR4 SO-DIMM does not fit a desktop; the SSDs do. Bigger than a mini PC: a wall shelf, not flat on the wall.
+
+**Why a desktop idles higher** (~20-35W vs xero's ~10W; +10-15W with a GPU): a large PSU is inefficient at 20W load; desktop boards carry power delivery and extra chips sized for 150W+ CPUs; C-states/ASPM often ship disabled; more fans and drives; a GPU idles at 10-15W; and Ryzen 7000/9000 desktop chips idle ~25-30W from their I/O die (AMD "G" APUs and Intel avoid that). Tuned - Intel, no RGB, a quality ~550W PSU, C-states and ASPM on, `powertop --auto-tune`, GPU only once needed - it can land around 15-20W, about ₹60-80/month more than xero. The bigger cost is UPS runtime, which ties back to part 1.
+
+Moving to any new machine means moving Docker, ZFS (`zfs send` to the new pool), the systemd units, Tailscale identities, the crontab and the static IP `.123`; plan it as its own step when the box is chosen.
+
+#### Log
+- 2026-10-23: entry created from a conversation: load review (xero has headroom; the Pi is the tight box, see "RPi load migration"), machine options, local LLM, DIY build and idle power. Second SSD deferred because the S3 Deep Archive backup is now running.
