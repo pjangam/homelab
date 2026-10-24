@@ -325,6 +325,26 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "Loopback only; HA (host network) is its only client. Custom models go in projects/voice-assistant/wakewords/. projects/voice-assistant/README.md"
 
   [[group.endpoint]]
+  name = "Voice satellite - bedroom (ESPHome API)"
+  proto = "tcp"
+  host = "192.168.1.125"
+  port = 6053
+  connect = "projects/voice-assistant/esphome/esphome.sh logs --device 192.168.1.125   (on the Mac: build_on_mac.sh, then esphome logs voice-satellite.yaml --device 192.168.1.125)"
+  desc = "ESPHome native API on the bedroom voice satellite: the board streams mic audio to HA over this and HA drives its status light. Noise-encrypted with the api_key in the gitignored esphome/secrets.yaml."
+  who = "Home Assistant's ESPHome integration (device \"Voice Satellite\", HA area Bedroom). An `esphome logs` session is a second client."
+  note = "Static IP set in firmware, not a DHCP reservation. OTA on port 3232. Was the WLED aarti board until 2026-10-06. Weak Wi-Fi at -75 dBm. projects/voice-assistant/README.md"
+
+  [[group.endpoint]]
+  name = "Voice satellite - living room (ESPHome API)"
+  proto = "tcp"
+  host = "192.168.1.126"
+  port = 6053
+  connect = "projects/voice-assistant/esphome/esphome.sh logs --device 192.168.1.126"
+  desc = "ESPHome native API on the living room voice satellite, same role as the bedroom board above. Noise-encrypted with api_key_living_room."
+  who = "Home Assistant's ESPHome integration (device \"Voice Living Room\", HA area Living Room)."
+  note = "Flashed 2026-10-24. Static IP set in firmware - keep .126 out of the router's DHCP pool. OTA on port 3232; compile on xero (the Mac cannot fetch ESP-IDF on this ISP). projects/voice-assistant/README.md"
+
+  [[group.endpoint]]
   name = "NTP (chrony)"
   proto = "udp"
   host = "192.168.1.123"

@@ -55,7 +55,25 @@ white noise, AC.
 - `esphome/` - the ESP32 satellites: `voice-satellite-common.yaml` (shared), one small file per board - `voice-satellite.yaml` (first board, .125, HA area Bedroom) and `voice-living-room.yaml` (.126, waiting on a second INMP441) - `build_on_mac.sh [living]`, `esphome.sh`
   (ESPHome in docker: `compile`, `run --device /dev/ttyUSB0`, later OTA to
   192.168.1.125), and the gitignored `secrets.yaml` (Wi-Fi, API key, OTA
-  password). **Prefer not to compile on xero:** the RAM is replaced and cleared
+  password). **Prefer xero over the Mac for a first build (2026-10-24):** `build_on_mac.sh`
+  could not fetch ESPHome's ESP-IDF tarball - GitHub release assets came down at
+  7-9 KB/s, so the download timed out. **This comes and goes:** the same
+  TCP-and-TLS-fine-but-no-data symptom hit PyPI and `deb.debian.org` from xero
+  and the Pi on 2026-10-22 and cleared within the hour (`PROJECTS.md`, LAN
+  gateway Log). So the Mac path may work again; test it with a quick
+  `curl -r 0-2000000 -w '%{speed_download}'` against the tarball URL before
+  committing to it. Compile on xero
+  instead, where ESP-IDF 5.5.5 is already cached in the `esphome-build` volume:
+  `CONFIG=voice-living-room.yaml esphome.sh compile`, then either flash there
+  (`esphome.sh flash-bin`) or pull `firmware.factory.bin` out of the volume
+  (`docker run --rm -v esphome-build:/v alpine cat /v/build/<name>/build/firmware.factory.bin`)
+  and write it from the Mac with `esptool --port /dev/cu.usbserial-0001 --baud 460800 write-flash 0x0 <bin>`.
+  An already-flashed board takes an **OTA** instead, which needs none of this.
+  If the Mac venv ever has to be rebuilt, pin `cbor2==5.7.1`: cbor2 6.x ships
+  macOS wheels for arm64 only and this MacBook is Intel. `check_usb_serial.sh`
+  diagnoses a board that does not appear on USB (two of three cables were
+  charge-only on 2026-10-24).
+  **The old caveat, still true:** the RAM is replaced and cleared
   (2026-10-09), but a full-core build still runs xero in the 90s°C on its
   pegboard until "xero cooling" in PROJECTS.md is done. Build on the Mac instead: `esphome/build_on_mac.sh` from a
   clone (venv, no Docker) flashes over USB on the Mac, OTA, or copies the
