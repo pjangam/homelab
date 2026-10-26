@@ -17,6 +17,14 @@
 # media_player entity targeting it goes unavailable. This never self-heals,
 # so it's restarted on sight rather than after a threshold.
 #
+# Third failure mode (2026-10-26, on the Pi): spotifyd logs "Connection to
+# server closed" and then never logs in to Spotify again by itself. The
+# process stays up and keeps advertising on the LAN, so the advertising check
+# is green, but Spotify's Web API no longer knows the device: spotcast's play
+# fails with "Device not found". On 2026-10-26 it sat like that from 00:34 to
+# 11:08, when a phone on the LAN woke it. Restarted once the closed
+# connection has gone SESSION_GRACE_MIN without a later "Authenticated as".
+#
 # Every restart is appended to restarts.log so healthcheck.sh can flag
 # repeated flapping (a one-off hang is fine to silently self-heal; restarting
 # every few minutes means something's actually wrong and needs a look).
@@ -28,6 +36,7 @@ STATE_DIR="$HOME/.cache/spotifyd-watchdog"
 DOWN_SINCE_FILE="$STATE_DIR/down-since"
 RESTART_LOG="$STATE_DIR/restarts.log"
 DOWN_THRESHOLD_MIN=15
+SESSION_GRACE_MIN=5
 LOG_TAG="spotifyd-watchdog"
 
 # cron runs with no XDG_RUNTIME_DIR, so `systemctl --user` fails with
@@ -46,16 +55,34 @@ if [ -z "$pid" ] || [ "$pid" = "0" ]; then
   exit 0
 fi
 
-# Zeroconf check. Scoped to the current MainPID so a failure logged by a
-# previous, already-replaced invocation can't retrigger this forever.
-if journalctl --user -u spotifyd.service _PID="$pid" --no-pager 2>/dev/null \
-     | grep -q "Setting up dns-sd failed"; then
-  logger -t "$LOG_TAG" "spotifyd zeroconf setup failed at startup (pid $pid) - not advertising as a Connect device, restarting"
+# This process's log lines. Scoped to the current MainPID so a failure logged
+# by a previous, already-replaced invocation can't retrigger this forever.
+# Matched on _PID alone, not `--user -u`: the Pi keeps no user journal, so its
+# spotifyd lines only exist in the system journal (readable through `adm`).
+journal=$(journalctl _PID="$pid" -o short-unix --no-pager 2>/dev/null)
+
+restart() { # reason
+  logger -t "$LOG_TAG" "$1 (pid $pid) - restarting"
   systemctl --user restart spotifyd
   rm -f "$DOWN_SINCE_FILE"
   date -Iseconds >> "$RESTART_LOG"
   logger -t "$LOG_TAG" "spotifyd restarted"
   exit 0
+}
+
+# Zeroconf check.
+if grep -q "Setting up dns-sd failed" <<<"$journal"; then
+  restart "spotifyd zeroconf setup failed at startup - not advertising as a Connect device"
+fi
+
+# Session check: the last session event decides. Field 1 is the unix time.
+last=$(grep -E "Connection to server closed|Authenticated as" <<<"$journal" | tail -1)
+if grep -q "Connection to server closed" <<<"$last"; then
+  closed_at=${last%%.*}
+  closed_min=$(( ($(date +%s) - closed_at) / 60 ))
+  if [ "$closed_min" -ge "$SESSION_GRACE_MIN" ]; then
+    restart "spotifyd lost its Spotify session ${closed_min}m ago and never logged back in"
+  fi
 fi
 
 # A CLOSE-WAIT with Recv-Q 0 just means the remote end closed and spotifyd
