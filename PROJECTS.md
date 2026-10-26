@@ -2561,3 +2561,14 @@ Moving to any new machine means moving Docker, ZFS (`zfs send` to the new pool),
 
 #### Log
 - 2026-10-23: entry created from a conversation: load review (xero has headroom; the Pi is the tight box, see "Move some load to the Raspberry Pi"), machine options, local LLM, DIY build and idle power. Second SSD deferred because the S3 Deep Archive backup is now running.
+
+### Old duplicity backup in Google Drive - keep or delete
+**Status:** Backlog
+**Priority:** P3
+
+**Why:** `My Drive -> xero` holds a 2019 encrypted duplicity backup (134 x 25 MB, ~3.3 GB, probably Deja Dup of the home folder) that uses up Drive storage. Details in `docs/google_drive_duplicity_backup.md`.
+**State:** Found 2026-10-26. The GPG passphrase is not remembered, so the backup cannot be read as things stand.
+**Next step:** User decides. Look for the passphrase in Vaultwarden or among old passwords. If found, list the contents. If not, delete the folder and empty Drive's Trash.
+
+#### Log
+- 2026-10-26: Found and identified; decision deferred.
