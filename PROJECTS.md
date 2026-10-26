@@ -1727,23 +1727,30 @@ On xero, `sudo smartctl -a /dev/nvme0` (or `/dev/sda`, whichever `findmnt /` say
 **Status:** Backlog
 **Priority:** P2
 
-**Why:** xero runs hot where it is mounted. memtest86+ hit 103°C there on 2026-10-08 (a RAM bit flipped), against 86°C on the desk with the fan side in open air. Mounted with the fan side facing the board, the only gap was its rubber feet. Idle on the pegboard is 55-68°C, high for an N5105.
-**State:** nothing built. Two stopgaps tried on 2026-10-08 (a makeshift stopper wedged between xero and the board for a gap - fragile; the room AC turned down - not bearable as a permanent setting); neither stays.
-**Next step:** pick from the options below (an external fan and better mounting are both on the table).
+**Why:** xero runs hot where it is mounted. memtest86+ hit 103°C there on 2026-10-08 (a RAM bit flipped), against 86°C on the desk with the fan side in open air. Mounted with the fan side facing the board, the only gap was its rubber feet. Idle on the pegboard is 55-68°C, high for an N5105. **The SSD runs hot too:** the Kingston SA400 (datapool) reaches 81-87°C, against a 70°C rating, under long disk jobs (2026-10-22, 2026-10-26). It is screwed into the plastic bottom cover, away from the CPU blower, so nothing moves air over it.
+**State:** nothing built. Since the fan side was turned to face the room, the CPU has open air but the bottom cover, where the SSD is, faces the board with only the rubber feet for a gap. **The two sides compete for the open air:** whichever faces the board runs hot. Two stopgaps tried on 2026-10-08 (a makeshift stopper wedged between xero and the board for a gap - fragile; the room AC turned down - not bearable as a permanent setting); neither stays.
+**Next step:** free test first: stand xero clear of the board with the SSD side in open air, point the spare Pi fan at it, run a fixed 20GB datapool read and compare the SSD's peak with 81-82°C. Then build whichever of the two options below the result supports.
 
 #### Options
-User, 2026-10-08: an external fan and better mounting are both on the table.
+User, 2026-10-08: an external fan and better mounting are both on the table. Updated 2026-10-26 to cover the SSD as well: a mount has to give **both** sides air.
+- **Main option: standoffs + USB fan.** Keep the fan side facing the room, push xero 3-4cm off the board, and have a USB fan blow through the gap across the bottom cover (the SSD side). Cools the SSD without taking air from the CPU.
+- **Alternative: stand xero on its edge** on a Skadis shelf, held by a bracket or bookend so it cannot tip, so neither face touches the board. Both sides get open air, maybe no fan needed. It no longer hangs from its mounting holes, so it has to be held securely.
+- **Ruled out: flipping xero so the SSD side faces the room.** That puts the CPU fan side back against the board, the setup that hit 103°C.
+- **Not worth it:** a fan inside the case (no room, and the blower uses the only fan header); heatsinks or thermal pads on the SSD (the plastic cover has nowhere to send the heat); cutting vents in the cover.
+- **Software limit:** an SSD-temperature rule in `services/immich/load_guard.sh` (pause Immich at 80°C or above for a minute, resume under ~60°C). The guard watches only `x86_pkg_temp` today. Not built yet.
+- **Long term:** a Samsung 870 EVO or Crucial MX500 as the mirror's second SSD (see "ZFS mirror"), which handles long jobs better than the SA400 and runs cooler.
 - **Sturdy standoffs** between xero and the board: M3/M4 nylon or brass standoffs, 3-4 cm, in xero's mounting holes (check the thread), or a Skadis shelf with xero standing on it, fan side out. Replaces the stopper.
 - **External USB fan** (user: manageable, 2026-10-08): a 5V 80-120mm USB fan (roughly ₹300-800) clipped to the pegboard, moving air through the gap behind xero - ideally pulling the hot exhaust out rather than blowing at the case. Powered from one of xero's USB ports, so it is on whatever UPS xero is on and runs whenever xero does. Pick a quiet one (low RPM or with a speed switch); it is in the room.
 - **New thermal paste** on the CPU (never redone; the 2026-08-21 clean was dust only). Likely the biggest single gain if idle stays in the 60s with good airflow.
-- **Turn the vented side away from the board** if a mount can be found (its mounting holes are on the fan side, which is why it faces the board now).
+- ~~**Turn the vented side away from the board**~~ - done before 2026-10-22 (the user turned the fan side to face the room). It moved the problem to the SSD side, see State.
 
 #### Done when
-A full-load run (memtester 2 x 10G or a build) on the pegboard, at normal room temperature, stays under ~85°C. The 90°C healthcheck alert covers it until then.
+A full-load run (memtester 2 x 10G or a build) on the pegboard, at normal room temperature, stays under ~85°C, **and** a 20GB datapool read keeps the Kingston under ~70°C (`node_hwmon_temp_celsius{chip="target0:0:0_0:0:0:0"}` in Prometheus). The 90°C healthcheck alert covers it until then.
 
 #### Log
 - 2026-08-21: CPU cleaned (dust only, thermal paste not redone).
 - 2026-10-08: memtest86+ hit 103°C on the pegboard (a RAM bit flipped), against 86°C on the desk. A memtester run that evening (2 x 10G, pegboard) climbed to 92-95°C even with both stopgaps in place.
+- 2026-10-26: a 4GB GoPro upload, plus Immich's conversion and ML that followed, took the Kingston to 81-82°C for ~5 min (12:10-12:15). Photos show the SSD in the plastic bottom cover, which now faces the board. Flipping xero over ruled out (it puts the CPU back against the board). Options updated: standoffs + USB fan, or standing it on edge. Immich transcode policy set to `required` the same day to cut the disk load (see "Immich re-enablement").
 
 ### xero's UPS (CRU12V3A) dead - xero off until it is replaced
 **Status:** Active
