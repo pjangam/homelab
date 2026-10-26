@@ -496,6 +496,12 @@ list is in its `sessions` attribute. It goes unavailable with the server, via
 the same `clawlight/availability` last-will the LED uses. `clawlight/state` is
 unchanged, so the LED is not affected.
 
+**Limitation (seen in the car, 2026-10-26): CarPlay shows one session.** The HA
+app's CarPlay tile shows only the sensor's short line, not its attributes, so
+with several sessions only one is readable there. The sensor still names all
+of them and HA shows the full `sessions` list; it is the car's tile that is
+limited.
+
 To show it: HA app -> Settings -> Companion App -> CarPlay, turn CarPlay on,
 and add the sensor to the Quick Access list.
 
