@@ -445,12 +445,13 @@ qty | item | est | note
 1 | USB 3 SATA enclosure (UASP) | 500-900 | only if xero has no free internal bay - both its SATA slots look taken (SA400 + Biwin boot); check when the case is open
 ```
 ### Offsite backup for Immich photo data
-**Status:** Active
-**Priority:** P2
+**Status:** Done
 
 **Why:** Vaultwarden and HA config are already backed up daily to Dropbox via rclone. Immich's photo data (`datapool/immich-upload`, `datapool/immich-db`) has no copy off the Kingston SSD - the ZFS pool itself is a single disk (see above). Since 2026-10-22 it is the only copy of much of it: the Takeout zips and the phone-uploads copies were deleted once Immich had them, and the phone no longer has the May 2024 trip videos. Wider than Immich: nothing on `datapool` has a copy off xero.
-**State:** shape decided 2026-10-22 (see "Design (2026-10-22)"): a local copy on a 1TB Samsung SD card the user thinks they have, plus monthly encrypted tar bundles to S3 Glacier Deep Archive, read only if both the Kingston and the card fail. ~73G to protect today (originals + DB dumps). The old AWS account was suspended for inactivity; a new one is needed.
-**Next step:** Deep Archive half is running: the first full run finished 2026-10-23 05:16, and cron repeats it monthly (04:00 on the 1st). SD card half: user finds the card and a USB 3 reader; then `f3probe`, a ZFS pool on it, nightly `zfs send`.
+**Outcome:** done 2026-10-26. Off-site copy running: `projects/immich-backup/archive_to_glacier.sh` puts every original Immich knows (both users and the birthday external library) plus the newest DB dump into GPG tar bundles in S3 Glacier Deep Archive (`pramod-immich-backup`, us-east-1). First full run 2026-10-23: 18,853 files, 80.5GB, 24 bundles. Cron repeats it at 04:00 on the 1st, and the healthcheck alerts after 33 days without a completed run. `recovered-media` (2 files) and `phone-uploads` are all in Immich, so the archive covers them; `documents` goes to Dropbox.
+- Not pursued: the SD-card local copy. User, 2026-10-26: nice to have, not needed. A dead Kingston is restored from Deep Archive (12-48h, ~$0.20), or prevented by the "ZFS mirror" entry.
+- Left for the user: delete the two probe objects under `immich/test/` from the S3 console (the upload-only key cannot).
+- Not yet seen: the first incremental run (2026-11-01), which should pick up `GOPR0178.MP4` from 2026-10-26.
 
 #### Approach
 A naive rclone-to-Dropbox push doesn't actually make sense here: the whole point of self-hosting Immich is avoiding paying for cloud photo storage, so continuously syncing the full photo set to cloud storage undermines that. If pursued, needs a different shape - compress/archive first, and use a cold-storage tier (e.g. S3 Glacier / Glacier Deep Archive) priced for rarely-accessed disaster-recovery data rather than active-sync storage, not a Dropbox-style always-on sync.
@@ -486,6 +487,7 @@ The "Approach" note above says cloud undermines self-hosting; the counter-argume
 - 2026-10-22: bucket `pramod-immich-backup` (us-east-1, general purpose, versioning on, incomplete multipart uploads cleaned after 7 days) and IAM user `xero-immich-archive` with `iam-policy.json`, by console (from now on cloud resources go in Terraform). First real uploads: two ~95MB bundles + DB dump + manifest, `Tier: DEEP_ARCHIVE` confirmed. Two fixes: an empty manifest made `grep` end the script silently under pipefail; rclone's read-back after each upload is refused by the upload-only key (403, then a retry "succeeded"), so `--s3-no-head`. Full run started detached under `flock`, same lock as the monthly cron line; healthcheck alerts if no `Immich archive complete:` in 33 days. Two probe objects under `immich/test/` (bytes) can be deleted from the console.
 - 2026-10-22: SSD reads now streamed (`tar | gpg | rclone rcat`, so ~3MB/s instead of 4G in 20s), and a file at more than one path (the same photo in two users' libraries, e.g. Bhakti's Takeout, or one Immich moves after it is archived) is uploaded once and recorded as `alias:` lines, which the restore copies back to every path. `test_archive.sh`: 13 checks against a local remote and a made-up asset table, restore included. Photo dates play no part: a Takeout's old photos are simply not archived yet, so they go up on the next run.
 - 2026-10-23: first full run done: 23:05 to 05:16, 18,853 files, 80.5GB in 24 bundles (22 this run plus the 2 test bundles), no errors. The Kingston peaked at 69°C on that run, which still used the old burst reads.
+- 2026-10-26: closed. Cron, healthcheck and the first run confirmed; `recovered-media` checked against Immich by SHA-1 (both files present); the archive cron added to `docs/hardware.md`. SD-card half dropped as nice-to-have.
 
 ### Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement
 **Status:** Parked
