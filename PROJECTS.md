@@ -178,15 +178,13 @@ qty | item | est | note
 - 2026-10-09: **verified - Done.** HA history of `binary_sensor.wol_pi_under_voltage` and `..._since_boot` since monitoring began on 2026-10-06: never `on` (only off/unavailable/unknown), through three nights of white noise and a reboot after the 2026-10-08 power cut; 0 kernel under-voltage events since that boot. The 5.1V supply fixed it. `docs/hardware.md` Power row updated.
 
 ### MacBook DNS keeps breaking - root cause closed out (OpenVPN Connect, at connect); no client-side cure
-**Status:** Active
-**Priority:** P3
+**Status:** Closed
 
 **Why:** the Mac's resolver broke six times with an identical signature, and each repair destroyed the evidence before anyone could say what caused it. Between breaks the Mac is silently unfiltered - the 2026-08-28 occurrence went unnoticed for 10 days.
-**State:** root cause known (2026-09-30): OpenVPN Connect writes the off-LAN server pair into configd's in-memory `Setup:` store at connect, and skips the restore when the tunnel process dies instead of disconnecting. **No client-side cure exists** - the bug is in corporate software on a managed Mac. The repair stays a repair; what changed is that it is now a 30-second repair with an unambiguous verification, instead of a month of looking in the wrong layer. The recorder keeps running to catch the next occurrence.
-**Next step:**
-- **Try a reboot next time, before the repair.** An in-memory dynamic-store key should not survive configd restarting. Untested, and if it holds it is a simpler answer than anything here.
-- **Report the `192.169.0.2` typo upstream** (see "The 192.169 typo is upstream").
-- **Attribute the one remaining write** at the next occurrence (see "One write still unattributed").
+**Outcome:** closed 2026-10-26: nothing more can be done from this side. Root cause known since 2026-09-30: OpenVPN Connect writes the off-LAN server pair (see "The signature, every time") into configd's in-memory `Setup:` store when it connects, and skips the restore when the tunnel process dies instead of disconnecting. The bug is in corporate software on a managed Mac (the employer M2), so there is no client-side cure.
+- **When it happens again** (lookups hang, "the internet is slow"): run `fix_macbook_dns.sh` on the Mac and verify with `scutil --dns`, never `networksetup`. About 30 seconds. Clawlight keeps working at home either way, since its hooks report over the LAN (see "Knock-on: clawlight").
+- **Not pursued:** reporting the 192.169 typo upstream to whoever runs the corporate VPN profile, and attributing the one 2026-09-28 write left unexplained. A reboot instead of the repair (should clear an in-memory key) was never tried; worth one go at the next occurrence, since it costs nothing.
+- **Still running:** the DNS recorder on the M2 (`tools/network/mac-dns-recorder.sh`, log `~/Library/Logs/homelab/dns-recorder/snapshots.log`). Harmless to leave; it would attribute the next write if anyone looks.
 
 #### The signature, every time
 `en0` resolves against `192.168.0.2` + `192.169.0.2`. Neither is on this LAN (192.168.1.0/24) and the second is a typo landing in publicly routable space, so queries *hang* rather than fail fast - which is why it reads as "the internet is slow", not "DNS is down".
@@ -257,9 +255,10 @@ Mitigated for clawlight specifically on 2026-09-28 (see Log): reporting never ne
 - 2026-09-28 18:37: 6th occurrence, broken for 39 hours until the repair on 2026-09-30 09:49. The recorder caught it (pid 41238, still alive 2026-09-30).
 - 2026-09-30: the 6th occurrence closed the remaining questions. Refined the 09-23 conclusion: "persistent" was wrong - the key is written only into configd's in-memory store - and "never restores" is wrong too, it restores 442 times out of 447 and the interesting case is the 5 it does not. Written at connect, restore skipped on process death, ovpnagent's log found (see "Root cause").
 - 2026-09-30, second pass: the mechanism, the profile history, why it only started hurting in August, and the August/September symptoms merged into one bug; `fix_macbook_dns.sh` corrected; tooling and recorder updated (full command lines, `Setup:` dictionary verbatim).
+- 2026-10-26: closed by the user: the cause is in OpenVPN Connect on a managed Mac and nothing on our side can stop it. The repair and its verification are the standing answer; reporting upstream and attributing the last write are not pursued.
 
 ### ESP32 UPS LED monitor
-**Status:** Active
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** `watchdog_power.sh` (below) currently guesses "90 minutes on battery is probably safe" before shutting down cleanly. The RouterUPS has 4 status LEDs (plug=mains, battery-full=on-battery-ok, lightning=charging, battery-low=critical) - reading the actual battery-low LED would replace the time guess with the UPS's own real signal.
@@ -309,6 +308,9 @@ The 4 LEDs are only 5mm apart, too tight for discrete sensors + individual light
 2. Whether the LEDs are on flying wires already connected to the main board (trivial to tap) or mounted directly on the PCB (would need to solder at whatever pad pitch the board actually uses, not necessarily the same 5mm as the LEDs' visible spacing).
 3. If it's PCB-mounted, whether that pitch is something comfortable to hand-solder at all.
 
+#### Log
+- 2026-10-26: moved to Backlog by the user. Nothing bought; the case inspection is still the next step whenever it is picked up.
+
 ### Check if server RAM is expandable
 **Status:** Done
 
@@ -338,7 +340,7 @@ The 4 LEDs are only 5mm apart, too tight for discrete sensors + individual light
 - 2026-10-09: ~~Open: a fresh memtest86+ run~~ **cleared by memtester instead (user's choice):** 2 copies x 10G, 2 loops each, all 18 tests ok in every loop, 0 failures, 21:32 -> 00:46 on the pegboard, on the router's UPS. CPU 89-95°C on sysfs (HA peak 97°C), with a makeshift stopper for a gap and the AC turned down - so the stick is clean in the low-to-mid 90s, where the first memtest86+ error came at 103°C. memtester covers only free memory (20 of 32GB), so this is strong evidence, not a full clearance; a recurrence of segfaults or speech-to-phrase hangs would mean testing again.
 
 ### Local Qwen (Ollama) delegation experiment
-**Status:** Active
+**Status:** Backlog
 **Priority:** P3
 
 **Why:** wanted to test routing trivial subagent tasks to a locally-hosted model (Qwen via Ollama) instead of Anthropic's cloud models, to see if cost/latency can be saved on simple work while keeping a cloud Claude model for anything nontrivial. Manual/semi-automatic invocation is an explicitly acceptable bar for a first pass, full auto-detection would be a bonus.
@@ -356,6 +358,9 @@ The 4 LEDs are only 5mm apart, too tight for discrete sensors + individual light
 
 #### The script
 `tools/dev-shell/qwen_delegate_repl.py` is a REPL loop (`while True: input() -> tool_runner turn -> print reply`) that persists conversation history across turns, defines `delegate_to_local_model` as a custom tool wrapping Ollama's local HTTP API, and prints `[-> delegating to qwen2.5:1.5b: ...]` / `[<- ... replied: ...]` markers so delegation is visible live. Orchestrator defaults to `claude-opus-5` (swappable to sonnet/haiku for cost).
+
+#### Log
+- 2026-10-26: moved to Backlog by the user.
 
 ### Check RAM in Lenovo Flex
 **Status:** Done

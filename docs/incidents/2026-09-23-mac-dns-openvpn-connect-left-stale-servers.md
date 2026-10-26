@@ -414,3 +414,13 @@ The `192.169.0.2` typo has been in the profile for at least five months and
 survived at least seven profile revisions. Every client on that VPN resolves
 against a publicly routable address in a block that is not theirs. Worth
 reporting.
+
+## Closed (2026-10-26)
+
+Closed without a fix: the bug is in OpenVPN Connect on a managed work Mac, and
+nothing on the client side can stop the write or force the missing restore.
+The standing answer is the repair: `fix_macbook_dns.sh`, then check with
+`scutil --dns` (not `networksetup`). Reporting the 192.169 typo upstream
+and attributing the 2026-09-28 write were not pursued. A reboot in place of the
+repair is still untested and worth one try at the next occurrence. The recorder
+stays installed on the M2.
