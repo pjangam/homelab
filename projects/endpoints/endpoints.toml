@@ -450,6 +450,15 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   who = "Phones picking a speaker in the Spotify app, and HA's play_bedroom_track through its spotcast entity."
   note = "Only shows up in spotcast after a phone has played to it once. Running but not advertising is the known failure; check_spotifyd_advertising.sh looks for it."
 
+  [[group.endpoint]]
+  name = "Spotify Connect - xero"
+  proto = "udp"
+  host = "192.168.1.123"
+  connect = "avahi-browse -pt _spotify-connect._tcp   (look for xero)"
+  desc = "spotifyd on xero (systemd --user), a second Connect device next to raspberrypi. Disabled at the 2026-09-24 move to the Pi, back on since 2026-10-27; both run."
+  who = "Phones picking a speaker in the Spotify app, and HA's spotcast entity media_player.xero_..._spotcast."
+  note = "Zeroconf login only: no saved credentials until a phone picks it once from the Spotify app. watchdog_spotifyd.sh runs from xero's cron again."
+
 [[group]]
 name = "Not services at all"
 blurb = "Packets with a direction and no listener, or a listener that never answers. There is nothing to open here - the point is that these exist and where they point."
