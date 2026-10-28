@@ -31,6 +31,15 @@ the version is pinned in `.env` as `IMMICH_VERSION`.
   `cpus: 2` until 2026-10-16, when face detection on a 37-photo upload still
   took xero to 89°C; one core halves ML throughput (about 10 minutes for a
   batch that size).
+- **Integrity checks run at 03:00 IST and checksum 15% of the library a
+  night** (set 2026-10-28; Administration -> Settings -> Integrity, stored in
+  `system_metadata.system-config`). v3's default is `0 3 * * *` in the
+  container's clock, which is UTC (no `TZ` on `immich_server`), i.e. 08:30 IST,
+  and a checksum of 100% of the assets: an ~80GB read at ~190MB/s for 8
+  minutes that took the Kingston to 75°C every morning. Now all three jobs
+  (missing, untracked, checksum) are `30 21 * * *` UTC and the checksum
+  `percentageLimit` is 0.15. It resumes from a checkpoint, so the whole
+  library is still covered about once a week, in ~1-minute bursts.
 
 ## Load guard
 

@@ -568,6 +568,7 @@ Three shapes, cheapest first:
 - 2026-10-26: `GOPR0178.MP4` (4.0GB, 1080p60 H.264) uploaded from `phone-uploads` after a clean `ffmpeg -c copy` pass; SHA-1 matched, dated 2018-01-23 from its metadata. The Kingston datapool SSD hit 81-82C during the upload, conversion and ML analysis that followed. Cause: transcode policy `optimal` with target 720p converted every video above 720p (about 2,900 of 3,531; `encoded-video` is 113GB). **Policy set to `required`** via the API: only codecs not on the accepted list (HEVC) get converted now, so 1080p/4K H.264 plays from the original. Existing converted copies kept.
 - 2026-10-18: own tailnet name `https://photos.<tailnet>/` via the `photos-tailscale` sidecar (tailnet only; named for the job, not the app). Ojaswi's birthday album added as a read-only external library.
 - 2026-10-26: reviewed for closing: not done. Open: the ML backlog (14,412 / 15,298 of 18,839) and the `@pre-v3` snapshots. Finished items dropped from Next step (`recovered-media` videos, the tailnet route).
+- 2026-10-28: the Kingston hit 75°C at 08:30 IST every morning since the v3 upgrade: Immich's integrity checks (default `0 3 * * *` UTC) checksummed the whole library, ~80GB at ~190MB/s. Moved to 03:00 IST and capped at 15% a night (`services/immich/README.md`).
 
 ### Move the Airtel router to a central spot (retire the Wi-Fi extender)
 **Status:** Backlog
