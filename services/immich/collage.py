@@ -64,7 +64,8 @@ def assets(album_id):
         items += res["items"]
         page = res["nextPage"] and int(res["nextPage"])
     # leave out collages this script uploaded on an earlier run
-    items = [a for a in items if a.get("deviceId") != "collage.py"]
+    # (Immich 3 no longer returns deviceId, so go by the name it saves them as)
+    items = [a for a in items if not a["originalFileName"].endswith("_collage.jpg")]
     return sorted(items, key=lambda a: a["localDateTime"])
 
 
@@ -87,20 +88,21 @@ def rows(photos, cols, width, gap):
     return out
 
 
-def upload(path, album_id):
+def upload(path, album):
+    name = album["albumName"].replace(" ", "_") + "_collage.jpg"  # what assets() skips
     boundary = uuid.uuid4().hex
     now = datetime.now(timezone.utc).isoformat()
-    fields = {"deviceAssetId": f"collage-{path.name}-{now}", "deviceId": "collage.py",
+    fields = {"deviceAssetId": f"collage-{name}-{now}", "deviceId": "collage.py",
               "fileCreatedAt": now, "fileModifiedAt": now}
     body = b"".join(
         f"--{boundary}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n".encode()
         for k, v in fields.items())
     body += (f"--{boundary}\r\nContent-Disposition: form-data; name=\"assetData\"; "
-             f"filename=\"{path.name}\"\r\nContent-Type: image/jpeg\r\n\r\n").encode()
+             f"filename=\"{name}\"\r\nContent-Type: image/jpeg\r\n\r\n").encode()
     body += path.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
     res = api("/assets", data=body,
               headers={"content-type": f"multipart/form-data; boundary={boundary}"})
-    api(f"/albums/{album_id}/assets", {"ids": [res["id"]]}, method="PUT")
+    api(f"/albums/{album['id']}/assets", {"ids": [res["id"]]}, method="PUT")
     return res["id"]
 
 
@@ -140,7 +142,7 @@ def main():
     sheet.save(out, quality=92)
     print(out)
     if a.upload:
-        print("uploaded", upload(out, alb["id"]))
+        print("uploaded", upload(out, alb))
 
 
 if __name__ == "__main__":
