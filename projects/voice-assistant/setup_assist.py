@@ -34,7 +34,7 @@ EXPOSE = {
     "switch.bedroom_balcony": ["balcony light"],
     "fan.bedroom_fan_2": ["bedroom fan", "fan"],
     "switch.living_room_tubelight": ["hall light", "living room light"],
-    "switch.living_room_shelf_led": ["shelf light"],
+    "switch.living_room_shelf_led": ["shelf light", "shelf LED", "living room LED"],
     "fan.living_room_fan": ["hall fan"],
     "switch.white_noise": [],
     "climate.panasonic_ac_panasonic_ac": ["AC", "air conditioner"],
