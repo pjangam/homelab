@@ -2650,3 +2650,23 @@ qty | item | est | note
 
 #### Log
 - 2026-10-28: dongle chosen; link saved for buying later.
+
+### Workbench stock: jumper wires and project boxes
+**Status:** Backlog
+**Priority:** P3
+
+**Why:** general stock for ESP32/Pi builds, so a build doesn't stall on a missing wire or end up as a bare board on the floor. Separate from the per-project parts lists, which still list their own box or jumpers when they need one.
+**State:** added to the shopping list 2026-10-28, not bought. Quantities are a sensible default, not a count of a specific need.
+**Next step:** buy on the next shop trip (all loose local stock).
+
+```parts
+qty | item | est | note
+1 | Male-male dupont jumpers (40-pin strip, 20cm) | 100-150 | local - breadboard to breadboard
+1 | Male-female dupont jumpers (40-pin strip, 20cm) | 100-150 | local - Pi/ESP32 header pins to breadboard
+1 | Female-female dupont jumpers (40-pin strip, 20cm) | 100-150 | local - header to module pins (sensors, LEDs)
+3 | Small ABS project box (~85x55x30mm) | 180-300 | local - fits an ESP32 dev board or a small sensor
+2 | Medium ABS project box (~100x68x40mm) | 200-300 | local - ESP32 plus a buck converter or relay
+```
+
+#### Log
+- 2026-10-28: entry created for jumper wires and project boxes.
