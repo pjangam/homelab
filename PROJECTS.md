@@ -2668,8 +2668,9 @@ qty | item | est | note
 2 | Male-female dupont jumpers (40-pin strip, 20cm) | 200-300 | local - Pi/ESP32 header pins to breadboard
 2 | Female-female dupont jumpers (40-pin strip, 20cm) | 200-300 | local - header to module pins (sensors, LEDs)
 1 | Female-female dupont jumpers (40-pin strip, 10cm) | 80-120 | local - short runs inside a project box, so the wiring doesn't bunch up
+1 | Berg strip / dupont housings, 2.54mm, assorted 1-8 pin (single row) + a few 2x4/2x5 | 100-200 | local - group several jumpers into one plug (e.g. mic or amp to ESP32, one plug per module). Reuses the jumpers' crimped pins: lift the 1-pin shell's latch with a needle, push the pin into the multi-way housing until it clicks. No crimper needed
 2 | Small ABS project box (~85x55x30mm), spare | 120-200 | local - for the next ESP32 or sensor build; the voice satellite and Diwali boxes are on their own entries
 ```
 
 #### Log
-- 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here. Jumpers doubled and a 10cm set added: current stock is running out.
+- 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here. Jumpers doubled and a 10cm set added: current stock is running out. Berg strip (dupont) housings added for multi-pin plugs.
