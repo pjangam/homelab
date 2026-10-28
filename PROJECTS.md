@@ -2659,16 +2659,17 @@ qty | item | est | note
 **Priority:** P3
 
 **Why:** general stock for ESP32/Pi builds, so a build doesn't stall on a missing wire or end up as a bare board on the floor. Separate from the per-project parts lists, which still list their own box or jumpers when they need one.
-**State:** added to the shopping list 2026-10-28, not bought. Quantities are a sensible default, not a count of a specific need.
+**State:** added to the shopping list 2026-10-28, not bought. **Current jumper stock is running out** (user, 2026-10-28), so the jumpers are doubled; the box quantity is a sensible default.
 **Next step:** buy on the next shop trip (all loose local stock).
 
 ```parts
 qty | item | est | note
-1 | Male-male dupont jumpers (40-pin strip, 20cm) | 100-150 | local - breadboard to breadboard
-1 | Male-female dupont jumpers (40-pin strip, 20cm) | 100-150 | local - Pi/ESP32 header pins to breadboard
-1 | Female-female dupont jumpers (40-pin strip, 20cm) | 100-150 | local - header to module pins (sensors, LEDs)
+2 | Male-male dupont jumpers (40-pin strip, 20cm) | 200-300 | local - breadboard to breadboard
+2 | Male-female dupont jumpers (40-pin strip, 20cm) | 200-300 | local - Pi/ESP32 header pins to breadboard
+2 | Female-female dupont jumpers (40-pin strip, 20cm) | 200-300 | local - header to module pins (sensors, LEDs)
+1 | Female-female dupont jumpers (40-pin strip, 10cm) | 80-120 | local - short runs inside a project box, so the wiring doesn't bunch up
 2 | Small ABS project box (~85x55x30mm), spare | 120-200 | local - for the next ESP32 or sensor build; the voice satellite and Diwali boxes are on their own entries
 ```
 
 #### Log
-- 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here.
+- 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here. Jumpers doubled and a 10cm set added: current stock is running out.
