@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Homelab showcase</title>
+<!-- Shareable overview for r/homelab. Deliberately sanitized: no hostnames,
+     IPs, tailnet name, personal names or work projects. Logos are local copies
+     (icons/, from homarr-labs/dashboard-icons and simple-icons) so a render
+     never depends on the network. Render:
+       tools/repo-tools/shot.sh docs/showcase/homelab-showcase.html docs/showcase/homelab-showcase.png 1920 1080 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  :root {
+    --ink: #eef2ff; --muted: #94a3c4; --dim: #64748b;
+    --glass: rgba(22, 30, 54, 0.62); --glass2: rgba(34, 44, 76, 0.55); --edge: rgba(148, 163, 255, 0.18);
+    --cyan: #22d3ee; --violet: #a78bfa; --pink: #f472b6; --amber: #fbbf24; --green: #34d399; --red: #fb7185; --blue: #60a5fa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; color: var(--ink);
+    font-family: "Inter", "DejaVu Sans", sans-serif; background: #070b18; }
+  body::before { content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(900px 600px at 12% 8%, rgba(124, 58, 237, 0.30), transparent 60%),
+      radial-gradient(800px 600px at 92% 20%, rgba(14, 165, 233, 0.25), transparent 60%),
+      radial-gradient(900px 700px at 55% 105%, rgba(236, 72, 153, 0.18), transparent 60%),
+      radial-gradient(rgba(148, 163, 255, 0.10) 1px, transparent 1px) 0 0 / 28px 28px; }
+  .abs { position: absolute; }
+  .glass { background: var(--glass); border: 1px solid var(--edge); border-radius: 22px;
+    backdrop-filter: blur(14px); box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06); }
+  .mono { font-family: "JetBrains Mono", monospace; }
+
+  /* header */
+  .title { left: 56px; top: 38px; }
+  .title .kicker { font: 700 15px "JetBrains Mono", monospace; letter-spacing: 4px; color: var(--cyan); text-transform: uppercase; }
+  .title h1 { font-size: 60px; font-weight: 900; letter-spacing: -2px; line-height: 1.05; margin-top: 6px;
+    background: linear-gradient(90deg, #fff 0%, #c4b5fd 45%, #67e8f9 100%); -webkit-background-clip: text; color: transparent; }
+  .title p { color: var(--muted); font-size: 19px; margin-top: 8px; }
+  .stats { right: 56px; top: 52px; display: flex; gap: 14px; }
+  .stat { width: 132px; padding: 14px 10px; text-align: center; border-radius: 18px; }
+  .stat b { display: block; font-size: 34px; font-weight: 900; letter-spacing: -1px;
+    background: linear-gradient(180deg, #fff, var(--c)); -webkit-background-clip: text; color: transparent; }
+  .stat small { color: var(--muted); font-size: 12.5px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  /* access chain */
+  .access { left: 56px; top: 222px; width: 300px; height: 690px; padding: 22px; }
+  .sect { font: 700 13px "JetBrains Mono", monospace; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+  .hop { display: flex; align-items: center; gap: 14px; padding: 11px 14px; margin-top: 12px; border-radius: 16px;
+    background: var(--glass2); border: 1px solid var(--edge); }
+  .hop img, .ic { width: 46px; height: 46px; object-fit: contain; flex: none; }
+  .hop b { display: block; font-size: 18px; }
+  .hop span { color: var(--muted); font-size: 13.5px; }
+  .down { text-align: center; color: var(--cyan); font-size: 18px; margin: 2px 0 -8px; text-shadow: 0 0 12px var(--cyan); }
+  .note { margin-top: 14px; font-size: 13px; color: var(--muted); line-height: 1.45; padding: 10px 12px;
+    border-left: 3px solid var(--green); background: rgba(52, 211, 153, 0.07); border-radius: 8px; }
+  .note b { color: var(--green); }
+
+  /* server */
+  .server { left: 392px; top: 222px; width: 1028px; height: 690px; padding: 24px 26px;
+    border: 1px solid rgba(167, 139, 250, 0.45);
+    box-shadow: 0 0 0 1px rgba(167,139,250,0.15), 0 0 60px rgba(124, 58, 237, 0.35), 0 20px 60px rgba(0,0,0,0.5); }
+  .shead { display: flex; align-items: center; gap: 16px; }
+  .shead h2 { font-size: 30px; font-weight: 900; letter-spacing: -0.8px; }
+  .shead .tag { font: 700 12px "JetBrains Mono", monospace; color: var(--violet); border: 1px solid rgba(167,139,250,0.5);
+    padding: 4px 10px; border-radius: 999px; letter-spacing: 1.5px; }
+  .specs { display: flex; gap: 8px; margin: 12px 0 18px; flex-wrap: wrap; }
+  .spec { font: 500 13.5px "JetBrains Mono", monospace; color: #cbd5f5; background: rgba(255,255,255,0.05);
+    border: 1px solid var(--edge); padding: 5px 11px; border-radius: 8px; display: flex; gap: 7px; align-items: center; }
+  .spec img { width: 18px; height: 18px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .grp { border-radius: 16px; padding: 14px 14px 10px; background: var(--glass2); border: 1px solid var(--edge); position: relative; overflow: hidden; }
+  .grp::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--c), transparent); }
+  .grp h3 { font: 700 12.5px "JetBrains Mono", monospace; letter-spacing: 2.5px; color: var(--c); text-transform: uppercase; margin-bottom: 8px; }
+  .svc { display: flex; align-items: center; gap: 11px; padding: 6px 0; }
+  .svc img, .svc .ic { width: 34px; height: 34px; }
+  .svc b { font-size: 15.5px; font-weight: 700; display: block; line-height: 1.2; }
+  .svc span { font-size: 12.5px; color: var(--muted); }
+  .ic { display: grid; place-items: center; border-radius: 10px; font: 800 13px "JetBrains Mono", monospace; color: #0b1020;
+    background: linear-gradient(135deg, var(--c), #fff); }
+  .white { filter: invert(1) brightness(1.1); }
+
+  .load { margin-top: 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--edge); }
+  .load .lt { grid-column: 1 / -1; display: flex; justify-content: space-between; }
+  .m b { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; }
+  .m small { color: var(--muted); font-size: 12.5px; font-weight: 600; margin-left: 6px; }
+  .bar { height: 8px; border-radius: 8px; background: rgba(255,255,255,0.07); margin-top: 8px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--c), #fff); box-shadow: 0 0 12px var(--c); }
+  .svgi { width: 46px; height: 46px; flex: none; display: grid; place-items: center; border-radius: 12px;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa); }
+  .svgi svg { width: 28px; height: 28px; }
+
+  /* right column */
+  .pi { left: 1490px; top: 222px; width: 374px; height: 318px; padding: 22px; }
+  .esp { left: 1490px; top: 594px; width: 374px; height: 318px; padding: 22px; }
+  .dh { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .dh img { width: 48px; height: 48px; }
+  .dh b { font-size: 22px; font-weight: 900; display: block; }
+  .dh span { color: var(--muted); font-size: 13.5px; }
+  .li { display: flex; gap: 10px; align-items: center; font-size: 15px; padding: 5px 0; }
+  .li img { width: 24px; height: 24px; }
+  .li i { width: 24px; text-align: center; font-style: normal; color: var(--c); font-weight: 900; }
+
+  /* MQTT bus */
+  .bus { left: 1420px; top: 222px; width: 70px; height: 690px; }
+  .busline { position: absolute; left: 33px; top: 40px; bottom: 40px; width: 4px; border-radius: 4px;
+    background: linear-gradient(180deg, var(--green), var(--cyan), var(--violet)); box-shadow: 0 0 18px var(--green); }
+  .tap { position: absolute; height: 3px; background: var(--green); box-shadow: 0 0 10px var(--green); }
+  .busbadge { position: absolute; left: 4px; top: 312px; width: 62px; padding: 8px 0; border-radius: 14px; text-align: center;
+    background: #0d1430; border: 1px solid var(--green); box-shadow: 0 0 20px rgba(52,211,153,0.5); }
+  .busbadge img { width: 34px; height: 34px; }
+  .busbadge div { font: 700 10.5px "JetBrains Mono", monospace; color: var(--green); letter-spacing: 1px; }
+
+  /* footer */
+  .foot { left: 56px; top: 940px; width: 1808px; height: 104px; padding: 16px 24px; display: flex; align-items: center; gap: 22px; }
+  .flow { display: flex; align-items: center; gap: 12px; }
+  .node { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 14px; background: var(--glass2); border: 1px solid var(--edge); }
+  .node img { width: 30px; height: 30px; }
+  .node b { font-size: 15px; display: block; }
+  .node span { font-size: 12px; color: var(--muted); }
+  .arr { color: var(--cyan); font-size: 22px; text-shadow: 0 0 10px var(--cyan); }
+  .sep { width: 1px; height: 64px; background: var(--edge); }
+  .lessons { font-size: 14px; color: var(--muted); line-height: 1.55; }
+  .lessons b { color: var(--amber); }
+</style>
+</head>
+<body>
+
+<div class="abs title">
+  <div class="kicker">// homelab · 2026</div>
+  <h1>One 10W mini PC runs my whole home</h1>
+  <p>Photos, passwords, DNS, home automation and a 100% local voice assistant · wall-mounted on a pegboard</p>
+</div>
+
+<div class="abs stats">
+  <div class="stat glass" style="--c: var(--violet)"><b>27</b><small>containers</small></div>
+  <div class="stat glass" style="--c: var(--green)"><b>~12W</b><small>server idle</small></div>
+  <div class="stat glass" style="--c: var(--cyan)"><b>32GB</b><small>RAM</small></div>
+  <div class="stat glass" style="--c: var(--pink)"><b>0</b><small>cloud voice</small></div>
+</div>
+
+<!-- access -->
+<div class="abs access glass">
+  <div class="sect">Access</div>
+  <div class="hop"><div class="svgi"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="13" height="10" rx="1.5"/><path d="M1 17h15"/><rect x="17" y="8" width="6" height="12" rx="1.5"/></svg></div><div><b>Phones &amp; laptops</b><span>home or away</span></div></div>
+  <div class="down">↓</div>
+  <div class="hop"><img class="white" src="icons/tailscale.svg"><div><b>Tailscale</b><span>sidecar per service</span></div></div>
+  <div class="down">↓</div>
+  <div class="hop"><img src="icons/caddy.svg"><div><b>Caddy</b><span>reverse proxy · HTTPS</span></div></div>
+  <div class="down">↓</div>
+  <div class="hop"><img src="icons/pi-hole.svg"><div><b>Pi-hole</b><span>DNS + ad-blocking, whole LAN</span></div></div>
+  <div class="note"><b>No port-forwards.</b> Everything is tailnet-only; the one public page, a shared photo album, goes out through Tailscale Funnel.</div>
+  <div class="note" style="border-left-color: var(--amber); background: rgba(251,191,36,0.07)"><b style="color: var(--amber)">Power cuts:</b> mini UPS on the server, a clean shutdown if it runs long, and the Pi wakes it again when mains returns.</div>
+</div>
+
+<!-- server -->
+<div class="abs server glass">
+  <div class="shead"><h2>The server</h2><span class="tag">BEELINK MINI PC</span></div>
+  <div class="specs">
+    <div class="spec">Celeron N5105 · 4C</div>
+    <div class="spec">32GB DDR4</div>
+    <div class="spec"><img class="white" src="icons/si-openzfs.svg">960GB ZFS + 128GB boot</div>
+    <div class="spec"><img src="icons/ubuntu.svg">Ubuntu 24.04</div>
+    <div class="spec"><img src="icons/docker.svg">Docker Compose</div>
+  </div>
+  <div class="grid">
+    <div class="grp" style="--c: var(--amber)"><h3>Photos</h3>
+      <div class="svc"><img src="icons/immich.svg"><div><b>Immich</b><span>19k photos · ML search · iGPU transcode</span></div></div>
+      <div class="svc"><img src="icons/copyparty.svg"><div><b>copyparty</b><span>shared family albums</span></div></div>
+      <div class="svc"><div class="ic" style="--c: var(--amber)">SMB</div><div><b>Samba</b><span>phone dumps</span></div></div>
+    </div>
+    <div class="grp" style="--c: var(--green)"><h3>Smart home</h3>
+      <div class="svc"><img src="icons/home-assistant.svg"><div><b>Home Assistant</b><span>AC, fans, lights, scenes</span></div></div>
+      <div class="svc"><img src="icons/mosquitto.svg"><div><b>Mosquitto</b><span>MQTT broker</span></div></div>
+      <div class="svc"><img src="icons/spotify.svg"><div><b>spotifyd</b><span>Spotify Connect speaker</span></div></div>
+    </div>
+    <div class="grp" style="--c: var(--violet)"><h3>Local voice</h3>
+      <div class="svc"><div class="ic" style="--c: var(--violet)">WW</div><div><b>openWakeWord</b><span>"hey jarvis"</span></div></div>
+      <div class="svc"><div class="ic" style="--c: var(--violet)">STT</div><div><b>speech-to-phrase</b><span>speech → text, on-box</span></div></div>
+      <div class="svc"><div class="ic" style="--c: var(--violet)">TTS</div><div><b>Piper</b><span>text → speech</span></div></div>
+    </div>
+    <div class="grp" style="--c: var(--red)"><h3>Security</h3>
+      <div class="svc"><img class="white" src="icons/vaultwarden.svg"><div><b>Vaultwarden</b><span>family password manager</span></div></div>
+      <div class="svc"><div class="ic" style="--c: var(--red)">GPG</div><div><b>Encrypted backups</b><span>nothing leaves home in plaintext</span></div></div>
+      <div class="svc"><div class="ic" style="--c: var(--red)">GL</div><div><b>gitleaks</b><span>secret scan on every push</span></div></div>
+    </div>
+    <div class="grp" style="--c: var(--pink)"><h3>Monitoring</h3>
+      <div class="svc"><img src="icons/prometheus.svg"><div><b>Prometheus</b><span>node-exporter · cAdvisor</span></div></div>
+      <div class="svc"><img src="icons/grafana.svg"><div><b>Grafana</b><span>p95 &amp; max, never averages</span></div></div>
+      <div class="svc"><img src="icons/ntfy.svg"><div><b>ntfy</b><span>push alerts to phones</span></div></div>
+    </div>
+    <div class="grp" style="--c: var(--cyan)"><h3>Built in-house</h3>
+      <div class="svc"><img class="white" src="icons/si-react.svg"><div><b>Projects board</b><span>React dashboard of the backlog</span></div></div>
+      <div class="svc"><div class="ic" style="--c: var(--cyan)">°C</div><div><b>Thermal load guard</b><span>pauses ML before it cooks</span></div></div>
+      <div class="svc"><div class="ic" style="--c: var(--cyan)">⚡</div><div><b>Power-cut watchdog</b><span>clean ZFS shutdown on UPS</span></div></div>
+    </div>
+  </div>
+  <div class="load">
+    <div class="lt"><span class="sect">Last 7 days, measured</span><span class="sect" style="color:var(--dim)">p95 · temperature is the max</span></div>
+    <div class="m" style="--c: var(--violet)"><b>19%</b><small>CPU p95</small><div class="bar"><i style="width:19%"></i></div></div>
+    <div class="m" style="--c: var(--cyan)"><b>42%</b><small>RAM p95</small><div class="bar"><i style="width:42%"></i></div></div>
+    <div class="m" style="--c: var(--amber)"><b>79°C</b><small>CPU max</small><div class="bar"><i style="width:75%"></i></div></div>
+    <div class="m" style="--c: var(--green)"><b>331 / 860 GB</b><small>ZFS</small><div class="bar"><i style="width:38%"></i></div></div>
+  </div>
+</div>
+
+<!-- MQTT bus -->
+<div class="abs bus">
+  <div class="busline"></div>
+  <div class="tap" style="left:0; width:33px; top:380px"></div>
+  <div class="tap" style="left:37px; width:33px; top:160px"></div>
+  <div class="tap" style="left:37px; width:33px; top:530px"></div>
+  <div class="busbadge"><img src="icons/mosquitto.svg"><div>MQTT</div></div>
+</div>
+
+<!-- Pi -->
+<div class="abs pi glass" style="--c: var(--red)">
+  <div class="dh"><img src="icons/raspberry-pi.svg"><div><b>Raspberry Pi 3B</b><span>the box that's always up first</span></div></div>
+  <div class="li"><i>⏻</i>Wakes the server after power cuts (WoL)</div>
+  <div class="li"><img src="icons/node-red.svg">Node-RED bridge for the AC</div>
+  <div class="li"><img src="icons/spotify.svg">Second Spotify speaker</div>
+  <div class="li"><i>◉</i>GPIO buttons &amp; status LED</div>
+  <div class="li"><img src="icons/prometheus.svg">node-exporter, scraped by the server</div>
+  <div class="li"><i>⌚</i>Syncs its clock from the server</div>
+</div>
+
+<!-- ESP32s -->
+<div class="abs esp glass" style="--c: var(--violet)">
+  <div class="dh"><img class="white" src="icons/si-espressif.svg"><div><b>ESP32 fleet</b><span>~₹400 each · ESPHome &amp; WLED</span></div></div>
+  <div class="li"><img src="icons/esphome.svg">2× voice satellites · mic + LED ring</div>
+  <div class="li"><img src="icons/wled.png">Sound-reactive festival lights</div>
+  <div class="li"><i>✦</i>…that react to Diwali firecrackers</div>
+  <div class="li"><i>●</i>Status light for my AI coding agents</div>
+  <div class="li"><i>⇪</i>All updated over Wi-Fi (OTA)</div>
+</div>
+
+<!-- footer -->
+<div class="abs foot glass">
+  <div class="sect" style="writing-mode: vertical-rl; transform: rotate(180deg);">Backups</div>
+  <div class="flow">
+    <div class="node"><img class="white" src="icons/si-openzfs.svg"><div><b>ZFS</b><span>copies=2 · scrubs</span></div></div>
+    <div class="arr">→</div>
+    <div class="node"><img src="icons/dropbox.svg"><div><b>Dropbox</b><span>nightly, GPG-encrypted</span></div></div>
+    <div class="arr">+</div>
+    <div class="node"><img src="icons/aws.svg"><div><b>S3 Deep Archive</b><span>photos, monthly</span></div></div>
+    <div class="node"><img src="icons/terraform.svg"><div><b>Terraform</b><span>cloud as code</span></div></div>
+    <div class="node"><img src="icons/watchtower.svg"><div><b>Watchtower</b><span>weekly updates</span></div></div>
+  </div>
+  <div class="sep"></div>
+  <div class="lessons"><b>Lessons so far:</b> memtest caught a bad RAM stick · a bad patch cable meant 100Mb/s<br>· consumer SSDs hate bulk reads (a daily photo checksum hit 75°C) · everything lives in one git repo</div>
+</div>
+
+</body>
+</html>
