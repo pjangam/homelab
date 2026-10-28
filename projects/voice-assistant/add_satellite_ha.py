@@ -7,7 +7,8 @@ new satellite there is always a click-through left. This does that over the
 API instead, and sets the device's area in the same run (the room a satellite
 serves is its HA area, nothing in the firmware).
 
-Idempotent: if the host is already a config entry it only fixes the area.
+Idempotent: if the host is already a config entry it only fixes the area
+(it does not enable a disabled entry - see satellite_status.py).
 
 Run on xero, from the repo root:
     set -a; . ./.env.healthcheck; set +a
@@ -61,6 +62,16 @@ def existing_entry(host):
         yield entry
 
 
+def entry_for_host(host):
+    """The esphome entry for a host. Read from HA's own store, because no API
+    returns an entry's host."""
+    store = pathlib.Path(__file__).resolve().parents[2] / "HOMEASSISTANT_CONFIG" / ".storage" / "core.config_entries"
+    for entry in json.loads(store.read_text())["data"]["entries"]:
+        if entry["domain"] == "esphome" and entry["data"].get("host") == host:
+            return entry["entry_id"]
+    raise SystemExit(f"HA says {host} is configured, but no esphome entry in {store} has that host")
+
+
 def set_area(entry_id, area_id):
     devices = call({"type": "config/device_registry/list"})
     mine = [d for d in devices if entry_id in d.get("config_entries", [])]
@@ -92,8 +103,17 @@ def main():
     if step.get("step_id") in ("encryption_key", "authenticate"):
         step = http("POST", f"/api/config/config_entries/flow/{flow_id}",
                     {"noise_psk": secret(key_name)})
+    if step.get("type") == "abort" and str(step.get("reason")).startswith("already_configured"):
+        # HA ends an aborted flow by itself, so there is nothing to delete.
+        # Its entry may also be disabled - this neither enables nor adds it.
+        entry_id = entry_for_host(host)
+        print(f"{host} is already entry {entry_id}")
+        if area_id:
+            set_area(entry_id, area_id)
+        return
     if step.get("type") != "create_entry":
-        http("DELETE", f"/api/config/config_entries/flow/{flow_id}")
+        if step.get("type") != "abort":
+            http("DELETE", f"/api/config/config_entries/flow/{flow_id}")
         raise SystemExit(f"flow did not finish: step={step.get('step_id')} "
                          f"reason={step.get('reason')} errors={step.get('errors')}")
 

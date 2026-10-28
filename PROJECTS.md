@@ -2173,9 +2173,9 @@ qty | item | est | note
 **Priority:** P3
 
 **Why:** turn lights, white noise, fans and the AC on/off and set the AC temperature by voice. Doesn't need to be smart: a fixed set of English commands is enough. An HA voice add-on tried a year or two ago never worked - almost certainly because HA here is a plain Docker container, where add-ons cannot be installed. Assist itself is built into HA and needs only the speech pieces run as containers. Details: `projects/voice-assistant/README.md`.
-**State:** voice works from the phone app and from both ESP32 satellites - 192.168.1.125 (HA area Bedroom) and 192.168.1.126 (living room, **flashed 2026-10-24**, signal -32 dBm vs the bedroom board's -75 dBm). Both run current firmware. In the bedroom the white-noise hiss drowns commands. Live wake word is `hey_jarvis`; community models `andromeda` and `dumbledore` are preloaded but untested. **Left to do on the new board: add it in HA** (ESPHome integration, key `api_key_living_room`) **and set its area to Living Room**, then test. speech-to-phrase has twice got stuck until restarted (possibly xero's bad RAM).
+**State:** voice works from the phone app and from both ESP32 satellites - 192.168.1.125 (HA area Bedroom) and 192.168.1.126 (living room, **flashed 2026-10-24**, signal -32 dBm vs the bedroom board's -75 dBm). Both run current firmware. In the bedroom the white-noise hiss drowns commands. Live wake word is `hey_jarvis`; community models `andromeda` and `dumbledore` are preloaded but untested. **The living room board is in HA** since 2026-10-28 (entry enabled, area Living Room, satellite idle); a live command from that room is still to be tested. speech-to-phrase has twice got stuck until restarted (possibly xero's bad RAM).
 **Next step:**
-- Add the living room board in HA and set its area (see State), then test commands from that room.
+- Test commands from the living room ("hey jarvis, turn on living room light"); watch with `watch_assist.sh`.
 - Try `andromeda` / `dumbledore` against `hey_jarvis` and keep the best (to try: `WAKE_WORD_ID` in `setup_assist.py`, run it, restart speech-to-phrase, temporary `--debug` on openwakeword). Train on Colab only if neither works.
 - If speech-to-phrase gets stuck again after the RAM swap (done 2026-10-08; the 32GB stick passed memtester on 2026-10-09), treat it as a software bug: investigate then, and add a healthcheck that sends a test phrase and restarts speech-to-phrase on an empty result.
 
@@ -2220,6 +2220,7 @@ The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satel
   - **Mac-side esphome needs `cbor2==5.7.1` pinned.** esphome 2026.9.1 -> smpclient -> smp -> cbor2, and cbor2 6.x ships macOS wheels for **arm64 only**; this MacBook is Intel, so pip tries a source build and fails for want of Rust. 5.7.1 has Intel wheels for cp313 and cp314. The env is at `~/.cache/esphome-venv-2026.9.1` (uv + standalone CPython 3.13.17, since pypi.org is unreachable - see below); do not delete it.
   - **Flashing needed a third USB cable.** The first two were charge-only: the Mac saw no device at all, not even the USB-C dongle's hub. Diagnostic for next time: `projects/voice-assistant/esphome/check_usb_serial.sh`. The board's bridge is a CP2102, which needs no driver on macOS.
   - Future updates to this board are **OTA to 192.168.1.126**, so none of the above applies to them.
+- 2026-10-28: living room satellite **added in HA**: the ESPHome entry created on 2026-10-24 had been disabled after a one-time test; re-enabled through the websocket API, area Living Room, assist satellite idle. `add_satellite_ha.py` crashed on an already-configured host (HA aborts the flow itself, then the script's DELETE 404ed); it now finds the entry and only sets the area. New `satellite_status.py` shows each satellite's entry, area and entities.
 
 ### Grafana for all stats
 **Status:** Done
