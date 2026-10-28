@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""Make a grid collage from an Immich album.
+
+    python3 -I services/immich/collage.py "navratri 2026 oju" [--cols 3]
+        [--width 3240] [--gap 12] [--bg white] [--out collage.jpg]
+        [--newest-first] [--upload]
+
+Photos are placed oldest first, left to right, top to bottom. Nothing is
+cropped: every photo in a row is scaled to the same height so the row fills
+the width exactly, which keeps each photo whole whatever its shape. Images
+come from Immich's JPEG preview (2560px long side), so HEIC - including
+iPhone HEICs named .jpg - needs no decoder here. With --upload the collage
+goes back into Immich and into the same album.
+"""
+import argparse
+import io
+import json
+import sys
+import urllib.request
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+
+from PIL import Image, ImageOps
+
+REPO = Path(__file__).resolve().parents[2]
+SERVER = "http://localhost:2283/api"
+
+
+def env(key):
+    for line in (REPO / ".env").read_text().splitlines():
+        if line.startswith(key + "="):
+            return line.split("=", 1)[1]
+    sys.exit(f"{key} not in .env")
+
+
+KEY = env("IMMICH_API_KEY")
+
+
+def api(path, body=None, raw=False, data=None, headers=None, method=None):
+    h = {"x-api-key": KEY, **(headers or {})}
+    if body is not None:
+        data = json.dumps(body).encode()
+        h["content-type"] = "application/json"
+    req = urllib.request.Request(SERVER + path, data=data, headers=h,
+                                 method=method or ("POST" if data else "GET"))
+    with urllib.request.urlopen(req) as r:
+        out = r.read()
+    return out if raw else json.loads(out)
+
+
+def album(name):
+    for a in api("/albums"):
+        if a["albumName"].lower() == name.lower():
+            return a
+    sys.exit(f"no album named {name!r}")
+
+
+def assets(album_id):
+    items, page = [], 1
+    while page:
+        res = api("/search/metadata", {"albumIds": [album_id], "type": "IMAGE",
+                                       "size": 250, "page": page})["assets"]
+        items += res["items"]
+        page = res["nextPage"] and int(res["nextPage"])
+    # leave out collages this script uploaded on an earlier run
+    items = [a for a in items if a.get("deviceId") != "collage.py"]
+    return sorted(items, key=lambda a: a["localDateTime"])
+
+
+def photo(asset):
+    img = Image.open(io.BytesIO(
+        api(f"/assets/{asset['id']}/thumbnail?size=preview", raw=True)))
+    return ImageOps.exif_transpose(img).convert("RGB")
+
+
+def rows(photos, cols, width, gap):
+    """Each row of `cols` photos at the one height that makes it `width` wide."""
+    out = []
+    for i in range(0, len(photos), cols):
+        row = photos[i:i + cols]
+        inner = width - gap * (len(row) + 1)
+        h = inner / sum(p.width / p.height for p in row)
+        if out and len(row) < cols:
+            h = min(h, out[-1][0])  # a short last row stays the size of the others
+        out.append((round(h), row))
+    return out
+
+
+def upload(path, album_id):
+    boundary = uuid.uuid4().hex
+    now = datetime.now(timezone.utc).isoformat()
+    fields = {"deviceAssetId": f"collage-{path.name}-{now}", "deviceId": "collage.py",
+              "fileCreatedAt": now, "fileModifiedAt": now}
+    body = b"".join(
+        f"--{boundary}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n".encode()
+        for k, v in fields.items())
+    body += (f"--{boundary}\r\nContent-Disposition: form-data; name=\"assetData\"; "
+             f"filename=\"{path.name}\"\r\nContent-Type: image/jpeg\r\n\r\n").encode()
+    body += path.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
+    res = api("/assets", data=body,
+              headers={"content-type": f"multipart/form-data; boundary={boundary}"})
+    api(f"/albums/{album_id}/assets", {"ids": [res["id"]]}, method="PUT")
+    return res["id"]
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    p.add_argument("album")
+    p.add_argument("--cols", type=int, default=3)
+    p.add_argument("--width", type=int, default=3240, help="collage width in pixels")
+    p.add_argument("--gap", type=int, default=12, help="pixels between and around photos")
+    p.add_argument("--bg", default="white")
+    p.add_argument("--out", type=Path)
+    p.add_argument("--newest-first", action="store_true")
+    p.add_argument("--upload", action="store_true", help="add the collage to the album")
+    a = p.parse_args()
+
+    alb = album(a.album)
+    items = assets(alb["id"])
+    if a.newest_first:
+        items.reverse()
+    if not items:
+        sys.exit("album has no photos")
+    photos = []
+    for i, asset in enumerate(items):
+        print(f"{i + 1}/{len(items)} {asset['originalFileName']}", file=sys.stderr)
+        photos.append(photo(asset))
+    g, layout = a.gap, rows(photos, a.cols, a.width, a.gap)
+    sheet = Image.new("RGB", (a.width, sum(h + g for h, _ in layout) + g), a.bg)
+    y = g
+    for h, row in layout:
+        x = g
+        for p in row:
+            w = round(p.width * h / p.height)
+            sheet.paste(p.resize((w, h), Image.LANCZOS), (x, y))
+            x += w + g
+        y += h + g
+    out = a.out or Path(f"{a.album.replace(' ', '_')}_collage.jpg")
+    sheet.save(out, quality=92)
+    print(out)
+    if a.upload:
+        print("uploaded", upload(out, alb["id"]))
+
+
+if __name__ == "__main__":
+    main()
