@@ -2669,8 +2669,11 @@ qty | item | est | note
 2 | Female-female dupont jumpers (40-pin strip, 20cm) | 200-300 | local - header to module pins (sensors, LEDs)
 1 | Female-female dupont jumpers (40-pin strip, 10cm) | 80-120 | local - short runs inside a project box, so the wiring doesn't bunch up
 1 | Berg strip / dupont housings, 2.54mm, assorted 1-8 pin (single row) + a few 2x4/2x5 | 100-200 | local - group several jumpers into one plug (e.g. mic or amp to ESP32, one plug per module). Reuses the jumpers' crimped pins: lift the 1-pin shell's latch with a needle, push the pin into the multi-way housing until it clicks. No crimper needed
+1 | Dupont crimp tool for 2.54mm pins (SN-28B or similar, AWG 28-18) | 800-1500 | local if stocked, else online - for making jumpers to exact length from bare wire. Must say "dupont"/"2.54mm": JST/terminal crimpers have the wrong die
+100 | Dupont crimp pins, female, 2.54mm | 80-150 | local - loose pins for the crimp tool; usually sold per 100
+100 | Dupont crimp pins, male, 2.54mm | 80-150 | local - loose pins for the crimp tool; usually sold per 100
 2 | Small ABS project box (~85x55x30mm), spare | 120-200 | local - for the next ESP32 or sensor build; the voice satellite and Diwali boxes are on their own entries
 ```
 
 #### Log
-- 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here. Jumpers doubled and a 10cm set added: current stock is running out. Berg strip (dupont) housings added for multi-pin plugs.
+- 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here. Jumpers doubled and a 10cm set added: current stock is running out. Berg strip (dupont) housings added for multi-pin plugs, then a dupont crimp tool and 100 each male/female crimp pins.
