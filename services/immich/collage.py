@@ -2,7 +2,7 @@
 """Make a grid collage from an Immich album.
 
     python3 -I services/immich/collage.py "navratri 2026 oju" [--cols 3]
-        [--width 3240] [--gap 32] [--bg white] [--bg-photo IMG_6581.jpg]
+        [--width 3240] [--gap 12] [--bg white] [--bg-photo IMG_6581.jpg]
         [--bg-blur 0] [--out collage.jpg] [--newest-first] [--upload]
 
 Photos are placed oldest first, left to right, top to bottom. Nothing is
@@ -124,7 +124,7 @@ def main():
     p.add_argument("album")
     p.add_argument("--cols", type=int, default=3)
     p.add_argument("--width", type=int, default=3240, help="collage width in pixels")
-    p.add_argument("--gap", type=int, default=32, help="pixels between and around photos")
+    p.add_argument("--gap", type=int, default=12, help="pixels between and around photos")
     p.add_argument("--bg", default="white")
     p.add_argument("--bg-photo", help="Immich photo (file name or id) behind the gaps")
     p.add_argument("--bg-blur", type=float, default=0, help="blur radius for --bg-photo")
