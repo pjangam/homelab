@@ -2190,6 +2190,7 @@ qty | item | est | note
 1 | Soldering iron, temperature-controlled (~60W) | 500-800 | replaces the current one, which no longer works properly; the INMP441's header pins need soldering
 2 | MAX98357A I2S amplifier breakout | 300-600 | one per satellite, for spoken replies; I2S digital in, 3W class-D out, runs off the board's 5V VIN
 2 | Speaker driver, 4 ohm, 3W, 40-50mm | 100-350 | one per satellite; a bare driver, not a powered/Bluetooth speaker. Example: amazon.in/dp/B0GTZ5DD6P (2 inch, 4 ohm 3W, bracket + wires, Rs 169 each, 2026-10-15); cut its connector off if it does not fit the amp. Put it in a small box with holes in front
+2 | ABS project box, white/translucent (~115x90x55mm) | 300-500 | local - one per satellite: ESP32 + INMP441 + MAX98357A + 40-50mm speaker + 8 LEDs. Drill a speaker grille, a mic hole at the end away from the speaker, and a USB cable notch; translucent so the LED ring shows
 ```
 
 #### Speaker (planned 2026-10-15)
@@ -2403,6 +2404,7 @@ qty | item | est | note
 1 | ESP32 classic devkit (ESP32-WROOM-32, 4MB) | 350-450 | local, Pimpri - estimate, not a fetched listing. Needed for every option; buy on the voice satellite parts trip
 284 | WS2812B pixels (~4.7m) | 0 | owned: 180 px Ganapati strip + ~104 px left on the spare reel after 16 for the voice satellites
 1 | 5V 4A power supply | 0 | owned, free since Ganapati
+1 | ABS project box (~100x68x40mm) | 100-150 | local - WLED controller: ESP32 + 470R + strip/power leads; supply brick stays outside. Holes or glands for the strip and 5V leads, USB notch for flashing
 1 | 470R resistor + 1000uF 10V capacitor | 20 | local, or owned (assumed in the drawer from the aarti build)
 # Option 2 - sound-reactive Lakshmi Puja aarti
 1 | INMP441 I2S mic | 150-250 | local; a second one, since the first goes to the living-room satellite. Digital I2S, NOT analog MAX4466
@@ -2410,6 +2412,7 @@ qty | item | est | note
 1 | ESP32-C3 SuperMini | 200-300 | local if stocked, else online (order by ~25 Oct); estimate
 1 | Paper akash kandil | 100-300 | local, any festival stall; or make one
 1 | USB charger 5V 1-2A | 0 | probably owned (estimate); a 12-24 px ring at low brightness draws well under 1A
+1 | Small ABS project box (~50x35x20mm) | 50-80 | local - only for the ESP32-C3 SuperMini if it is not tucked inside the kandil
 ```
 
 **Cost:** **Option 1 about Rs 350-450 (just the ESP32).** Option 1 + kandil ~Rs 650-1050; + mic (Option 2) adds ~Rs 150-250. All estimates, local prices.
@@ -2664,9 +2667,8 @@ qty | item | est | note
 1 | Male-male dupont jumpers (40-pin strip, 20cm) | 100-150 | local - breadboard to breadboard
 1 | Male-female dupont jumpers (40-pin strip, 20cm) | 100-150 | local - Pi/ESP32 header pins to breadboard
 1 | Female-female dupont jumpers (40-pin strip, 20cm) | 100-150 | local - header to module pins (sensors, LEDs)
-3 | Small ABS project box (~85x55x30mm) | 180-300 | local - fits an ESP32 dev board or a small sensor
-2 | Medium ABS project box (~100x68x40mm) | 200-300 | local - ESP32 plus a buck converter or relay
+2 | Small ABS project box (~85x55x30mm), spare | 120-200 | local - for the next ESP32 or sensor build; the voice satellite and Diwali boxes are on their own entries
 ```
 
 #### Log
-- 2026-10-28: entry created for jumper wires and project boxes.
+- 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here.
