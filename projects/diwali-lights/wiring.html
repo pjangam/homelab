@@ -1,0 +1,753 @@
+<title>Diwali Door Wiring</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: one 820px bench column, house style shared with the aarti strip page. */
+  :root {
+    --paper:   #eaeef2;
+    --surface: #ffffff;
+    --sunk:    #dfe5ea;
+    --ink:     #15202b;
+    --muted:   #566676;
+    --line:    #c6d0d9;
+    --w5v:     #bf3327;
+    --w33:     #6d4aa8;
+    --wgnd:    #2b3a47;
+    --wdata:   #a3760e;
+    --warn:    #9a4a10;
+    --ok:      #2f6b4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:   #101822;
+      --surface: #17212c;
+      --sunk:    #0b1219;
+      --ink:     #e4ebf1;
+      --muted:   #93a5b6;
+      --line:    #2c3b4a;
+      --w5v:     #ee6155;
+      --w33:     #b292e8;
+      --wgnd:    #93a9bd;
+      --wdata:   #e3a92c;
+      --warn:    #e79a4e;
+      --ok:      #62c093;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:   #101822;
+    --surface: #17212c;
+    --sunk:    #0b1219;
+    --ink:     #e4ebf1;
+    --muted:   #93a5b6;
+    --line:    #2c3b4a;
+    --w5v:     #ee6155;
+    --w33:     #b292e8;
+    --wgnd:    #93a9bd;
+    --wdata:   #e3a92c;
+    --warn:    #e79a4e;
+    --ok:      #62c093;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 64px;
+  }
+
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 18px; margin-bottom: 32px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    font-size: clamp(30px, 6vw, 42px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+
+  .standfirst { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  h2 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    font-size: 23px;
+    margin: 44px 0 6px;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin: 26px 0 4px;
+  }
+
+  p { max-width: 65ch; }
+
+  figure { margin: 22px 0 8px; }
+
+  .scroller {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 10px;
+  }
+
+  .scroller svg { display: block; min-width: 660px; width: 100%; height: auto; }
+  .scroller.wide svg { min-width: 780px; }
+  .scroller.door svg { min-width: 560px; }
+
+  figcaption {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 10px;
+    max-width: 65ch;
+  }
+
+  code, .mono { font-family: "IBM Plex Mono", monospace; font-size: 0.92em; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 15px; margin-top: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  td:first-child { font-family: "IBM Plex Mono", monospace; white-space: nowrap; }
+  td { font-variant-numeric: tabular-nums; }
+  .tablewrap { overflow-x: auto; }
+
+  .swatch {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    margin-right: 7px;
+    vertical-align: baseline;
+  }
+
+  .callout {
+    border-left: 3px solid var(--warn);
+    padding: 2px 0 2px 16px;
+    margin: 22px 0;
+  }
+  .callout p { margin: 0; }
+  .callout p + p { margin-top: 8px; }
+  .callout .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--warn);
+    display: block;
+    margin-bottom: 3px;
+  }
+  .callout.ok { border-left-color: var(--ok); }
+  .callout.ok .label { color: var(--ok); }
+  .callout.note { border-left-color: var(--muted); }
+  .callout.note .label { color: var(--muted); }
+
+  ol.checks { padding-left: 0; list-style: none; counter-reset: c; margin: 16px 0 0; }
+  ol.checks li {
+    counter-increment: c;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+    max-width: 68ch;
+  }
+  ol.checks li::before {
+    content: counter(c);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    color: var(--muted);
+    padding-top: 2px;
+  }
+  ol.checks li > div { min-width: 0; }
+  ol.checks strong { font-weight: 600; }
+
+  .settings { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .pill {
+    border: 1px solid var(--line);
+    background: var(--sunk);
+    padding: 7px 13px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+  }
+  .pill b { font-weight: 400; color: var(--muted); }
+
+  .fwbox {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    padding: 16px 18px 6px;
+    margin-top: 18px;
+  }
+  .fwbox h3 { margin-top: 0; }
+  .fwbox ul { margin: 8px 0 12px; padding-left: 20px; max-width: 65ch; }
+  .fwbox li { margin-bottom: 6px; }
+  .fwbox li::marker { color: var(--muted); }
+
+  footer {
+    margin-top: 52px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--muted);
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Diwali lights 2026 &middot; planned, 2026-10-28</p>
+    <h1>Diwali Door Wiring</h1>
+    <p class="standfirst">284 WS2812B pixels around the front door in two pieces: the 180-pixel aarti strip up the near side and across the top, and the ~104-pixel reel offcut down the far side. An INMP441 mic on the same board makes it react to firecrackers. One 5V 4A supply feeds the board, the strip's start and a power-injection pair to the joint at the far top corner. The thing that matters most is that joint: three wires from piece A's output end to piece B's input end, with the injection pair landing on the same +5V and GND. Swapping the injection pair at the joint shorts the supply.</p>
+  </header>
+
+  <h2>The whole circuit</h2>
+  <p>The supply's output splits three ways at the controller box: the strip's start, the ESP32's VIN pin, and the injection pair that runs ~3m along the frame to the joint. Data enters at the start and flows through piece A, across the joint and down piece B. The mic is borrowed from a voice satellite for the festival week. If no mic is fitted, WLED still runs, just not sound-reactive.</p>
+
+  <figure>
+    <div class="scroller wide">
+      <svg viewBox="0 0 1040 690" role="img" aria-label="Wiring diagram of the Diwali door lights. A single 5 volt 4 amp supply has a ground rail and a plus 5 volt rail. The ESP32 devkit takes its VIN pin from the plus 5 volt rail and its GND from the ground rail. GPIO4 goes through a 470 ohm resistor, placed at the strip end of the lead, to the DIN pad of piece A, 180 pixels and 3 metres, which runs up the near side of the door and across the top. A 1000 microfarad capacitor sits across the two rails at the strip start, striped leg to ground. Piece A's plus 5V and GND input pads connect to the rails. At the far top corner piece A's DOUT connects to piece B's DIN, about 104 pixels with the count still to confirm, and A's plus 5V and GND output pads connect to B's input pads. A separate injection pair, about 3 metres of 0.75 square millimetre two-core wire, runs from the supply rails to that joint's plus 5V and GND. The far end of piece B connects to nothing. An INMP441 microphone connects SD to GPIO32, WS to GPIO25, SCK to GPIO33, VDD to the ESP32's 3.3 volt pin, GND to ground and L slash R to ground.">
+        <defs>
+          <marker id="adata" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--wdata)"></polygon>
+          </marker>
+        </defs>
+
+        <!-- INMP441 -->
+        <text x="20" y="112" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--muted)">firecracker-reactive mode</text>
+        <rect x="20" y="124" width="160" height="306" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <text x="100" y="156" text-anchor="middle" font-family="IBM Plex Sans Condensed, sans-serif" font-size="17" font-weight="700" fill="var(--ink)">INMP441</text>
+        <text x="100" y="174" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">faces outdoors</text>
+        <text x="100" y="189" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">borrowed for the week</text>
+
+        <circle cx="180" cy="210" r="4.5" fill="var(--wdata)"></circle>
+        <text x="170" y="214" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">SD</text>
+        <circle cx="180" cy="246" r="4.5" fill="var(--wdata)"></circle>
+        <text x="170" y="250" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">WS</text>
+        <circle cx="180" cy="282" r="4.5" fill="var(--wdata)"></circle>
+        <text x="170" y="286" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">SCK</text>
+        <circle cx="180" cy="330" r="4.5" fill="var(--w33)"></circle>
+        <text x="170" y="334" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">VDD</text>
+        <circle cx="180" cy="366" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="170" y="370" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">GND</text>
+        <circle cx="180" cy="398" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="170" y="402" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">L/R</text>
+        <text x="170" y="418" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">low = left channel</text>
+
+        <!-- ESP32 -->
+        <rect x="270" y="90" width="220" height="350" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <text x="380" y="122" text-anchor="middle" font-family="IBM Plex Sans Condensed, sans-serif" font-size="18" font-weight="700" fill="var(--ink)">ESP32 devkit</text>
+        <text x="380" y="141" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">ESP32-WROOM-32 &middot; 4MB</text>
+        <text x="380" y="157" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">WLED &middot; 192.168.1.127</text>
+        <text x="380" y="173" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">in the ABS box</text>
+
+        <!-- ESP32 left pins (mic side) -->
+        <circle cx="270" cy="210" r="4.5" fill="var(--wdata)"></circle>
+        <text x="280" y="214" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">GPIO32</text>
+        <circle cx="270" cy="246" r="4.5" fill="var(--wdata)"></circle>
+        <text x="280" y="250" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">GPIO25</text>
+        <circle cx="270" cy="282" r="4.5" fill="var(--wdata)"></circle>
+        <text x="280" y="286" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">GPIO33</text>
+        <circle cx="270" cy="330" r="4.5" fill="var(--w33)"></circle>
+        <text x="280" y="334" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--w33)">3V3</text>
+        <circle cx="270" cy="366" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="280" y="370" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wgnd)">GND</text>
+
+        <!-- ESP32 right pin -->
+        <circle cx="490" cy="210" r="4.5" fill="var(--wdata)"></circle>
+        <text x="480" y="206" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">GPIO4</text>
+        <text x="480" y="222" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">silk D4 / IO4 / G4</text>
+
+        <!-- ESP32 bottom pins -->
+        <circle cx="330" cy="440" r="4.5" fill="var(--w5v)"></circle>
+        <text x="330" y="428" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--w5v)">VIN / 5V</text>
+        <circle cx="440" cy="440" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="440" y="428" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wgnd)">GND</text>
+
+        <!-- direction key -->
+        <text x="398" y="300" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="var(--muted)">arrows show which</text>
+        <text x="398" y="316" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" fill="var(--muted)">end drives the signal</text>
+
+        <!-- mic bus wires -->
+        <line x1="180" y1="210" x2="264" y2="210" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#adata)"></line>
+        <line x1="270" y1="246" x2="186" y2="246" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#adata)"></line>
+        <line x1="270" y1="282" x2="186" y2="282" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#adata)"></line>
+        <line x1="180" y1="330" x2="270" y2="330" stroke="var(--w33)" stroke-width="2.5"></line>
+        <text x="225" y="322" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">3.3V only</text>
+        <line x1="180" y1="366" x2="270" y2="366" stroke="var(--wgnd)" stroke-width="2.5"></line>
+        <polyline points="180,398 225,398 225,366" fill="none" stroke="var(--wgnd)" stroke-width="2.5"></polyline>
+        <circle cx="225" cy="366" r="5" fill="var(--wgnd)"></circle>
+
+        <!-- data line to piece A -->
+        <line x1="490" y1="210" x2="518" y2="210" stroke="var(--wdata)" stroke-width="2.5"></line>
+        <polyline points="518,210 523,197 535,223 547,197 559,223 571,197 576,210" fill="none" stroke="var(--wdata)" stroke-width="2.5"></polyline>
+        <text x="547" y="186" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wdata)">470R</text>
+        <line x1="576" y1="210" x2="604" y2="210" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#adata)"></line>
+
+        <!-- piece A -->
+        <rect x="610" y="110" width="160" height="240" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <text x="690" y="140" text-anchor="middle" font-family="IBM Plex Sans Condensed, sans-serif" font-size="18" font-weight="700" fill="var(--ink)">Piece A</text>
+        <text x="690" y="159" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">180 px &middot; 3m</text>
+        <text x="690" y="175" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">aarti strip</text>
+        <text x="690" y="324" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">near side + top</text>
+        <text x="690" y="339" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">WS2812B GRB 60/m</text>
+
+        <circle cx="610" cy="210" r="4.5" fill="var(--wdata)"></circle>
+        <text x="622" y="214" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">DIN</text>
+        <circle cx="610" cy="250" r="4.5" fill="var(--w5v)"></circle>
+        <text x="622" y="254" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">+5V</text>
+        <circle cx="610" cy="290" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="622" y="294" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">GND</text>
+
+        <circle cx="770" cy="210" r="4.5" fill="var(--wdata)"></circle>
+        <text x="758" y="214" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">DOUT</text>
+        <circle cx="770" cy="250" r="4.5" fill="var(--w5v)"></circle>
+        <text x="758" y="254" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">+5V</text>
+        <circle cx="770" cy="290" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="758" y="294" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">GND</text>
+
+        <!-- the joint -->
+        <text x="820" y="86" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">The joint</text>
+        <text x="820" y="102" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">far top corner</text>
+        <line x1="770" y1="210" x2="864" y2="210" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#adata)"></line>
+        <line x1="770" y1="250" x2="870" y2="250" stroke="var(--w5v)" stroke-width="5"></line>
+        <line x1="770" y1="290" x2="870" y2="290" stroke="var(--wgnd)" stroke-width="5"></line>
+        <circle cx="840" cy="250" r="6" fill="var(--w5v)"></circle>
+        <circle cx="800" cy="290" r="6" fill="var(--wgnd)"></circle>
+        <text x="820" y="150" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">solder, or</text>
+        <text x="820" y="164" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">3-pin JST-SM</text>
+
+        <!-- piece B -->
+        <rect x="870" y="110" width="150" height="240" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <text x="945" y="140" text-anchor="middle" font-family="IBM Plex Sans Condensed, sans-serif" font-size="18" font-weight="700" fill="var(--ink)">Piece B</text>
+        <text x="945" y="159" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">~104 px &middot; ~1.7m</text>
+        <text x="945" y="175" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--warn)">count to confirm</text>
+        <text x="945" y="324" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">far side, down</text>
+        <text x="945" y="339" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">far end: insulate</text>
+
+        <circle cx="870" cy="210" r="4.5" fill="var(--wdata)"></circle>
+        <text x="882" y="214" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">DIN</text>
+        <circle cx="870" cy="250" r="4.5" fill="var(--w5v)"></circle>
+        <text x="882" y="254" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">+5V</text>
+        <circle cx="870" cy="290" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="882" y="294" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">GND</text>
+
+        <!-- 5V supply -->
+        <rect x="20" y="480" width="160" height="130" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <text x="100" y="512" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">5V 4A supply</text>
+        <text x="100" y="534" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">the only supply</text>
+        <text x="100" y="552" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">brick outside the box</text>
+        <text x="100" y="570" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">capped at 3400mA</text>
+        <text x="100" y="588" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">in WLED</text>
+
+        <!-- GND rail -->
+        <polyline points="180,520 800,520 800,290" fill="none" stroke="var(--wgnd)" stroke-width="5"></polyline>
+        <circle cx="180" cy="520" r="5" fill="var(--wgnd)"></circle>
+        <text x="192" y="512" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--wgnd)">GND</text>
+
+        <!-- +5V rail -->
+        <polyline points="180,580 840,580 840,250" fill="none" stroke="var(--w5v)" stroke-width="5"></polyline>
+        <circle cx="180" cy="580" r="5" fill="var(--w5v)"></circle>
+        <text x="192" y="602" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--w5v)">+5V &middot; up to 3.4A for the strip</text>
+
+        <!-- ESP32 power taps -->
+        <line x1="330" y1="440" x2="330" y2="580" stroke="var(--w5v)" stroke-width="2.5"></line>
+        <circle cx="330" cy="580" r="5" fill="var(--w5v)"></circle>
+        <text x="318" y="470" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--warn)">USB unplugged</text>
+        <text x="318" y="484" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--warn)">while fed here</text>
+        <line x1="440" y1="440" x2="440" y2="520" stroke="var(--wgnd)" stroke-width="2.5"></line>
+        <circle cx="440" cy="520" r="6" fill="var(--wgnd)"></circle>
+        <text x="452" y="470" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wgnd)">common ground</text>
+        <text x="452" y="486" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">data reference</text>
+
+        <!-- strip start feed -->
+        <polyline points="580,520 580,290 610,290" fill="none" stroke="var(--wgnd)" stroke-width="5"></polyline>
+        <circle cx="580" cy="520" r="5" fill="var(--wgnd)"></circle>
+        <polyline points="552,580 552,250 610,250" fill="none" stroke="var(--w5v)" stroke-width="5"></polyline>
+        <circle cx="552" cy="580" r="5" fill="var(--w5v)"></circle>
+
+        <!-- 1000uF across the pair at the strip start -->
+        <circle cx="500" cy="520" r="5" fill="var(--wgnd)"></circle>
+        <line x1="500" y1="520" x2="500" y2="539" stroke="var(--wgnd)" stroke-width="2.5"></line>
+        <line x1="482" y1="541" x2="518" y2="541" stroke="var(--ink)" stroke-width="3.5"></line>
+        <line x1="482" y1="555" x2="518" y2="555" stroke="var(--ink)" stroke-width="3.5"></line>
+        <line x1="500" y1="557" x2="500" y2="580" stroke="var(--w5v)" stroke-width="2.5"></line>
+        <circle cx="500" cy="580" r="5" fill="var(--w5v)"></circle>
+        <text x="470" y="540" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">1000&#181;F 10V</text>
+        <text x="470" y="555" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">at the strip start</text>
+        <text x="470" y="569" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">striped leg to GND</text>
+        <text x="526" y="545" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">&minus;</text>
+        <text x="526" y="563" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">+</text>
+
+        <!-- injection labels -->
+        <text x="856" y="452" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">injection pair</text>
+        <text x="856" y="468" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">~3m 2-core 0.75mm&#178;</text>
+        <text x="856" y="482" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">along the frame</text>
+        <text x="856" y="496" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">to the joint</text>
+
+        <!-- legend -->
+        <circle cx="30" cy="656" r="5" fill="var(--ink)"></circle>
+        <text x="42" y="660" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">filled dot = joined</text>
+        <line x1="186" y1="650" x2="202" y2="662" stroke="var(--muted)" stroke-width="1.5"></line>
+        <line x1="186" y1="662" x2="202" y2="650" stroke="var(--muted)" stroke-width="1.5"></line>
+        <text x="210" y="660" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">plain crossing = not joined</text>
+        <line x1="408" y1="656" x2="436" y2="656" stroke="var(--wgnd)" stroke-width="5"></line>
+        <text x="444" y="660" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">thick = strip power</text>
+        <line x1="598" y1="656" x2="626" y2="656" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#adata)"></line>
+        <text x="636" y="660" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">arrow = signal direction</text>
+      </svg>
+    </div>
+    <figcaption>Three wires cross without joining: the ESP32's VIN lead and the strip-start +5V lead pass over the GND rail, and the injection +5V passes over the joint's GND link. Everything thick carries strip current and is real wire (mains-wire offcut or 0.75mm&#178;), never a breadboard rail or dupont jumper. The ESP32 draws its power off the same rails through thin wires. If no mic is fitted, WLED still runs, just not sound-reactive.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>From</th><th>To</th><th>Why it matters</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="swatch" style="background:var(--w5v)"></span>supply +5V</td>
+          <td>piece A <span class="mono">+5V</span> pad (start)</td>
+          <td>The main feed, carrying up to 3.4A. Use mains-wire offcut as on the aarti build. Never a breadboard or duponts: on the aarti build they limited this path to about 1A.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wgnd)"></span>supply GND</td>
+          <td>piece A <span class="mono">GND</span> pad (start)</td>
+          <td>The return for the same current. Same wire class as +5V.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--w5v)"></span>supply +5V</td>
+          <td>ESP32 <span class="mono">VIN</span> (some boards print <span class="mono">5V</span>)</td>
+          <td>Powers the board from the brick, not from USB. The onboard regulator makes the 3.3V. Never feed 5V into the <span class="mono">3V3</span> pin.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wgnd)"></span>ESP32 <span class="mono">GND</span></td>
+          <td>supply GND</td>
+          <td><strong>The common ground.</strong> GPIO4's signal is measured against it. On one supply this happens naturally, but the wire must actually be there. On the aarti build an open ground made all pixels cycle colours while WLED was set to solid red.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wdata)"></span>ESP32 <span class="mono">GPIO4</span></td>
+          <td>470R, then piece A <span class="mono">DIN</span></td>
+          <td>Put the resistor at the strip end of the data lead. GPIO4 is not a strapping pin (those are 0, 2, 5, 12 and 15) and is an output. WLED has defaulted to GPIO16 before, so set the pin explicitly.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--w5v)"></span>1000&#181;F 10V</td>
+          <td>across A's start pads</td>
+          <td>Bulk capacitor for current steps. It is polarised: the striped leg goes to GND. 10V gives 2x margin on 5V.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wdata)"></span>A <span class="mono">DOUT</span></td>
+          <td>B <span class="mono">DIN</span></td>
+          <td>The data continues across the joint. B must be mounted with its printed arrows pointing <strong>down</strong> the far side, away from the joint.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--w5v)"></span>A +5V / <span class="swatch" style="background:var(--wgnd)"></span>GND out</td>
+          <td>B +5V / GND in</td>
+          <td>Short links at the joint. Wire to wire, +5V to +5V. Copper traces are the reliable guide; JST pigtail colours are not standard.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--w5v)"></span>injection +5V</td>
+          <td>the joint's +5V</td>
+          <td>~3m of 0.75mm&#178; (18AWG) 2-core along the frame. It feeds the far end of A and all of B, so the far side does not drift pink or orange.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wgnd)"></span>injection GND</td>
+          <td>the joint's GND</td>
+          <td>The other core of the same cable. <strong>Swapped with +5V, it shorts the supply</strong>, so check it with a meter before first power (step 3 below).</td>
+        </tr>
+        <tr>
+          <td>B far end</td>
+          <td>nothing</td>
+          <td>Leave the far end unconnected. Cover the cut pads with heat-shrink or tape so they stay clear of the frame's hardware.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>The mic, on the same board</h3>
+  <p>The INMP441 drives firecracker-reactive mode. It is borrowed from one of the two voice satellites for the festival week, and it uses the same pins as the aarti build. It runs on the board's 3.3V and ground and does not touch the strip side. Mount it at the door's outer side, facing outdoors, on a short lead from the ESP32 box. Keep the lead as short as the mounting allows: SCK and WS are clock lines, and a long unshielded run can pick up noise. Out of the box, it is on the weather side of the door, so keep it under the frame's overhang and away from rain.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Mic pin</th><th>ESP32</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="swatch" style="background:var(--wdata)"></span>SD</td><td><span class="mono">GPIO32</span></td><td>The audio data. The mic drives this line and the ESP32 reads it.</td></tr>
+        <tr><td><span class="swatch" style="background:var(--wdata)"></span>WS</td><td><span class="mono">GPIO25</span></td><td>Word select. The ESP32 drives it, so it cannot be on input-only GPIO34-39.</td></tr>
+        <tr><td><span class="swatch" style="background:var(--wdata)"></span>SCK</td><td><span class="mono">GPIO33</span></td><td>Bit clock. The ESP32 drives it.</td></tr>
+        <tr><td><span class="swatch" style="background:var(--w33)"></span>VDD</td><td><span class="mono">3V3</span></td><td>This is a 3.3V part. The VIN pin carries 5V on this build, and 5V on VDD damages the mic.</td></tr>
+        <tr><td><span class="swatch" style="background:var(--wgnd)"></span>GND</td><td><span class="mono">GND</span></td><td>The common ground.</td></tr>
+        <tr><td><span class="swatch" style="background:var(--wgnd)"></span>L/R</td><td><span class="mono">GND</span></td><td>Tie low for the left channel. Left floating, the mic reads flat zero.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Around the door</h2>
+  <p>The route as decided. Measure the real door before cutting anything. The drawing assumes the standard 2.1m x 0.9m. It also puts the mains socket on the left; if the socket is on the right, mirror the drawing.</p>
+
+  <figure>
+    <div class="scroller door">
+      <svg viewBox="0 0 720 560" role="img" aria-label="Physical layout of the strip around a 2.1 by 0.9 metre door, socket side on the left. The mains socket is outside the door frame on the left with the 5 volt supply brick plugged in and the ABS controller box beside it, near the bottom of the left jamb. Piece A, 180 pixels, starts at the bottom of the left jamb, runs 2.1 metres and 126 pixels up, then 0.9 metres and 54 pixels across the top, ending exactly at the top right corner. Piece B, about 104 pixels, starts at that corner and runs down the right jamb about 1.7 metres, stopping 35 to 40 centimetres above the floor. Data arrows run up, across and down. The injection pair runs from the box up the left jamb and across the top beside the strip to the joint at the top right corner. The microphone sits beside the box on a short lead, facing outdoors.">
+        <defs>
+          <marker id="adoor" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--wdata)"></polygon>
+          </marker>
+        </defs>
+
+        <!-- floor -->
+        <line x1="20" y1="480" x2="700" y2="480" stroke="var(--line)" stroke-width="2"></line>
+        <text x="690" y="500" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">floor</text>
+
+        <!-- door opening -->
+        <rect x="300" y="80" width="171" height="400" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <text x="385" y="270" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--muted)">door</text>
+        <text x="385" y="288" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">~2.1m x 0.9m</text>
+        <text x="385" y="304" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--warn)">measure first</text>
+
+        <!-- injection pair: outside the strip, up the left and across the top -->
+        <polyline points="250,438 250,64 471,64" fill="none" stroke="var(--w5v)" stroke-width="2"></polyline>
+        <polyline points="256,438 256,70 471,70" fill="none" stroke="var(--wgnd)" stroke-width="2"></polyline>
+        <text x="300" y="56" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">injection pair, ~3m</text>
+
+        <!-- piece A: up the left jamb, across the top -->
+        <polyline points="292,480 292,78 471,78" fill="none" stroke="var(--ink)" stroke-width="7"></polyline>
+        <!-- piece B: down the right jamb, stops short -->
+        <line x1="479" y1="78" x2="479" y2="403" stroke="var(--muted)" stroke-width="7"></line>
+        <line x1="471" y1="78" x2="479" y2="78" stroke="var(--muted)" stroke-width="7"></line>
+
+        <!-- data direction -->
+        <line x1="276" y1="380" x2="276" y2="300" stroke="var(--wdata)" stroke-width="2" marker-end="url(#adoor)"></line>
+        <line x1="340" y1="94" x2="420" y2="94" stroke="var(--wdata)" stroke-width="2" marker-end="url(#adoor)"></line>
+        <line x1="495" y1="180" x2="495" y2="260" stroke="var(--wdata)" stroke-width="2" marker-end="url(#adoor)"></line>
+
+        <!-- joint -->
+        <circle cx="475" cy="70" r="8" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="475" cy="70" r="3.5" fill="var(--ink)"></circle>
+        <text x="492" y="48" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">the joint</text>
+        <text x="492" y="64" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">A DOUT &#8594; B DIN</text>
+
+        <!-- side labels -->
+        <text x="164" y="250" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">Piece A</text>
+        <text x="164" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">up: 126 px &middot; 2.1m</text>
+        <text x="164" y="284" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">top: 54 px &middot; 0.9m</text>
+        <text x="164" y="300" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">px 1-180</text>
+
+        <text x="512" y="220" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">Piece B</text>
+        <text x="512" y="238" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">down: ~104 px &middot; ~1.7m</text>
+        <text x="512" y="254" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--warn)">count to confirm</text>
+        <text x="512" y="270" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">px 181-~284</text>
+
+        <!-- B shortfall -->
+        <line x1="479" y1="410" x2="479" y2="478" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"></line>
+        <text x="492" y="434" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">stops ~35-40cm</text>
+        <text x="492" y="450" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">above the floor</text>
+        <text x="492" y="408" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">end insulated</text>
+
+        <!-- socket, supply, box, mic -->
+        <rect x="40" y="380" width="44" height="44" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <circle cx="55" cy="398" r="3" fill="var(--ink)"></circle>
+        <circle cx="69" cy="398" r="3" fill="var(--ink)"></circle>
+        <circle cx="62" cy="411" r="3" fill="var(--ink)"></circle>
+        <text x="62" y="370" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">mains socket</text>
+
+        <rect x="96" y="428" width="64" height="34" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <text x="128" y="449" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink)">5V 4A</text>
+        <polyline points="84,402 128,402 128,428" fill="none" stroke="var(--muted)" stroke-width="1.5"></polyline>
+
+        <rect x="196" y="424" width="72" height="44" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <text x="232" y="443" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">ESP32</text>
+        <text x="232" y="458" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">ABS box</text>
+        <line x1="160" y1="445" x2="196" y2="445" stroke="var(--w5v)" stroke-width="3"></line>
+        <!-- box to strip start -->
+        <polyline points="268,458 292,458" fill="none" stroke="var(--ink)" stroke-width="3"></polyline>
+        <text x="200" y="500" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">strip starts at the bottom,</text>
+        <text x="200" y="516" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">socket side</text>
+
+        <!-- mic -->
+        <circle cx="210" cy="372" r="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <circle cx="210" cy="372" r="3" fill="var(--ink)"></circle>
+        <line x1="210" y1="382" x2="210" y2="424" stroke="var(--ink)" stroke-width="1.5"></line>
+        <text x="196" y="336" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">INMP441 mic</text>
+        <text x="196" y="352" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">faces outdoors</text>
+
+        <!-- legend -->
+        <line x1="20" y1="540" x2="48" y2="540" stroke="var(--ink)" stroke-width="7"></line>
+        <text x="56" y="544" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">piece A</text>
+        <line x1="128" y1="540" x2="156" y2="540" stroke="var(--muted)" stroke-width="7"></line>
+        <text x="164" y="544" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">piece B</text>
+        <line x1="236" y1="540" x2="264" y2="540" stroke="var(--wdata)" stroke-width="2" marker-end="url(#adoor)"></line>
+        <text x="274" y="544" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">data direction</text>
+        <line x1="400" y1="537" x2="428" y2="537" stroke="var(--w5v)" stroke-width="2"></line>
+        <line x1="400" y1="543" x2="428" y2="543" stroke="var(--wgnd)" stroke-width="2"></line>
+        <text x="436" y="544" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">injection +5V / GND</text>
+      </svg>
+    </div>
+    <figcaption>Piece A ends exactly at the far top corner (126 + 54 = 180 pixels at 60/m). The injection cable must cover the same 3m <em>plus</em> the run inside the box and the slack at both ends, so cut about 3.5m, not 3m.</figcaption>
+  </figure>
+
+  <h2>The joint, as a physical part</h2>
+  <p>At the corner, piece A's output end meets piece B's input end. Piece B turns 90&deg; to go down the jamb, so join them with three short wires rather than butting the pads together. Identify each end by its copper, not by wire colour. The printed arrows on both pieces must point the same way, away from the supply.</p>
+
+  <figure>
+    <div class="scroller">
+      <svg viewBox="0 0 760 330" role="img" aria-label="Close-up of the joint. On the left the output end of piece A, on the right the input end of piece B, both drawn with a wide plus 5 volt trace on top, a thin data trace in the middle and a wide ground trace at the bottom, and printed arrows on both pointing right, away from the supply. Three short wires join plus 5V to plus 5V, data out to data in with an arrow, and ground to ground. The injection cable's plus 5V core lands on the plus 5V link from above and its ground core on the ground link from below.">
+        <defs>
+          <marker id="aj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--muted)"></polygon>
+          </marker>
+          <marker id="ajd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--wdata)"></polygon>
+          </marker>
+        </defs>
+
+        <!-- piece A output end -->
+        <rect x="40" y="110" width="290" height="104" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <line x1="40" y1="128" x2="330" y2="128" stroke="var(--w5v)" stroke-width="8"></line>
+        <line x1="40" y1="162" x2="330" y2="162" stroke="var(--wdata)" stroke-width="2.5"></line>
+        <line x1="40" y1="196" x2="330" y2="196" stroke="var(--wgnd)" stroke-width="8"></line>
+        <rect x="70" y="140" width="44" height="44" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <rect x="200" y="140" width="44" height="44" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <line x1="128" y1="162" x2="186" y2="162" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#aj)"></line>
+        <line x1="256" y1="162" x2="296" y2="162" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#aj)"></line>
+        <rect x="302" y="119" width="26" height="18" fill="var(--w5v)"></rect>
+        <rect x="302" y="154" width="26" height="16" fill="var(--wdata)"></rect>
+        <rect x="302" y="187" width="26" height="18" fill="var(--wgnd)"></rect>
+        <text x="40" y="236" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">Piece A, output end</text>
+        <text x="40" y="254" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">pixel 180 &middot; pads +5V / DO / GND</text>
+
+        <!-- piece B input end -->
+        <rect x="430" y="110" width="290" height="104" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <line x1="430" y1="128" x2="720" y2="128" stroke="var(--w5v)" stroke-width="8"></line>
+        <line x1="430" y1="162" x2="720" y2="162" stroke="var(--wdata)" stroke-width="2.5"></line>
+        <line x1="430" y1="196" x2="720" y2="196" stroke="var(--wgnd)" stroke-width="8"></line>
+        <rect x="516" y="140" width="44" height="44" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <rect x="646" y="140" width="44" height="44" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <line x1="466" y1="162" x2="504" y2="162" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#aj)"></line>
+        <line x1="574" y1="162" x2="632" y2="162" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#aj)"></line>
+        <rect x="432" y="119" width="26" height="18" fill="var(--w5v)"></rect>
+        <rect x="432" y="154" width="26" height="16" fill="var(--wdata)"></rect>
+        <rect x="432" y="187" width="26" height="18" fill="var(--wgnd)"></rect>
+        <text x="720" y="236" text-anchor="end" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">Piece B, input end</text>
+        <text x="720" y="254" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">pixel 181 &middot; pads +5V / DI / GND</text>
+
+        <!-- links -->
+        <line x1="328" y1="128" x2="432" y2="128" stroke="var(--w5v)" stroke-width="4"></line>
+        <line x1="328" y1="162" x2="426" y2="162" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#ajd)"></line>
+        <line x1="328" y1="196" x2="432" y2="196" stroke="var(--wgnd)" stroke-width="4"></line>
+
+        <!-- injection: +5V from above, GND from below -->
+        <line x1="380" y1="52" x2="380" y2="128" stroke="var(--w5v)" stroke-width="4"></line>
+        <circle cx="380" cy="128" r="6" fill="var(--w5v)"></circle>
+        <text x="380" y="40" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--w5v)">injection +5V</text>
+        <line x1="380" y1="196" x2="380" y2="272" stroke="var(--wgnd)" stroke-width="4"></line>
+        <circle cx="380" cy="196" r="6" fill="var(--wgnd)"></circle>
+        <text x="380" y="290" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--wgnd)">injection GND</text>
+        <text x="380" y="306" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">(same 2-core cable, split here)</text>
+
+        <text x="40" y="40" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">Arrows on both pieces</text>
+        <text x="40" y="58" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">point the same way</text>
+        <text x="720" y="40" text-anchor="end" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">Wide = power, thin = data</text>
+        <text x="720" y="58" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">on every WS2812B strip</text>
+      </svg>
+    </div>
+    <figcaption>If B's arrows point back toward the joint, that end is B's output: B stays dark and nothing is damaged. Swap the ends; do not rewire the data line. With a JST-SM pigtail, match the wires by the trace each one is soldered to, then mark the +5V wire. Pigtail colours vary between reels.</figcaption>
+  </figure>
+
+  <div class="callout">
+    <p><span class="label">The injection pair, swapped, is a short across the supply</span>The pair is ~3m long and both cores look alike at the far end. Mark the +5V core at both ends before routing it, with red tape or a knot. Then do the resistance check in step 3 with everything unplugged before you apply power. A brick with short protection usually shuts off and survives, but do not count on it.</p>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">USB and VIN at the same time</span>On this build the board's 5V pin carries the brick's 5V. With a USB cable plugged in too, two 5V sources meet on that rail. Many devkits have a diode between USB and VIN, but some do not. A board without one can push current back into the laptop's USB port. Flash on the bench with the supply unplugged, or unplug the supply before you connect USB. After the first flash, update over Wi-Fi (WLED's OTA page) and leave USB out.</p>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">3.3V data into a 5V strip, no level shifter</span>WS2812B wants about 0.7 &times; 5V = 3.5V for a logic high, and the ESP32 gives 3.3V. That is out of spec, but it worked reliably on the aarti build with this strip, this resistor and a similar short lead, so no shifter is fitted here. If <strong>pixel 1</strong> flickers or shows the wrong colour while the rest are right, the fix is a 74AHCT125, not a new strip. Keep the GPIO4 to DIN lead short so the box sits at the strip start.</p>
+  </div>
+
+  <h2>The power numbers</h2>
+  <p>A WS2812B pixel draws up to ~60mA at full white (20mA per die). 284 &times; 60mA = <strong>~17A</strong>, more than four times the brick's 4A. WLED's current limiter is the only thing that keeps the brick safe. At <strong>3400mA</strong>, it dims the strip until its estimate fits. That leaves ~600mA under the 4A rating for the ESP32, which draws roughly 100-250mA with Wi-Fi active, plus margin. Warm, dim effects such as Candle Multi stay far below the cap. Only a full-white or full-brightness preset reaches it.</p>
+  <p>The injection cable: 0.75mm&#178; copper is about 0.023&#937; per metre. A 3m run is ~0.14&#937; for the loop (out and back). Even if all 3.4A went through it, the drop would be ~0.5V. In practice it carries the share for the far side, roughly half, so ~0.25V. That is within what the strip tolerates. Without the cable, B's current would have to flow through the full 3m of A's thin copper traces first.</p>
+
+  <div class="fwbox">
+    <h3>Firmware: WLED</h3>
+    <div class="settings">
+      <span class="pill"><b>LEDs</b> 284</span>
+      <span class="pill"><b>type</b> WS281x</span>
+      <span class="pill"><b>data pin</b> 4</span>
+      <span class="pill"><b>order</b> GRB</span>
+      <span class="pill"><b>max current</b> 3400mA</span>
+      <span class="pill"><b>supply</b> 5V 4A</span>
+      <span class="pill"><b>IP</b> 192.168.1.127</span>
+      <span class="pill"><b>boot preset</b> 1</span>
+    </div>
+    <ul>
+      <li><strong>Build: always audioreactive</strong>, whether or not the mic is fitted. Use <span class="mono">tools/esp32-tools/flash-wled-audioreactive.sh --flash</span>, which defaults to 0.14.4, the last release with a prebuilt audioreactive <span class="mono">.bin</span>. The aarti board later ran 16.0.1 audioreactive with its presets intact; see "On which version to flash" in <span class="mono">aarti_lights_setup.md</span>. With no mic, the build still runs, just not sound-reactive.</li>
+      <li><strong>Flash offsets.</strong> The WLED release <span class="mono">.bin</span> is the app image alone and goes at <span class="mono">0x10000</span>, with the bootloader at <span class="mono">0x1000</span> and partitions at <span class="mono">0x8000</span>. Written at <span class="mono">0x0</span>, it reports "hash verified" and then bootloops. The script does this correctly. Step 4 of <span class="mono">aarti_lights_setup.md</span> still says <span class="mono">0x0</span>, which is out of date. xero has a dead USB port, so flash from a known-good port or the 2019 MacBook.</li>
+      <li><strong>LED count</strong> 284 = 180 + the offcut. Count B's pixels on the bench and enter 180 + that count.</li>
+      <li><strong>Static IP 192.168.1.127.</strong> 192.168.1.125 is now the bedroom voice satellite. <span class="mono">wled.sh</span> still defaults to .125, so run it as <span class="mono">WLED_HOST=192.168.1.127 ./projects/aarti-lights/wled.sh &hellip;</span>.</li>
+      <li><strong>Boot preset 1:</strong> a warm effect, either Candle Multi or Fire Flicker in amber. The strip then comes back correctly after a power cut without HA or xero.</li>
+      <li><strong>Mic setup.</strong> Enable the AudioReactive usermod, which ships disabled, and set the I2S pins to SD 32, WS 25, SCK 33. <strong>Reboot after any pin change</strong>, because WLED only initialises I2S at boot.</li>
+      <li><strong>Firecracker mode preset.</strong> A peak-triggered effect, Ripple Peak or Puddlepeak, on a warm or gold palette. Set squelch high so only bangs trigger it. Tune the thresholds on the first evening.</li>
+      <li><strong>Fireworks preset (no sound needed).</strong> Starburst or Fireworks, as the fallback when the mic is out or the reactive preset misbehaves.</li>
+    </ul>
+  </div>
+
+  <h2>Verify in this order</h2>
+  <p>This is a build order and a diagnostic order together. Each step adds one thing, so a failure points at that one thing. Do steps 1-4 on the bench, before anything goes on the frame.</p>
+  <ol class="checks">
+    <li><div><strong>Board alone, on USB, supply unplugged.</strong> Flash, join Wi-Fi, set the static IP, then run <span class="mono">WLED_HOST=192.168.1.127 ./projects/aarti-lights/wled.sh info</span>. Set the data pin to 4, order GRB and the cap to 3400. <em>Expected:</em> it answers and reports pin 4. A wrong pin or count is a settings problem, not a wiring one.</div></li>
+    <li><div><strong>Unplug USB. Supply to the box, the board and piece A only.</strong> Set count 180, solid red, low brightness. <em>Expected:</em> all 180 steady red. <strong>All lit but cycling colours</strong> = the common ground is open. <strong>First N lit, rest dark</strong> = the data chain breaks at pixel N. <strong>Nothing lit, board on Wi-Fi</strong> = the data line: GPIO4, the 470R, or DOUT used instead of DIN. <strong>Board not on Wi-Fi</strong> = VIN/GND to the board.</div></li>
+    <li><div><strong>Supply unplugged: meter check of the injection pair.</strong> Make the joint (A to B, three links) and land the injection pair on it. Measure resistance from the supply-end +5V core to the box's +5V, then from the supply-end GND core to the box's GND. <em>Expected:</em> near 0&#937; for each. Then measure across +5V and GND at the box. <em>Expected:</em> a reading that climbs as the capacitor charges, not one stuck at 0&#937;. A steady 0&#937; across +5V/GND = the pair is swapped somewhere. Do not power up.</div></li>
+    <li><div><strong>Power on, count 180 + B's count, solid red.</strong> <em>Expected:</em> every pixel on both pieces red. <strong>A lit, B dark</strong> = data does not reach B's DIN: B is the wrong way round, or the DO-DI link is open. <strong>B's first pixel wrong, rest fine</strong> = a marginal data joint at the corner. Count the lit pixels on B and correct the LED count.</div></li>
+    <li><div><strong>Red, then green, then blue.</strong> Red showing red confirms GRB. Red and green swapped = the colour-order setting, never the wiring.</div></li>
+    <li><div><strong>Full white at full brightness, briefly.</strong> <em>Expected:</em> the estimate sits at or under 3400mA, nothing warm, and B's far end looks the same white as A's start. <strong>B's far end pink or orange</strong> = the injection pair is not carrying current: an open joint at either end. If a meter comes out, measure DC volts across the joint's +5V and GND with the strip running, never continuity on a live rail.</div></li>
+    <li><div><strong>Pull the supply and plug it back.</strong> <em>Expected:</em> within a few seconds the strip comes back on its own in boot preset 1. Dark or a different effect = the boot preset is not saved.</div></li>
+    <li><div><strong>Mic: load the firecracker preset and clap close to the mic.</strong> <em>Expected:</em> a ripple on a loud clap, nothing on talking. Flat with any sound = WS or SCK on the wrong pin, the mic on 5V, L/R floating, or pins changed without a reboot. Triggers on speech = squelch too low.</div></li>
+  </ol>
+
+  <div class="callout ok">
+    <p><span class="label">Safe probing</span>Check resistance and continuity only with the supply unplugged. Check voltage only with the meter across pads, set to DC volts. Never bridge a bare wire from the supply to a pad to "test" a section; use the WLED UI to light it instead.</p>
+  </div>
+
+  <div class="callout note">
+    <p><span class="label">Drawn from the plan, not yet built</span>Three details here are inferred, not recorded. (1) The supply splits three ways <strong>inside the controller box</strong>, since the box's parts note lists the "strip/power leads". (2) The socket side is drawn on the left. (3) The 470R sits at the strip end of a short data lead, as decided; with the box right at the strip start, that is effectively inside or at the box's exit. Piece B's pixel count is unconfirmed. Correct the page once it is built.</p>
+  </div>
+
+  <footer>
+    Planned 2026-10-28: Option 1 plus a mic borrowed from a voice satellite (which one is still to choose). Not bought or built yet; the build deadline is Thu 5 Nov, for Dhanteras on Fri 6 Nov. New ESP32-WROOM-32 devkit at <span class="mono">192.168.1.127</span>, WLED audioreactive, strip on GPIO4, mic on 32/25/33, 284 px (180 + ~104), one 5V 4A supply capped at 3400mA. Flash with <span class="mono">tools/esp32-tools/flash-wled-audioreactive.sh</span>, control with <span class="mono">projects/aarti-lights/wled.sh</span> (set <span class="mono">WLED_HOST</span>). Plan and parts: <span class="mono">PROJECTS.md</span> &rarr; "Diwali lights 2026". Reused build: <span class="mono">projects/aarti-lights/aarti_lights_setup.md</span>. Page source: <span class="mono">projects/diwali-lights/wiring.html</span>.
+  </footer>
+</div>

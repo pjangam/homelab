@@ -197,8 +197,10 @@ both - so presets survived the jump.
    ```
    ./tools/esp32-tools/flash-wled-audioreactive.sh --flash
    ```
-   Downloads the 0.14.4 audioreactive image, erases the flash and writes it at
-   `0x0`. Erasing wipes any existing WiFi credentials, which is the standard
+   Downloads the 0.14.4 audioreactive image, erases the flash and writes the
+   bootloader at `0x1000`, the partition table at `0x8000` and WLED at
+   `0x10000` (corrected 2026-10-28; this said `0x0`, which the script itself
+   warns against). Erasing wipes any existing WiFi credentials, which is the standard
    path for a first install. The script refuses an implausibly small download,
    because a truncated image flashes "successfully" and then bootloops.
 5. **Get it on the LAN.** It comes up as the AP `WLED-AP` (password
