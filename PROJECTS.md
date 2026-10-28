@@ -2220,7 +2220,7 @@ The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satel
   - **Flashing needed a third USB cable.** The first two were charge-only: the Mac saw no device at all, not even the USB-C dongle's hub. Diagnostic for next time: `projects/voice-assistant/esphome/check_usb_serial.sh`. The board's bridge is a CP2102, which needs no driver on macOS.
   - Future updates to this board are **OTA to 192.168.1.126**, so none of the above applies to them.
 - 2026-10-28: living room satellite **added in HA**: the ESPHome entry created on 2026-10-24 had been disabled after a one-time test; re-enabled through the websocket API, area Living Room, assist satellite idle. `add_satellite_ha.py` crashed on an already-configured host (HA aborts the flow itself, then the script's DELETE 404ed); it now finds the entry and only sets the area. New `satellite_status.py` shows each satellite's entry, area and entities.
-- 2026-10-28 15:55: **living room satellite tested live**: "hey jarvis" -> "turn off living room light", then "turn on living room light"; both transcribed exactly and `switch.living_room_tubelight` followed. ~6s from wake word to action, most of it waiting for the end of speech. The HA UI looked "disabled" from a tab opened before it was re-enabled.
+- 2026-10-28 15:55: **living room satellite tested live**: "hey jarvis" -> "turn off living room light", then "turn on living room light"; both transcribed exactly and `switch.living_room_tubelight` followed. ~6s from wake word to action, most of it waiting for the end of speech. The user saw it as disabled again afterwards, though the entry was enabled throughout; probably a tab opened before the re-enable (not confirmed).
 
 ### Grafana for all stats
 **Status:** Done
