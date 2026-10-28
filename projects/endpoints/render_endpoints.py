@@ -349,6 +349,7 @@ def main() -> None:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Homelab endpoints</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Cg fill='%23fff'%3E%3Crect x='7' y='8' width='18' height='3' rx='1.5'/%3E%3Crect x='7' y='14.5' width='18' height='3' rx='1.5'/%3E%3Crect x='7' y='21' width='12' height='3' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
 <style>{CSS}</style>
 </head>
 <body>

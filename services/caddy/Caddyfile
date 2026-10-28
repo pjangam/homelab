@@ -49,6 +49,16 @@ xero.{$TAILNET_SUFFIX} {
         reverse_proxy localhost:3000
     }
 
+    # A page with no icon of its own makes the browser fetch /favicon.ico,
+    # which the catch-all below would hand to Vaultwarden - so every such tab
+    # showed Vaultwarden's shield. Serve a neutral homelab one instead.
+    # Vaultwarden's own tab is unaffected: it links images/favicon-*.png.
+    handle /favicon.ico {
+        header Content-Type image/svg+xml
+        header Cache-Control "max-age=86400"
+        respond `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#16a34a"/><path d="M16 7 6 15.5h3V25h5.5v-6h3v6H23v-9.5h3z" fill="#fff"/></svg>` 200
+    }
+
     handle {
         reverse_proxy localhost:8080
     }
