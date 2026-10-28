@@ -101,33 +101,63 @@ automation:
 
   # "Everything" means lights and fans - never the AC or the white noise, so a
   # bedtime "turn off everything" cannot kill either (user, 2026-10-28). Plain
-  # "everything" is the room of the satellite that heard it, by its HA area;
-  # "in the house" is every room. A command with no satellite behind it (the
+  # "everything" / "all lights" is the room of the satellite that heard it, by
+  # its HA area; "in the house" is every room; naming a room ("turn off [the]
+  # bedroom", "...living room|hall") is that room from any satellite. "All
+  # lights" leaves the fans on. A command with no satellite behind it (the
   # phone app) has no room, so it falls back to the whole house. HA's built-in
   # "turn off everything" only reaches light.* entities, and these are all
   # Tinxy switch.*, so without this it matched and did nothing.
+  # Trigger id is "<scope>|<what>": scope here/house/bedroom/living_room,
+  # what all/lights.
   - id: voice_all_off
     alias: "Voice: turn off everything"
     triggers:
       - trigger: conversation
-        id: room
+        id: "here|all"
         command:
           - "(turn|switch) off everything [here|in here]"
           - "(turn|switch) everything off"
       - trigger: conversation
-        id: house
+        id: "house|all"
         command:
           - "(turn|switch) off everything in [the] (house|home)"
           - "(turn|switch) everything off in [the] (house|home)"
+      - trigger: conversation
+        id: "here|lights"
+        command:
+          - "(turn|switch) off all [the] lights [here|in here]"
+          - "(turn|switch) all [the] lights off"
+      - trigger: conversation
+        id: "house|lights"
+        command:
+          - "(turn|switch) off all [the] lights in [the] (house|home)"
+      - trigger: conversation
+        id: "bedroom|all"
+        command:
+          - "(turn|switch) off [everything in] [the] bedroom"
+          - "(turn|switch) [the] bedroom off"
+      - trigger: conversation
+        id: "living_room|all"
+        command:
+          - "(turn|switch) off [everything in] [the] (living room|hall)"
+          - "(turn|switch) [the] (living room|hall) off"
     variables:
       rooms:
         bedroom: [switch.bedroom_tubelight, switch.bedroom_led_bulb_2, switch.bedroom_balcony, fan.bedroom_fan_2]
         living_room: [switch.living_room_tubelight, switch.living_room_shelf_led, fan.living_room_fan]
-      area: "{{ area_id(trigger.device_id) if trigger.device_id else '' }}"
-      whole: "{{ trigger.id == 'house' or area not in rooms }}"
-      targets: "{{ rooms.bedroom + rooms.living_room if whole else rooms[area] }}"
+      scope: "{{ trigger.id.split('|')[0] }}"
+      what: "{{ trigger.id.split('|')[1] }}"
+      area: >-
+        {{ scope if scope in rooms else
+           (area_id(trigger.device_id) if scope == 'here' and trigger.device_id else '') }}
+      whole: "{{ area not in rooms }}"
+      chosen: "{{ rooms.bedroom + rooms.living_room if whole else rooms[area] }}"
+      targets: "{{ chosen | select('match', 'switch\\.') | list if what == 'lights' else chosen }}"
     actions:
       - action: homeassistant.turn_off
         target:
           entity_id: "{{ targets }}"
-      - set_conversation_response: "Turned off everything{{ ' in the house' if whole else ' in the ' ~ area_name(area) | lower }}"
+      - set_conversation_response: >-
+          Turned off {{ 'all the lights' if what == 'lights' else 'everything' }}
+          {{- ' in the house' if whole else ' in the ' ~ area_name(area) | lower }}
