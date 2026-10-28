@@ -2591,9 +2591,36 @@ Sources: [NUC 14 Pro India](https://varietyinfotech.com/product-tag/barebones-mi
 - **Nothing on the LAN needs more than 1Gbps today.** The router is 1GbE, and phones upload to Immich over Wi-Fi, which is slower than 1Gbps. Going faster than 1GbE needs a 2.5GbE switch (or a new router) **and** a 2.5GbE port on the server. Only worth it alongside a new machine, or once something wired (a NAS, a desktop) moves bulk data to xero.
 - **For the new machine:** prefer **2.5GbE onboard, Intel i226-V** (Realtek RTL8125 is fine on Linux too), or a free PCIe/M.2 slot for a NIC later. Two ports is a plus (VLANs, or a direct link to a second box). In the table above that favours the NUC 14 Pro, the GMKtec K8 Plus, the SER8, the UM890 Pro and the DIY build (a PCIe slot takes a 10GbE card later). It counts against the ThinkCentre Tiny and the Beelink EQ14 (1GbE only; the Tiny's add-in slot depends on the model).
 
+**Ports by machine (looked up 2026-10-28).** From reviews and retailer listings, which disagree in places; check the exact SKU's spec sheet before buying. Includes the cheaper N150/N250 boxes from the 2026-10-23 conversation that were not in the table above.
+
+| Machine | LAN | Fast expansion ports | Other ports | RAM rule |
+|---|---|---|---|---|
+| **xero today** | 1x 1GbE Realtek RTL8111, soldered | none (USB 3.2 Gen 2, 10Gbps) | HDMI | 1x DDR4 SO-DIMM, ok |
+| **ASUS NUC 14 Pro** | 1x 2.5GbE (Intel); a LAN/USB expansion lid adds a 2nd | **2x Thunderbolt 4 / USB4 (40Gbps)**, rear | front: USB-C 20Gbps + 2x USB-A 10Gbps; rear: USB-A 10Gbps, USB 2.0, 2x HDMI 2.1 | 2x DDR5 SO-DIMM, ok |
+| **ASUS NUC 14 Essential (N250)** | 2.5GbE on some SKUs, 1GbE on others | none confirmed | not confirmed | 1x DDR5 SO-DIMM (16 or 32GB max, sources differ), ok; discontinued at CDW 2025-04 |
+| **Gigabyte BRIX GB-BTIP-N250** | 1x 1GbE Realtek RTL8111H | USB-C | DP, HDMI | 1x DDR5 SO-DIMM, ok |
+| **Beelink EQ14 (N150)** | 2x 1GbE, or 2x 2.5GbE as a separate variant | USB-C 10Gbps, data only (no DP, no charging) | 2x HDMI, USB-A (counts vary) | 1x DDR4 SO-DIMM, ok |
+| **Beelink S13 / S13 Pro (N150)** | 1x 1GbE on the S13; 2.5GbE only on some variants | none | 4x USB 3.2 10Gbps, 2x HDMI | 1x DDR4 SO-DIMM, ok; 2x M.2 2280 (2nd is PCIe 3.0 x1), no 2.5" bay |
+| **AOOSTAR N1 Pro (N150)** | **2x 2.5GbE Intel i226-V** | USB-C | USB 3.2, HDMI, DP | **12GB LPDDR5 soldered - out**; storage is one M.2 2242 |
+| **Lenovo ThinkCentre M75q Gen 2 Tiny** | 1x 1GbE Realtek RTL8111FP | front USB-C 5Gbps | rear 2x USB 3.2 Gen 1, 2x USB 2.0, HDMI, DP; one optional port (DP/HDMI/serial/USB-C/VGA). No 2nd LAN option listed | 2x DDR4 SO-DIMM, ok |
+| **GMKtec K8 Plus** | **2x 2.5GbE Intel i226-V** | **OCuLink (PCIe 4.0 x4)** + 2x USB4 (1 on some listings) | 2x USB-A 10Gbps, HDMI 2.1, DP 2.1 | 2x DDR5 SO-DIMM, ok |
+| **Beelink SER8** | 1x 2.5GbE Realtek | 1x USB4 (40Gbps), rear | front USB-C + USB-A 10Gbps; rear USB-A 10Gbps, 2x USB 2.0, HDMI 2.1, DP 1.4 | 2x DDR5 SO-DIMM, ok |
+| **Minisforum UM890 Pro** | **2x 2.5GbE Realtek RTL8125** (not Intel) | 2x USB4 (40Gbps); **OCuLink via an M.2 adapter board that uses one of the two M.2 slots** | 4x USB-A, HDMI 2.1, DP 1.4 | 2x DDR5 SO-DIMM, ok |
+| **DIY micro-ATX (B760)** | 2.5GbE onboard (board-dependent) | **PCIe x16 slot** (+ x1/x4 slots by board) | as the board | 4x DDR5 DIMM, ok |
+
+What the ports would be used for here:
+- **2.5GbE / dual LAN:** faster LAN once the router or a switch does 2.5GbE. A second port allows a separate VLAN for IoT or a direct cable to a second box (a backup target or ZFS replication).
+- **Thunderbolt 4 / USB4 (40Gbps):** a 10GbE adapter (~₹10-15k), a fast external drive for the `datapool` mirror, or a slower eGPU. The cleanest way to get past 2.5GbE on a mini PC.
+- **OCuLink:** a full-speed eGPU for a local LLM (see Local LLM above); not useful for networking.
+- **USB 10Gbps only (N150/N250 boxes, xero):** room for a 2.5GbE USB adapter and nothing faster.
+- **PCIe slot (DIY):** takes any NIC (10GbE ~₹5-8k used Intel X520/X540), a GPU, or a SATA/HBA card.
+
+Sources: [NUC 14 Pro (ServeTheHome)](https://www.servethehome.com/asus-nuc-14-pro-review-intel-core), [NUC 14 Pro (Tom's Guide)](https://www.tomsguide.com/computing/desktop-computers/asus-NUC-14-pro-review), [NUC 14 Essential N250 (Scan)](https://www.scan.co.uk/products/asus-rnuc14mnk250-nuc-14-essential-intel-n250-intel-graphics-ddr5-m2-pcie-gen3x4-usb32-gen2-hdmi-dp), [BRIX N250 (Gigabyte)](https://www.gigabyte.com/be/Mini-PcBarebone/GB-BTIP-N250/sp), [EQ14 (Notebookcheck)](https://www.notebookcheck.net/Beelink-EQ14-mini-PC-review-Ready-to-go-HTPC-for-under-200.939127.0.html), [Beelink S13 (iFixit)](https://www.ifixit.com/Device/Beelink_Mini_S13), [AOOSTAR N1 Pro (YPC)](https://www.ypc.co.uk/product/aoostar-n1pro-mini-pc-intel-n150-twin-lakebeat-n95-n100up-to-3-6ghz-with-12g-lpddr5-ram-256g-m-2-2242-ssdmicro-desktop-computer-support-4k-3-displaydual-2-5g-lanwifi5-bt5-for-office-business/), [M75q Gen 2 PSREF](https://psref.lenovo.com/syspool/Sys/PDF/ThinkCentre/ThinkCentre_M75q_Gen_2/ThinkCentre_M75q_Gen_2_Spec.PDF), [K8 Plus (Notebookcheck)](https://www.notebookcheck.net/AMD-powered-mini-PC-with-OCuLink-and-dual-2-5G-Ethernet-now-available-with-30-discount.1105367.0.html), [SER8 (ServeTheHome)](https://www.servethehome.com/beelink-ser8-review-amd-ryzen-7-8845hs-powered-mini-pc/), [UM890 Pro (Liliputing)](https://liliputing.com/minisforum-um890-pro-review-a-versatile-high-performance-and-nearly-silent-mini-pc/).
+
 Moving to any new machine means moving Docker, ZFS (`zfs send` to the new pool), the systemd units, Tailscale identities, the crontab and the static IP `.123`; plan it as its own step when the box is chosen.
 
 #### Log
+- 2026-10-28: added "Ports by machine" to part 3: LAN, USB4/Thunderbolt/OCuLink and RAM rule for each candidate, plus the N150/N250 boxes (NUC 14 Essential, BRIX N250, Beelink S13, AOOSTAR N1 Pro - soldered RAM, out) from the 2026-10-23 conversation.
 - 2026-10-28: added "Network port" to part 3: xero's link is 1Gbps since the new patch cable, capped by the soldered RTL8111 and the 1GbE router; USB 2.5GbE is xero's only upgrade path; 2.5GbE (Intel i226) is now a buying criterion.
 - 2026-10-23: entry created from a conversation: load review (xero has headroom; the Pi is the tight box, see "Move some load to the Raspberry Pi"), machine options, local LLM, DIY build and idle power. Second SSD deferred because the S3 Deep Archive backup is now running.
 
