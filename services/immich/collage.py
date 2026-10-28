@@ -8,8 +8,9 @@
 Photos are placed oldest first, left to right, top to bottom. Nothing is
 cropped: every photo in a row is scaled to the same height so the row fills
 the width exactly, which keeps each photo whole whatever its shape. Images
-come from Immich's JPEG preview (2560px long side), so HEIC - including
-iPhone HEICs named .jpg - needs no decoder here. With --upload the collage
+come from Immich's JPEG preview (2560px long side, with any crop made in
+Immich applied), so HEIC - including iPhone HEICs named .jpg - needs no
+decoder here. With --upload the collage
 goes back into Immich and into the same album. --bg-photo (a file name or
 asset id anywhere in the library) is stretched over the whole sheet so it
 shows through the gaps instead of the plain --bg colour.
@@ -73,7 +74,7 @@ def assets(album_id):
 
 def photo(asset):
     img = Image.open(io.BytesIO(
-        api(f"/assets/{asset['id']}/thumbnail?size=preview", raw=True)))
+        api(f"/assets/{asset['id']}/thumbnail?size=preview&edited=true", raw=True)))
     return ImageOps.exif_transpose(img).convert("RGB")
 
 
