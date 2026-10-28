@@ -2,15 +2,17 @@
 """Make a grid collage from an Immich album.
 
     python3 -I services/immich/collage.py "navratri 2026 oju" [--cols 3]
-        [--width 3240] [--gap 12] [--bg white] [--out collage.jpg]
-        [--newest-first] [--upload]
+        [--width 3240] [--gap 32] [--bg white] [--bg-photo IMG_6581.jpg]
+        [--bg-blur 0] [--out collage.jpg] [--newest-first] [--upload]
 
 Photos are placed oldest first, left to right, top to bottom. Nothing is
 cropped: every photo in a row is scaled to the same height so the row fills
 the width exactly, which keeps each photo whole whatever its shape. Images
 come from Immich's JPEG preview (2560px long side), so HEIC - including
 iPhone HEICs named .jpg - needs no decoder here. With --upload the collage
-goes back into Immich and into the same album.
+goes back into Immich and into the same album. --bg-photo (a file name or
+asset id anywhere in the library) is stretched over the whole sheet so it
+shows through the gaps instead of the plain --bg colour.
 """
 import argparse
 import io
@@ -21,7 +23,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageFilter, ImageOps
 
 REPO = Path(__file__).resolve().parents[2]
 SERVER = "http://localhost:2283/api"
@@ -75,6 +77,17 @@ def photo(asset):
     return ImageOps.exif_transpose(img).convert("RGB")
 
 
+def find(name_or_id):
+    try:
+        return api(f"/assets/{uuid.UUID(name_or_id)}")
+    except ValueError:
+        hits = api("/search/metadata", {"originalFileName": name_or_id,
+                                        "type": "IMAGE"})["assets"]["items"]
+        if not hits:
+            sys.exit(f"no photo named {name_or_id!r}")
+        return hits[0]
+
+
 def rows(photos, cols, width, gap):
     """Each row of `cols` photos at the one height that makes it `width` wide."""
     out = []
@@ -111,8 +124,10 @@ def main():
     p.add_argument("album")
     p.add_argument("--cols", type=int, default=3)
     p.add_argument("--width", type=int, default=3240, help="collage width in pixels")
-    p.add_argument("--gap", type=int, default=12, help="pixels between and around photos")
+    p.add_argument("--gap", type=int, default=32, help="pixels between and around photos")
     p.add_argument("--bg", default="white")
+    p.add_argument("--bg-photo", help="Immich photo (file name or id) behind the gaps")
+    p.add_argument("--bg-blur", type=float, default=0, help="blur radius for --bg-photo")
     p.add_argument("--out", type=Path)
     p.add_argument("--newest-first", action="store_true")
     p.add_argument("--upload", action="store_true", help="add the collage to the album")
@@ -129,7 +144,12 @@ def main():
         print(f"{i + 1}/{len(items)} {asset['originalFileName']}", file=sys.stderr)
         photos.append(photo(asset))
     g, layout = a.gap, rows(photos, a.cols, a.width, a.gap)
-    sheet = Image.new("RGB", (a.width, sum(h + g for h, _ in layout) + g), a.bg)
+    size = (a.width, sum(h + g for h, _ in layout) + g)
+    sheet = Image.new("RGB", size, a.bg)
+    if a.bg_photo:
+        sheet = ImageOps.fit(photo(find(a.bg_photo)), size, Image.LANCZOS)
+        if a.bg_blur:
+            sheet = sheet.filter(ImageFilter.GaussianBlur(a.bg_blur))
     y = g
     for h, row in layout:
         x = g
