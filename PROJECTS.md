@@ -2548,7 +2548,7 @@ qty | item | est | note
 **Priority:** P3
 
 **Why:** three hardware purchases the user has in mind, collected in one place because they affect each other (a bigger machine changes the UPS load and the drive plan). Nothing can be bought for a few months (user, 2026-10-23), so this records the options and reasoning so far, ready for when it can.
-**State:** options researched 2026-10-23 (below), nothing decided or bought. Standing rule for any machine: **no soldered RAM or storage** - the user wants to upgrade parts when needed. That rules out the Mac mini, Ryzen AI Max boxes and most N100/N150 mini PCs.
+**State:** options researched 2026-10-23 (below), nothing decided or bought. Standing rule for any machine: **no soldered RAM or storage** - the user wants to upgrade parts when needed. That rules out the Mac mini, Ryzen AI Max boxes and most N100/N150 mini PCs. **The network port is now a buying criterion too** (2026-10-28): see "Network port" under part 3.
 **Next step:** when purchases are possible, pick the order. The UPS/inverter needs a load figure first: "Home power audit" has the device side; a new machine's idle draw adds to it.
 
 #### 1. UPS + inverter for the whole house
@@ -2586,9 +2586,15 @@ Sources: [NUC 14 Pro India](https://varietyinfotech.com/product-tag/barebones-mi
 
 **Why a desktop idles higher** (~20-35W vs xero's ~10W; +10-15W with a GPU): a large PSU is inefficient at 20W load; desktop boards carry power delivery and extra chips sized for 150W+ CPUs; C-states/ASPM often ship disabled; more fans and drives; a GPU idles at 10-15W; and Ryzen 7000/9000 desktop chips idle ~25-30W from their I/O die (AMD "G" APUs and Intel avoid that). Tuned - Intel, no RGB, a quality ~550W PSU, C-states and ASPM on, `powertop --auto-tune`, GPU only once needed - it can land around 15-20W, about ₹60-80/month more than xero. The bigger cost is UPS runtime, which ties back to part 1.
 
+**Network port (added 2026-10-28).** The new patch cable fixed xero's 100Mb/s downshift, and the link is now 1Gbps/Full. That is the ceiling at both ends: xero's onboard Realtek RTL8111/8168 and the Airtel router's port each advertise at most 1000BASE-T. Cat6 would carry 10Gbps, so the cable is not the limit.
+- **xero's port is soldered** to the board, so it cannot be swapped. The one upgrade path is **USB**: xero has a USB 3.2 Gen 2 (10Gbps) root hub, so a 2.5GbE USB adapter (Realtek RTL8156B, roughly ₹2-3k; check locally) would work. The Intel 7265 Wi-Fi card on PCIe `02:00.0` is probably a socketed M.2 card, and an M.2 A+E 2.5GbE adapter could replace it in theory, but that is fiddly; prefer USB.
+- **Nothing on the LAN needs more than 1Gbps today.** The router is 1GbE, and phones upload to Immich over Wi-Fi, which is slower than 1Gbps. Going faster than 1GbE needs a 2.5GbE switch (or a new router) **and** a 2.5GbE port on the server. Only worth it alongside a new machine, or once something wired (a NAS, a desktop) moves bulk data to xero.
+- **For the new machine:** prefer **2.5GbE onboard, Intel i226-V** (Realtek RTL8125 is fine on Linux too), or a free PCIe/M.2 slot for a NIC later. Two ports is a plus (VLANs, or a direct link to a second box). In the table above that favours the NUC 14 Pro, the GMKtec K8 Plus, the SER8, the UM890 Pro and the DIY build (a PCIe slot takes a 10GbE card later). It counts against the ThinkCentre Tiny and the Beelink EQ14 (1GbE only; the Tiny's add-in slot depends on the model).
+
 Moving to any new machine means moving Docker, ZFS (`zfs send` to the new pool), the systemd units, Tailscale identities, the crontab and the static IP `.123`; plan it as its own step when the box is chosen.
 
 #### Log
+- 2026-10-28: added "Network port" to part 3: xero's link is 1Gbps since the new patch cable, capped by the soldered RTL8111 and the 1GbE router; USB 2.5GbE is xero's only upgrade path; 2.5GbE (Intel i226) is now a buying criterion.
 - 2026-10-23: entry created from a conversation: load review (xero has headroom; the Pi is the tight box, see "Move some load to the Raspberry Pi"), machine options, local LLM, DIY build and idle power. Second SSD deferred because the S3 Deep Archive backup is now running.
 
 ### Old duplicity backup in Google Drive - keep or delete
