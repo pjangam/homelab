@@ -10,6 +10,8 @@ substitutions:
   name: voice-satellite
   friendly_name: Voice Satellite
   static_ip: 192.168.1.125
+  # 7, not 8: one LED cut off on 2026-10-28 after its solder pads were damaged.
+  num_leds: "7"
 
 packages:
   common: !include voice-satellite-common.yaml

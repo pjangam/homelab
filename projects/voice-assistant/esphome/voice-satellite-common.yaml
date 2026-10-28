@@ -149,14 +149,16 @@ light:
           colors:
             - { state: true, brightness: 100%, duration: 150ms }
             - { state: false, duration: 150ms }
-  # 8-LED WS2812B stick on GPIO4 via the 470R, powered from VIN (wiring.html).
+  # WS2812B stick on GPIO4 via the 470R, powered from VIN (wiring.html).
+  # Length is per board (num_leds in its substitutions): 8 LEDs as wired,
+  # 7 on the bedroom board since 2026-10-28.
   # Internal: driven only by the scripts above, and kept out of HA so Assist
   # never sees a second "light" on this board.
   - platform: esp32_rmt_led_strip
     id: strip
     internal: true
     pin: GPIO4
-    num_leds: 8
+    num_leds: ${num_leds}
     chipset: WS2812
     rgb_order: GRB
     default_transition_length: 0s

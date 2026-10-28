@@ -2221,6 +2221,7 @@ The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satel
   - Future updates to this board are **OTA to 192.168.1.126**, so none of the above applies to them.
 - 2026-10-28: living room satellite **added in HA**: the ESPHome entry created on 2026-10-24 had been disabled after a one-time test; re-enabled through the websocket API, area Living Room, assist satellite idle. `add_satellite_ha.py` crashed on an already-configured host (HA aborts the flow itself, then the script's DELETE 404ed); it now finds the entry and only sets the area. New `satellite_status.py` shows each satellite's entry, area and entities.
 - 2026-10-28 15:55: **living room satellite tested live**: "hey jarvis" -> "turn off living room light", then "turn on living room light"; both transcribed exactly and `switch.living_room_tubelight` followed. ~6s from wake word to action, most of it waiting for the end of speech. The user saw it as disabled again afterwards, though the entry was enabled throughout; probably a tab opened before the re-enable (not confirmed).
+- 2026-10-28: **bedroom satellite strip is 7 LEDs now**, not 8: the first LED's pads were damaged while soldering, so it was cut off and the next joint resoldered (by someone else). `num_leds` is now a per-board substitution (bedroom 7, living room 8). The running firmware still says 8, which is harmless (the extra data falls off the end); reflash from the personal MacBook (`build_on_mac.sh`, OTA to .125) whenever it is next awake.
 
 ### Grafana for all stats
 **Status:** Done
