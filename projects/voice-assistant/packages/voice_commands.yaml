@@ -98,3 +98,36 @@ automation:
         data:
           preset_mode: "{{ preset }}"
       - set_conversation_response: "{{ 'Hall' if fan == 'fan.living_room_fan' else 'Bedroom' }} fan {{ preset | lower }}"
+
+  # "Everything" means lights and fans - never the AC or the white noise, so a
+  # bedtime "turn off everything" cannot kill either (user, 2026-10-28). Plain
+  # "everything" is the room of the satellite that heard it, by its HA area;
+  # "in the house" is every room. A command with no satellite behind it (the
+  # phone app) has no room, so it falls back to the whole house. HA's built-in
+  # "turn off everything" only reaches light.* entities, and these are all
+  # Tinxy switch.*, so without this it matched and did nothing.
+  - id: voice_all_off
+    alias: "Voice: turn off everything"
+    triggers:
+      - trigger: conversation
+        id: room
+        command:
+          - "(turn|switch) off everything [here|in here]"
+          - "(turn|switch) everything off"
+      - trigger: conversation
+        id: house
+        command:
+          - "(turn|switch) off everything in [the] (house|home)"
+          - "(turn|switch) everything off in [the] (house|home)"
+    variables:
+      rooms:
+        bedroom: [switch.bedroom_tubelight, switch.bedroom_led_bulb_2, switch.bedroom_balcony, fan.bedroom_fan_2]
+        living_room: [switch.living_room_tubelight, switch.living_room_shelf_led, fan.living_room_fan]
+      area: "{{ area_id(trigger.device_id) if trigger.device_id else '' }}"
+      whole: "{{ trigger.id == 'house' or area not in rooms }}"
+      targets: "{{ rooms.bedroom + rooms.living_room if whole else rooms[area] }}"
+    actions:
+      - action: homeassistant.turn_off
+        target:
+          entity_id: "{{ targets }}"
+      - set_conversation_response: "Turned off everything{{ ' in the house' if whole else ' in the ' ~ area_name(area) | lower }}"
