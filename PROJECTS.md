@@ -2693,7 +2693,7 @@ qty | item | est | note
 **Priority:** P3
 
 **Why:** `do-release-upgrade -c` has offered 26.04.1 LTS since its .1 release, and the 2026-10-29 power-cut reboot brought up a new kernel, which raised the question of whether the OS should move too. Recorded so the reasoning isn't worked out again from scratch.
-**State:** decided 2026-10-29: stay on 24.04. xero is Lubuntu 24.04.5 (`lubuntu-desktop` installed, GUI off: boots to `multi-user.target`) on the 7.0 HWE kernel (`linux-generic-hwe-24.04`, 7.0.0-42 as of 2026-10-29). unattended-upgrades keeps kernel patches coming within 24.04, so a new kernel is not an OS upgrade. 24.04 standard support runs to 2029.
+**State:** decided 2026-10-29: stay on 24.04. xero is Lubuntu 24.04.5 (`lubuntu-desktop` installed, GUI off: boots to `multi-user.target`) on the 7.0 HWE kernel (`linux-generic-hwe-24.04`, 7.0.0-42 as of 2026-10-29). unattended-upgrades keeps kernel patches coming within 24.04, so a new kernel is not an OS upgrade. 24.04 standard support runs to 2029 for the Ubuntu base (kernel, ZFS, systemd, Docker host packages); Lubuntu's own flavour packages (LXQt and its apps) get only 3 years, to April 2027 - irrelevant while the GUI is off, but one more reason to purge the desktop if xero is kept past then.
 **Next step:** revisit only on one of these triggers: (a) a new machine is bought ("Machine upgrades") - install **Ubuntu Server 26.04** fresh on it instead of upgrading xero; (b) xero is kept long-term - do the release upgrade on a quiet weekend in early 2027 after backups and a `zpool scrub`, with keyboard and screen attached; (c) the ZFS userland/kmod mismatch below causes a real problem.
 
 #### Why not upgrade now
