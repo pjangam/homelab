@@ -6,11 +6,10 @@
 #
 #   tools/dev-shell/test_tmux_copy_mode.sh
 #
-# Mouse events cannot be synthesised, so each test runs the body of the binding
-# that a real drag would fire, against a scratch session. `copy-mode -M` is the
-# one part that cannot be reproduced - it means "begin a mouse drag" and needs a
-# real one - so the tests enter with plain `copy-mode -e`, which is the half of
-# `-eM` whose behaviour is under test anyway.
+# Mouse events cannot be synthesised, so each test reads the body of the
+# binding a real drag (or Escape) would fire out of the live server and runs it
+# against a scratch session. That way the test fails if the binding changes,
+# not just if tmux does.
 set -euo pipefail
 
 S=tmuxcopytest-$$
@@ -22,58 +21,81 @@ cleanup() { tmux kill-session -t "$S" 2>/dev/null || true; }
 trap cleanup EXIT
 
 command -v tmux >/dev/null || { echo "tmux not installed"; exit 2; }
-tmux has-session -t 0 2>/dev/null || tmux info >/dev/null 2>&1 || { echo "no tmux server running"; exit 2; }
+# `tmux info` needs an attached client on 3.4, so it fails over plain ssh.
+tmux ls >/dev/null 2>&1 || { echo "no tmux server running"; exit 2; }
 
 tmux new-session -d -s "$S" -x 80 -y 24 'seq 1 500; sleep 120'
 sleep 0.5
 
-# The binding's body, with the mouse's `-t =` replaced by an explicit target.
-dragend() {
-  tmux if-shell -F -t "$S" '#{scroll_position}' \
-    "send -t $S -X copy-selection" \
-    "send -t $S -X copy-selection-and-cancel"
+TABLE=copy-mode
+[ "$(tmux show -gv mode-keys)" = vi ] && TABLE=copy-mode-vi
+
+# Run what a key in the copy-mode table is bound to, pointed at the scratch
+# pane. The mouse's own target (-t =) only exists for a real mouse event, so
+# every `send -X` gets an explicit one instead.
+fire() {
+  local body
+  # Filter the whole table: `list-keys -T table key` prints nothing on 3.7.
+  body=$(tmux list-keys -T "$TABLE" | sed -nE "s/^bind-key +-T $TABLE +$1 +//p")
+  [ -n "$body" ] || { bad "$1 is not bound in $TABLE"; return; }
+  body=${body//send-keys -X/send-keys -t $S -X}
+  body=${body//send -X/send -t $S -X}
+  body=${body//select-pane/select-pane -t $S}
+  body=${body//if-shell -F/if-shell -t $S -F}
+  eval "tmux $body"
 }
 mode() { tmux display -p -t "$S" '#{pane_in_mode}'; }
 pos()  { tmux display -p -t "$S" '#{scroll_position}'; }
-# Empty outside copy-mode; normalise to 0 so the assertion reads the same in
-# both branches - no copy-mode is no selection.
+# Empty outside copy-mode; normalise to 0 - no copy-mode is no selection.
 sel()  { local v; v=$(tmux display -p -t "$S" '#{selection_present}'); echo "${v:-0}"; }
+buf()  { tmux show-buffer 2>/dev/null || true; }
 
-echo "== drag-select at the live bottom leaves copy-mode =="
-tmux copy-mode -e -t "$S"
-is "enters copy-mode" "$(mode)" 1
-is "at the bottom" "$(pos)" 0
-tmux send -t "$S" -X begin-selection
-tmux send -t "$S" -X -N 5 cursor-right
-dragend
-is "drag-end exits copy-mode" "$(mode)" 0
-is "no selection left behind" "$(sel)" 0
-
-echo "== drag-select while scrolled back stays put =="
-tmux copy-mode -e -t "$S"
+echo "== drag-select while scrolled back: copies, stays put, stays highlighted =="
+tmux copy-mode -t "$S"
 tmux send -t "$S" -X -N 10 scroll-up
-is "scrolled back" "$(pos)" 10
 tmux send -t "$S" -X begin-selection
 tmux send -t "$S" -X -N 5 cursor-right
-# Moving the cursor can nudge the view itself, which is the test's doing and not
-# the binding's - so compare against where we actually were when the drag ended.
 before=$(pos)
-is "selection is live mid-drag" "$(sel)" 1
-dragend
+tmux set-buffer -- "sentinel-$$"
+fire MouseDragEnd1Pane
 is "drag-end stays in copy-mode" "$(mode)" 1
 is "scroll position kept" "$(pos)" "$before"
-is "selection ends with the mouse" "$(sel)" 0
+is "selection still highlighted" "$(sel)" 1
+[ "$(buf)" != "sentinel-$$" ] && ok "selection copied to the tmux buffer" \
+  || bad "selection copied to the tmux buffer (buffer unchanged)"
 [ "$before" -ne 0 ] && ok "still scrolled back, not snapped to the bottom" \
   || bad "test set up wrong: pane was already at the bottom"
 
-# The regression this branch used to have: with copy-selection-no-clear the
-# selection stayed live, so scrolling on kept dragging it wider.
+# stop-selection is what keeps the highlight from growing: without it the
+# selection end follows the cursor, and scrolling moves the cursor.
+copied=$(buf)
 tmux send -t "$S" -X -N 3 scroll-up
-is "scrolling after the copy does not re-grow a selection" "$(sel)" 0
+tmux send -t "$S" -X -N 4 cursor-down
+fire MouseDragEnd1Pane
+is "scrolling after the copy does not grow the selection" "$(buf)" "$copied"
 
-echo "== the wheel alone gets you back out (-e on the drag entry) =="
-tmux send -t "$S" -X -N 11 scroll-down
-is "scrolling to the bottom exits copy-mode" "$(mode)" 0
+echo "== Escape clears the selection first, leaves copy-mode second =="
+if [ "$TABLE" = copy-mode ]; then
+  fire Escape
+  is "first Escape clears the selection" "$(sel)" 0
+  is "first Escape stays in copy-mode" "$(mode)" 1
+  fire Escape
+  is "second Escape leaves copy-mode" "$(mode)" 0
+else
+  fire Escape
+  is "Escape clears the selection" "$(sel)" 0
+  is "Escape stays in copy-mode" "$(mode)" 1
+  tmux send -t "$S" -X cancel
+fi
+
+echo "== double-click copies a word and stays =="
+tmux copy-mode -t "$S"
+tmux send -t "$S" -X -N 10 scroll-up
+before=$(pos)
+fire DoubleClick1Pane
+is "double-click stays in copy-mode" "$(mode)" 1
+is "double-click keeps scroll position" "$(pos)" "$before"
+is "double-click leaves the word highlighted" "$(sel)" 1
 
 echo
 echo "$pass passed, $fail failed"
