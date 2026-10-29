@@ -2712,5 +2712,12 @@ Ubuntu was right for this box: prebuilt, signed ZFS modules on every kernel (Deb
 
 Verdict: for the next machine, **Ubuntu Server LTS**: the same base, without the desktop.
 
+#### Removing the desktop (if xero is kept past April 2027)
+Simulated 2026-10-29, not done. `apt purge lubuntu-desktop` alone removes only the meta-package; `apt purge --autoremove lubuntu-desktop` removes **382 packages**, including ones xero uses: `pipewire-audio`, `pipewire-alsa`, `alsa-base` (spotifyd and the `filter-chain` user service play through PipeWire), `bluez`, `network-manager-openvpn`. NetworkManager itself stays (it brings up `enp1s0` - keep it). Safe order:
+1. `sudo apt-mark manual` pipewire, pipewire-pulse, pipewire-audio, pipewire-alsa, wireplumber, alsa-base, network-manager, avahi-daemon (and anything else the next step shows that's in use).
+2. `apt-get -s purge --autoremove lubuntu-desktop` again and read the list.
+3. Purge, reboot, then check: network, Tailscale, all containers, spotifyd audio, the systemd --user units.
+~30 minutes; anything removed by mistake comes back with `apt install`. Result: about the same as a fresh Ubuntu Server, minus leftovers (configs, NetworkManager instead of networkd).
+
 #### Log
 - 2026-10-29: entry created. 7.0.0-42 was installed by unattended-upgrades at 06:49 and went live at the 17:46 reboot after the power-watchdog shutdown. Upgrade deferred, reasons above.
