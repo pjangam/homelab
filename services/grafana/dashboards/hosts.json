@@ -15,6 +15,104 @@
   "panels": [
     {
       "id": 1,
+      "type": "stat",
+      "title": "Uptime",
+      "description": "Since each host's kernel booted (node_boot_time_seconds), so a container or HA restart does not reset it. A clean shutdown on a power cut (projects/power-watchdog) does.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dtdurations",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "instant": true,
+          "range": false,
+          "expr": "time() - node_boot_time_seconds",
+          "legendFormat": "{{host}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Reboots in range",
+      "description": "How many times the boot time changed within the selected range. Prometheus keeps 90 days.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "instant": true,
+          "range": false,
+          "expr": "changes(node_boot_time_seconds[$__range])",
+          "legendFormat": "{{host}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
       "type": "timeseries",
       "title": "CPU busy, all cores",
       "description": "Share of all cores busy (not idle, not iowait) per 5s; each point is the max / p95 of its interval.",
@@ -25,7 +123,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 0,
+        "y": 4,
         "w": 12,
         "h": 8
       },
@@ -104,7 +202,7 @@
       ]
     },
     {
-      "id": 2,
+      "id": 4,
       "type": "timeseries",
       "title": "CPU temperature",
       "description": "xero: x86_pkg_temp (N5105 TjMax 105\u00b0C; healthcheck warns at 90, the Immich load guard stops it at 93). Pi: cpu-thermal.",
@@ -115,7 +213,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 12,
-        "y": 0,
+        "y": 4,
         "w": 12,
         "h": 8
       },
@@ -193,7 +291,7 @@
       ]
     },
     {
-      "id": 3,
+      "id": 5,
       "type": "timeseries",
       "title": "CPU busy per core (max)",
       "description": "",
@@ -204,7 +302,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 8,
+        "y": 12,
         "w": 12,
         "h": 8
       },
@@ -274,7 +372,7 @@
       ]
     },
     {
-      "id": 4,
+      "id": 6,
       "type": "timeseries",
       "title": "xero core temperatures (max)",
       "description": "",
@@ -285,7 +383,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 12,
-        "y": 8,
+        "y": 12,
         "w": 12,
         "h": 8
       },
@@ -354,7 +452,7 @@
       ]
     },
     {
-      "id": 5,
+      "id": 7,
       "type": "timeseries",
       "title": "Memory used (excl. cache)",
       "description": "1 - MemAvailable/MemTotal: page cache does not count, it is handed back on demand.",
@@ -365,7 +463,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 16,
+        "y": 20,
         "w": 12,
         "h": 8
       },
@@ -444,7 +542,7 @@
       ]
     },
     {
-      "id": 6,
+      "id": 8,
       "type": "timeseries",
       "title": "Pressure stall (xero)",
       "description": "% of each 5s that some task waited for CPU / memory / IO (PSI). The Pi's kernel has no PSI.",
@@ -455,7 +553,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 12,
-        "y": 16,
+        "y": 20,
         "w": 12,
         "h": 8
       },
@@ -569,7 +667,7 @@
       ]
     },
     {
-      "id": 7,
+      "id": 9,
       "type": "timeseries",
       "title": "Disk busy",
       "description": "xero: sda = datapool (ZFS), sdb = boot SSD. Pi: mmcblk0.",
@@ -580,7 +678,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 24,
+        "y": 28,
         "w": 12,
         "h": 8
       },
@@ -659,7 +757,7 @@
       ]
     },
     {
-      "id": 8,
+      "id": 10,
       "type": "timeseries",
       "title": "Disk throughput (max)",
       "description": "",
@@ -670,7 +768,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 12,
-        "y": 24,
+        "y": 28,
         "w": 12,
         "h": 8
       },
@@ -748,7 +846,7 @@
       ]
     },
     {
-      "id": 9,
+      "id": 11,
       "type": "timeseries",
       "title": "Network (max)",
       "description": "xero's wired link negotiated 100Mb/s (~12MB/s) as of 2026-10-09.",
@@ -759,7 +857,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 32,
+        "y": 36,
         "w": 12,
         "h": 8
       },
@@ -837,7 +935,7 @@
       ]
     },
     {
-      "id": 10,
+      "id": 12,
       "type": "timeseries",
       "title": "SSD used",
       "description": "xero's two SSDs. Kingston = the whole ZFS pool incl. snapshots, from `zfs list` (services/node-exporter/zpool_textfile.sh, cron every minute); 100% is when writes stop. Its datasets are copies=2, so each GB of new data costs 2 GB here.",
@@ -848,7 +946,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 12,
-        "y": 32,
+        "y": 36,
         "w": 12,
         "h": 8
       },
@@ -927,7 +1025,7 @@
       ]
     },
     {
-      "id": 11,
+      "id": 13,
       "type": "timeseries",
       "title": "ZFS ARC size (xero, max)",
       "description": "",
@@ -938,7 +1036,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 40,
+        "y": 44,
         "w": 12,
         "h": 8
       },
@@ -1007,7 +1105,7 @@
       ]
     },
     {
-      "id": 12,
+      "id": 14,
       "type": "timeseries",
       "title": "SSD temperature (xero)",
       "description": "drivetemp hwmon, loaded since 2026-10-21 (projects/xero-stats/enable_drivetemp.sh). The Kingston A400 is rated to 70\u00b0C; SMART says it has reached 84\u00b0C. Chips are named by SATA port, so moving a cable swaps the two.",
@@ -1018,7 +1116,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 12,
-        "y": 40,
+        "y": 44,
         "w": 12,
         "h": 8
       },
@@ -1114,7 +1212,7 @@
       ]
     },
     {
-      "id": 13,
+      "id": 15,
       "type": "timeseries",
       "title": "ZFS errors (xero, max)",
       "description": "Read / write / checksum errors summed over the pool's vdevs, as zpool status counts them (services/node-exporter/zpool_textfile.sh, cron every minute). They hold until `zpool clear`, so a step up marks when they happened. A level, so max only: a p95 would just repeat it. Checksum errors with no read/write errors mean bad data, not a bad link.",
@@ -1125,7 +1223,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 48,
+        "y": 52,
         "w": 12,
         "h": 8
       },

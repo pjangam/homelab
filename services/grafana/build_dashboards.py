@@ -65,6 +65,19 @@ def panel(title, targets, unit, x, y, w=12, h=8, max_=None, desc="", stack=False
     return p
 
 
+def stat(title, expr, legend, unit, x, y, w=12, h=4, desc=""):
+    """One number per series, as of the dashboard's end time."""
+    return {
+        "id": next(_ids), "type": "stat", "title": title, "description": desc, "datasource": DS,
+        "gridPos": {"x": x, "y": y, "w": w, "h": h},
+        "fieldConfig": {"defaults": {"unit": unit, "color": {"mode": "fixed", "fixedColor": "text"}}},
+        "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": False},
+                    "colorMode": "none", "graphMode": "none", "textMode": "value_and_name"},
+        "targets": [{"datasource": DS, "refId": "A", "instant": True, "range": False,
+                     "expr": expr, "legendFormat": legend}],
+    }
+
+
 def max_p95(expr, legend):
     mx, p95 = peak(expr)
     return [(mx, f"{legend} max"), (p95, f"{legend} p95")]
@@ -107,6 +120,12 @@ ssd_temp = lambda port: f'node_hwmon_temp_celsius{{host="xero",chip="target{port
 
 y = 0
 hosts = []
+hosts.append(stat("Uptime", 'time() - node_boot_time_seconds', "{{host}}", "dtdurations", 0, y,
+                  desc="Since each host's kernel booted (node_boot_time_seconds), so a container or HA restart "
+                       "does not reset it. A clean shutdown on a power cut (projects/power-watchdog) does."))
+hosts.append(stat("Reboots in range", 'changes(node_boot_time_seconds[$__range])', "{{host}}", "short", 12, y,
+                  desc="How many times the boot time changed within the selected range. Prometheus keeps 90 days."))
+y += 4
 hosts.append(panel("CPU busy, all cores", max_p95(cpu_busy, "{{host}}"), "percent", 0, y, max_=100,
                    desc="Share of all cores busy (not idle, not iowait) per 5s; each point is the max / p95 of its interval."))
 hosts.append(panel("CPU temperature", max_p95(temp, "{{host}}"), "celsius", 12, y,
