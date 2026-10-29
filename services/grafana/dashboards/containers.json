@@ -14,7 +14,7 @@
   },
   "panels": [
     {
-      "id": 14,
+      "id": 16,
       "type": "timeseries",
       "title": "Container CPU (max)",
       "description": "100% = one full core; xero has 4. Each point is the max 5s value in its interval. Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
@@ -94,7 +94,7 @@
       ]
     },
     {
-      "id": 15,
+      "id": 17,
       "type": "timeseries",
       "title": "Container CPU (p95)",
       "description": "Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
@@ -174,7 +174,7 @@
       ]
     },
     {
-      "id": 16,
+      "id": 18,
       "type": "timeseries",
       "title": "Container memory, working set (max)",
       "description": "Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
@@ -254,7 +254,7 @@
       ]
     },
     {
-      "id": 17,
+      "id": 19,
       "type": "timeseries",
       "title": "Container network received (max)",
       "description": "Host-networked containers (caddy, grafana, homeassistant, node-exporter, prometheus) are left out: cAdvisor reports all of xero's traffic for each of them. Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
@@ -334,7 +334,7 @@
       ]
     },
     {
-      "id": 18,
+      "id": 20,
       "type": "timeseries",
       "title": "Container network sent (max)",
       "description": "Host-networked containers (caddy, grafana, homeassistant, node-exporter, prometheus) are left out: cAdvisor reports all of xero's traffic for each of them. Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",

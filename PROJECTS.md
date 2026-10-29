@@ -2708,6 +2708,7 @@ Ubuntu was right for this box: prebuilt, signed ZFS modules on every kernel (Deb
 - **Proxmox VE:** ZFS-native and good for VMs/LXC, but adds a layer over the Docker-everything setup with no gain on a 4-core N5105. Worth a look only on a much bigger machine.
 - **TrueNAS SCALE / Unraid:** appliance OSes that fight host-level cron jobs, systemd --user units and the repo-driven setup used here.
 - **NixOS:** the whole machine as reproducible config, but a steep switch from a working setup.
+- **Alpine:** tiny and secure, great *inside* containers, poor as this host: OpenRC instead of systemd (this repo runs on systemd units, `systemd --user` with linger, timers and `journalctl`, all of which would need rewriting), musl libc breaks some host binaries and Python wheels, and ZFS on the root/host pool is less travelled there. Its size advantage doesn't matter on a 32GB/SSD box.
 
 Verdict: for the next machine, **Ubuntu Server LTS**: the same base, without the desktop.
 
