@@ -2688,3 +2688,28 @@ qty | item | est | note
 
 #### Log
 - 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here. Jumpers doubled and a 10cm set added: current stock is running out. Berg strip (dupont) housings added for multi-pin plugs, then a dupont crimp tool and 100 each male/female crimp pins.
+### xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet
+**Status:** Parked
+**Priority:** P3
+
+**Why:** `do-release-upgrade -c` has offered 26.04.1 LTS since its .1 release, and the 2026-10-29 power-cut reboot brought up a new kernel, which raised the question of whether the OS should move too. Recorded so the reasoning isn't worked out again from scratch.
+**State:** decided 2026-10-29: stay on 24.04. xero is Lubuntu 24.04.5 (`lubuntu-desktop` installed, GUI off: boots to `multi-user.target`) on the 7.0 HWE kernel (`linux-generic-hwe-24.04`, 7.0.0-42 as of 2026-10-29). unattended-upgrades keeps kernel patches coming within 24.04, so a new kernel is not an OS upgrade. 24.04 standard support runs to 2029.
+**Next step:** revisit only on one of these triggers: (a) a new machine is bought ("Machine upgrades") - install **Ubuntu Server 26.04** fresh on it instead of upgrading xero; (b) xero is kept long-term - do the release upgrade on a quiet weekend in early 2027 after backups and a `zpool scrub`, with keyboard and screen attached; (c) the ZFS userland/kmod mismatch below causes a real problem.
+
+#### Why not upgrade now
+- Little to gain: the HWE kernel already gives 24.04 the new kernel and hardware support, and nearly everything else runs in Docker, which doesn't care about the host release.
+- Real risk on the box that runs everything: the release upgrade disables third-party repos (Docker, Tailscale), moves the system Python (host scripts and systemd --user units using it, e.g. `websockets` in `projects/healthcheck/add_stats_dashboard_tile.py`), and rebuilds the ZFS module the pools depend on. A failure takes HA, Immich, Pi-hole and the AC bridge down together.
+- The bad RAM that made a big upgrade unsafe was replaced with the 32GB stick, so that is no longer the reason.
+- **One point for 26.04:** ZFS userland is `zfs-2.2.2` (24.04's) while the HWE kernel module is `zfs-kmod-2.4.1`. Works day to day, but it is an untested pairing and new pool features can't be managed with 2.2 tools. Don't `zpool upgrade` while it lasts. 26.04 would put them back in step.
+
+#### Was Lubuntu the right choice?
+Ubuntu was right for this box: prebuilt, signed ZFS modules on every kernel (Debian builds them with DKMS, which can break on a kernel update and leave the pool unmounted), HWE kernels for the N5105, and first-party Docker/Tailscale repos. The desktop flavour was not needed: with the GUI off it costs little, but it still runs services a headless server doesn't use (`cups`, `cups-browsed`, `ModemManager`, as of 2026-10-29) and pulls desktop packages into every update. Not worth a reinstall; check what depends on each before removing it (avahi and bluetooth may be used by spotifyd and audio). Alternatives considered:
+- **Debian stable:** leaner and steadier, but ZFS via DKMS (above). Fine if the root isn't ZFS and you accept the occasional rebuild.
+- **Proxmox VE:** ZFS-native and good for VMs/LXC, but adds a layer over the Docker-everything setup with no gain on a 4-core N5105. Worth a look only on a much bigger machine.
+- **TrueNAS SCALE / Unraid:** appliance OSes that fight host-level cron jobs, systemd --user units and the repo-driven setup used here.
+- **NixOS:** the whole machine as reproducible config, but a steep switch from a working setup.
+
+Verdict: for the next machine, **Ubuntu Server LTS**: the same base, without the desktop.
+
+#### Log
+- 2026-10-29: entry created. 7.0.0-42 was installed by unattended-upgrades at 06:49 and went live at the 17:46 reboot after the power-watchdog shutdown. Upgrade deferred, reasons above.
