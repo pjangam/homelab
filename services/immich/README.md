@@ -66,6 +66,16 @@ first, then smart search. Run it detached:
     systemd-run --user --unit immich-ml-backlog services/immich/ml_backlog.sh
     journalctl --user -u immich-ml-backlog -f
 
+Remote ML on the 2019 MacBook clears it several times faster. On the Mac, from
+its clone of this repo (needs Docker Desktop or OrbStack; the version must
+match xero's):
+
+    services/immich/remote_ml_mac.sh v3.3.5    # starts the container, keeps the Mac awake
+
+then on xero `services/immich/remote_ml.sh on` (Mac first, xero's own ML as the
+fallback, concurrency 6), `status` to check, and `off` plus
+`remote_ml_mac.sh stop` when done.
+
 Stopping it leaves the current queue paused (new uploads get no ML until it
 is resumed); run it again to continue. The Kingston's reading jumps with
 activity: 63°C under load, 51°C fifteen seconds after a pause.
