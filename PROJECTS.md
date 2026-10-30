@@ -515,7 +515,15 @@ Problems with that:
 
 This is a distinct need from the iPhone-upload SMB share (Done section) - continuous, automatic, always-available-everywhere sync, not a manual one-off drop zone.
 **State:** not started. Syncthing identified as the right fit - true peer-to-peer, no cloud storage or third-party leak surface, no storage cap, works over LAN and (via Tailscale) when away from home. Homelab server would act as an always-on peer so devices stay in sync even when not simultaneously online.
-**Next step:** none yet, not started.
+**Requirement (user, 2026-10-30):** files readily available on every device **even when it is offline**, and devices sync whenever they come online. That is Syncthing's model (a full local copy on each device) and rules out on-demand access as the main path.
+**Next step:** list the devices and what each gets: xero (always-on peer, folder = `datapool/documents`), the personal 2019 MacBook, the iPhone, and the work laptop (see Open question). Then a Syncthing container on xero, reachable over the tailnet only.
+
+#### Options compared (2026-10-30)
+- **Syncthing - chosen, meets the requirement.** Full copy per device, peer-to-peer, no cloud, no cap; xero as the always-on peer so devices that are never online together still converge. iPhone: no official app - **Synctrain** (free, open source) or **Möbius Sync** (paid); both keep real local files, but iOS only syncs while the app is open or in short background windows, so open it to catch up. Not a backup: a deletion syncs everywhere - keep the existing gpg Dropbox backup of `documents` (`projects/certs-backup/backup_documents.sh`), and turn on Syncthing's file versioning on xero's copy.
+- **Seafile / Nextcloud on xero** - server-centric; offline only for files pinned in the apps. Web UI would suit the work laptop. Heavier (Nextcloud especially); not needed if Syncthing covers it.
+- **Vaultwarden attachments** - works (free in Vaultwarden, end-to-end encrypted, web vault for the work laptop) but **attachments are fetched on demand, not cached offline**, so it fails the requirement; only the typed text of a note is offline. Also `backup_vaultwarden.sh` keeps 7 full copies of `vw-data` in Dropbox (2.75GiB free), so attachments multiply there. At most for a few ID scans, with the key numbers typed into the note.
+- **SMB share over Tailscale / a read-only web file browser** - no offline copies; only as a no-install fallback for the work laptop.
+- **Dropbox + Cryptomator** - fixes the leak risk only; still capped and cloud-dependent.
 
 #### Open question
 How the work laptop fits in - same policy-visibility risk that ruled out Dropbox offline-files there could apply to installing any sync client. Not yet decided whether that machine gets a full Syncthing client, browser/web-GUI-only access, no access at all, or gets figured out later. Scope for phone + personal devices + homelab server first.
