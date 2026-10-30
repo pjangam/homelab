@@ -2449,7 +2449,7 @@ Add the board to `docs/hardware.md` and its MQTT topic to `endpoints.toml`.
 qty | item | est | note
 1 | ESP32 classic devkit (ESP32-WROOM-32, 4MB) | 0 | owned: one of the spares bought on an earlier trip (user, 2026-10-28)
 284 | WS2812B pixels (~4.7m) | 0 | owned: 180 px Ganapati strip + ~104 px left on the spare reel after 16 for the voice satellites
-1 | 5V 4A power supply | 0 | owned, free since Ganapati
+1 | 5V 4A power supply | 0 | owned: a OnePlus fast charger, label 5V 4A (Dash-style, checked 2026-10-30). Proprietary chargers may give the full 4A only after a OnePlus-phone handshake and ~2A to a plain load - load-test it on the bench before trusting a 3400mA cap
 1 | ABS project box (~100x68x40mm) | 100-150 | local - WLED controller: ESP32 + 470R + strip/power leads; supply brick stays outside. Holes or glands for the strip and 5V leads, USB notch for flashing
 1 | 470R resistor + 1000uF 10V capacitor | 20 | local, or owned (assumed in the drawer from the aarti build)
 # Option 2 - sound-reactive Lakshmi Puja aarti
@@ -2478,6 +2478,7 @@ qty | item | est | note
 - 2026-10-28: **wiring diagram drawn**: `projects/diwali-lights/wiring.html` (three views: circuit, door route, corner joint; bench checks and WLED settings). Assumed: the 3-way supply split inside the ESP32 box, socket on the left of the door (mirror if not), ~104 px offcut, 2.1x0.9m door. Cut the injection pair ~3.5m, not 3m (slack); meter-check its polarity at the joint before first power, since swapped cores short the supply. `wled.sh` still defaults to .125 - run it as `WLED_HOST=192.168.1.127`. Fixed on the way: the aarti setup doc said the flash script writes at `0x0`; it writes 0x1000/0x8000/0x10000.
 - 2026-10-28: **A and B are already soldered together** (user): one 284 px strip, joint done. Mount it starting at the bottom of the socket side so the joint lands at the far top corner; turn the corner a few cm past the joint (45° fold), not at it. Injection still goes on the joint's pads (one more solder job), or with no soldering onto the factory power pigtail at B's far end if it is the reel's original end (~5m pair instead of ~3m). Noted at the top of the diagram's joint section.
 - 2026-10-30: Active/P1 (user): Dhanteras (Fri 6 Nov) is a week away, the lights should be up by then.
+- 2026-10-30: the "5V 4A supply" is the OnePlus fast charger used for Ganapati; label says 5V 4A. Unverified whether it gives 4A without a OnePlus handshake (Ganapati's 180 px likely never drew over 2A). Bench step added: full white on the whole strip with the cap raised 2000 -> 2800 -> 3400mA for ~1 min each; if the ESP32 resets or the strip flickers/browns out, keep the cap one step below. Fallback: plain 5V 4-5A barrel adapter, ~Rs 250-450 local (estimate).
 
 ### Humidity-triggered AC dry mode and mister (temperature/humidity sensor on an ESP32)
 **Status:** Backlog
