@@ -502,7 +502,7 @@ The "Approach" note above says cloud undermines self-hosting; the counter-argume
 - 2026-10-26: closed. Cron, healthcheck and the first run confirmed; `recovered-media` checked against Immich by SHA-1 (both files present); the archive cron added to `docs/hardware.md`. SD-card half dropped as nice-to-have.
 
 ### Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement
-**Status:** Parked
+**Status:** Active
 **Priority:** P3
 
 **Why:** currently uses Dropbox to keep sensitive personal documents (ID cards, tax documents, etc.) available across devices.
@@ -519,6 +519,9 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 
 #### Open question
 How the work laptop fits in - same policy-visibility risk that ruled out Dropbox offline-files there could apply to installing any sync client. Not yet decided whether that machine gets a full Syncthing client, browser/web-GUI-only access, no access at all, or gets figured out later. Scope for phone + personal devices + homelab server first.
+
+#### Log
+- 2026-10-30: Parked -> Active so it stays visible (user: to work on in the near future, after the Diwali lights).
 
 ### Immich re-enablement
 **Status:** Done
