@@ -2188,14 +2188,10 @@ qty | item | est | note
 - 2026-10-05: reopened - the SE has sent no cry alerts in real use. ntfy's cache, which holds 12h, had nothing on `baby-cry`. Over the same days Alfred on the SE kept sending its own baby-cry alerts, and the iPhone 14 still detects the cry. The SE was updated to iOS 26 the same day; observe for a few days (see Next step).
 
 ### Local voice control (HA Assist)
-**Status:** Active
-**Priority:** P3
+**Status:** Done
 
 **Why:** turn lights, white noise, fans and the AC on/off and set the AC temperature by voice. Doesn't need to be smart: a fixed set of English commands is enough. An HA voice add-on tried a year or two ago never worked - almost certainly because HA here is a plain Docker container, where add-ons cannot be installed. Assist itself is built into HA and needs only the speech pieces run as containers. Details: `projects/voice-assistant/README.md`.
-**State:** voice works from the phone app and from both ESP32 satellites - 192.168.1.125 (HA area Bedroom) and 192.168.1.126 (living room, **flashed 2026-10-24**, signal -32 dBm vs the bedroom board's -75 dBm). Both run current firmware. In the bedroom the white-noise hiss drowns commands. Live wake word is `hey_jarvis`; community models `andromeda` and `dumbledore` are preloaded but untested. **The living room board is in HA and works** since 2026-10-28 (area Living Room): "turn off/on living room light" switched the tubelight both ways. It has no speaker yet, so the entity can sit at "responding" after a command while the board is already listening again. speech-to-phrase has twice got stuck until restarted (possibly xero's bad RAM).
-**Next step:**
-- Try `andromeda` / `dumbledore` against `hey_jarvis` and keep the best (to try: `WAKE_WORD_ID` in `setup_assist.py`, run it, restart speech-to-phrase, temporary `--debug` on openwakeword). Train on Colab only if neither works.
-- If speech-to-phrase gets stuck again after the RAM swap (done 2026-10-08; the 32GB stick passed memtester on 2026-10-09), treat it as a software bug: investigate then, and add a healthcheck that sends a test phrase and restarts speech-to-phrase on an empty result.
+**Outcome:** done 2026-10-30. Voice works from the phone app and from both ESP32 satellites: 192.168.1.125 (HA area Bedroom) and 192.168.1.126 (Living Room, since 2026-10-28), wake word `hey_jarvis`, local STT (speech-to-phrase), TTS (Piper) and wake word (openWakeWord) on xero. Commands: lights, fans, AC on/off and temperature, white noise, "turn off everything" per room or house. Known limits: in the bedroom the white-noise hiss drowns commands; the bedroom board's firmware still says 8 LEDs for its 7 (harmless, not tracked). If speech-to-phrase gets stuck again (twice before the 2026-10-08 RAM swap, not since), treat it as a software bug: add a healthcheck that sends a test phrase and restarts it on an empty result. Speakers for spoken replies and the wake-word trial moved to "Voice satellites: speakers and wake word".
 
 #### Two rooms
 The user has a second ESP32 and is buying a second INMP441. Config is split into `voice-satellite-common.yaml` plus per-board files; the first board (`voice-satellite.yaml`, .125) is assigned to HA area **Bedroom** (2026-10-06); `voice-living-room.yaml` (192.168.1.126, own API key `api_key_living_room` in secrets.yaml) is ready for the second board: wire as `wiring.html`, `build_on_mac.sh living` over USB, add in HA, set its area to Living Room. A board's room is its HA area, nothing in the firmware. Room-agnostic commands must keep working ("turn off the bedroom light" from the living room) - only commands without a room/device name use the satellite's area. Place the bedroom board away from the white-noise speaker.
@@ -2206,13 +2202,7 @@ qty | item | est | note
 16 | WS2812B pixels | 0 | owned: cut from the spare aarti reel, 8 per satellite
 1 | INMP441 I2S mic | 150-300 | for the living room satellite; digital I2S, NOT analog MAX4466
 1 | Soldering iron, temperature-controlled (~60W) | 500-800 | replaces the current one, which no longer works properly; the INMP441's header pins need soldering
-2 | MAX98357A I2S amplifier breakout | 300-600 | one per satellite, for spoken replies; I2S digital in, 3W class-D out, runs off the board's 5V VIN
-2 | Speaker driver, 4 ohm, 3W, 40-50mm | 100-350 | one per satellite; a bare driver, not a powered/Bluetooth speaker. Example: amazon.in/dp/B0GTZ5DD6P (2 inch, 4 ohm 3W, bracket + wires, Rs 169 each, 2026-10-15); cut its connector off if it does not fit the amp. Put it in a small box with holes in front
-2 | ABS project box, white/translucent (~115x90x55mm) | 300-500 | local - one per satellite: ESP32 + INMP441 + MAX98357A + 40-50mm speaker + 8 LEDs. Drill a speaker grille, a mic hole at the end away from the speaker, and a USB cable notch; translucent so the LED ring shows
 ```
-
-#### Speaker (planned 2026-10-15)
-The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satellites have no way to play it, so today a command only shows on the LED. Adding a MAX98357A + small speaker per board gives spoken replies and confirmation tones. It goes on its own I2S bus (the ESP32 has two), not shared with the mic: LRC GPIO26, BCLK GPIO27, DIN GPIO22 - all free and none of them strapping pins - with VIN to 5V, GND, and SD left unconnected (amp on). Firmware: a second `i2s_audio` bus, an `i2s_audio` speaker, and `speaker:` on `voice_assistant`; ESPHome mutes the mic while the reply plays, so the board does not hear itself. Not wired or flashed yet.
 
 #### Log
 - 2026-10-05: phone-app stage done.
@@ -2244,6 +2234,31 @@ The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satel
 - 2026-10-28: "turn on living room LED" got "No text recognized": speech-to-phrase only knows exposed names and aliases, and the shelf switch answered only to "Living Room Shelf LED" / "shelf light". Added aliases "shelf LED" and "living room LED" in `setup_assist.py`, applied, restarted speech-to-phrase; all three phrases match `switch.living_room_shelf_led` (checked with the conversation debug API, nothing switched).
 - 2026-10-28: **"turn off everything"** added (`voice_all_off` in `packages/voice_commands.yaml`): lights and fans only, never the AC or white noise (user's choice). Plain "turn off everything" is the satellite's room by its HA area; "...in the house" is every room; the phone app (no satellite) gets the whole house. HA's built-in version matched but did nothing, because every light here is a Tinxy `switch.*`. Phrases checked with the conversation debug API and the room logic rendered per case; not yet said out loud.
 - 2026-10-28: more phrasings on the same automation: "turn off all [the] lights" (this room, lights only - fans stay on), "...all lights in the house", "turn off [the] bedroom", "turn off [the] living room / hall" (that room from either satellite, lights and fans). Single-device commands ("turn off bedroom light", "hall fan") still go to their device. Checked with the debug API and by rendering each case; not yet said out loud.
+- 2026-10-30: closed (user: both satellites live). Speakers and the wake-word trial split out to "Voice satellites: speakers and wake word".
+
+### Voice satellites: speakers and wake word
+**Status:** Backlog
+**Priority:** P3
+
+**Why:** the Assist pipeline already answers in speech (Piper), but neither ESP32 satellite can play it, so a command only shows on the LEDs and the living room entity can sit at "responding". And `hey_jarvis` is a stopgap wake word. Split out of "Local voice control (HA Assist)" (Done 2026-10-30).
+**State:** nothing bought or wired. Speaker design and parts below; community wake words `andromeda` and `dumbledore` are preloaded by `openwakeword` but untested.
+**Next step:**
+- Try `andromeda` / `dumbledore` against `hey_jarvis` and keep the best (`WAKE_WORD_ID` in `projects/voice-assistant/setup_assist.py`, run it, restart speech-to-phrase, temporary `--debug` on openwakeword). Train on Colab only if neither works.
+- Speakers: buy the parts below (local shop first), wire per the plan, add the firmware pieces, OTA both boards. Update both boards' `docs/hardware.md` entries (GPIOs, firmware) when done.
+
+#### Parts
+```parts
+qty | item | est | note
+2 | MAX98357A I2S amplifier breakout | 300-600 | one per satellite, for spoken replies; I2S digital in, 3W class-D out, runs off the board's 5V VIN
+2 | Speaker driver, 4 ohm, 3W, 40-50mm | 100-350 | one per satellite; a bare driver, not a powered/Bluetooth speaker. Example: amazon.in/dp/B0GTZ5DD6P (2 inch, 4 ohm 3W, bracket + wires, Rs 169 each, 2026-10-15); cut its connector off if it does not fit the amp. Put it in a small box with holes in front
+2 | ABS project box, white/translucent (~115x90x55mm) | 300-500 | local - one per satellite: ESP32 + INMP441 + MAX98357A + 40-50mm speaker + 8 LEDs. Drill a speaker grille, a mic hole at the end away from the speaker, and a USB cable notch; translucent so the LED ring shows
+```
+
+#### Speaker plan (2026-10-15)
+The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satellites have no way to play it, so today a command only shows on the LED. Adding a MAX98357A + small speaker per board gives spoken replies and confirmation tones. It goes on its own I2S bus (the ESP32 has two), not shared with the mic: LRC GPIO26, BCLK GPIO27, DIN GPIO22 - all free and none of them strapping pins - with VIN to 5V, GND, and SD left unconnected (amp on). Firmware: a second `i2s_audio` bus, an `i2s_audio` speaker, and `speaker:` on `voice_assistant`; ESPHome mutes the mic while the reply plays, so the board does not hear itself. Not wired or flashed yet.
+
+#### Log
+- 2026-10-30: entry created, split out of "Local voice control (HA Assist)".
 
 ### Grafana for all stats
 **Status:** Done
