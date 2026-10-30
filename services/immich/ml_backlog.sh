@@ -20,6 +20,7 @@
 # get no faces or smart search while a queue is paused.
 #
 # Detached: systemd-run --user --unit immich-ml-backlog services/immich/ml_backlog.sh
+#   (other queues: --setenv=QUEUES='ocr duplicateDetection'; no rests: --setenv=REST_MIN=0)
 #           journalctl --user -u immich-ml-backlog -f
 set -uo pipefail
 
@@ -65,7 +66,8 @@ api "$API/system-config" | python3 -c '
 import json, sys
 c = json.load(sys.stdin)
 for q in sys.argv[2:]:
-    c["job"][q]["concurrency"] = int(sys.argv[1])
+    if q in c["job"]:  # duplicateDetection has no concurrency setting
+        c["job"][q]["concurrency"] = int(sys.argv[1])
 print(json.dumps(c))' "$CONCURRENCY" $QUEUES | api -X PUT "$API/system-config" -d @- >/dev/null \
   || { echo "could not set concurrency" >&2; exit 1; }
 log "concurrency $CONCURRENCY for: $QUEUES"
