@@ -76,6 +76,22 @@ then on xero `services/immich/remote_ml.sh on` (Mac first, xero's own ML as the
 fallback, concurrency 6), `status` to check, and `off` plus
 `remote_ml_mac.sh stop` when done.
 
+First run, 2026-10-30: ~270 assets/min face detection and ~620/min smart search
+on the Mac, against ~21/min on xero's 2 cores; the Kingston's 70°C pause was
+the only limit. Two lessons:
+- **Check the Mac's link first.** Through the TP-Link extender it did ~250KB/s
+  even on the LAN, which caps remote ML near one asset a second whatever the
+  CPU. On the router directly (its 2.4GHz SSID; the 5GHz one gives xero no LAN
+  access to the Mac) it did ~7.3MB/s. Use the Mac's tailnet address: its LAN IP
+  is DHCP with a randomised MAC and changes on reassociation.
+- **If ghcr pulls truncate** ("failed to read expected number of bytes:
+  unexpected EOF"), side-load the image from xero, which already has it:
+  `docker save -o <tmp>/ml.tar ghcr.io/immich-app/immich-machine-learning:vX.Y.Z`
+  (no gzip, the layers are compressed already; ~270MB), serve it on the LAN
+  for a while (`timeout 3600 python3 -m http.server 8765 --bind 192.168.1.123`,
+  no resume support), then `docker load -i` on the Mac and run
+  `remote_ml_mac.sh`, which uses the local image.
+
 Stopping it leaves the current queue paused (new uploads get no ML until it
 is resumed); run it again to continue. The Kingston's reading jumps with
 activity: 63°C under load, 51°C fifteen seconds after a pause.
