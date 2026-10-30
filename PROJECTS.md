@@ -572,11 +572,12 @@ Three shapes, cheapest first:
 **Priority:** P3
 
 **Why:** face detection and smart search had never run on most of the library: Immich processes new uploads by itself, but the "Missing" jobs for what was already there were never queued after it came back on 2026-10-09. Without them there is no face grouping and no smart search for ~13k photos.
-**State:** running since 2026-10-30 12:17 as the systemd --user transient unit `immich-ml-backlog` (`services/immich/ml_backlog.sh`, see "ML backlog" in `services/immich/README.md`): concurrency 1, ML container capped at 1 CPU, 20-minute batches with 10-minute rests, paused at CPU >= 85°C or Kingston >= 62°C. Face detection first (13,071 queued, ~140/min once warm), then smart search (12,212 missing). The Kingston's reading jumps to 63°C under load and falls to 51°C fifteen seconds after a pause, so short heat pauses every few minutes are expected.
+**State:** running since 2026-10-30 12:17 as the systemd --user transient unit `immich-ml-backlog` (`services/immich/ml_backlog.sh`, see "ML backlog" in `services/immich/README.md`): concurrency 2, ML container on 2 CPUs (since 12:52; was 1), 20-minute batches with 10-minute rests, paused at CPU >= 85°C or Kingston >= 70°C. Face detection first, then smart search (12,212 missing). Measured in the database, not the queue: ~11 assets/min on 2 cores (photos with many faces are slow), so ~12.5k needs ~19h of running, ~28h with rests. On 2 cores the CPU sits at 77-79°C and the SSD at 52-64°C. ~2,500 jobs dropped out of the queue across the 3.3.5 restart; the script's re-queue passes pick them up.
 **Next step:** let it finish (`journalctl --user -u immich-ml-backlog -f`), then check the counts are near zero, that people show up under Explore, and that smart search answers. If the run stops early, re-run the script; it leaves the queue paused, not empty. Delete `@pre-v3.3.5` snapshots around mid-November.
 
 #### Log
 - 2026-10-30: split out of "Immich re-enablement". Script written and started; it survived the 3.3.5 upgrade restart mid-run.
+- 2026-10-30: ML back to 2 cores and concurrency 2 (user: temperatures had headroom). An earlier ~140/min estimate came from the queue count and was wrong: the queue had lost jobs.
 
 ### Bhakti's Google Takeout into Immich
 **Status:** Backlog
