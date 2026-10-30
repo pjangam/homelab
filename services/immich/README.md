@@ -26,11 +26,11 @@ the version is pinned in `.env` as `IMMICH_VERSION`.
   container: H.264 and VP9 sources to 720p H.264 in about a second per 30s of
   video; Jasper Lake only has the low-power encoder (`EncSliceLP`) and ffmpeg
   picks it by itself. QSV failed (`h264_qsv` error -22) - use VAAPI.
-- `immich_machine_learning` is capped at `cpus: 1` so the ML backlog cannot
+- `immich_machine_learning` is capped at `cpus: 2` so the ML backlog cannot
   pin all four N5105 cores (xero has reached 103°C under full load). It was
-  `cpus: 2` until 2026-10-16, when face detection on a 37-photo upload still
-  took xero to 89°C; one core halves ML throughput (about 10 minutes for a
-  batch that size).
+  `cpus: 1` from 2026-10-16, when face detection on a 37-photo upload took
+  xero to 89°C, to 2026-10-30, when the throttled backlog run held 70-74°C on
+  one core and went back to two for speed.
 - **Integrity checks run at 03:00 IST and checksum 15% of the library a
   night** (set 2026-10-28; Administration -> Settings -> Integrity, stored in
   `system_metadata.system-config`). v3's default is `0 3 * * *` in the
@@ -58,9 +58,9 @@ runs it against fake readings and a fake docker.
 
 Immich runs face detection and smart search on new uploads by itself, but
 assets that were already there need the "Missing" jobs queued by hand.
-`ml_backlog.sh` does that with the load kept down: concurrency 1, 20-minute
+`ml_backlog.sh` does that with the load kept down: concurrency 2, 20-minute
 batches with 10-minute rests, and a pause whenever `x86_pkg_temp` >= 85°C or
-the Kingston >= 62°C, until both are back under 70°C / 55°C. Face detection
+the Kingston >= 70°C (its rating), until both are back under 70°C / 62°C. Face detection
 first, then smart search. Run it detached:
 
     systemd-run --user --unit immich-ml-backlog services/immich/ml_backlog.sh

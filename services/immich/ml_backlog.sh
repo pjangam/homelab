@@ -6,8 +6,8 @@
 # back, and an unthrottled pass is the sustained load that has gone wrong on
 # this box before (see load_guard.sh).
 #
-# Sets both jobs' concurrency to 1 (the ML container is also capped at
-# `cpus: 1` in docker-compose.yml), queues only assets missing results, and
+# Sets both jobs' concurrency to CONCURRENCY (the ML container is also capped
+# at `cpus: 2` in docker-compose.yml), queues only assets missing results, and
 # runs one queue at a time:
 #   run RUN_MIN minutes -> pause REST_MIN minutes -> repeat
 # and pauses mid-batch if x86_pkg_temp >= CPU_HOT or the SSD >= SSD_HOT,
@@ -26,7 +26,8 @@ set -uo pipefail
 RUN_MIN=${RUN_MIN:-20}
 REST_MIN=${REST_MIN:-10}
 CPU_HOT=${CPU_HOT:-85}   CPU_OK=${CPU_OK:-70}
-SSD_HOT=${SSD_HOT:-62}   SSD_OK=${SSD_OK:-55}   # Kingston A400 is rated 70°C
+SSD_HOT=${SSD_HOT:-70}   SSD_OK=${SSD_OK:-62}   # Kingston A400 is rated 70°C; healthcheck warns at 75
+CONCURRENCY=${CONCURRENCY:-2}
 INTERVAL=${INTERVAL:-15}
 QUEUES=${QUEUES:-faceDetection smartSearch}
 API=${API:-http://localhost:2283/api}
@@ -59,22 +60,36 @@ left() {
 current=
 trap '[ -n "$current" ] && pause "$current" true && log "stopped; $current left PAUSED - run again to continue"; exit 0' INT TERM
 
-# Concurrency 1 for every queue we touch.
+# CONCURRENCY for every queue we touch.
 api "$API/system-config" | python3 -c '
 import json, sys
 c = json.load(sys.stdin)
-for q in sys.argv[1:]:
-    c["job"][q]["concurrency"] = 1
-print(json.dumps(c))' $QUEUES | api -X PUT "$API/system-config" -d @- >/dev/null \
+for q in sys.argv[2:]:
+    c["job"][q]["concurrency"] = int(sys.argv[1])
+print(json.dumps(c))' "$CONCURRENCY" $QUEUES | api -X PUT "$API/system-config" -d @- >/dev/null \
   || { echo "could not set concurrency" >&2; exit 1; }
-log "concurrency 1 for: $QUEUES"
+log "concurrency $CONCURRENCY for: $QUEUES"
 
 for q in $QUEUES; do pause "$q" true; done
 for q in $QUEUES; do
   current=$q
+  # Queue whatever is still missing, work through it, and queue again: jobs
+  # can drop out of the queue (an Immich restart mid-run lost ~2,500 on
+  # 2026-10-30). A pass that queues nothing ends it; 3 passes at most, so
+  # assets that always fail cannot keep it going.
+  for pass in 1 2 3; do
+  # Immich refuses to queue ("Job is already running") while a job is active,
+  # so pause and let the active ones finish; then unpause briefly so the
+  # queue-all job expands into one job per missing asset.
+  pause "$q" true
+  until api "$API/queues/$q" | grep -q '"active":0,'; do sleep 5; done
   api -X PUT "$API/jobs/$q" -d '{"command":"start","force":false}' >/dev/null || { log "could not queue $q"; exit 1; }
-  sleep 5
-  log "$q: $(left "$q") queued"
+  pause "$q" false
+  sleep 20
+  pause "$q" true
+  n=$(left "$q")
+  log "$q: pass $pass, $n queued"
+  [ "$n" -gt 2 ] || break
   while [ "$(left "$q")" -gt 0 ]; do
     pause "$q" false
     log "$q: batch start, $(left "$q") left, cpu/ssd $(temps | tr ' ' /)°C"
@@ -94,6 +109,7 @@ for q in $QUEUES; do
     [ "$(left "$q")" -gt 0 ] || break
     log "$q: rest ${REST_MIN}m, $(left "$q") left, cpu/ssd $(temps | tr ' ' /)°C"
     sleep $(( REST_MIN * 60 ))
+  done
   done
   pause "$q" false
   log "$q: done"

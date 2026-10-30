@@ -156,10 +156,12 @@ services:
       - model-cache:/cache
     env_file:
       - .env
-    # One of the N5105's 4 cores: the ~12k-photo ML backlog otherwise pins all
-    # of them, and xero has reached 103°C under full load. Was 2 until
-    # 2026-10-16, when a 37-photo upload still took xero to 89°C.
-    cpus: 1
+    # Two of the N5105's 4 cores: the ML backlog otherwise pins all of them,
+    # and xero has reached 103°C under full load. Was 1 from 2026-10-16 (a
+    # 37-photo upload took xero to 89°C) to 2026-10-30, when the throttled
+    # backlog run (services/immich/ml_backlog.sh, pauses at 85°C) held 70-74°C
+    # on one core.
+    cpus: 2
     restart: always
     healthcheck:
       disable: false
