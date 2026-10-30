@@ -1223,17 +1223,20 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 - 2026-09-15: LED bought - RG, not RGB.
 
 ### In-house smart switch to replace Tinxy
-**Status:** Backlog
+**Status:** Active
 **Priority:** P3
 
 **Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
 **State:** not started - brainstormed 2026-09-02. Two directions considered (see Options).
-**Next step:** crack open one existing Tinxy switch to see what's actually inside (chip ID, whether it's a known-flashable module) before committing to either path.
+**Next step:** starts after "Diwali lights 2026" (user, 2026-10-30). (1) Read the ratings on the relays already owned and check them against this job: the coil voltage (5V suits an ESP32 board's 5V; 12V needs its own supply), the **contact rating on the AC side** (printed like `10A 250VAC`), comfortably above the load - fans and lights, and mind the inrush of LED drivers and fan motors - and whether they come on a module with a transistor/optocoupler driver, since an ESP32 GPIO cannot drive a bare relay coil. (2) Crack open one existing Tinxy switch to see what is inside (chip ID, whether it is a known-flashable module) before committing to either path.
 
 #### Options
 
 - **Reflash existing Tinxy units with Tasmota/ESPHome** - cheapest, reuses hardware already wired into the walls, would get fully local MQTT control with zero cloud dependency. Risk: Tinxy isn't a known-flashable brand like Sonoff, so it's a per-unit gamble (open one up, identify the chip, risk bricking it) before knowing if it's worth doing for the rest.
 - **Replace with switches built for local control from the start** - Shelly (local HTTP/MQTT API) or Zigbee units behind a local Zigbee2MQTT coordinator. Zigbee in particular never touches the internet at all, only local HA, so it sidesteps the ISP-outage problem structurally rather than depending on a reflash succeeding. Real cost: these are wall-mounted and already installed, not a five-minute swap, and Shelly historically runs ~2x the bare-device price once wiring/casing is counted (see the cost note in the approach 1 findings under "Physical GPIO buttons" in ✅ Done).
+
+#### Log
+- 2026-10-30: moved to Active so it stays visible; work starts after the Diwali lights. Relay ratings check added as the first step.
 
 ### Remote control for scenes/scripts (Spotify, white noise, etc.)
 **Status:** Backlog
