@@ -3,7 +3,9 @@
 # Written 2026-10-30. Run after tools/esp32-tools/flash-wled-audioreactive.sh
 # --flash; wiring and layout in projects/diwali-lights/wiring.html.
 #
-#   diwali_wled.sh wifi       # 1. joined to the board's WLED-AP: house WiFi + static IP
+#   diwali_wled.sh wifi-usb   # 1. board on xero's USB: house WiFi over serial + static IP
+#   diwali_wled.sh wifi       #    or, joined to the board's WLED-AP: the same over the AP
+#   diwali_wled.sh static IP  #    or, already on the house WiFi at IP: move it to static
 #   diwali_wled.sh setup      # 2. on the house WiFi: count, pin, order, cap, name
 #   diwali_wled.sh loadtest   # 3. full white at rising caps - does the charger hold?
 #   diwali_wled.sh warm       # 4. warm diya effect, saved as boot preset 1
@@ -42,23 +44,51 @@ info() { curl -fsS -m 5 "http://$HOST/json/info"; }
 # field <python-expr over d> from /json/info, or empty when unreachable
 field() { info 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print($1)" 2>/dev/null || true; }
 
-case "${1:-}" in
-  wifi)
-    secrets="$REPO/projects/voice-assistant/esphome/secrets.yaml"
-    ssid=${WIFI_SSID:-$(sed -n 's/^wifi_ssid: *"\(.*\)"/\1/p' "$secrets" 2>/dev/null)}
-    pass=${WIFI_PASSWORD:-$(sed -n 's/^wifi_password: *"\(.*\)"/\1/p' "$secrets" 2>/dev/null)}
-    [ -n "$ssid" ] && [ -n "$pass" ] || { echo "no WiFi details: set WIFI_SSID and WIFI_PASSWORD" >&2; exit 1; }
-    curl -fsS -m 5 http://4.3.2.1/json/info >/dev/null \
-      || { echo "4.3.2.1 not reachable - join the WLED-AP network (password wled1234) first" >&2; exit 1; }
-    body=$(python3 -c '
+wifi_details() {
+  local secrets="$REPO/projects/voice-assistant/esphome/secrets.yaml"
+  ssid=${WIFI_SSID:-$(sed -n 's/^wifi_ssid: *"\(.*\)"/\1/p' "$secrets" 2>/dev/null)}
+  pass=${WIFI_PASSWORD:-$(sed -n 's/^wifi_password: *"\(.*\)"/\1/p' "$secrets" 2>/dev/null)}
+  [ -n "$ssid" ] && [ -n "$pass" ] || { echo "no WiFi details: set WIFI_SSID and WIFI_PASSWORD" >&2; exit 1; }
+}
+
+# static_cfg <wled address to post to> - static IP, gateway, mDNS name, then reboot
+static_cfg() {
+  local body
+  body=$(python3 -c '
 import json, sys
 ssid, psk, host, gw = sys.argv[1:]
 ip = lambda s: [int(x) for x in s.split(".")]
 print(json.dumps({"nw": {"ins": [{"ssid": ssid, "psk": psk, "ip": ip(host),
                                    "gw": ip(gw), "sn": [255, 255, 255, 0]}]},
                   "id": {"mdns": "wled-diwali", "name": "Diwali Lights"}}))' "$ssid" "$pass" "$HOST" "$GATEWAY")
-    post 4.3.2.1 cfg "$body"
-    post 4.3.2.1 state '{"rb":true}' || true
+  post "$1" cfg "$body"
+  post "$1" state '{"rb":true}' || true
+}
+
+case "${1:-}" in
+  wifi-usb)
+    # Board still on xero's USB after flashing: WiFi over serial (Improv), no AP.
+    wifi_details
+    out=$("$HOME/.cache/wled-esptool-venv/bin/python" "$REPO/tools/esp32-tools/improv_wifi.py" \
+            --port "${PORT:-/dev/ttyUSB0}" --ssid "$ssid" --password "$pass") || { echo "$out" >&2; exit 1; }
+    echo "$out"
+    dhcp=$(sed -n 's|^url: *https\?://\([0-9.]*\).*|\1|p' <<< "$out" | head -1)
+    [ -n "$dhcp" ] || { echo "joined, but no address reported - find it in the router and run: $0 static <ip>" >&2; exit 1; }
+    for _ in $(seq 10); do curl -fsS -m 3 "http://$dhcp/json/info" >/dev/null 2>&1 && break; sleep 2; done
+    static_cfg "$dhcp"
+    echo "on WiFi at $dhcp (DHCP); static $HOST set, rebooting. Next: $0 setup"
+    ;;
+  static)
+    # The board is on the house WiFi at a DHCP address ($2): move it to $HOST.
+    wifi_details
+    static_cfg "${2:?usage: $0 static <current ip>}"
+    echo "static $HOST set, rebooting. Next: $0 setup"
+    ;;
+  wifi)
+    wifi_details
+    curl -fsS -m 5 http://4.3.2.1/json/info >/dev/null \
+      || { echo "4.3.2.1 not reachable - join the WLED-AP network (password wled1234) first" >&2; exit 1; }
+    static_cfg 4.3.2.1
     echo "sent WiFi '$ssid' and static $HOST; the board is rebooting onto the house WiFi."
     echo "Rejoin your own WiFi, then: $0 setup"
     echo "If $HOST never answers, it did not join: WLED-AP comes back after ~1 min, retry."
@@ -125,5 +155,5 @@ print(names.index("candle multi") if "candle multi" in names else names.index("c
     echo "Candle Multi (effect $fx), amber, saved as preset 1 and set as the boot preset:"
     echo "the strip comes back like this after a power cut, without HA or xero."
     ;;
-  *) sed -n '2,29p' "$0"; exit 1 ;;
+  *) sed -n '2,31p' "$0"; exit 1 ;;
 esac
