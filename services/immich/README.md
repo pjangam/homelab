@@ -54,6 +54,22 @@ an urgent ntfy push and keeps Immich stopped, across reboots, until re-armed:
 Watch it with `journalctl --user -u immich-load-guard -f`. `test_load_guard.sh`
 runs it against fake readings and a fake docker.
 
+## ML backlog
+
+Immich runs face detection and smart search on new uploads by itself, but
+assets that were already there need the "Missing" jobs queued by hand.
+`ml_backlog.sh` does that with the load kept down: concurrency 1, 20-minute
+batches with 10-minute rests, and a pause whenever `x86_pkg_temp` >= 85°C or
+the Kingston >= 62°C, until both are back under 70°C / 55°C. Face detection
+first, then smart search. Run it detached:
+
+    systemd-run --user --unit immich-ml-backlog services/immich/ml_backlog.sh
+    journalctl --user -u immich-ml-backlog -f
+
+Stopping it leaves the current queue paused (new uploads get no ML until it
+is resumed); run it again to continue. The Kingston's reading jumps with
+activity: 63°C under load, 51°C fifteen seconds after a pause.
+
 ## Upgrading
 
 Never go back to `IMMICH_VERSION=release`: a floating tag pulled 3.x over a
@@ -75,6 +91,10 @@ VectorChord on its first start. Snapshots `@pre-v3` were taken before it.
 2026-10-21: 3.3.1 -> 3.3.4 with `upgrade.sh` (snapshots `@pre-v3.3.4`). No
 compose or `example.env` changes; one migration, `AddAssetFaceAssetState`
 (denormalised owner/visibility columns on `asset_face`), ran in about a second.
+
+2026-10-30: 3.3.4 -> 3.3.5 with `upgrade.sh` (snapshots `@pre-v3.3.5`), in the
+middle of the ML backlog run; the queue sat in Redis and carried on. The
+`@pre-v3` and `@pre-v3.3.4` snapshots were deleted the same day (~32G).
 
 **v3 needs video metadata re-extracted.** 3.x stores video stream details in
 a new `asset_video` table, filled by metadata extraction. Videos extracted

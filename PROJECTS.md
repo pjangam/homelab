@@ -514,14 +514,10 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 How the work laptop fits in - same policy-visibility risk that ruled out Dropbox offline-files there could apply to installing any sync client. Not yet decided whether that machine gets a full Syncthing client, browser/web-GUI-only access, no access at all, or gets figured out later. Scope for phone + personal devices + homelab server first.
 
 ### Immich re-enablement
-**Status:** Active
-**Priority:** P3
+**Status:** Done
 
 **Why:** ~13k photos already migrated from Google Takeout, but Immich was disabled - 8GB RAM isn't enough with ML enabled.
-**State:** running since 2026-10-09, on Immich v3.3.4 since 2026-10-21 (32GB stick; `services/immich/README.md`). 18,839 assets (2026-10-26). Google Takeout fully accounted for (2026-10-22); off-site copy in Deep Archive ("Offsite backup for Immich photo data", Done); tailnet route `https://photos.<tailnet>/` since 2026-10-18; the 2 `recovered-media` videos are in Immich (checked by SHA-1 2026-10-26). Transcode policy `required` since 2026-10-26. Lost for good: `IMG-20191013-WA0002.jpg`. Known and accepted: 5 animated GIFs without thumbnails (the 2,200 hidden Live Photo video halves never get one, which is normal). Link is 1Gbps since the patch cable was replaced on 2026-10-28.
-**Next step:**
-- **The ML backlog:** 14,412 assets without smart search and 15,298 without face detection (2026-10-26). Queue Smart Search and Face Detection ("Missing") in Administration -> Jobs with concurrency 1 and watch the load guard and the Kingston's temperature for the first hour. Remote ML on the Lenovo Flex or the Intel MacBook would clear it faster (see "Could an old Intel MacBook Pro be the Immich server?").
-- **Delete the `@pre-v3` snapshots** (`immich-upload@pre-v3` holds 31G; `immich-db@pre-v3` 150M). Immich has run on v3.3.4 since 2026-10-21. Needs sudo (user). The `@pre-v3.3.4` ones can go at the same time.
+**Outcome:** done 2026-10-30. Immich runs on xero again (32GB stick), on v3.3.5 (`services/immich/README.md`), at `https://photos.<tailnet>/`. 18,839 assets (2026-10-26); Google Takeout fully accounted for (2026-10-22); off-site copy in Deep Archive ("Offsite backup for Immich photo data", Done); the 2 `recovered-media` videos are in. Lost for good: `IMG-20191013-WA0002.jpg`. Known and accepted: 5 animated GIFs without thumbnails (the 2,200 hidden Live Photo video halves never get one, which is normal). The ML backlog moved to its own entry, "Immich ML backlog"; Bhakti's photos are "Bhakti's Google Takeout into Immich".
 
 #### How it is running
 Path taken: ZFS snapshots `@pre-v3` of both datasets and `rewrite_for_copies.sh` on the library (user, sudo), then 2.7.5 on the vectorchord postgres image, which migrated the DB off pgvecto.rs, then 3.3.1. `IMMICH_VERSION` is now an exact pin, never `release`. ML is capped at `cpus: 2`, and the load guard (`services/immich/load_guard.sh`, systemd --user `immich-load-guard`) stops the `immich_*` containers at >=93°C for 1 min, <1.5GB free memory for 1 min or >=95% CPU for 10 min, pushes to ntfy, and keeps them down until `load_guard.sh --reset`.
@@ -569,6 +565,29 @@ Three shapes, cheapest first:
 - 2026-10-18: own tailnet name `https://photos.<tailnet>/` via the `photos-tailscale` sidecar (tailnet only; named for the job, not the app). Ojaswi's birthday album added as a read-only external library.
 - 2026-10-26: reviewed for closing: not done. Open: the ML backlog (14,412 / 15,298 of 18,839) and the `@pre-v3` snapshots. Finished items dropped from Next step (`recovered-media` videos, the tailnet route).
 - 2026-10-28: the Kingston hit 75°C at 08:30 IST every morning since the v3 upgrade: Immich's integrity checks (default `0 3 * * *` UTC) checksummed the whole library, ~80GB at ~190MB/s. Moved to 03:00 IST and capped at 15% a night (`services/immich/README.md`).
+- 2026-10-30: closed. 3.3.4 -> 3.3.5 with `upgrade.sh`; `@pre-v3` and `@pre-v3.3.4` snapshots deleted (~32G back), `@pre-v3.3.5` kept for a week or two. The ML backlog, the last open item, was started with `services/immich/ml_backlog.sh` and split out ("Immich ML backlog").
+
+### Immich ML backlog
+**Status:** Active
+**Priority:** P3
+
+**Why:** face detection and smart search had never run on most of the library: Immich processes new uploads by itself, but the "Missing" jobs for what was already there were never queued after it came back on 2026-10-09. Without them there is no face grouping and no smart search for ~13k photos.
+**State:** running since 2026-10-30 12:17 as the systemd --user transient unit `immich-ml-backlog` (`services/immich/ml_backlog.sh`, see "ML backlog" in `services/immich/README.md`): concurrency 1, ML container capped at 1 CPU, 20-minute batches with 10-minute rests, paused at CPU >= 85°C or Kingston >= 62°C. Face detection first (13,071 queued, ~140/min once warm), then smart search (12,212 missing). The Kingston's reading jumps to 63°C under load and falls to 51°C fifteen seconds after a pause, so short heat pauses every few minutes are expected.
+**Next step:** let it finish (`journalctl --user -u immich-ml-backlog -f`), then check the counts are near zero, that people show up under Explore, and that smart search answers. If the run stops early, re-run the script; it leaves the queue paused, not empty. Delete `@pre-v3.3.5` snapshots around mid-November.
+
+#### Log
+- 2026-10-30: split out of "Immich re-enablement". Script written and started; it survived the 3.3.5 upgrade restart mid-run.
+
+### Bhakti's Google Takeout into Immich
+**Status:** Backlog
+**Priority:** P3
+
+**Why:** Bhakti's photos live in Google Photos on her account, on the Rs 150/month Google One plan. Moving them into Immich (and so into the Deep Archive copy) is the precondition for dropping that plan; see the cost note under "Offsite backup for Immich photo data".
+**State:** not started. Her Immich user exists, named `Bkahti` (misspelt; fix under Administration -> Users), holding 1 asset.
+**Next step:** she requests a Google Photos Takeout; import it as her user following "Importing a Google Takeout export" in `services/immich/README.md` (immich-go 0.32 breaks on Immich 3.3, so the curl-based `upload_from_takeout.sh` with her API key), then check it with `verify_takeout.py` as was done for the first Takeout. Pace the import for the Kingston's temperature. The archive dedupes photos shared between the two libraries by SHA-1. Only then decide on Google One.
+
+#### Log
+- 2026-10-30: entry created, split out of "Immich re-enablement".
 
 ### Move the Airtel router to a central spot (retire the Wi-Fi extender)
 **Status:** Backlog
