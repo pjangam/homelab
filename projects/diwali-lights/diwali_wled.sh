@@ -43,6 +43,8 @@ post() { curl -fsS -m 10 -X POST "http://$1/json/$2" -H 'Content-Type: applicati
 info() { curl -fsS -m 5 "http://$HOST/json/info"; }
 # field <python-expr over d> from /json/info, or empty when unreachable
 field() { info 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print($1)" 2>/dev/null || true; }
+# WLED restarts itself after LED hardware changes (count, pin, order); wait for it
+wait_up() { sleep 2; for _ in $(seq 30); do [ -n "$(field 'd["ver"]')" ] && return; sleep 2; done; echo "$HOST did not come back" >&2; exit 1; }
 
 wifi_details() {
   local secrets="$REPO/projects/voice-assistant/esphome/secrets.yaml"
@@ -95,10 +97,10 @@ case "${1:-}" in
     ;;
   setup)
     [ -n "$(field 'd["ver"]')" ] || { echo "$HOST not answering - did 'wifi' work?" >&2; exit 1; }
-    w count "$LEDS"
-    w pin 4
-    w order grb
-    w cap "$CAP"
+    w count "$LEDS"; wait_up
+    w pin 4; wait_up
+    w order grb; wait_up
+    w cap "$CAP"; wait_up
     w info
     echo
     echo "Check the colour order: '$WLED solid red' must look red (WLED_HOST=$HOST)."
