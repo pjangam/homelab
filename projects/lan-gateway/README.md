@@ -25,6 +25,16 @@ usage monitoring" tracks the rollout.
   `/run`), else the IP. Devices behind the TP-Link extender all carry its
   MAC and get no router hostname, so name them by IP and pin that IP on the
   router.
+  Since 2026-10-31 it also adds each IP's growth, minute by minute, to the
+  device holding that IP right then: `homelab_lan_device_bytes_total{id}`
+  and `homelab_lan_device_name{id,device}`, where the id is the MAC (unless
+  several IPs share it, as the extender's clients do), else `ts:<label>`,
+  else `ip:<ip>`. The dashboard uses these, so a device's bytes stay with it
+  when the router gives its old IP to someone else. Totals are kept in
+  `/run/lan-gateway-bytes.state` and restart at 0 on reboot, like the
+  kernel's.
+- `block_device.sh` - temporarily cuts one device (IP or MAC) off the
+  internet at xero; sudo, not persistent.
 - `setup_lan_gateway.sh` - installs it all; `--remove` undoes it. Run from a
   real terminal on xero (sudo).
 
