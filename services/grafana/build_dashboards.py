@@ -240,18 +240,53 @@ containers = [
 # them for node-exporter once a minute, so a minute is the finest grain there is
 # (a 5s irate would read 0 between updates). Totals use increase(), which
 # handles the counter reset on every xero reboot or table reload.
+#
+# Two sources, added up per device name:
+#   - from CUTOVER on, homelab_lan_device_bytes_total{id}: bytes per device
+#     (MAC, Tailscale label or IP), named as of the dashboard's "to" time, so
+#     renaming a device relabels its history.
+#   - before it, the per-IP counter, each 5 minutes named by whatever held the
+#     IP then (homelab_lan_device_info at that moment). The router hands an IP
+#     on when a device leaves, so naming old IP history by today's name filed
+#     a week of an Android phone under a guest's laptop (2026-10-31). Those
+#     names were cached an hour, so a device's first hour on a new IP may show
+#     as the bare IP, and later renames do not reach this part.
 gw = 'homelab_lan_gateway_bytes_total'
+dev = 'homelab_lan_device_bytes_total'
+CUTOVER = 1793415660  # 2026-10-31 08:31 IST, the first per-device sample
 
 
-def named(expr):
-    """Give each per-ip series of expr a device label from homelab_lan_device_info
-    (usage_textfile.sh: device-names, else the router's hostname). Joined on the
-    names as of the dashboard's "to" time, so a rename relabels all of the
-    history. Not @ end(): Grafana rounds a range query's end down to its step,
-    which on the hourly panels is up to an hour ago. An ip with no name then
-    keeps its ip, rather than vanishing from the join."""
-    return (f'(({expr}) * on (ip) group_left (device) (homelab_lan_device_info @ ${{__to:date:seconds}})'
-            f' or on (ip) label_replace({expr}, "device", "$1", "ip", "(.*)"))')
+def by_name_now(expr):
+    """Name each per-id series of expr as of the dashboard's "to" time. Not
+    @ end(): Grafana rounds a range query's end down to its step, which on the
+    hourly panels is up to an hour ago. An id with no name keeps its id."""
+    return (f'(({expr}) * on (id) group_left (device) (homelab_lan_device_name @ ${{__to:date:seconds}})'
+            f' or on (id) label_replace({expr}, "device", "$1", "id", "(.*)"))')
+
+
+def by_name_then(expr):
+    """Name each per-ip series of expr by the device on that IP at the time,
+    and keep only points before CUTOVER."""
+    return (f'((({expr}) * on (ip) group_left (device) homelab_lan_device_info'
+            f' or on (ip) label_replace({expr}, "device", "$1", "ip", "(.*)"))'
+            f' and on () (vector(time()) < {CUTOVER}))')
+
+
+def both(new, old, by="device, direction"):
+    """new + old summed per device; a src label keeps them apart until the sum."""
+    return (f'sum by ({by}) (label_replace(sum by ({by}) ({new}), "src", "new", "", "")'
+            f' or label_replace(sum by ({by}) ({old}), "src", "old", "", ""))')
+
+
+def bytes_in(window):
+    """Bytes per device and direction in each window ending at a point."""
+    old = f'sum_over_time((sum by (device, direction) ({by_name_then(f"increase({gw}[5m])")}))[{window}:5m])'
+    return both(by_name_now(f"increase({dev}[{window}])"), old)
+
+
+def rate_of(direction):
+    sel = f'{{direction="{direction}"}}'
+    return both(by_name_now(f"rate({dev}{sel}[2m])"), by_name_then(f"rate({gw}{sel}[2m])"), by="device")
 
 
 def usage_bars(title, time_from, x, y, w=8, h=10):
@@ -268,7 +303,7 @@ def usage_bars(title, time_from, x, y, w=8, h=10):
                     "reduceOptions": {"calcs": ["lastNotNull"], "values": False}},
         "transformations": [{"id": "sortBy", "options": {"sort": [{"field": "Value", "desc": True}]}}],
         "targets": [{"datasource": DS, "refId": "A", "instant": True, "range": False,
-                     "expr": f'sort_desc(sum by (device, direction) ({named(f"increase({gw}[$__range])")}))',
+                     "expr": f'sort_desc({bytes_in("$__range")})',
                      "legendFormat": "{{device}} {{direction}}"}],
     }
 
@@ -277,19 +312,19 @@ usage = [
     usage_bars("Today", "now/d", 0, 0),
     usage_bars("This month", "now/M", 8, 0),
     usage_bars("Last 30 days", "30d", 16, 0),
-    {**panel("Per day", [(f'sum by (device, direction) ({named(f"increase({gw}[1d])")})', "{{device}} {{direction}}")],
+    {**panel("Per day", [(bytes_in("1d"), "{{device}} {{direction}}")],
              "bytes", 0, 10, w=24, h=10, stack=True,
              desc="Bytes per device per day, stacked. Days are UTC days (05:30 to 05:30 IST): "
                   "Prometheus aligns 1d steps to UTC, and a day's bar appears only once it has ended - "
                   "the Today gauge covers the day so far."),
      "interval": "1d", "timeFrom": "30d"},
-    {**panel("Per hour", [(f'sum by (device, direction) ({named(f"increase({gw}[1h])")})', "{{device}} {{direction}}")],
+    {**panel("Per hour", [(bytes_in("1h"), "{{device}} {{direction}}")],
              "bytes", 0, 20, w=24, h=10, stack=True,
              desc="Bytes per device per hour, stacked, last 2 days. An hour's bar appears once it has ended."),
      "interval": "1h", "timeFrom": "2d"},
     panel("Throughput per device (max)", [
-        ('max_over_time((sum by (device) (' + named(f'rate({gw}{{direction="down"}}[2m])') + '))[$__interval:1m])', "{{device}} down"),
-        ('max_over_time((sum by (device) (' + named(f'rate({gw}{{direction="up"}}[2m])') + '))[$__interval:1m])', "{{device}} up"),
+        (f'max_over_time(({rate_of("down")})[$__interval:1m])', "{{device}} down"),
+        (f'max_over_time(({rate_of("up")})[$__interval:1m])', "{{device}} up"),
     ], "Bps", 0, 30, w=24, h=10,
         desc="The counters update once a minute, so this is each minute's rate and each point the max "
              "of those minutes - no finer than a minute."),
@@ -304,6 +339,7 @@ for uid, title, panels, desc in [
     ("containers", "Containers (xero)", containers, "Per-container CPU, memory and network from cAdvisor."),
     ("network-usage", "Network usage (per device)", usage,
      "Internet bytes per LAN device through xero as the gateway (projects/lan-gateway). "
+     "Counted per device (MAC, Tailscale name, or IP behind the extender) since 2026-10-31 08:31; before that per IP, named by whichever device held the IP at the time. "
      "Devices are named from projects/lan-gateway/device-names, else the router's hostname, else their IP; only DHCP devices go through xero, fixed-IP ones (xero, the Pi, ESP32s) do not."),
 ]:
     path = OUT / f"{uid}.json"

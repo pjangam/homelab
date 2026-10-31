@@ -96,10 +96,15 @@ that return no data.
 
 Added 2026-10-22 with `projects/lan-gateway/`: bytes each LAN device sends
 and receives through xero as its internet gateway (DHCP devices only; xero,
-the Pi and the ESP32s have fixed IPs on the router). Devices are named by
-`homelab_lan_device_info{ip,device}`, joined on the names as of the
-dashboard's end time, so naming a device relabels its whole history: see
-`projects/lan-gateway/README.md` for where the names come from. Today / this month
+the Pi and the ESP32s have fixed IPs on the router). Since 2026-10-31 08:31
+it counts per device (`homelab_lan_device_bytes_total{id}`: MAC, Tailscale
+label, or IP behind the extender), named by `homelab_lan_device_name` as of
+the dashboard's end time, so naming a device relabels its history. Before
+that it counted per IP; those bytes are named by whichever device held the IP
+at the time (`homelab_lan_device_info` then), because the router hands an IP
+on when a device leaves - naming old IP history by today's name had filed a
+week of an Android phone under a guest's laptop. The two are added up by
+name. See `projects/lan-gateway/README.md` for where the names come from. Today / this month
 / last 30 days, per day, per hour, and per-minute throughput. The counters
 are written once a minute (`homelab_lan_gateway_bytes_total`), so a minute is
 the finest grain - the one place the 5s rule cannot apply. `increase()`

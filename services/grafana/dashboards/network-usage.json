@@ -1,7 +1,7 @@
 {
   "uid": "network-usage",
   "title": "Network usage (per device)",
-  "description": "Internet bytes per LAN device through xero as the gateway (projects/lan-gateway). Devices are named from projects/lan-gateway/device-names, else the router's hostname, else their IP; only DHCP devices go through xero, fixed-IP ones (xero, the Pi, ESP32s) do not.",
+  "description": "Internet bytes per LAN device through xero as the gateway (projects/lan-gateway). Counted per device (MAC, Tailscale name, or IP behind the extender) since 2026-10-31 08:31; before that per IP, named by whichever device held the IP at the time. Devices are named from projects/lan-gateway/device-names, else the router's hostname, else their IP; only DHCP devices go through xero, fixed-IP ones (xero, the Pi, ESP32s) do not.",
   "tags": [
     "homelab"
   ],
@@ -74,7 +74,7 @@
           "refId": "A",
           "instant": true,
           "range": false,
-          "expr": "sort_desc(sum by (device, direction) (((increase(homelab_lan_gateway_bytes_total[$__range])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[$__range]), \"device\", \"$1\", \"ip\", \"(.*)\"))))",
+          "expr": "sort_desc(sum by (device, direction) (label_replace(sum by (device, direction) (((increase(homelab_lan_device_bytes_total[$__range])) * on (id) group_left (device) (homelab_lan_device_name @ ${__to:date:seconds}) or on (id) label_replace(increase(homelab_lan_device_bytes_total[$__range]), \"device\", \"$1\", \"id\", \"(.*)\"))), \"src\", \"new\", \"\", \"\") or label_replace(sum by (device, direction) (sum_over_time((sum by (device, direction) ((((increase(homelab_lan_gateway_bytes_total[5m])) * on (ip) group_left (device) homelab_lan_device_info or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[5m]), \"device\", \"$1\", \"ip\", \"(.*)\")) and on () (vector(time()) < 1793415660))))[$__range:5m])), \"src\", \"old\", \"\", \"\")))",
           "legendFormat": "{{device}} {{direction}}"
         }
       ]
@@ -140,7 +140,7 @@
           "refId": "A",
           "instant": true,
           "range": false,
-          "expr": "sort_desc(sum by (device, direction) (((increase(homelab_lan_gateway_bytes_total[$__range])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[$__range]), \"device\", \"$1\", \"ip\", \"(.*)\"))))",
+          "expr": "sort_desc(sum by (device, direction) (label_replace(sum by (device, direction) (((increase(homelab_lan_device_bytes_total[$__range])) * on (id) group_left (device) (homelab_lan_device_name @ ${__to:date:seconds}) or on (id) label_replace(increase(homelab_lan_device_bytes_total[$__range]), \"device\", \"$1\", \"id\", \"(.*)\"))), \"src\", \"new\", \"\", \"\") or label_replace(sum by (device, direction) (sum_over_time((sum by (device, direction) ((((increase(homelab_lan_gateway_bytes_total[5m])) * on (ip) group_left (device) homelab_lan_device_info or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[5m]), \"device\", \"$1\", \"ip\", \"(.*)\")) and on () (vector(time()) < 1793415660))))[$__range:5m])), \"src\", \"old\", \"\", \"\")))",
           "legendFormat": "{{device}} {{direction}}"
         }
       ]
@@ -206,7 +206,7 @@
           "refId": "A",
           "instant": true,
           "range": false,
-          "expr": "sort_desc(sum by (device, direction) (((increase(homelab_lan_gateway_bytes_total[$__range])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[$__range]), \"device\", \"$1\", \"ip\", \"(.*)\"))))",
+          "expr": "sort_desc(sum by (device, direction) (label_replace(sum by (device, direction) (((increase(homelab_lan_device_bytes_total[$__range])) * on (id) group_left (device) (homelab_lan_device_name @ ${__to:date:seconds}) or on (id) label_replace(increase(homelab_lan_device_bytes_total[$__range]), \"device\", \"$1\", \"id\", \"(.*)\"))), \"src\", \"new\", \"\", \"\") or label_replace(sum by (device, direction) (sum_over_time((sum by (device, direction) ((((increase(homelab_lan_gateway_bytes_total[5m])) * on (ip) group_left (device) homelab_lan_device_info or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[5m]), \"device\", \"$1\", \"ip\", \"(.*)\")) and on () (vector(time()) < 1793415660))))[$__range:5m])), \"src\", \"old\", \"\", \"\")))",
           "legendFormat": "{{device}} {{direction}}"
         }
       ]
@@ -287,7 +287,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "sum by (device, direction) (((increase(homelab_lan_gateway_bytes_total[1d])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[1d]), \"device\", \"$1\", \"ip\", \"(.*)\")))",
+          "expr": "sum by (device, direction) (label_replace(sum by (device, direction) (((increase(homelab_lan_device_bytes_total[1d])) * on (id) group_left (device) (homelab_lan_device_name @ ${__to:date:seconds}) or on (id) label_replace(increase(homelab_lan_device_bytes_total[1d]), \"device\", \"$1\", \"id\", \"(.*)\"))), \"src\", \"new\", \"\", \"\") or label_replace(sum by (device, direction) (sum_over_time((sum by (device, direction) ((((increase(homelab_lan_gateway_bytes_total[5m])) * on (ip) group_left (device) homelab_lan_device_info or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[5m]), \"device\", \"$1\", \"ip\", \"(.*)\")) and on () (vector(time()) < 1793415660))))[1d:5m])), \"src\", \"old\", \"\", \"\"))",
           "legendFormat": "{{device}} {{direction}}"
         }
       ],
@@ -369,7 +369,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "sum by (device, direction) (((increase(homelab_lan_gateway_bytes_total[1h])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[1h]), \"device\", \"$1\", \"ip\", \"(.*)\")))",
+          "expr": "sum by (device, direction) (label_replace(sum by (device, direction) (((increase(homelab_lan_device_bytes_total[1h])) * on (id) group_left (device) (homelab_lan_device_name @ ${__to:date:seconds}) or on (id) label_replace(increase(homelab_lan_device_bytes_total[1h]), \"device\", \"$1\", \"id\", \"(.*)\"))), \"src\", \"new\", \"\", \"\") or label_replace(sum by (device, direction) (sum_over_time((sum by (device, direction) ((((increase(homelab_lan_gateway_bytes_total[5m])) * on (ip) group_left (device) homelab_lan_device_info or on (ip) label_replace(increase(homelab_lan_gateway_bytes_total[5m]), \"device\", \"$1\", \"ip\", \"(.*)\")) and on () (vector(time()) < 1793415660))))[1h:5m])), \"src\", \"old\", \"\", \"\"))",
           "legendFormat": "{{device}} {{direction}}"
         }
       ],
@@ -450,7 +450,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "max_over_time((sum by (device) (((rate(homelab_lan_gateway_bytes_total{direction=\"down\"}[2m])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(rate(homelab_lan_gateway_bytes_total{direction=\"down\"}[2m]), \"device\", \"$1\", \"ip\", \"(.*)\"))))[$__interval:1m])",
+          "expr": "max_over_time((sum by (device) (label_replace(sum by (device) (((rate(homelab_lan_device_bytes_total{direction=\"down\"}[2m])) * on (id) group_left (device) (homelab_lan_device_name @ ${__to:date:seconds}) or on (id) label_replace(rate(homelab_lan_device_bytes_total{direction=\"down\"}[2m]), \"device\", \"$1\", \"id\", \"(.*)\"))), \"src\", \"new\", \"\", \"\") or label_replace(sum by (device) ((((rate(homelab_lan_gateway_bytes_total{direction=\"down\"}[2m])) * on (ip) group_left (device) homelab_lan_device_info or on (ip) label_replace(rate(homelab_lan_gateway_bytes_total{direction=\"down\"}[2m]), \"device\", \"$1\", \"ip\", \"(.*)\")) and on () (vector(time()) < 1793415660))), \"src\", \"old\", \"\", \"\")))[$__interval:1m])",
           "legendFormat": "{{device}} down"
         },
         {
@@ -459,7 +459,7 @@
             "uid": "prometheus"
           },
           "refId": "B",
-          "expr": "max_over_time((sum by (device) (((rate(homelab_lan_gateway_bytes_total{direction=\"up\"}[2m])) * on (ip) group_left (device) (homelab_lan_device_info @ ${__to:date:seconds}) or on (ip) label_replace(rate(homelab_lan_gateway_bytes_total{direction=\"up\"}[2m]), \"device\", \"$1\", \"ip\", \"(.*)\"))))[$__interval:1m])",
+          "expr": "max_over_time((sum by (device) (label_replace(sum by (device) (((rate(homelab_lan_device_bytes_total{direction=\"up\"}[2m])) * on (id) group_left (device) (homelab_lan_device_name @ ${__to:date:seconds}) or on (id) label_replace(rate(homelab_lan_device_bytes_total{direction=\"up\"}[2m]), \"device\", \"$1\", \"id\", \"(.*)\"))), \"src\", \"new\", \"\", \"\") or label_replace(sum by (device) ((((rate(homelab_lan_gateway_bytes_total{direction=\"up\"}[2m])) * on (ip) group_left (device) homelab_lan_device_info or on (ip) label_replace(rate(homelab_lan_gateway_bytes_total{direction=\"up\"}[2m]), \"device\", \"$1\", \"ip\", \"(.*)\")) and on () (vector(time()) < 1793415660))), \"src\", \"old\", \"\", \"\")))[$__interval:1m])",
           "legendFormat": "{{device}} up"
         }
       ]
