@@ -122,7 +122,8 @@ done)
 # Devices not on any IP right now keep their last name, unless device-names
 # has a newer one for their MAC or Tailscale label.
 renamed=$(awk '$1 == "n" { print $2 }' "$state" 2>/dev/null | while read -r id; do
-  n=$(lookup "${id#ts:}" | sed 's/[\\"]//g'); [ -n "$n" ] && echo "n $id $n"
+  n=$(lookup "${id#ts:}" | sed 's/[\\"]//g')
+  if [ -n "$n" ]; then echo "n $id $n"; fi
 done)
 
 # Add each IP's growth since last minute to the device holding it now. With
