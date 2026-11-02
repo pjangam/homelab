@@ -180,13 +180,22 @@ both are regenerable, and at `copies=2` they took ~124G of the Kingston for
 `finish` deletes the `.old` copies after a spot-check; `rollback` undoes it.
 See "datapool storage headroom" in PROJECTS.md.
 
+When you decide to run it:
 
-  When you decide to run it:
-  ! sudo services/immich/split_regenerable.sh check
-  ! sudo services/immich/split_regenerable.sh run
-  Then spot-check Immich in the browser: thumbnails load, a few videos play, and a new upload gets a thumbnail. After
-  that:
-  ! sudo services/immich/split_regenerable.sh finish
-  If anything looks wrong before finish, rollback puts everything back as it was.
+```
+sudo services/immich/split_regenerable.sh check
+sudo services/immich/split_regenerable.sh run
+```
 
+Then spot-check Immich in the browser: thumbnails load, a few videos play, and a new upload gets a thumbnail. After that:
+
+```
+sudo services/immich/split_regenerable.sh finish
+```
+
+If anything looks wrong before `finish`, `rollback` puts everything back as it was:
+
+```
+sudo services/immich/split_regenerable.sh rollback
+```
 
