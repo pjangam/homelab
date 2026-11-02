@@ -169,3 +169,13 @@ and were uploaded, as were the 26 Google "-edited" copies. Never uploaded:
 the zip (bad CRC), was re-downloaded from Google Photos by hand (link from
 `takeout_photo_url.sh`) and uploaded the same day. The zips were deleted
 that evening; these scripts need a fresh export to run again.
+
+## Transcodes and thumbnails at copies=1
+
+`split_regenerable.sh` (2026-11-02, not yet run) moves `encoded-video/` and
+`thumbs/` into child datasets of `datapool/immich-upload` with `copies=1`:
+both are regenerable, and at `copies=2` they took ~124G of the Kingston for
+~62G of data. Same paths, so compose does not change. `sudo ... check` first;
+`run` stops Immich, copies paced by SSD temperature, verifies and restarts;
+`finish` deletes the `.old` copies after a spot-check; `rollback` undoes it.
+See "datapool storage headroom" in PROJECTS.md.
