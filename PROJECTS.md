@@ -602,10 +602,27 @@ Three shapes, cheapest first:
 
 **Why:** Bhakti's photos live in Google Photos on her account, on the Rs 150/month Google One plan. Moving them into Immich (and so into the Deep Archive copy) is the precondition for dropping that plan; see the cost note under "Offsite backup for Immich photo data".
 **State:** not started. Her Immich user exists, named `Bkahti` (misspelt; fix under Administration -> Users), holding 1 asset.
-**Next step:** she requests a Google Photos Takeout; import it as her user following "Importing a Google Takeout export" in `services/immich/README.md` (immich-go 0.32 breaks on Immich 3.3, so the curl-based `upload_from_takeout.sh` with her API key), then check it with `verify_takeout.py` as was done for the first Takeout. Pace the import for the Kingston's temperature. The archive dedupes photos shared between the two libraries by SHA-1. Only then decide on Google One.
+**Next step:** she requests a Google Photos Takeout; import it as her user following "Importing a Google Takeout export" in `services/immich/README.md` (immich-go 0.32 breaks on Immich 3.3, so the curl-based `upload_from_takeout.sh` with her API key), then check it with `verify_takeout.py` as was done for the first Takeout. Note the Takeout's size first and re-measure `datapool` afterwards: "datapool storage headroom" is waiting on it. Pace the import for the Kingston's temperature. The archive dedupes photos shared between the two libraries by SHA-1. Only then decide on Google One.
 
 #### Log
 - 2026-10-30: entry created, split out of "Immich re-enablement".
+
+### datapool storage headroom
+**Status:** Parked
+**Priority:** P3
+
+**Why:** raised 2026-11-02: the user expected to run out of storage soon and was pricing bigger SSDs (4TB 870 EVO - expensive under the chip-price spike).
+**State:** measured 2026-11-02, no space problem yet. `datapool` (Kingston SA400, 888G): **302G used (33%), 586G free.** Every dataset has `copies=2` (self-healing on one disk), so data takes twice its size: `immich-upload` is 281G on disk for 143G of data. Of that 143G, about **56G is Immich's transcoded videos** (`encoded-video/`) and ~6G thumbnails (`thumbs/`), both regenerable from the originals but stored twice too. New photos look like tens of GB of data a year, so roughly 50-100G/year on disk including transcodes - **several years of runway** (rough estimate, not a measured trend). Bhakti's Takeout is the unknown that could take a big bite at once.
+**Next step:** revisit after "Bhakti's Google Takeout into Immich" is imported: re-measure (`zpool list datapool`, `zfs list -o name,used,logicalused -r datapool`), then decide on the options below. Before her import, note the Takeout's size from Google's export page.
+
+#### Options (cheapest first)
+1. **Transcodes and thumbnails to `copies=1`** - free, frees ~60-70G. Put `encoded-video/` and `thumbs/` on their own dataset with `copies=1` (originals stay at `copies=2`); needs a short Immich stop and sudo for the `zfs create` and the move. If a block of a transcode rots, Immich regenerates it.
+2. **Check the Takeout size before importing** - decides whether 1. is enough.
+3. **Bigger storage with the next machine** - see "Purchases" (better machine) and "ZFS mirror". **xero cannot take NVMe** (checked 2026-11-02): its M.2 drive slot is SATA (the Biwin boot disk is on the SATA controller), and the N5105's two PCIe root ports are used by the Realtek NIC and the Intel 7265 WiFi card. On xero, more space means a 2.5"/M.2 SATA SSD or USB.
+4. **If buying an SSD anyway:** Samsung 870 EVO and Crucial MX500 go to 4TB (870 QVO to 8TB, but QLC: slow on long writes, half the endurance); Kingston KC600 is a cheaper DRAM-cached TLC option. Avoid DRAM-less ones (BX500, SA510, NS100, another SA400). A mirror is only as large as its smaller disk, so 4TB usable with redundancy means two 4TB drives (attach one, swap out the Kingston for the second, `autoexpand`). Prices not checked locally.
+
+#### Log
+- 2026-11-02: entry created; measured, options recorded, parked until after Bhakti's Takeout.
 
 ### Move the Airtel router to a central spot (retire the Wi-Fi extender)
 **Status:** Backlog
