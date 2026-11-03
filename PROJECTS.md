@@ -2918,3 +2918,23 @@ Everything is off-the-shelf: setup only, no code to maintain.
 #### Log
 - 2026-11-03: recorded. Considered and set aside: a Claude Code hook speaking replies on a satellite (home only, not the car); iOS Speak Screen (needs a gesture).
 - 2026-11-03: wrote `setup_claude_pipeline.py` against HA 2026.10.4's Anthropic integration (config flow + conversation subentry reconfigure over the REST API, pipeline over websocket): model `claude-haiku-5-5` for speed, web search on (2 uses, home location), max 400 tokens, car prompt. The key is entered once and kept only in HA's `.storage`. Not run: no API key on xero yet. README section added. No new port or device, so endpoints.toml and hardware.md are unchanged.
+
+### Spotify by voice (HA Assist)
+**Status:** Backlog
+**Priority:** P3
+
+**Why:** raised 2026-11-03: play music by voice the way Siri does ("play X"), from the voice satellites and, later, the car.
+**State:** nothing built. Today HA has one Spotify script, `script.play_bedroom_track` (a fixed playlist on xero's spotifyd via `spotcast.play_media`), and no voice command for it.
+**Next step:** phase 1 - user to list the phrases, playlists and speaker for each (e.g. "play bedtime music" -> which playlist, on xero or the Pi).
+
+#### Phase 1 - fixed commands (offline, both satellites)
+- One custom sentence per playlist ("play bedtime music") -> a script that calls `spotcast.play_media` on the chosen speaker; plus pause, resume, next and volume for the Spotify players. Sentences go in `projects/voice-assistant/packages/voice_commands.yaml` (lists in `custom_sentences/en/sentences.yaml`), then restart speech-to-phrase so it retrains.
+- Works because Speech-to-Phrase only has to recognise phrases it was trained on; that is also why phase 1 cannot do arbitrary song names.
+- Room: a satellite's HA area can pick the speaker when the command names none (the way "turn on the fan" picks the room's fan).
+
+#### Phase 2 - free requests ("play Arijit Singh in the living room")
+- Needs (a) free-speech recognition and (b) something that searches Spotify by name. (a): the iPhone's dictation via "Hands-free Claude in the car" (Whisper on xero is slow on the N5105). (b): **Music Assistant** as a Docker container with its HA integration, which adds a search-and-play voice intent and plays to Spotify Connect players. Check then whether spotifyd players show up in Music Assistant, or whether it needs its own players.
+- Do this after the car project's basic loop works.
+
+#### Log
+- 2026-11-03: recorded after a conversation; phase split agreed.
