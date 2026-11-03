@@ -2888,8 +2888,8 @@ qty | item | est | note
 **Priority:** P2
 
 **Why:** raised 2026-11-03: a fully hands-free voice conversation, mainly while driving. The Claude app's mic in a Claude Code session is dictation only (tap to send, replies are text), and iOS cannot read a reply aloud without a tap or gesture. Claude's own voice mode is hands-free but only in ordinary chats, and it knows nothing about the home.
-**State:** idea agreed with the user 2026-11-03, nothing set up. Build it in a fresh session (user's choice, to keep that session's context small).
-**Next step:** get an Anthropic API key (user, by hand; it never goes in the repo), then step 1 below.
+**State:** HA side scripted, not run yet: `projects/voice-assistant/setup_claude_pipeline.py` does build steps 1-2 (integration, agent, "Claude" pipeline) and asks two test questions. The Shortcut steps are in `projects/voice-assistant/README.md`.
+**Next step:** user: create an Anthropic API key with a monthly spend limit, then run `set -a; . ./.env.healthcheck; set +a; projects/voice-assistant/setup_claude_pipeline.py` from the repo root and paste the key when asked. Then build the Shortcut (step 3).
 
 #### How it works
 "Hey Siri, ask home" runs an iPhone Shortcut, which works in CarPlay with no touch:
@@ -2916,3 +2916,4 @@ Everything is off-the-shelf: setup only, no code to maintain.
 
 #### Log
 - 2026-11-03: recorded. Considered and set aside: a Claude Code hook speaking replies on a satellite (home only, not the car); iOS Speak Screen (needs a gesture).
+- 2026-11-03: wrote `setup_claude_pipeline.py` against HA 2026.10.4's Anthropic integration (config flow + conversation subentry reconfigure over the REST API, pipeline over websocket): model `claude-haiku-5-5` for speed, web search on (2 uses, home location), max 400 tokens, car prompt. The key is entered once and kept only in HA's `.storage`. Not run: no API key on xero yet. README section added. No new port or device, so endpoints.toml and hardware.md are unchanged.

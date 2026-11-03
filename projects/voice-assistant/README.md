@@ -105,6 +105,48 @@ projects/voice-assistant/test_stt.sh "turn on white noise"
 The container's own HA token is `HA_TOKEN_SPEECH_TO_PHRASE` in `.env`
 (long-lived token "speech-to-phrase" in HA's profile page).
 
+## Claude pipeline and the "Ask home" Shortcut (car)
+
+Hands-free questions while driving, home or general: "Hey Siri, ask home".
+Separate from everything above: the phone's Siri does the speech-to-text and
+speaks the reply, so Speech-to-Phrase and Piper are not involved, and the
+preferred "Home Assistant" pipeline and the satellites are unchanged.
+
+- **Agent:** HA's Anthropic integration ("Claude"), model `claude-haiku-5-5`
+  (fastest), web search on, replies capped short, instructions written for
+  being heard in a car. It sees only the entities exposed to Assist.
+- **Pipeline "Claude":** that agent with "prefer handling commands locally"
+  on, so "turn off the hall fan" is still handled by HA itself (instant, free)
+  and only the rest goes to Claude (paid per use on the API key).
+- **Shortcut "Ask home"** on the iPhone: Dictate Text -> Home Assistant
+  "Assist" action (pipeline "Claude", text = Dictated Text) -> Speak Text.
+
+Set up, from the repo root (asks for the API key the first time; HA keeps it):
+
+```sh
+set -a; . ./.env.healthcheck; set +a
+projects/voice-assistant/setup_claude_pipeline.py
+```
+
+Re-run it after changing the prompt or model at the top of the script
+(`CLAUDE_MODEL=claude-sonnet-5-5 ...` to try a bigger model). It ends by
+asking one home and one general question and printing Claude's answers.
+
+Building the Shortcut (Shortcuts app on the iPhone, new Shortcut):
+1. Add **Dictate Text** (Stop Listening: After Pause).
+2. Add the Home Assistant app's **Assist** action; pick the server, set the
+   pipeline to **Claude**, and the text to *Dictated Text*.
+3. Add **Speak Text** with the Assist action's result.
+4. Name it **Ask home**. Test on the phone ("Hey Siri, ask home"), then in
+   the car through CarPlay.
+
+If the Assist action has no pipeline choice: replace step 2 with **Get
+Contents of URL**, POST `https://<HA tailnet URL>/api/conversation/process`,
+header `Authorization: Bearer <long-lived token "car-shortcut">`, JSON body
+`text` = Dictated Text, `agent_id` = the agent entity the script printed;
+then **Get Dictionary Value** `response.speech.plain.speech` into Speak Text.
+That skips prefer-local, so Claude handles home commands too (slower, works).
+
 ## Gotchas
 
 - **The phone app's voice mode needs a TTS engine on the pipeline.** It always
