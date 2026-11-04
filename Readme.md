@@ -1,5 +1,91 @@
 > See `PROJECTS.md` for the working list of active/parked/backlog projects and their current state.
 
+This file is about **the machine**: bringing xero up, keeping its OS healthy,
+and the quirks of this particular hardware. Everything that belongs to one
+project or service is documented in that project's own folder - the index
+below is the way in.
+
+---
+
+## Where things live
+
+Four homes, by purpose rather than file type (the rules are in `CLAUDE.md`):
+
+| | |
+|---|---|
+| [`projects/`](projects/) | code this repo builds - with its scripts, tests, units and setup doc |
+| [`services/`](services/) | config for off-the-shelf software we only run |
+| [`tools/`](tools/) | helpers used by more than one project |
+| [`docs/`](docs/) | reference and incident write-ups not owned by one project |
+
+Docker's live data directories (`vw-data/`, `HOMEASSISTANT_CONFIG/`,
+`etc-pihole/`, `postgres/`, `library/`, `certs/`, `backups/`) stay at the root
+on purpose, and are gitignored. `clawlight/`, `scripts/`, `systemd/`, `esp32/`
+and the `*_buttons_setup.md` files are the projects that deploy to the
+wol-sender Pi or the Mac; they move into the layout above in a later session.
+
+### projects/
+
+| | |
+|---|---|
+| [`aarti-lights`](projects/aarti-lights/README.md) | sound-reactive WS2812B strip behind the makhar (ESP32 + WLED) |
+| [`certs-backup`](projects/certs-backup/README.md) | TLS cert renewal, and the encrypted offsite backups |
+| [`curtains`](projects/curtains/README.md) | cord-loop curtain drive - design only, not built |
+| [`diwali-lights`](projects/diwali-lights/README.md) | WLED door outline |
+| [`endpoints`](projects/endpoints/README.md) | the one page listing every endpoint we serve |
+| [`ha-dashboard`](projects/ha-dashboard/README.md) | the Home dashboard, tracked and synced over HA's websocket API |
+| [`healthcheck`](projects/healthcheck/README.md) | the synthetic healthcheck - silent when healthy, alerts when not |
+| [`immich-backup`](projects/immich-backup/README.md) | offsite copy of Immich originals (S3 Glacier Deep Archive) |
+| [`lan-gateway`](projects/lan-gateway/README.md) | xero as the LAN gateway, counting bytes per device |
+| [`miraie-ac`](projects/miraie-ac/README.md) | the Panasonic AC in HA, via Node-RED on the Pi |
+| [`pi-health`](projects/pi-health/README.md) | the wol Pi reporting its own health over MQTT |
+| [`power-watchdog`](projects/power-watchdog/README.md) | clean shutdown on an extended power cut (armed) |
+| [`projects-ui`](projects/projects-ui/README.md) | the dashboard that renders `PROJECTS.md` at `/projects` |
+| [`spotifyd`](projects/spotifyd/README.md) | headless Spotify Connect on the Pi |
+| [`tinxy-watchdog`](projects/tinxy-watchdog/README.md) | restarts HA after a sustained ISP-outage disconnect (temporary) |
+| [`voice-assistant`](projects/voice-assistant/README.md) | local voice control through HA Assist |
+| [`white-noise`](projects/white-noise/README.md) | the bedroom white-noise switch |
+| [`wishlist`](projects/wishlist/README.md) | priority-ordered list of expensive things to buy |
+| [`xero-stats`](projects/xero-stats/README.md) | xero's stats as p95/max, never averages |
+
+### services/
+
+| | |
+|---|---|
+| [`albums`](services/albums/README.md) | public photo albums over Tailscale Funnel |
+| [`caddy`](services/caddy/README.md) | the HTTPS front door for `xero.<tailnet>` |
+| [`chrony`](services/chrony/README.md) | xero as the LAN time server (the Pi has no RTC) |
+| [`grafana`](services/grafana/README.md) | graphs of everything xero and the Pi do |
+| [`immich`](services/immich/README.md) | self-hosted photos |
+| [`mosquitto`](services/mosquitto/README.md) | the MQTT broker every local integration uses |
+| [`node-exporter`](services/node-exporter/README.md) | host metrics on both machines, plus the ZFS textfile |
+| [`nodered`](services/nodered/README.md) | the flow engine (runs on the Pi) |
+| [`ntfy`](services/ntfy/README.md) | self-hosted push notifications, and the alert routing |
+| [`pihole-secondary`](services/pihole-secondary/README.md) | the second Pi-hole on the wol Pi |
+| [`prometheus`](services/prometheus/README.md) | metrics store behind Grafana |
+| [`samba`](services/samba/README.md) | the `phone-uploads` and `documents` SMB shares |
+| [`tailscale`](services/tailscale/README.md) | the sidecars that give a service its own tailnet name |
+| [`vaultwarden`](services/vaultwarden/README.md) | the password manager every secret here points at |
+
+### tools/
+
+| | |
+|---|---|
+| [`chromium-update`](tools/chromium-update/README.md) | the Mac's Chromium snapshot updater |
+| [`dev-shell`](tools/dev-shell/README.md) | the Mac shell setup (iTerm + tmux + Claude Code) |
+| [`diagrams`](tools/diagrams/README.md) | screenshot a wiring diagram to check it before publishing |
+| [`esp32-tools`](tools/esp32-tools/README.md) | flashing and bring-up for the WLED boards |
+| [`ha-diag`](tools/ha-diag/README.md) | two awkward Home Assistant questions |
+| [`heic-convert`](tools/heic-convert/README.md) | HEIC to JPEG, for what lands on the shares |
+| [`host-stats`](tools/host-stats/README.md) | the per-second sampler, and the cooling benchmark |
+| [`memtest`](tools/memtest/README.md) | RAM testing on xero without a USB stick |
+| [`network`](tools/network/README.md) | throughput and DNS diagnosis, including the Mac's recurring break |
+| [`notify`](tools/notify/README.md) | the shared email and ntfy senders |
+| [`repo-tools`](tools/repo-tools/README.md) | scripts about this repo itself |
+| [`zfs`](tools/zfs/README.md) | the ARC cap |
+
+---
+
 ## New Machine Setup
 
 Run `new_machine_setup.sh` then complete these manual steps:
@@ -35,536 +121,35 @@ Both print what they found and how to bypass a confirmed false positive: `git co
 
 ---
 
-## Miraie AC (Node-RED + MQTT)
-
-Mosquitto runs on `xero`; Node-RED itself runs on the Pi (`wol-sender`, `192.168.1.124`) - moved there 2026-08-22, see `PROJECTS.md` "Move some load to the Raspberry Pi". The `node-red-contrib-ha-miraie-ac` node is set up automatically. Manual steps after first run:
-
-1. Open Node-RED at `http://192.168.1.124:1880` - the editor now requires login (`adminAuth` in `settings.js`, enabled 2026-08-22 since it's reachable over Wi-Fi rather than only from xero itself; previously had no auth at all). Username `pramod`; the password should be saved in Vaultwarden as "Node-RED admin" (check there first - if missing, it was generated during the 2026-08-22 migration and needs resetting via `node-red admin hash-pw` + editing `settings.js`'s `adminAuth` block on the Pi).
-2. Find the `ha-miraie-ac` node in the palette (left sidebar), drag it into a flow
-3. Double-click the node and configure:
-   - **Mobile number** — Miraie registered phone number
-   - **Password** — Miraie app password
-   - **MQTT broker** — host `192.168.1.123` (xero's LAN IP - Node-RED isn't on the same Docker network as Mosquitto anymore, so the `mosquitto` container hostname won't resolve), port `1883`, username `homelab` + password (Mosquitto requires auth as of the 2026-08-23 security pass — see Vaultwarden "Mosquitto MQTT")
-4. Click Deploy (top right) — node status should show "HA broker connected" and "MirAIe broker connected". If credentials were entered via the node's config panel, they must land nested under the node's "credentials" store, not as flat fields - if the broker doesn't connect after Deploy, a full container restart (`docker restart node-red`), not just a redeploy, may be needed to pick them up.
-5. In Home Assistant: Settings → Integrations → Add Integration → MQTT → host `192.168.1.123`, port `1883`, username `homelab` + password
-6. AC appears under Settings → Devices & Services → MQTT as "PANASONIC AC"
-7. If entity shows "Unavailable", turn the AC on/off physically to trigger a state update
-
-> **TODO (deferred): Full automation approach**
-> 1. Store Miraie credentials in Bitwarden
-> 2. On setup, pull them via Bitwarden CLI (`bw get item "Miraie AC"`)
-> 3. Export working Node-RED flow as `nodered-flows.json` in repo, inject credentials and POST to Node-RED API
-> 4. Set up HA MQTT integration via HA REST API using a long-lived token (no Selenium needed)
-> 5. Only manual step: generate the HA long-lived token once
-
-### Fixing a dead bridge by hand
-
-**Symptom:** the AC is `unavailable` in HA, usually with *"This entity is no
-longer being provided by the mqtt integration"*. That message means HA still
-has the entity in its registry but no MQTT discovery config behind it -
-Node-RED publishes `homeassistant/climate/panasonic-ac/config` on every
-connect, so if the bridge is down it never gets republished.
-
-```bash
-projects/miraie-ac/fix_miraie_ac.sh           # no-op if the bridge is already healthy
-projects/miraie-ac/fix_miraie_ac.sh --force   # restart anyway (republishes discovery)
-projects/miraie-ac/diagnose_miraie_ac.sh      # read-only: what is actually broken
-```
-
-The fix is one `docker restart node-red` on the Pi - nothing on xero needs
-restarting, Mosquitto and HA are unaffected. The script wraps that restart in
-the two things that actually matter:
-
-1. **It checks DNS first and refuses to restart if `miraie.in` isn't
-   resolving.** Restarting into broken DNS silently recreates the original
-   failure rather than fixing it (see below).
-2. **It verifies the bridge came back**, polling for both ESTABLISHED
-   connections. `docker restart` exiting 0 proves nothing, and neither does
-   the container healthcheck - that only means Node-RED's web UI answers on
-   1880.
-
-**Root cause of the 2026-09-07 outage**, which is the failure mode to expect
-again: a single DNS lookup failed at Node-RED startup and the node never
-retried.
-
-```
-6 Sep 12:17:43 - [error] [ha-miraie-ac:MirAIe] There was an error logging in.
-                         getaddrinfo EAI_AGAIN auth.miraie.in
-```
-
-The container then sat `Up (healthy)` for 29 hours holding **zero** broker
-connections. Note the entrypoint's `until nslookup auth.miraie.in` guard did
-not help: it passed, and DNS failed again five seconds later at login.
-
-`projects/miraie-ac/diagnose_miraie_ac.sh --capture` restarts Node-RED while sniffing
-MQTT, which is the only way to see this path's traffic - `ha-miraie-ac`
-publishes state and availability with `retain=false`, so subscribing while the
-AC sits idle shows nothing whether the bridge is healthy or dead.
-
-### Is the AC actually usable? (healthcheck alert + dashboard tile)
-
-`projects/miraie-ac/check_miraie_ac_available.sh` asks the only question that matters -
-what does HA hold for `climate.panasonic_ac_panasonic_ac`? - and
-`projects/healthcheck/healthcheck.sh` acts on the answer, with a tile on the Stats
-dashboard (`binary_sensor.homelab_healthcheck_homelab_miraie_ac`) reflecting
-the latest observation immediately:
-
-1. **One unavailable run (*/15 cron):** nothing yet - discovery blips and
-   node-red restarts drop the entity for seconds.
-2. **Still unavailable on the next run:** it runs
-   `projects/miraie-ac/fix_miraie_ac.sh --force` itself, **once per outage**,
-   with the output going to `healthcheck.log`. If that brings the entity back
-   (the missed-availability case, e.g. 2026-09-15) nobody is alerted.
-3. **Not cured:** one email + ntfy saying what the fix found - exit 2 "switch
-   the AC on", exit 3 "restart HA's MQTT integration", exit 1 "the bridge did
-   not reconnect". It is not retried: those are not problems a restart fixes.
-
-Cured outages still show on the tile as `autofixes_24h` / `last_autofix`
-attributes, and 3 or more fixes in 24h raises its own alert, so an AC that
-keeps dropping cannot hide behind a fix that keeps working.
-`projects/miraie-ac/test_healthcheck_miraie_ac_autofix.sh` covers all of this
-with the check and fix stubbed.
-
-That tile was added with `projects/healthcheck/add_stats_dashboard_tile.py`, which edits the
-dashboard over HA's websocket API. Use it rather than hand-editing
-`.storage/lovelace.dashboard_stats`: storage-mode dashboards live in HA's
-memory, so a file edit does nothing until HA restarts - and restarting HA is
-itself what knocked the AC entity out for 37 minutes on 2026-09-11. The script
-is idempotent and snapshots the dashboard into `backups/lovelace/` first.
-
-Added 2026-09-11, after the AC broke twice that evening from two unrelated
-causes and *nothing* noticed either time — both were found by looking. Every
-signal that existed stayed green throughout: node-red runs on the Pi so it is
-not in healthcheck's docker check at all, and the container reported
-`Up (healthy)` through both outages anyway. Watching the entity catches both
-root causes, and whatever breaks it next, because it watches the symptom you
-actually depend on rather than any one mechanism.
-
-Why 30 minutes: a brief `unavailable` is normal and self-healing — HA blips
-every MQTT entity for a second or two when discovery re-registers, and every
-`docker restart node-red` drops the entity for ~20s. Both real outages (79min
-and 37min) run well past the threshold. The check exits 2 for "can't tell"
-(no token, HA not answering) and the healthcheck deliberately does not alert
-on that: HA being down is already covered by the container check.
-
-### Node-RED Watchdog (MQTT bridge health)
-
-**Why:** the `ha-miraie-ac` node can end up in a stale connection loop - confirmed once (2026-08-23), where credentials were correctly stored but the live MQTT connection to Mosquitto kept silently failing until a full container restart, not just a flow redeploy. `watchdog_nodered.sh` (on the Pi) checks the container's actual TCP state and restarts it if the bridge isn't connected.
-
-**How it works:**
-1. Every 10 minutes (cron, on the Pi), the script checks `/proc/net/tcp` inside the `node-red` container for two ESTABLISHED connections: one to MirAIe's cloud MQTT broker (port 8883) and one to Mosquitto on xero (port 1883).
-2. If either is missing, it runs `docker restart node-red`.
-3. Deliberately does **not** wait for AC state/availability MQTT messages (the original design) - Node-RED only publishes those once per reconnect (not retained by the node's own code), so nothing arrives while the AC is powered off, which is most of the year outside summer. That caused a false restart on every single run regardless of actual bridge health.
-4. All actions logged via `logger -t nodered-watchdog` (`journalctl -t nodered-watchdog`) and to `nodered-watchdog.log` on the Pi.
-
-**Currently enabled** (re-enabled 2026-09-11 for AC season, expected to stay on through at least mid-November 2026). It had been disabled since 2026-08-23 for the off-season. Verified on re-enable by stopping `node-red` and running the script by hand: it logged `MQTT bridge down (cloud_connected=0 local_connected=0)`, restarted the container, and the bridge was back in ~5s.
-
-**A second, separate way the AC entity goes unavailable.** Later the same evening (2026-09-11 21:05) it happened again with a different cause: the unit was provably online - it answered a `mode/set` and published fresh state - while HA held the entity `unavailable` for 37 minutes. The node publishes the unit's `availability` with `retain=false`, and HA gates the entity on that topic (`avty_t` in the discovery payload). So once **HA** restarts it holds no availability value and keeps the entity unavailable no matter how much state arrives; it recovers only if HA happens to be subscribed when Node-RED republishes `online`, and since the config and availability go out back-to-back on a reconnect, that is a race HA can lose. Re-publishing `online` to `miraie-ac/panasonic-ac/availability` brings it straight back. `projects/miraie-ac/fix_miraie_ac.sh` now checks the HA entity and does exactly that re-delivery (exit 3 if the entity still will not come back, which means the problem is HA-side).
-
-**What it does not cover.** This watchdog only sees the *bridge*. On 2026-09-11 the AC entity went `unavailable` in HA while both broker connections stayed healthy the whole time - the indoor unit itself had gone silent to the MirAIe cloud, and three `docker restart node-red` in a row reported success and changed nothing. The watchdog correctly stays quiet in that case, because restarting cannot fix a unit that is switched off. That failure is what `projects/miraie-ac/fix_miraie_ac.sh` diagnoses (exit 2 = the unit, not the bridge).
-
-It also cannot see the missed-availability case above, where the bridge is healthy and the unit online but HA never got the `online`. On 2026-09-15 an HA restart at 16:15 set that up. Node-RED's connection to Mosquitto never dropped, so it had no reason to republish anything, and the entity sat unavailable until 17:52 while every run here logged "healthy". Restarting HA does **not** make Node-RED reconnect. Only a node-red restart or a lost broker connection does. Both entity-side cases are now handled from xero: `healthcheck.sh` watches the HA entity and runs `fix_miraie_ac.sh --force` on its own (see "Is the AC actually usable?" above).
-
-**Status refresh flow (prevents the missed-availability case).** Since 2026-09-15 Node-RED has an inject node wired into the MirAIe node, firing 90s after start and then every 5 minutes. Any message into that node makes it fetch each AC's status from the MirAIe cloud API and publish state and availability again. So a missed `online` now costs HA at most 5 minutes, and nothing is invented: the value is the cloud's own `onlineStatus`, so an AC that is really off still shows unavailable. It does **not** republish the discovery config, so after an HA restart the entity stays gone until a node-red restart, which the healthcheck auto-fix still covers. This also means `miraie-ac/#` now carries traffic every 5 minutes, not only on reconnect or change.
-- Source of truth: `projects/miraie-ac/nodered_refresh_flow.json`. Deploy with `projects/miraie-ac/deploy_nodered_refresh_flow.sh`: it backs up `flows.json` on the Pi, merges the nodes by id, restarts node-red, and checks on MQTT that the refresh publishes the same availability and state fields as the reconnect. If not, it rolls back automatically. Deploying edits the file and restarts, because the admin API needs the editor password. `--rollback` restores the newest backup by hand.
-- `projects/miraie-ac/test_nodered_refresh_live.sh` publishes `offline` to make HA mark the AC unavailable, then waits for the refresh to bring it back. First run: back after 180s, no restart.
-- Token lifetime: the node logs in once at startup and the refresh reuses that token. A MirAIe login returns `expiresIn` = 7257599s, which is **84 days** (measured 2026-09-15 with `projects/miraie-ac/check_miraie_token_lifetime.sh`, which does a separate login and prints no secrets; the node's refresh kept working afterwards). Every node-red restart logs in again and resets the 84 days, and the watchdog, the fix script and image updates all restart it, so an expiry would need node-red to run for 12 weeks straight. That case is covered too: `projects/miraie-ac/renew_miraie_login.sh` runs daily at 11:05 from xero's crontab (log `miraie-login-renew.log`). It reads node-red's `StartedAt` on the Pi and, once the login is 70 of its 84 days old, renews it by restarting node-red through `fix_miraie_ac.sh --force`. If the renewal fails it emails and pushes, and it retries daily for the two weeks left. Use `--force` to renew now. `projects/miraie-ac/test_renew_miraie_login.sh` covers its decisions, with ssh, the fix script and the alerts faked. If a token ever does expire, the refresh fails quietly: nothing is published, and the node logs `There was an error getting device status` (`ssh pramod@192.168.1.124 'docker logs --since 24h node-red | grep -i error'`).
-
-**Disable / re-enable** (no need to touch cron; edit on the Pi): the toggle lives in `WATCHDOG_ENABLED` inside `/home/pramod/nodered-watchdog.env`, next to the script itself - a plain env file rather than a hidden dotfile, so it's easier to stumble on again next summer.
-```bash
-# on the Pi: edit /home/pramod/nodered-watchdog.env
-WATCHDOG_ENABLED=false   # disable (e.g. AC off for the season)
-WATCHDOG_ENABLED=true    # re-enable (e.g. before summer AC season)
-```
-
-**Cron entry** (`crontab -e` on the Pi):
-```
-*/10 * * * * /home/pramod/watchdog_nodered.sh >> /home/pramod/nodered-watchdog.log 2>&1
-```
-
----
-
-## Baby Monitor (Alfred Camera → Home Assistant)
-
-Currently using **Alfred Camera** on iPhone. No native HA integration exists yet.
-
-**Features in use:** low light mode, motion detection alerts, sound alerts.
-
-**Approach under consideration — bridge Alfred alerts to HA via iOS Shortcuts:**
-- Alfred detects motion/sound → sends push notification to iPhone
-- iOS Shortcuts automation fires on Alfred notification → sends HTTP POST to HA webhook
-- HA webhook triggers automations (lights, alerts on other devices, etc.)
-- Low light mode stays Alfred's job — no HA integration needed for that
-
-**HA side (webhook automation skeleton):**
-```yaml
-automation:
-  - alias: "Alfred Motion Alert"
-    trigger:
-      - platform: webhook
-        webhook_id: alfred_motion
-    action:
-      - ... # e.g. notify, turn on light
-```
-Webhook URL: `http://<ha-ip>:8123/api/webhook/alfred_motion`
-
-**iOS Shortcuts side:**
-1. Shortcuts → Automation → New Automation
-2. Trigger: App → Alfred → "Notification received"
-3. Action: Get Contents of URL → POST to HA webhook URL
-4. Create separate automations for motion and sound (filter by notification text)
-
-**Other options ruled out:**
-- RTSP server apps on iPhone — iOS restricts background network servers, unreliable
-- New hardware — not preferred
-- Alfred web viewer — laggy and buggy
-
----
-
-## White Noise (Home Assistant Switch)
-
-How the HA white noise switch works, end to end:
-
-1. **HA MQTT switch** — `switch.white_noise` is created via MQTT discovery (no YAML entity config needed); toggling it publishes `ON`/`OFF` to `whitenoise/set` on the local Mosquitto broker (`localhost:1883`, container name `mosquitto`)
-2. **MQTT bridge** (`projects/white-noise/white-noise-mqtt.py`) — a `uv run --script` (deps declared inline, no venv to manage) that subscribes to `whitenoise/set`, translates it into systemctl calls, and publishes retained state/availability back to `whitenoise/state` / `whitenoise/available` so HA reflects reality instantly instead of polling (`projects/white-noise/white-noise-mqtt.service`)
-3. **systemctl** — starts/stops the `white-noise` user service (`projects/white-noise/white-noise.service`), which runs `sox` (`play -n -q synth brownnoise fade t 60`, `sudo apt install sox`) directly. SoX's own `fade` effect ramps volume in over ~60s in software — no wrapper script needed. The unit's `ExecStartPre`/`ExecStop` pin the ALSA `Speaker` control (card 1, the USB speaker pinned as default in `~/.asoundrc`) to a fixed 59% ceiling (about 67 dB at the bed, measured 2026-09-24; the wol Pi's 3.5mm jack uses 93%, set with the fade steps in `deploy_audio_pi.sh`) and do a quick ~1.2s ALSA ramp-down before killing the process on stop, so it doesn't cut out abruptly. This is the point to tune if you want a different fade timing or volume range. It also pauses Spotify first with `playerctl -p spotifyd pause` (`sudo apt install playerctl`) so white noise never starts over music; when spotifyd has no active Connect session it has no MPRIS player to pause, and the journal's "No players found" from that line is expected. `projects/white-noise/test_white_noise_pauses_spotify.sh` checks it end to end with a real playing track (it makes sound for ~20s).
-
-Both `white-noise.service` and `white-noise-mqtt.service` are `systemd --user` units, so `loginctl enable-linger pramod` must be set — otherwise they die whenever the login session they started under ends, and the HA switch silently stops responding (this bit us once: see git history).
-
-**Install / reinstall:**
-```bash
-cp projects/white-noise/white-noise.service      ~/.config/systemd/user/
-cp projects/white-noise/white-noise-mqtt.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now white-noise-mqtt
-sudo loginctl enable-linger pramod
-```
-
-**Starting/stopping directly (bypassing HA/MQTT):**
-```bash
-systemctl --user start white-noise   # fades in, pins volume to 59%
-systemctl --user stop  white-noise   # fades out, kills sox, resets volume to 59%
-```
-Always go through `systemctl`, never run the `ExecStartPre`/`ExecStop` lines from `white-noise.service` by hand — `kill $MAINPID` in the `ExecStop` line only works because systemd injects `$MAINPID` when it runs that line as part of stopping the unit. Run standalone in a shell, `$MAINPID` is empty, so `kill ""` silently no-ops and `sox` keeps playing — it looks like the stop "didn't take" or "restarted" when really it just never stopped.
-
-**Debugging the HA switch:**
-```bash
-systemctl --user status white-noise white-noise-mqtt   # both should be active (running)
-journalctl --user -u white-noise-mqtt -n 50             # bridge logs
-docker exec mosquitto mosquitto_sub -h localhost -p 1883 \
-  -u homelab -P "$(grep MQTT_PASSWORD .env.mqtt | cut -d= -f2)" -t 'whitenoise/#' -v
-```
-The last command should show one retained `whitenoise/available online` and one `whitenoise/state ON`/`OFF` — if `available` keeps flapping `offline`/`online` every few seconds, HA will show the switch as unavailable on and off, and presses made during an "offline" blip get dropped. That flapping is exactly the same reconnect-loop bug documented below for `toggle-button-mqtt.py` (found again in `white-noise-mqtt.py` on 2026-08-31 and fixed the same way).
-
----
-
-## Physical GPIO Buttons (wol-sender Pi)
-
-**Why:** the rest of the household and house help don't want to use the HA app or voice control - physical buttons wired to the wol-sender Pi's GPIO give a simple, no-app way to trigger specific things. See `PROJECTS.md` ("Easier HA control for household + house help") for the full research/decision history.
-
-1. **Push buttons → white noise start/stop** (`scripts/pi-buttons/white-noise-buttons-mqtt.py`, `white-noise-buttons-mqtt.service` on the Pi) — two momentary push buttons (GPIO17/pin 11 ↔ GND/pin 9 for start, GPIO18/pin 12 ↔ GND/pin 14 for stop) each publish a plain non-retained MQTT message on press; two HA automations (`white_noise_button_start`/`_stop` in `automations.yaml`) call `switch.turn_on`/`turn_off` directly on `switch.white_noise`. Supersedes an earlier latching toggle switch on GPIO17 alone (`binary_sensor.toggle_switch_1` + `toggle1_white_noise_on`/`_off`) — see `white_noise_buttons_setup.md` and the reconnect-loop bug note below for why momentary buttons with no persisted state are the more robust shape. Setup details: `white_noise_buttons_setup.md`.
-2. **Push buttons → oju sleep/awake scenes** (`scripts/pi-buttons/scene-buttons-mqtt.py`, `scene-buttons-mqtt.service` on the Pi) — two momentary push buttons (GPIO27/pin 13 and GPIO22/pin 15, both ↔ GND/pin 14) each publish a plain non-retained MQTT message on press; two HA automations (`scene_button_oju_sleep`/`_awake`) call `scene.turn_on` directly. Deliberately no persisted state/entity here (unlike the toggle switch) — a momentary trigger doesn't need one, and it sidesteps a real bug class hit with the toggle switch (see below). Setup details: `scene_buttons_setup.md`.
-
-**GPIO pinout reference:** `docs/gpio_pinout.md` — the Pi's full 40-pin header layout, marked up with what's already wired and which pins are free for the next button.
-
-**Reconnect-loop bug (2026-08-25, recurred 2026-08-31):** `toggle-button-mqtt.py`'s original manual MQTT reconnect loop was racy — checking `client.is_connected()` right after `loop_start()` could read `False` before the CONNACK was processed, tearing the connection down and reconnecting on a ~5s cycle indefinitely. Each reconnect briefly republished the switch's retained state through an "unavailable" transition, which was enough to refire its HA automation every 5 seconds — overriding manual scene/dashboard control of white noise regardless of the physical switch's actual position. Fixed by replacing the manual loop with `client.connect_async()` + `client.loop_forever()` (paho's built-in reconnect handling, no race). `scene-buttons-mqtt.py` was written to avoid the whole bug class by design — no retained state to republish in the first place. The same buggy pattern was independently present in `projects/white-noise/white-noise-mqtt.py` (it predates the 2026-08-25 fix and wasn't back-ported) and caused the same `whitenoise/available` flapping, making the HA white-noise switch flicker unavailable every ~5s. Fixed the same way on 2026-08-31, with the periodic `publish_state` poll moved to a background thread since `loop_forever()` blocks the main thread.
-
-Both bridge scripts need MQTT credentials for the `homelab` Mosquitto user (`~/toggle-button-mqtt.env` on the Pi, shared between both services) and `WorkingDirectory=/home/pramod` + `Environment=GPIOZERO_PIN_FACTORY=lgpio` in their systemd units — see `toggle_button_setup.md` for why those two matter on this hardware/kernel combination.
-
----
-
-## Tinxy Watchdog (ISP-outage auto-restart)
-
-**Why:** a flood damaged nearby ISP infra, causing frequent connectivity drops. Tinxy is cloud-push (MQTT to `mqtt.tinxy.in`), so every ISP blip makes all Tinxy devices show "unavailable" in HA until the MQTT client reconnects on its own. `watchdog_tinxy.sh` restarts the `homeassistant` container only if that reconnect doesn't happen — it's a bandage for the ISP issue, meant to be disabled once it's resolved.
-
-**How it works:**
-1. Every 5 minutes (cron), the script tails `HOMEASSISTANT_CONFIG/home-assistant.log` for the Tinxy coordinator's own signal lines: `Tinxy: MQTT disconnected – marking all N relays offline` (down) vs `Tinxy MQTT: connected to ...` (up).
-2. If the most recent of those two lines is a "disconnected", it starts a clock in `~/.cache/tinxy-watchdog/down-since`.
-3. Only after **20 continuous minutes** of disconnection does it run `docker restart homeassistant` — short blips (the common case with a flaky ISP) resolve on their own and never trigger a restart. After restarting, it resets the clock so it won't restart again for another 20 minutes if the ISP is still down.
-4. All actions are logged via `logger -t tinxy-watchdog` (`journalctl -t tinxy-watchdog`) and to `tinxy-watchdog.log` in the repo root.
-
-**Disable / re-enable** (no need to touch cron):
-```bash
-touch ~/.tinxy-watchdog-disabled   # disable
-rm ~/.tinxy-watchdog-disabled      # re-enable
-```
-
-**Cron entry** (`crontab -e`):
-```
-*/5 * * * * /home/pramod/code/homelab/projects/tinxy-watchdog/watchdog_tinxy.sh >> /home/pramod/code/homelab/tinxy-watchdog.log 2>&1
-```
-
----
-
-## Power Watchdog (clean shutdown on extended outage)
-
-**Why:** this server runs on its own UPS battery (separate from the router's). If the battery fully drains before mains returns, the server crashes uncontrolled - the likely cause of ZFS corruption found in `datapool` on 2026-07-12. `watchdog_power.sh` shuts the server down cleanly well before that happens instead.
-
-**How it works:**
-1. Every 5 minutes (cron), checks `/sys/class/net/enp1s0/carrier` - `enp1s0` connects through a WiFi extender with no battery backup of its own, so losing carrier is a reliable proxy for "mains is out, running on UPS battery." Since 2026-10-17 xero is cabled to the router instead. That still works while the router has **no UPS** (its mini UPS is backing xero while xero's own is out for warranty, 2026-10-22): the router dies with mains and takes the carrier with it. Once the router is back on a UPS, the carrier stays up in an outage and the watchdog needs the ping signal (`PROJECTS.md` "Pi audio move follow-ups", step 3).
-2. On carrier loss, starts a clock in `~/.cache/power-watchdog/down-since`.
-3. Once down for **10 minutes** (`DOWN_THRESHOLD_MIN` in the script), runs `sudo /usr/sbin/shutdown -h now`. It was 200 minutes, from a live outage test on 2026-07-31 (~288 minutes real runtime on xero's own UPS); cut to 10 on 2026-10-08 when that UPS died and power cuts became frequent. Raise it again once a replacement UPS's runtime is measured.
-4. All actions logged via `logger -t power-watchdog` (`journalctl -t power-watchdog`) and to `power-watchdog.log` in the repo root.
-
-**Currently armed** - this will actually shut the server down on a real extended outage, not just log.
-
-**Arm / disarm** (no need to touch cron):
-```bash
-touch ~/.power-watchdog-armed        # arm (enables the real shutdown)
-rm ~/.power-watchdog-armed           # disarm (back to dry-run/logging only)
-touch ~/.power-watchdog-disabled     # fully disable (skips the check entirely)
-rm ~/.power-watchdog-disabled        # re-enable
-```
-
-Arming for the first time also requires a one-time sudoers setup (installed by `new_machine_setup.sh`) granting passwordless sudo for `/usr/sbin/shutdown -h now` only, since the watchdog runs unattended from cron.
-
-**Known gap:** a graceful shutdown here doesn't automatically solve "how does the server turn back on" once mains returns - since the UPS keeps the server's PSU continuously powered throughout (before, during, and after the shutdown), the BIOS's "Restore on AC Power Loss" setting never actually triggers (it only fires on a genuine AC-loss-then-restore event at the PSU, which doesn't happen here). See the "Power-outage watchdog" entry in `PROJECTS.md` for the current plan (Wake-on-LAN via a mains-powered ESP32, in progress under `esp32/wol_on_boot/`).
-
-**Cron entry** (`crontab -e`):
-```
-*/5 * * * * /home/pramod/code/homelab/projects/power-watchdog/watchdog_power.sh >> /home/pramod/code/homelab/power-watchdog.log 2>&1
-```
-
----
-
-## Vaultwarden
-
-Signups are currently **disabled** (`SIGNUPS_ALLOWED: "false"` in `docker-compose.yml`). To allow a new account, temporarily set it to `"true"`, run `sudo docker compose up -d vaultwarden`, create the account, then set it back to `"false"`.
-
-## Samba (`phone-uploads` share)
-
-SMB file drop on xero, backed by `/datapool/phone-uploads`. Log in as `phoneupload`; the password is `SAMBA_PASSWORD` in `.env` and in Vaultwarden. It works on the LAN at `smb://192.168.1.123/phone-uploads` and over the tailnet at `smb://xero.<tailnet>.ts.net/phone-uploads`. It is stored on single-disk ZFS with `copies=2`, which repairs bit rot but does not survive losing the disk, and it is not backed up. Full details are in [`services/samba/README.md`](services/samba/README.md).
-
----
-
-## Push Notifications (self-hosted ntfy)
-
-Native push to the phone for clawlight's "needs your input" state and for
-infrastructure health alerts, self-hosted so message content and credentials
-stay on `xero`.
-
-**Two topics, deliberately separate.** `clawlight` carries agent-status pings;
-`homelab-health` carries `healthcheck.sh` and watchdog alerts. They were one
-topic until 2026-09-11, which meant muting "an agent needs input" while
-working also muted "ZFS is degraded" - the two want opposite attention.
-
-**Reachable at** `https://ntfy.<tailnet>` (tailnet only). It is **not** behind
-Caddy: ntfy cannot run under a sub-path (upstream declined it,
-binwiederhier/ntfy#1009), so it gets its own tailnet hostname from the
-`ntfy-tailscale` sidecar - the same pattern as `ha`, shared via the
-`x-tailscale-sidecar` anchor in `docker-compose.yml`. The sidecar provisions and
-**auto-renews** its own cert, unlike the static files in `certs/`.
-
-The ntfy container itself listens on `127.0.0.1:8127` only - never the LAN - so
-basic-auth credentials are not sent in plaintext anywhere. Local publishers
-(clawlight) use that loopback port; the phone uses the HTTPS tailnet name.
-
-### Accounts
-
-`auth-default-access` is `deny-all`; nothing is readable or writable without an
-explicit grant.
-
-| user | `clawlight` | `homelab-health` | used by |
-|---|---|---|---|
-| `pramod` | read-write | read-write | the phone app / web UI |
-| `clawlight` | **write-only**, token | *none* | `clawlight/server.py` |
-| `healthcheck` | *none* | **write-only**, token | `tools/notify/push_ntfy.sh` |
-
-The split is deliberate twice over: a leaked publish token cannot read
-notification history, and neither publisher can post to the other's topic. No
-rule is denial under `deny-all`, so there is nothing to revoke. Verify with:
-
-```bash
-./tools/notify/verify_ntfy_topics.sh   # proves both directions are refused
-```
-Credentials live in gitignored `.env.ntfy` (mode 600), created by:
-
-```bash
-./tools/notify/setup_ntfy_users.sh   # idempotent, safe to re-run
-```
-
-### Phone setup
-
-Install the ntfy app, then **Add server** → `https://ntfy.<tailnet>`, log in as
-`pramod` with `NTFY_ADMIN_PASSWORD` from `.env.ntfy`, and subscribe to **both
-`clawlight` and `homelab-health`**. Logging in grants access but does not
-subscribe you - an unsubscribed topic means those pushes silently land
-nowhere, which for `homelab-health` means no alerts at all. Tailscale must be up on the phone to *fetch* message content: the
-APNs wake-up relayed via `ntfy.sh` is contentless by design (it carries only a
-message ID and a SHA256 of the topic URL - never the message body), so without
-the tailnet the notification arrives generic.
-
-### What alerts here
-
-| source | notifies via |
-|---|---|
-| `clawlight/server.py` | ntfy (edge-triggered on `waiting`) |
-| `projects/healthcheck/healthcheck.sh` | email + ntfy — containers, units, ZFS, disk, backups, **cert expiry**, **MirAIe AC** |
-| `projects/power-watchdog/watchdog_power.sh` | email + ntfy — carrier lost/restored |
-| `projects/certs-backup/renew_certs.sh` | ntfy on failure |
-| `watchtower` | ntfy (`homelab-updates`, low priority) + an HA notification |
-
-The tinxy and spotifyd watchdogs, and the backup scripts, do not alert directly
-— they surface through `healthcheck.sh`, which checks their state and freshness.
-
-**Watchtower publishes to its own topic, `homelab-updates`, at priority 2 (low).**
-A container updating is informational, not a fault, so it must be mutable
-without muting `homelab-health`. It posts to ntfy and HA in one shot, and
-because Watchtower renders its template **once** and sends that same body to
-every destination, the body is shaped to satisfy both: ntfy parses
-`{topic,title,priority,tags,message}` as a native JSON publish and shows the
-readable `message`, while HA ignores those and reads the structured
-`updated`/`failed` arrays. See `WATCHTOWER_NOTIFICATION_TEMPLATE` in
-`docker-compose.yml`. On the phone it reads:
-
-```
-Homelab: 1 container(s) updated
-wt-test (alpine:latest): 6baf43584bcb -> 28bd5fe8b56d
-```
-
-Those are image IDs, not versions — Docker has no notion of a version, and
-moving tags like `:stable` are unchanged across an update, so the short image
-ID is the only thing that actually identifies what changed.
-
-ntfy is reached at `ntfy-server` on the compose network (not `ntfy` — that
-name resolves to the tailscale sidecar), so nothing extra is published on the
-host. The write-only token comes from `tools/notify/setup_ntfy_users.sh`, which
-also mirrors it into `.env` because that is the only env file docker compose
-auto-loads.
-
-### Adding another alert source
-
-Source the shared helper (companion to `tools/notify/send_email.sh`):
-
-```bash
-[ -f "$SCRIPT_DIR/.env.ntfy" ] && { set -a; . "$SCRIPT_DIR/.env.ntfy"; set +a; }
-source "$SCRIPT_DIR/tools/notify/push_ntfy.sh"
-
-push_ntfy "title" "body" [priority] [tags]    # priority defaults 4, tags "warning"
-```
-
-It is a silent no-op when `NTFY_CLAWLIGHT_TOKEN` is unset, so scripts that also
-run on machines without ntfy keep working unchanged, and it never fails the
-caller — an alert that cannot be sent must not take down the watchdog sending it.
-
-Give a genuinely separate alert its own topic and ACL rather than reusing
-`clawlight`, so each can be muted independently on the phone.
-
-**Caveat for power alerts:** a `lost carrier` event usually means the switch or
-router lost power too, so neither the push nor the email can leave the house
-until the link returns. It is still sent — it costs nothing and does get through
-when the loss is upstream of the LAN rather than a whole-house outage.
-
-### Gotchas
-
-- These tailscale sidecars need `TS_AUTHKEY`. `containerboot` hard-deadlines
-  `tailscale up` at 60s, so interactive login usually loses the race, restarts,
-  and leaves an orphan machine record squatting the DNS name.
-- The sidecar's `hostname: ntfy` shadows the `ntfy` service in Docker DNS, hence
-  the `ntfy-server` alias the serve config proxies to. Do not "simplify" it back.
-- `config.js` showing `"base_url": ""` is normal - the web app uses relative URLs.
-
-## Services to run
-
-- [x] Pi-hole: ad blocker
-- [x] Node-RED: workflow engine for IoT
-- [x] MQTT broker (Mosquitto)
-- [x] Vaultwarden (Bitwarden-compatible password manager)
-- [~] Immich: photos — **disabled, 8 GB RAM insufficient** (see below)
+## What runs here
+
+Everything below is on xero unless it says otherwise. Ports and URLs are
+indexed in [`projects/endpoints/endpoints.toml`](projects/endpoints/README.md);
+the compose file is the root `docker-compose.yml`.
+
+- [x] [Pi-hole](services/pihole-secondary/README.md): ad blocker (a second one runs on the wol Pi)
+- [x] [Node-RED](services/nodered/README.md): workflow engine for IoT - **on the wol Pi**
+- [x] [MQTT broker (Mosquitto)](services/mosquitto/README.md)
+- [x] [Vaultwarden](services/vaultwarden/README.md) (Bitwarden-compatible password manager)
+- [~] [Immich](services/immich/README.md): photos - **was disabled on 8 GB RAM**; see its README for the requirement
 - [x] Home Assistant
-- [x] Tailscale
-- [x] Caddy: reverse proxy with TLS
+- [x] [Tailscale](services/tailscale/README.md)
+- [x] [Caddy](services/caddy/README.md): reverse proxy with TLS
+- [x] [Grafana + Prometheus](services/grafana/README.md): graphs
+- [x] [ntfy](services/ntfy/README.md): push notifications to the phone
+- [x] [Samba](services/samba/README.md): SMB shares for dropping files onto xero, over LAN or tailnet
+- [x] [chrony](services/chrony/README.md): LAN time server
 - [x] Watchtower: auto-update containers (weekly, Sundays 04:00 UTC). Notes:
   `WATCHTOWER_NO_STARTUP_MESSAGE=true` because its boot banner fires while HA
   is still starting and always failed; and `projects-ui` carries
   `com.centurylinklabs.watchtower.enable=false` because it is built locally,
   so checking it against Docker Hub only ever produced a 401 it could never
   succeed at.
-- [x] Samba: `phone-uploads` SMB share for dropping files onto xero, over LAN or tailnet. Login, paths and addresses: [`services/samba/README.md`](services/samba/README.md)
-- [x] Tinxy watchdog: auto-restarts HA after sustained ISP-outage disconnects (temporary, see below)
+- [x] [Tinxy watchdog](projects/tinxy-watchdog/README.md): auto-restarts HA after sustained ISP-outage disconnects (temporary)
+- [x] Immich data redundancy: ZFS mirror for the photo volume - backup is skipped due to size, so disk redundancy is the safety net
+- [x] Immich: Google Photos imported via immich-go - 12,913 photos/videos uploaded (22/23 takeout parts). 21 files from part 019 missing, listed in `docs/google_takeout_missing.md`, to be uploaded manually
 - [ ] ftp server to dump files
-- [ ] ftp backups — compress and encrypt
-- [x] Immich data redundancy: ZFS mirror for the photo volume — backup is skipped due to size, so disk redundancy is the safety net
-- [x] Immich: Google Photos imported via immich-go — 12,913 photos/videos uploaded (22/23 takeout parts). 21 files from part 019 missing, listed in `docs/google_takeout_missing.md`, to be uploaded manually.
-
-## Immich hardware requirements
-
-Immich + its ML container + Postgres + Redis + the rest of the stack causes kernel panics on 8 GB RAM due to memory exhaustion. **Immich is disabled in docker-compose.yml until hardware is upgraded.**
-
-Data is safe on the ZFS pool: `datapool/immich-upload` (15 GB), `datapool/immich-db` (133 MB).
-
-To re-enable, uncomment the `immich-server`, `immich-machine-learning`, `redis`, `database` services and the `model-cache` volume in `docker-compose.yml`.
-
-Options to bring Immich back:
-- **Add RAM to this machine** — 16 GB minimum recommended
-- **Dedicated machine** — run Immich on a separate device (Raspberry Pi 5 with 8 GB works)
-- **Disable ML only** — comment out just `immich-machine-learning`; server runs with much less RAM but no face/object recognition
-
-## Spotify (headless)
-
-Running spotifyd as a Spotify Connect daemon — no GUI needed. Speakers connected to headphone jack (USB Audio Device / C-Media chip, card 1).
-
-**Install:**
-```bash
-# download spotifyd binary from https://github.com/Spotifyd/spotifyd/releases
-mkdir -p ~/.local/bin
-mv spotifyd ~/.local/bin/spotifyd
-chmod +x ~/.local/bin/spotifyd
-```
-
-**Config:** `~/.config/spotifyd/spotifyd.conf`
-```toml
-[global]
-username = "your-spotify-email"
-password = "your-spotify-password"
-device_name = "xero"
-device_type = "computer"
-backend = "alsa"
-device = "default"
-volume_controller = "softvol"
-bitrate = 320
-cache_path = "/home/pramod/.cache/spotifyd"
-no_audio_cache = false
-```
-
-**ALSA routing** (`~/.asoundrc`) — points `default` to card 1 (headphone jack):
-```
-defaults.pcm.card 1
-defaults.ctl.card 1
-```
-
-**Systemd user service:** `~/.config/systemd/user/spotifyd.service`
-```ini
-[Unit]
-Description=Spotifyd - Spotify Connect daemon
-After=network-online.target sound.target
-
-[Service]
-ExecStart=/home/pramod/.local/bin/spotifyd --no-daemon
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=default.target
-```
-
-**Enable:**
-```bash
-sudo usermod -aG audio pramod   # required — without this ALSA sees no devices
-# log out and back in (or reboot) for group to take effect
-systemctl --user enable --now spotifyd
-```
-
-**Usage:** "xero" appears as a Spotify Connect device in the Spotify app. Select it to play through the speakers.
-
-**Volume:**
-```bash
-amixer sset Master 50%
-```
-
-**Troubleshooting:**
-- **Stuck "active" but throwing 429/websocket errors** - just restart it: `systemctl --user restart spotifyd`.
-- **"xero" doesn't show up as a Connect device in the Spotify app** - check for a zeroconf/mDNS failure: `journalctl --user -u spotifyd -b | grep libmdns`. An `Setting up dns-sd failed: No such device (os error 19)` line means spotifyd's mDNS advertisement is silently failing on every startup (it logs this and keeps running normally otherwise, so nothing else looks wrong). Root cause found 2026-09-02: an orphaned Docker network interface (`docker network ls`, look for a bridge with 0 containers) broke libmdns's interface enumeration entirely. Remove the orphaned network (`docker network rm <name>`) and `systemctl --user restart spotifyd` - see `docs/incidents/2026-09-02-spotifyd-zeroconf-broken-by-orphaned-docker-network.md`.
+- [ ] ftp backups - compress and encrypt
 
 ---
 
@@ -643,65 +228,6 @@ The TTY uses a Terminus powerline PSF font so that oh-my-zsh agnoster theme rend
 **Constraint:** The Linux VGA text console's `KDFONTOP` ioctl only accepts 8px-wide fonts. Terminus powerline fonts ≥v18b are 10–14px wide and fail. Only v16b (8×16px) is guaranteed to load; larger sizes may work at 1024×768.
 
 ---
-
-## TLS certificates (Caddy-served names)
-
-`xero.<tailnet>` is served by Caddy from static files in `certs/`, renewed by
-`projects/certs-backup/renew_certs.sh` (Sundays 05:00). Caddy runs with `auto_https off`, so
-nothing renews these on its own - the script is the only thing that does.
-
-```bash
-./projects/certs-backup/renew_certs.sh          # safe to run any time; a no-op unless <30d left
-cat cert-renew.log             # every run is logged
-```
-
-It renews via `tailscale cert --min-validity 720h`, writes to temp files and
-validates them before installing, and **pushes a priority-5 ntfy alert on any
-failure** - see "Push Notifications" above. That alerting exists because this
-job failed silently for three months
-(`docs/incidents/2026-09-04-tls-cert-renewal-silently-broken.md`).
-
-Two things that will bite you if you edit it:
-- **No `sudo`.** This user has `NOPASSWD` only for `shutdown`, so any `sudo` in
-  cron fails with no TTY. Cert access comes from `tailscale set --operator=pramod`,
-  run once.
-- **`--min-validity` is mandatory.** Without it `tailscale cert` returns the
-  cached cert until it has effectively expired. Use Go duration units (`720h`) -
-  there is no `d` unit, and `30d` is a parse error.
-
-### Independent expiry check
-
-`renew_certs.sh` alerts when it *fails*, but it cannot alert if it never runs at
-all - a removed crontab line, a deleted script, or a machine that was off every
-Sunday are all indistinguishable from silence, and that is exactly the failure
-that went unnoticed for three months. So `projects/certs-backup/check_certs.sh` checks expiry
-independently, called from `healthcheck.sh` every 15 minutes, sharing no
-machinery with the thing it is checking.
-
-It warns below **21 days**: renewal runs weekly with a 30-day `--min-validity`,
-so a cert can legitimately sit just under 30d for up to a week before the next
-Sunday run - below 21d means renewal has missed at least one scheduled run plus
-slack. Problems go to email *and* an ntfy push.
-
-```bash
-./projects/certs-backup/check_certs.sh                  # silent when healthy; exits 1 if not
-./projects/certs-backup/test_cert_expiry_check.sh    # 8 cases against synthetic certs
-```
-
-The test drives the real script against generated certs (89d/30d/22d silent,
-20d/5d warn, expired, missing dir, malformed) rather than re-implementing its
-logic - its first version asserted silence against fixtures that had failed to
-generate, and "passed" while testing nothing.
-
-`ha.<tailnet>` and `ntfy.<tailnet>` do **not** use any of this - their tailscale
-sidecars renew their own certs internally, with no cron and no files in `certs/`.
-
-Vaultwarden and projects-ui deliberately **stay** under `xero.<tailnet>` rather
-than moving to that pattern (decided 2026-09-05). Moving them would retire this
-script, but Vaultwarden's `DOMAIN` is pinned to `https://xero.<tailnet>` - a new
-hostname would invalidate passkey/WebAuthn origins and force every client to be
-re-pointed. So the renewal and independent-check scripts above are **permanent
-infrastructure, not a stopgap**.
 
 ## Past incidents
 

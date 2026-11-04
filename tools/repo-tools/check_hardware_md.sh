@@ -75,9 +75,17 @@ fi
 
 # Every concrete LAN address the tracked docs mention - catches a device added
 # by a project (the WLED board was) that nobody wrote up here.
+#
+# The per-project READMEs are in this list because that is where the addresses
+# moved on 2026-11-04, when the root Readme.md became host-level only. Incident
+# write-ups are deliberately NOT in it: they name addresses of devices that are
+# long gone, which would report as missing for ever.
 while read -r ip; do
     check "address" "$ip"
-done < <(grep -ohE '\b192\.168\.[0-9]+\.[0-9]+\b' "$REPO"/PROJECTS.md "$REPO"/Readme.md "$REPO"/*_setup.md 2>/dev/null \
+done < <(cd "$REPO" && git ls-files -z -- PROJECTS.md Readme.md '*_setup.md' \
+        'projects/*/README.md' 'services/*/README.md' 'tools/*/README.md' \
+        'scripts/*/README.md' 'esp32/*/README.md' 'clawlight/README.md' \
+    | xargs -0 grep -ohE '\b192\.168\.[0-9]+\.[0-9]+\b' 2>/dev/null \
     | grep -vE '\.(0|255)$' | sort -u)
 
 [ "$missing" = 0 ] && echo "  (nothing)"

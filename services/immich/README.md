@@ -199,3 +199,16 @@ If anything looks wrong before `finish`, `rollback` puts everything back as it w
 sudo services/immich/split_regenerable.sh rollback
 ```
 
+## Hardware requirements
+
+
+Immich + its ML container + Postgres + Redis + the rest of the stack causes kernel panics on 8 GB RAM due to memory exhaustion. **Immich is disabled in docker-compose.yml until hardware is upgraded.**
+
+Data is safe on the ZFS pool: `datapool/immich-upload` (15 GB), `datapool/immich-db` (133 MB).
+
+To re-enable, uncomment the `immich-server`, `immich-machine-learning`, `redis`, `database` services and the `model-cache` volume in `docker-compose.yml`.
+
+Options to bring Immich back:
+- **Add RAM to this machine** — 16 GB minimum recommended
+- **Dedicated machine** — run Immich on a separate device (Raspberry Pi 5 with 8 GB works)
+- **Disable ML only** — comment out just `immich-machine-learning`; server runs with much less RAM but no face/object recognition

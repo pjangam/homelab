@@ -155,7 +155,7 @@ The speaker is on the Pi's **3.5mm jack** (card 1 `Headphones`, control `PCM`) t
    - ~~Move `watchdog_spotifyd.sh` to the Pi's cron~~ - done 2026-10-26 (`projects/spotifyd/deploy_watchdog_pi.sh`). Its restarts.log is on the Pi, so `healthcheck.sh`'s "keeps restarting" alarm on xero still can't see it.
    - Point `check_spotifyd_advertising.sh`/the dashboard tile at `raspberrypi`. It is avahi over the LAN, so xero can watch the Pi.
    - Have `healthcheck.sh` alarm on the retained `whitenoise/available`/`volume/available` going `offline`.
-2. **xero cleanup:** remove the disabled `white-noise`, `white-noise-mqtt`, `volume-mqtt` and `spotifyd` units and spotifyd from xero; update the White Noise section of `Readme.md` and `white_noise_buttons_setup.md`, which still describe xero.
+2. **xero cleanup:** remove the disabled `white-noise`, `white-noise-mqtt`, `volume-mqtt` and `spotifyd` units and spotifyd from xero; update `projects/white-noise/README.md` and `white_noise_buttons_setup.md`, which still describe xero (the README carries a note saying so).
 3. **Move xero to the router - moved 2026-10-17, the watchdog change is still to do.** Carrier loss stopped meaning a mains outage once xero went on the router's UPS (see the end of the Done entry). Add "the wol Pi **and** the extender both stop answering pings for N checks" to `watchdog_power.sh`; the extender needs a pinned IP first (it answers ARP for several LAN addresses with one MAC, `c2:c9:e3:09:e6:be`, so find its own one in the router's DHCP table). Patch cable replaced 2026-10-28: the link now comes up 1Gbps/Full (it had downshifted to 100Mbps, `check cabling!`).
 
 #### Log
@@ -1578,6 +1578,7 @@ Two phases: the ~50 scripts nothing live calls first, then the cron- and systemd
 Every file parses; no reference uses an old flat path; all moved tests pass with real scripts byte-identical before and after; aarti-lights, white-noise-mqtt and volume-mqtt restarted and running from the new paths; the 14:20 power watchdog sourced `notify/` silently, and the 14:30 healthcheck advanced its retained `last_check` (08:30 -> 09:00 UTC) with no problems.
 
 #### Log
+- 2026-11-04: the doc half of this split landed - see "Per-project READMEs: the root Readme split, and a rule that keeps it". The files moved in 2026-09-15; the prose describing them stayed in the root `Readme.md` for another seven weeks.
 - 2026-09-15: split shipped and verified.
 
 ### Sound-reactive aarti lights (Ganapati decoration)
@@ -1830,7 +1831,7 @@ Superseded by the DIY GPIO build, kept for reference.
   - The two HA automations (`scene_button_oju_sleep`/`_awake`) applied to `automations.yaml` and confirmed working.
   - `docs/gpio_pinout.md` added as a standing reference for the Pi's 40-pin header.
 - 2026-08-31: **GPIO17 toggle switch swapped for two momentary push buttons** - the latching toggle switch was replaced with independent start/stop push buttons - GPIO17 (pin 11, existing) now starts white noise, GPIO18 (pin 12, newly wired) stops it, both to GND, no resistor. Rebuilt in the momentary-button shape already proven out for the scene buttons: `scripts/pi-buttons/white-noise-buttons-mqtt.py` (replaces `toggle-button-mqtt.py`) publishes a plain non-retained MQTT message per press, no retained `binary_sensor`/availability topic - sidesteps the reconnect-loop bug class entirely rather than just fixing this instance of it. New automations `white_noise_button_start`/`_stop` replace the dead `toggle1_white_noise_on`/`_off`. Details: `white_noise_buttons_setup.md`.
-- 2026-08-31 (same day, separate bug): while debugging why the HA white-noise switch wasn't responding, found `white-noise-mqtt.py` (the switch's own MQTT bridge, unrelated to the physical buttons) had the identical unfixed reconnect race from before the 2026-08-25 fix - `whitenoise/available` was flapping offline/online every ~5s. Fixed the same way (`connect_async()` + `loop_forever()`); see `Readme.md`'s White Noise section.
+- 2026-08-31 (same day, separate bug): while debugging why the HA white-noise switch wasn't responding, found `white-noise-mqtt.py` (the switch's own MQTT bridge, unrelated to the physical buttons) had the identical unfixed reconnect race from before the 2026-08-25 fix - `whitenoise/available` was flapping offline/online every ~5s. Fixed the same way (`connect_async()` + `loop_forever()`); see `projects/white-noise/README.md`.
 - 2026-08-31: **confirmed working** - user verified both the start and stop buttons correctly toggle `switch.white_noise` in HA.
 - 2026-09-04: **broke after the 2026-09-03 reboot, fixed 2026-09-04.** Buttons did nothing while both bridge services looked healthy (active, restart counter 0, MQTT connected for 21h). Cause was neither the wiring nor MQTT: `lgpio` puts its edge-notification FIFO (`.lgd-nfy<N>`) in the process's working directory, both bridges ran with `WorkingDirectory=/home/pramod`, and systemd started them in the same second at boot - and the number in that filename is lgpio's per-process handle counter, which always starts at 0 - so both bridges named their pipe `.lgd-nfy0` and shared one. Not a race: verified on the Pi that any two lgpio processes in one directory collide every time. The idle `scene-buttons-mqtt` process (no buttons wired to it right now) sat on the shared pipe eating a share of the white-noise bridge's edge reports; a pipe empties as it is read, so every swallowed event was a lost press. Presses mostly vanished, occasionally got through.
   - Fixed by having each script `chdir` into its own `~/.lgpio/<script>/` before creating any `Button`, so no unit-file config can reintroduce the collision. Both scripts now also log (notify dir, watched pins, MQTT connect/disconnect, one line per press) - the total absence of logging is why this hid for a day.
@@ -2236,7 +2237,7 @@ Identified along the way: the Pi has no battery backup (unlike `xero`, on the UP
 #### Log
 - 2026-08-20: decided Vaultwarden stays deprioritized to last resort (see git history).
 - 2026-08-22: Node-RED migrated - flows/credentials/Miraie AC config copied to the Pi, started via plain `docker run`, both required MQTT connections (local HA broker, MirAIe cloud broker) confirmed live at the socket level. Removed `node-red` from `xero`'s `docker-compose.yml`.
-- 2026-08-23: watchdog fixed and redesigned - the Mosquitto-auth security pass broke `watchdog_nodered.sh` (no credentials passed), which surfaced a deeper pre-existing bug: its `AC_TOPIC` never matched what the `ha-miraie-ac` node actually publishes, and that data isn't retained anyway (only sent once per reconnect). Rewrote to check the container's own `/proc/net/tcp` for ESTABLISHED connections instead - independent of the AC's power state. Documented in `Readme.md` under "Node-RED Watchdog (MQTT bridge health)".
+- 2026-08-23: watchdog fixed and redesigned - the Mosquitto-auth security pass broke `watchdog_nodered.sh` (no credentials passed), which surfaced a deeper pre-existing bug: its `AC_TOPIC` never matched what the `ha-miraie-ac` node actually publishes, and that data isn't retained anyway (only sent once per reconnect). Rewrote to check the container's own `/proc/net/tcp` for ESTABLISHED connections instead - independent of the AC's power state. Documented in `projects/miraie-ac/README.md` under "Node-RED Watchdog (MQTT bridge health)".
 - 2026-09-02: closed out - the old `homelab_node-red-data` volume on `xero`, left as a rollback net, is confirmed gone (`docker volume ls` no longer lists it).
 
 ### Offsite copy of docs/hardware.md (Dropbox, encrypted)
@@ -2287,8 +2288,47 @@ Identified along the way: the Pi has no battery backup (unlike `xero`, on the UP
 - **Access:** `everyone` has read-only on `baby-cry`, so every account, including ones made later, and anonymous tailnet clients receive it. Only `babycry` and `pramod` can publish.
 - **Network route:** the listener reaches ntfy over Tailscale (VPN On Demand). If Tailscale proves flaky on that phone, the fallback is to also publish ntfy on xero's LAN address (`192.168.1.123:8127`, plain HTTP, publish-only token).
 
+#### Alfred Camera, the camera half (moved here from `Readme.md` 2026-11-04)
+The root Readme is host-level only now, so the camera notes live with the
+entry they belong to. Unchanged from what it said; the Shortcuts recipe below
+is **not known to work** - see Overlaps for why its trigger looks absent.
+
+
+Currently using **Alfred Camera** on iPhone. No native HA integration exists yet.
+
+**Features in use:** low light mode, motion detection alerts, sound alerts.
+
+**Approach under consideration — bridge Alfred alerts to HA via iOS Shortcuts:**
+- Alfred detects motion/sound → sends push notification to iPhone
+- iOS Shortcuts automation fires on Alfred notification → sends HTTP POST to HA webhook
+- HA webhook triggers automations (lights, alerts on other devices, etc.)
+- Low light mode stays Alfred's job — no HA integration needed for that
+
+**HA side (webhook automation skeleton):**
+```yaml
+automation:
+  - alias: "Alfred Motion Alert"
+    trigger:
+      - platform: webhook
+        webhook_id: alfred_motion
+    action:
+      - ... # e.g. notify, turn on light
+```
+Webhook URL: `http://<ha-ip>:8123/api/webhook/alfred_motion`
+
+**iOS Shortcuts side:**
+1. Shortcuts → Automation → New Automation
+2. Trigger: App → Alfred → "Notification received"
+3. Action: Get Contents of URL → POST to HA webhook URL
+4. Create separate automations for motion and sound (filter by notification text)
+
+**Other options ruled out:**
+- RTSP server apps on iPhone — iOS restricts background network servers, unreliable
+- New hardware — not preferred
+- Alfred web viewer — laggy and buggy
+
 #### Overlaps
-- **Baby monitor, Alfred Camera** (`Readme.md`, "Baby Monitor (Alfred Camera -> Home Assistant)"; `iphone_se` in `docs/hardware.md`). Alfred already sends cloud sound alerts from the SE. If the dedicated listener turns out to be the phone running Alfred, check that the two do not fight over the mic (it is: see the Log for 2026-10-03). This entry is also the local route for the Readme's "bridge Alfred alerts via Shortcuts" idea. That plan's "App -> Alfred -> Notification received" trigger does not appear to exist in Shortcuts, whereas the Sound Recognition trigger does.
+- **Baby monitor, Alfred Camera** ("Alfred Camera, the camera half" above; `iphone_se` in `docs/hardware.md`). Alfred already sends cloud sound alerts from the SE. If the dedicated listener turns out to be the phone running Alfred, check that the two do not fight over the mic (it is: see the Log for 2026-10-03). This entry is also the local route for the "bridge Alfred alerts via Shortcuts" idea above. That plan's "App -> Alfred -> Notification received" trigger does not appear to exist in Shortcuts, whereas the Sound Recognition trigger does.
 - **"ESP32 UPS LED monitor"** considers listening for a UPS low-battery beep. A second automation on the same listener phone (iOS 16+ can be trained on a custom alarm sound) could cover that later, on its own topic.
 
 #### Phase 2: the touch-button mister (optional, decide later)
@@ -3106,3 +3146,43 @@ Everything is off-the-shelf: setup only, no code to maintain.
 #### Log
 - 2026-11-04: built and deployed. API checked with curl (save, stale-version 409, nameless item 400) and through Caddy over the tailnet (200). Added to `endpoints.toml` (re-rendered) and to the xero entry in `docs/hardware.md`.
 - 2026-11-04: page went blank (Caddy 502) minutes after deploy: `git pull --rebase` recreated `projects/wishlist/web/`, and the container's bind mount stayed on the deleted copy. Now mounts the repo root read-only, like projects-ui.
+
+### Per-project READMEs: the root Readme split, and a rule that keeps it
+**Status:** Done
+
+**Why:** the 2026-09-15 split moved the *files* into `projects/`, `services/`, `tools/` and `docs/`, but not the prose. `Readme.md` was still 754 lines and still owned the runbooks for MirAIe AC, white noise, the GPIO buttons, both watchdogs, spotifyd, ntfy and the TLS certs - every one of which had a folder of its own by then. So `projects/miraie-ac/` held the scripts while the only description of what they fix sat 150 lines deep in a root README, and 11 of 19 project folders had no README at all. Found while reviewing the repo structure on 2026-11-04.
+
+**Outcome:** shipped 2026-11-04.
+- **Root `Readme.md` is host-level only**, 754 → ~280 lines: new machine setup, git hooks, HA config gitignore rationale, what runs here, OS updates, memory management, TTY font, past incidents, known issues, the N5105 quirks and overheating. Plus a **"Where things live" index** - the four homes, then every `projects/`, `services/` and `tools/` folder with a one-line description and a link.
+- **Eleven sections moved to their owner**, byte-for-byte by line range (`tools/repo-tools/split_readme.sh`, deleted after the run; its ranges are in the commit): MirAIe AC → `projects/miraie-ac/`, white noise → `projects/white-noise/`, Tinxy and power watchdogs → their folders, spotifyd → `projects/spotifyd/`, TLS certs → `projects/certs-backup/`, ntfy → `services/ntfy/`, Vaultwarden → `services/vaultwarden/`, Immich hardware → `services/immich/`, GPIO buttons → `scripts/pi-buttons/`, and the Alfred Camera notes into the "Baby-cry alert via ntfy" entry (its Overlaps already pointed at them).
+- **28 new READMEs**, so every folder under `projects/`, `services/`, `tools/`, `scripts/` and `esp32/` now has one. `projects/projects-ui/README.md` was the Vite template boilerplate and is now a real one.
+- **A rule in `CLAUDE.md`**, placed with the layout rules rather than next to the hardware/endpoints ones: the README arrives with the folder's **first file**, not before Done. A half-built project is when "what is this, what runs it, what breaks it" is hardest to reconstruct.
+- **`tools/repo-tools/check_readmes.sh`**, and `.githooks/pre-commit` runs it `--staged` - so a commit that creates a folder without a README is stopped, while the repo's existing state can never fail a commit.
+
+#### Notes worth keeping
+- **The IP sweep in `check_hardware_md.sh` had to move with the prose.** It grepped `PROJECTS.md`, `Readme.md` and the root `*_setup.md` for `192.168.*`, so every address that moved into a project README would have silently left its coverage - the exact drift the check exists to catch. It now reads the per-project READMEs too, via `git ls-files`. Incident write-ups are deliberately still excluded: they name devices that are long gone, which would report missing for ever.
+- **Moved prose is not automatically true prose.** `projects/white-noise/README.md` still describes xero's paths and card numbers, because the service moved to the Pi on 2026-09-24 and nobody rewrote it (step 2 of "Pi audio move follow-ups"). It carries a note saying so rather than reading as current.
+- **Three references pointed into sections that no longer exist** (`PROJECTS.md` ×3, plus the cross-links inside the moved text itself, e.g. the reconnect-loop bug note the white-noise page cites in the pi-buttons page). `toggle_button_setup.md`, cited from three files, has not existed since ac07b71 (2026-08-31).
+- The root `Makefile` is dead - it starts node-red under pm2, and node-red moved to the Pi on 2026-08-22. Untracked `nodered/node_modules/` at the root is its leftover. Not removed here; it is not documentation.
+
+#### Log
+- 2026-11-04: shipped, after a structure review that also turned up `.DS_Store` missing from `.gitignore` and the Done/Closed weight in this file (see "PROJECTS.md: move Done and Closed history out of the tracker").
+
+### PROJECTS.md: move Done and Closed history out of the tracker
+**Status:** Backlog
+**Priority:** P3
+
+#### Open items
+- [ ] **Pramod:** decide whether the tracker keeps Done/Closed at all, or they move to `docs/projects-archive.md`
+- [ ] **Claude:** if yes - move them, leave a one-line stub + link per entry, and re-point `projects-ui`'s parser, `check_open_items.sh` and `check_hardware_md.sh`
+
+**Why:** this file is 3,108 lines / 471 KB across 100 entries, and **45% of it is history**: 1,238 lines of `Done` plus 162 of `Closed`. The intro calls it the "working list of active/parked/backlog projects", which Done entries are by definition not. The tell is `tools/repo-tools/projects_md_chunks.py` - a tool whose job is to split this file so it can be worked on at all.
+
+**State:** discussed 2026-11-04 during the structure review; nothing moved. Two alternatives were considered and rejected:
+- **One file per project.** `projects/` has 19 folders against 100 entries here, so ~80 would be stub files for backlog ideas with no code - and it breaks what the single file is good at: reading every status at once, and `git grep` across the lot. Four consumers would need re-pointing (`projects-ui`'s parser, `check_open_items.sh --staged` in the pre-commit hook, `projects_md_chunks.py`, `check_hardware_md.sh`'s IP sweep).
+- **A database.** The writers here are Claude sessions and a text editor, and `git log -p PROJECTS.md` is the audit trail the Log sections lean on - neither survives a DB. It would also become another stateful thing to back up, and `projects-ui` is a renderer, not an editor, so adding a backlog idea would need write UI built first. If querying is what is wanted, the repo already has the pattern: `endpoints.toml` → rendered, gitignored `site/`. Derive a SQLite/JSON index from the markdown at render time; never make it the source of truth.
+
+**What is proposed instead:** the tracker keeps Active/Parked/Backlog (~1,700 lines, one parse target, hook and dashboard unchanged); `Done`/`Closed` move to `docs/projects-archive.md` with a one-line stub and link left behind. For an entry that owns a folder, the durable detail goes in its `projects/<name>/README.md` - which now exists for all of them - leaving the tracker entry with Status, Priority, Open items and Log. That also shrinks the surface two concurrent sessions can conflict over by nearly half, without a migration.
+
+#### Log
+- 2026-11-04: raised and scoped during the repo structure review (see "Per-project READMEs"). Not started.

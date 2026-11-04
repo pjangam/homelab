@@ -1,16 +1,34 @@
-# React + Vite
+# projects-ui
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The dashboard that renders `PROJECTS.md` as a browsable page at
+**`https://xero.<tailnet>/projects`** (tailnet only, through Caddy). A React +
+Vite app, built into an nginx image by its own `Dockerfile` and run from the
+root `docker-compose.yml`. It carries
+`com.centurylinklabs.watchtower.enable=false` because it is built locally, so
+Watchtower could only ever 401 against Docker Hub.
 
-Currently, two official plugins are available:
+It is **read-only**: `PROJECTS.md` stays the source of truth and is edited as
+text. The app parses it (`src/lib/parseProjects.js`), groups entries by Status,
+and pulls out two cross-cutting views:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Open items** (`src/lib/openItems.js`, `components/OpenItems.jsx`) - every
+  entry's `#### Open items` checklist in one panel, so what is waiting on whom
+  is visible at a glance. This is why the checklist format is enforced at
+  commit time by `.githooks/pre-commit`: an item that breaks the format is
+  invisible here, which means it is effectively forgotten.
+- **Shopping list** (`src/lib/parts.js`, `components/ShoppingList.jsx`) - the
+  parts named across entries, collected.
 
-## React Compiler
+```bash
+cd projects/projects-ui
+npm install
+npm run dev        # vite dev server
+npm test           # vitest - the parsers have real coverage, keep it
+npm run lint       # oxlint
+npm run build      # what the Dockerfile runs
+scripts/screenshot.sh   # headless screenshot (xero has no browser; Playwright image)
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Served under the `/projects` path with the prefix **kept intact** - its own
+`nginx.conf` serves from a matching location and redirects `/projects` to
+`/projects/`. See [`services/caddy/README.md`](../../services/caddy/README.md).
