@@ -20,6 +20,7 @@ Run from the repo root:  set -a; . ./.env.healthcheck; set +a
 import getpass
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 
@@ -44,7 +45,7 @@ MODEL_STEP = {
     "thinking_effort": "low",
     "web_search": True,
     "web_search_max_uses": 2,
-    "web_search_user_location": True,  # HA asks Claude once for city/region of zone.home
+    "user_location": True,  # HA asks Claude once for the city/region of zone.home
     "web_fetch": False,
     "code_execution": False,
     "tool_search": False,
@@ -134,7 +135,18 @@ def ensure_pipeline(agent):
 
 
 def ask(agent, text):
-    res = http("POST", "/api/conversation/process", {"text": text, "agent_id": agent, "language": "en"})
+    # Right after the reconfigure HA reloads the integration, and for a few
+    # seconds the agent id is "invalid"; wait it out.
+    for _ in range(10):
+        try:
+            res = http("POST", "/api/conversation/process", {"text": text, "agent_id": agent, "language": "en"})
+            break
+        except SystemExit as e:
+            if "invalid agent ID" not in str(e):
+                raise
+            time.sleep(2)
+    else:
+        raise SystemExit(f"agent {agent} never became available")
     speech = res["response"].get("speech", {}).get("plain", {}).get("speech", "")
     print(f"  Q: {text}\n  A: {speech}")
 
