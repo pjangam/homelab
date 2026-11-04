@@ -3166,6 +3166,7 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - The root `Makefile` is dead - it starts node-red under pm2, and node-red moved to the Pi on 2026-08-22. Untracked `nodered/node_modules/` at the root is its leftover. Not removed here; it is not documentation.
 
 #### Log
+- 2026-11-05: `.DS_Store` added to `.gitignore`. It was already covered by `~/.gitignore_global` on the Mac, so it was never a live risk from this clone - but xero commits from its own checkout, which has no such config. Ignored in-repo for the same reason as `*.gpg`.
 - 2026-11-04: shipped, after a structure review that also turned up `.DS_Store` missing from `.gitignore` and the Done/Closed weight in this file (see "PROJECTS.md: move Done and Closed history out of the tracker").
 
 ### PROJECTS.md: move Done and Closed history out of the tracker

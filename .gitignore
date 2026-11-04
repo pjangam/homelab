@@ -56,3 +56,10 @@ projects/voice-assistant/custom_sentences/en/songs.yaml
 projects/voice-assistant/packages/spotify_songs.yaml
 # projects/wishlist: the list itself (personal purchase plans), backed up separately
 projects/wishlist/data/
+# macOS Finder metadata. Ignored here rather than left to ~/.gitignore_global,
+# which covers it on this Mac but on no other clone - xero commits from its own
+# checkout, and the files land in any directory the Finder has looked at (6 of
+# them in this tree on 2026-11-05, one at the repo root). Same reasoning as the
+# *.gpg rule above: a leak-by-`git add -A` should be impossible in the repo
+# itself, not just on the machine that happens to have the right global config.
+.DS_Store
