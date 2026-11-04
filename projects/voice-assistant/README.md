@@ -30,6 +30,18 @@ Added in `packages/voice_commands.yaml` (sentence-trigger automations):
 - `[set the] [bedroom] fan [to] high|fast|medium|low|slow` (bare "fan" = bedroom)
 - `hall fan fast`, `living room fan low`, ...
 
+Spotify (plays on xero's spotifyd; added 2026-11-04):
+- `play <song>`, `play the song <song>` - any title in the liked songs, as
+  spoken: suffixes like "- Remastered 2011" and "(feat. X)" dropped. Plays that
+  exact track, no Spotify search. Synced nightly (see the files below).
+- `pause|stop the music`, `resume|continue the music`, `next song`,
+  `skip this song`, `previous song` (once restarts the song, twice goes back),
+  `music volume up|down`, `turn the music up|down`, `set the music volume to 40`.
+- Marathi/Hindi titles in Latin script are recognised when Speech-to-Phrase
+  guesses their pronunciation well enough, and fail otherwise (user's call).
+  A title that matters and fails gets an entry in `ALIASES` in
+  `spotify_library.py`.
+
 Names and aliases come from `setup_assist.py`: bedroom light / tube light,
 bedroom bulb, balcony light, bedroom fan, hall light, shelf light, hall fan,
 white noise, AC.
@@ -46,6 +58,17 @@ white noise, AC.
   `automation.reload` after editing.
 - `custom_sentences/en/` - lists for `{wildcards}` in the sentence triggers
   (Speech-to-Phrase cannot hear a wildcard without one).
+- `spotify_library.py` - writes the two gitignored generated files behind
+  "play <song>": `custom_sentences/en/songs.yaml` (the list Speech-to-Phrase
+  trains on) and `packages/spotify_songs.yaml` (the HA automation, title ->
+  track URI). Reads the token HA's Spotify integration keeps in
+  `.storage/core.config_entries`, read-only; it never refreshes it.
+- `sync_spotify_songs.sh` - cron, daily 04:30: runs the above and, only if the
+  list changed, reloads automations and restarts speech-to-phrase (~30s of
+  training for ~500 titles, when the satellites hear nothing). Log
+  `spotify-songs.log`. Run by hand after liking a song you want now.
+- `bench_whisper.sh`, `bench_moonshine.sh` - timing of free-form STT on xero
+  for a future "play anything" (results in PROJECTS.md, 2026-11-04).
 - `ha_ws.py` - tiny HA websocket client used by the above.
 - `test_pipeline_ws.py file.wav [end_stage]` - runs the pipeline over the
   websocket exactly as the phone app does for voice (binary audio frames).

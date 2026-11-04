@@ -161,3 +161,76 @@ automation:
       - set_conversation_response: >-
           Turned off {{ 'all the lights' if what == 'lights' else 'everything' }}
           {{- ' in the house' if whole else ' in the ' ~ area_name(area) | lower }}
+
+  # Spotify playback by voice. media_player.spotify_pramod is the Spotify
+  # integration's account-wide player, so it controls whatever Connect device
+  # is playing (normally xero's spotifyd). "play <song>" is generated from the
+  # library into packages/spotify_songs.yaml by spotify_library.py. No bare
+  # "play [the] music" here: it would compete with "play {song}".
+  # Trigger id is the media_player action, or "vol|<delta>" / "volset".
+  - id: voice_spotify_control
+    alias: "Voice: Spotify pause/resume/skip/volume"
+    triggers:
+      - trigger: conversation
+        id: media_pause
+        command:
+          - "(pause|stop) [the] (music|song|spotify)"
+      - trigger: conversation
+        id: media_play
+        command:
+          - "(resume|continue|unpause) [the] (music|song|spotify)"
+      - trigger: conversation
+        id: media_next_track
+        command:
+          - "(next|skip [the]|skip this) (song|track)"
+          - "play [the] next (song|track)"
+      - trigger: conversation
+        id: media_previous_track
+        command:
+          - "(previous|last) (song|track)"
+          - "play [the] (previous|last) (song|track)"
+      - trigger: conversation
+        id: "vol|0.1"
+        command:
+          - "(music|spotify) volume up"
+          - "(turn|make) [the] (music|spotify) (up|louder)"
+      - trigger: conversation
+        id: "vol|-0.1"
+        command:
+          - "(music|spotify) volume down"
+          - "(turn|make) [the] (music|spotify) (down|quieter|softer)"
+      # HA matches {music_volume} as free text, so a bare "music volume
+      # {music_volume}" also swallowed "music volume up" (as the default 50).
+      - trigger: conversation
+        id: volset
+        command:
+          - "set [the] (music|spotify) volume to {music_volume} [percent]"
+    variables:
+      player: media_player.spotify_pramod
+      now: "{{ state_attr('media_player.spotify_pramod', 'volume_level') | float(0.5) }}"
+    actions:
+      - choose:
+          - conditions: "{{ trigger.id.startswith('vol|') }}"
+            sequence:
+              - action: media_player.volume_set
+                target:
+                  entity_id: "{{ player }}"
+                data:
+                  volume_level: "{{ [[now + trigger.id.split('|')[1] | float, 0] | max, 1] | min | round(2) }}"
+              - set_conversation_response: "Music volume {{ 'up' if trigger.id.split('|')[1] | float > 0 else 'down' }}"
+          - conditions: "{{ trigger.id == 'volset' }}"
+            sequence:
+              - action: media_player.volume_set
+                target:
+                  entity_id: "{{ player }}"
+                data:
+                  volume_level: "{{ ([trigger.slots.music_volume | int(50), 100] | min) / 100 }}"
+              - set_conversation_response: "Music volume {{ [trigger.slots.music_volume | int(50), 100] | min }} percent"
+        default:
+          - action: "media_player.{{ trigger.id }}"
+            target:
+              entity_id: "{{ player }}"
+          - set_conversation_response: >-
+              {{ {'media_pause': 'Paused', 'media_play': 'Resuming',
+                  'media_next_track': 'Next song',
+                  'media_previous_track': 'Previous song'}[trigger.id] }}
