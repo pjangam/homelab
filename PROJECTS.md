@@ -2948,3 +2948,4 @@ Everything is off-the-shelf: setup only, no code to maintain.
 
 #### Log
 - 2026-11-03: recorded after a conversation; phase split agreed.
+- 2026-11-04: **Whisper timed on xero** for phase 2 (`projects/voice-assistant/bench_whisper.sh`, faster-whisper int8 on 4 threads, clean Google TTS audio of 1.4-2.8s, so real satellite audio will do worse). Per request: `tiny.en` ~1.5s but "papercut" -> "people good"; `base.en` ~3s, gets "numb by linkin park" and "bohemian rhapsody by queen" but "papercut" -> "people gut"; `small.en` 10-15s and `distil-small.en` ~9.5s, both get every English title. Marathi ("aggobai dhaggobai") is garbled by every model. CPU went 56 -> 67C. So locally it is fast-and-wrong or right-and-~10s; user wants **no paid options** for now, which rules out cloud STT. pypi.org (Fastly) timed out from xero the same day while Google, GitHub and Hugging Face worked; the script uses the `rhasspy/wyoming-whisper` image's venv to avoid pip.
