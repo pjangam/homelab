@@ -44,8 +44,14 @@ mouse setup in `tmux.conf` does not work:
 ## What it does
 
 - **Session picker.** Runs only for an interactive iTerm shell outside tmux.
-  It never attaches on its own: a number attaches, `n` creates a named
-  session with a Tab-completed start directory, Enter gives a plain shell. A
+  It never attaches on its own: a number attaches, `s` connects over ssh, `n`
+  creates a named session with a Tab-completed start directory, Enter gives a
+  plain shell. `s` lists `pramod@xero.local` and `pramod@wol` (override with a
+  `TMUX_PICKER_SSH_HOSTS=(...)` array set before the picker is sourced); Enter
+  takes the first, a number picks one, anything else is typed as `user@host`
+  and extra words like `-p 2222` pass through. ssh is the one time a tab skips
+  tmux on purpose. When it ends, or fails to connect, the tab carries on as a
+  plain local shell, so the error stays visible. A
   session already open in another tab gets an independent view (a tmux
   session group) instead of a mirror. Its `source` line must stay above
   powerlevel10k's instant-prompt block, because it reads from the console.
@@ -72,6 +78,7 @@ outside tmux.
 | Script | What it checks |
 |---|---|
 | `test_setup_tmux_shell.sh` | the installer, against throwaway `$HOME` files |
+| `test_tmux_session_picker.sh` | what each picker answer does, with `tmux` and `ssh` stubbed |
 | `test_tmux_copy_mode.sh` | the copy-mode binds in a running tmux server |
 | `test_tmux_altscreen.py` | whether dropping smcup/rmcup keeps tmux off the alternate screen |
 | `probe_tmux_scrollback.py` | why iTerm's own scrollback cannot replace tmux's (DECSTBM scroll region) |

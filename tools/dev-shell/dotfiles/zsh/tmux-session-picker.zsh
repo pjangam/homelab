@@ -3,8 +3,8 @@
 #
 # Runs when an interactive iTerm shell starts *outside* tmux. Never attaches on
 # its own -- it lists the running sessions and waits for a choice: a number to
-# attach, "n" to create a session you name, or Enter/"!" to stay in a plain
-# shell.
+# attach, "s" to ssh somewhere (the one time a tab skips tmux on purpose), "n"
+# to create a session you name, or Enter/"!" to stay in a plain shell.
 #
 # Sourced from the very top of ~/.zshrc, above the powerlevel10k instant-prompt
 # block (code that reads from the console has to live above it).
@@ -22,6 +22,34 @@ _tmux_unique_name() {
 
 # Where to look for project directories when guessing a session's start dir.
 : ${TMUX_PROJECT_ROOT:=$HOME/code}
+
+# Offered by the picker's ssh option; anything else can be typed as user@host.
+(( ${+TMUX_PICKER_SSH_HOSTS} )) || TMUX_PICKER_SSH_HOSTS=(pramod@xero.local pramod@wol)
+
+# Pick or type an ssh destination and connect. Not exec'd: when ssh ends -- or
+# fails to connect -- the tab carries on into a plain local shell, so an error
+# stays on screen instead of closing the tab.
+_tmux_ssh() {
+  local h choice i=0
+  for h in $TMUX_PICKER_SSH_HOSTS; do
+    (( i++ ))
+    printf '     %s%d%s) %s\n' $'\e[32m' $i $'\e[0m' "$h"
+  done
+  while true; do
+    read -r "choice?  ssh to (number or user@host) [1]: " || return 1
+    choice=${choice:-1}
+    if [[ $choice == <1-99> ]]; then
+      if (( choice <= $#TMUX_PICKER_SSH_HOSTS )); then
+        ssh $TMUX_PICKER_SSH_HOSTS[choice]
+        return
+      fi
+      print -P "  %F{red}no host $choice%f"
+      continue
+    fi
+    ssh ${(z)choice}                              # extra words, e.g. -p 2222, pass through
+    return
+  done
+}
 
 # Best guess at a start directory for a session called $1.
 _tmux_guess_dir() {
@@ -127,14 +155,15 @@ _tmux_session_picker() {
   else
     print -P "   %F{242}(no tmux sessions running)%f"
   fi
-  printf '    %sn%s) new session          %sEnter%s) plain shell, no tmux\n' \
-         $'\e[32m' $'\e[0m' $'\e[32m' $'\e[0m'
+  printf '    %ss%s) ssh   %sn%s) new session   %sEnter%s) plain shell, no tmux\n' \
+         $'\e[32m' $'\e[0m' $'\e[32m' $'\e[0m' $'\e[32m' $'\e[0m'
 
   local choice target
   while true; do
     read -r "choice?  > " || return 0
     case $choice in
-      ''|'!'|s|S)  return 0 ;;
+      ''|'!')      return 0 ;;
+      s|S)         _tmux_ssh; return 0 ;;
       n|N)         _tmux_new_named_session; return 0 ;;
       <1-999>)
         if (( choice >= 1 && choice <= $#sessions )); then
@@ -149,7 +178,7 @@ _tmux_session_picker() {
         fi
         print -P "  %F{red}no session $choice%f"
         ;;
-      *) print -P "  %F{red}?%f  number to attach, n for new, Enter for plain shell" ;;
+      *) print -P "  %F{red}?%f  number to attach, s for ssh, n for new, Enter for plain shell" ;;
     esac
   done
 }
