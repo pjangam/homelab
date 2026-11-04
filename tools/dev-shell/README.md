@@ -48,8 +48,7 @@ mouse setup in `tmux.conf` does not work:
   creates a named session with a Tab-completed start directory, Enter gives a
   plain shell. `s` lists `pramod@xero.local` and `pramod@192.168.1.124` (wol,
   by IP because its name does not resolve from the Mac), plus `n) new host`
-  (override the list with a `TMUX_PICKER_SSH_HOSTS=(...)` array set before the
-  picker is sourced). Enter takes the first, a number picks one, `n` asks for
+  (see "Adding an ssh host" below). Enter takes the first, a number picks one, `n` asks for
   a `user@host`, and extra words like `-p 2222` pass through. ssh is the one time a tab skips
   tmux on purpose. When it ends, or fails to connect, the tab carries on as a
   plain local shell, so the error stays visible. A
@@ -73,6 +72,48 @@ mouse setup in `tmux.conf` does not work:
 
 Escape hatches: `NO_TMUX=1` skips the picker; `n` at the claude prompt runs it
 outside tmux.
+
+## Adding an ssh host
+
+The `s` menu's list is the `TMUX_PICKER_SSH_HOSTS` array. For a one-off
+connection, `n) new host` is enough; add a host to the list when you will be
+going there regularly.
+
+**For every machine** (the usual case): edit the default near the top of
+`dotfiles/zsh/tmux-session-picker.zsh`, then re-run the installer on each Mac.
+
+```zsh
+(( ${+TMUX_PICKER_SSH_HOSTS} )) || TMUX_PICKER_SSH_HOSTS=(pramod@xero.local pramod@192.168.1.124 pramod@newbox.local)
+```
+
+Order matters: the first entry is what Enter picks. Each entry is one ssh
+destination, `user@host` or `user@ip`, handed to ssh as a single argument,
+so it cannot carry options like `-p` - for a non-standard port,
+add a `Host` block to `~/.ssh/config` and list its alias instead. Use an IP
+for a host whose name does not resolve from the Mac (wol). Then:
+
+```sh
+tools/dev-shell/test_tmux_session_picker.sh   # update the expected hosts if you reordered
+tools/dev-shell/setup-tmux-shell.sh
+```
+
+and commit. New tabs pick it up; already-open ones do not.
+
+**For this machine only**: set the whole list in `~/.zshenv`, which zsh reads
+before `~/.zshrc`. The picker only fills in its default when the array is not
+already set, so this replaces the list rather than adding to it - repeat the
+hosts you want to keep:
+
+```zsh
+TMUX_PICKER_SSH_HOSTS=(pramod@xero.local pramod@192.168.1.124 me@work-box)
+```
+
+Not `~/.zshrc`: the picker is sourced from its very first lines, before
+anything you could put there, and the block it sits in is rewritten by the
+installer.
+
+Not built yet (deferred 2026-11-04): adding a host from inside the menu, e.g.
+offering to save what was typed at `n) new host`.
 
 ## Tests and probes
 
