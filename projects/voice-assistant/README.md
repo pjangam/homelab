@@ -33,7 +33,7 @@ Added in `packages/voice_commands.yaml` (sentence-trigger automations):
 ### Spotify (added 2026-11-04)
 
 Commands to try on either satellite:
-- "Play <song title>" or "play the song <title>": works for any of your 514 liked songs and plays that exact track on xero's speaker. It never searches Spotify, so it can't pick the wrong song.
+- "Play \<song title\>" or "play the song \<title\>": works for any of your 514 liked songs and plays that exact track on xero's speaker. It never searches Spotify, so it can't pick the wrong song.
 - "Pause the music" or "stop the music"; "resume the music".
 - "Next song" or "skip this song"; "previous song" (the first time restarts the song, which is Spotify's normal behaviour, so say it twice to go back a song).
 - "Music volume up/down", "turn the music up/down", "set the music volume to 40".
