@@ -35,6 +35,7 @@ esp32/wol_on_boot/src/secrets.h
 esp32/wol_on_boot/.pio/
 .env.ntfy
 .env.clawlight
+.env.anthropic
 # tools/diagrams/render.sh output, throwaway screenshots
 *-render/
 # Rendered endpoint index - generated from projects/endpoints/endpoints.toml by
