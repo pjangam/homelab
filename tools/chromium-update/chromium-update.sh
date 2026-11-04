@@ -30,6 +30,10 @@ installed_rev() {
 }
 
 mode=${1:-}
+if [ -z "$mode" ] && [ -f "$STAMP" ] \
+        && [ -z "$(find "$STAMP" -mmin +$((MIN_AGE_HOURS * 60)))" ]; then
+    exit 0
+fi
 latest=$(curl -fsS --max-time 30 "$BUCKET/$PLATFORM/LAST_CHANGE")
 current=$(installed_rev "$APP" || true)
 
@@ -45,11 +49,6 @@ if pgrep -qf "$APP/Contents/MacOS/Chromium"; then
     log "r${current:-none} -> r$latest pending: Chromium is running"
     exit 0
 fi
-if [ "$mode" != --force ] && [ -f "$STAMP" ] \
-        && [ -z "$(find "$STAMP" -mmin +$((MIN_AGE_HOURS * 60)))" ]; then
-    exit 0
-fi
-
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 log "downloading r$latest"
