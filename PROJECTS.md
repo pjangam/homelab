@@ -1551,7 +1551,7 @@ Plug it in, `systemctl --user enable --now aarti-lights`, turn the four automati
 **Status:** Done
 
 **Why:** A long Claude Code run in a bare terminal tab dies with the tab (and with any ssh carrying it), and there was no way back to a session you'd lost track of.
-**Outcome:** shipped 2026-09-12 - `tools/dev-shell/setup-tmux-shell.sh`, installing a session picker, tab-completing start directories, `claude` / `claude-local` wrappers and tmux binds from `tools/dev-shell/dotfiles/`. Applied to the MacBook and verified. Run it on any new machine after `new_machine_setup.sh`.
+**Outcome:** shipped 2026-09-12 - `tools/dev-shell/setup-tmux-shell.sh`, installing a session picker, tab-completing start directories, `claude` / `claude-local` wrappers and tmux binds from `tools/dev-shell/dotfiles/`. Applied to the MacBook and verified. Run it on any new machine after `new_machine_setup.sh`. Who owns what, the later mouse/copy work and the iTerm settings the script can't set: `tools/dev-shell/README.md`.
 - Left open: the untracked `~/code/personal/scripts/install-tmux-claude.sh` is superseded; delete it.
 
 #### What shipped
