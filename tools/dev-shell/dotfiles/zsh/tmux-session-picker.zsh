@@ -23,8 +23,9 @@ _tmux_unique_name() {
 # Where to look for project directories when guessing a session's start dir.
 : ${TMUX_PROJECT_ROOT:=$HOME/code}
 
-# Offered by the picker's ssh option; anything else can be typed as user@host.
-(( ${+TMUX_PICKER_SSH_HOSTS} )) || TMUX_PICKER_SSH_HOSTS=(pramod@xero.local pramod@wol)
+# Offered by the picker's ssh option; "n" there takes any other user@host.
+# wol is by IP: its name does not resolve from the Mac (known issue).
+(( ${+TMUX_PICKER_SSH_HOSTS} )) || TMUX_PICKER_SSH_HOSTS=(pramod@xero.local pramod@192.168.1.124)
 
 # Pick or type an ssh destination and connect. Not exec'd: when ssh ends -- or
 # fails to connect -- the tab carries on into a plain local shell, so an error
@@ -35,19 +36,30 @@ _tmux_ssh() {
     (( i++ ))
     printf '     %s%d%s) %s\n' $'\e[32m' $i $'\e[0m' "$h"
   done
+  printf '     %sn%s) new host\n' $'\e[32m' $'\e[0m'
   while true; do
-    read -r "choice?  ssh to (number or user@host) [1]: " || return 1
+    read -r "choice?  ssh to [1]: " || return 1
     choice=${choice:-1}
-    if [[ $choice == <1-99> ]]; then
-      if (( choice <= $#TMUX_PICKER_SSH_HOSTS )); then
-        ssh $TMUX_PICKER_SSH_HOSTS[choice]
+    case $choice in
+      <1-99>)
+        if (( choice <= $#TMUX_PICKER_SSH_HOSTS )); then
+          ssh $TMUX_PICKER_SSH_HOSTS[choice]
+          return
+        fi
+        print -P "  %F{red}no host $choice%f"
+        ;;
+      n|N)
+        read -r "choice?  user@host: " || return 1
+        [[ -z $choice ]] && continue
+        ssh ${(z)choice}                          # extra words, e.g. -p 2222, pass through
         return
-      fi
-      print -P "  %F{red}no host $choice%f"
-      continue
-    fi
-    ssh ${(z)choice}                              # extra words, e.g. -p 2222, pass through
-    return
+        ;;
+      *)
+        # a typed user@host works here too, without going through n
+        ssh ${(z)choice}
+        return
+        ;;
+    esac
   done
 }
 

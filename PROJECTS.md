@@ -1576,7 +1576,7 @@ Plug it in, `systemctl --user enable --now aarti-lights`, turn the four automati
 #### Log
 - 2026-09-10/11: built by hand in a `~/code/personal/scripts` session.
 - 2026-09-12: packaged into this repo so a second machine (or a reinstalled one) gets the same shell without reconstructing it from memory; shipped and verified.
-- 2026-11-04: picker gained `s) ssh` (pramod@xero.local, pramod@wol, or a typed user@host), since ssh is the only time a tab skips tmux. `s` used to be an unlisted alias for plain shell. `tools/dev-shell/test_tmux_session_picker.sh` covers the menu.
+- 2026-11-04: picker gained `s) ssh` (pramod@xero.local, wol by IP since `wol` does not resolve from the Mac, or `n) new host`), since ssh is the only time a tab skips tmux. `s` used to be an unlisted alias for plain shell. `tools/dev-shell/test_tmux_session_picker.sh` covers the menu.
 
 ### spotifyd stopped advertising as a Connect device - boot race, not the old Docker-network bug
 **Status:** Done
