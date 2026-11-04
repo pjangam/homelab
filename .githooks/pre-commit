@@ -27,6 +27,10 @@ added_lines() {
     | grep -E '^\+' | grep -Ev '^\+\+\+' || true
 }
 
+# PROJECTS.md format: every entry the commit changes must lead with its
+# "#### Open items" checklist (rule in CLAUDE.md and the PROJECTS.md intro).
+"$(git rev-parse --show-toplevel)/tools/repo-tools/check_open_items.sh" --staged || exit 1
+
 lines="$(added_lines)"
 [ -z "$lines" ] && exit 0
 

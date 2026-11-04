@@ -38,7 +38,7 @@ Reference detail that is not history, as named `####` subsections.
 - 2026-10-08: dated updates, oldest first.
 ```
 
-**Open items come first** (set 2026-11-04): every Active entry, and any Parked or Backlog entry with a concrete next action, opens with a `#### Open items` checklist straight under Status/Priority. It replaces the old `**Next step:**` paragraph - an entry still carrying one gets converted the next time it is touched. One short line per item, each led by its owner in bold - `**Pramod:**`, `**Together:**` or `**Claude:**`, optionally with a when after a comma (`**Together, 2026-11-04 21:00:**`) - so what is waiting, and on whom, reads at a glance; the detail goes in State, the subsections or the Log, not in the item. The dashboard shows the checklist at the top of the entry and gathers every open entry's items into one panel grouped by owner. When an item is done, delete it and add a Log bullet (don't leave it ticked); when work turns up a new task, add it. `tools/repo-tools/check_open_items.sh` lists entries that break this.
+**Open items come first** (set 2026-11-04): every Active entry, and any Parked or Backlog entry with a concrete next action, opens with a `#### Open items` checklist straight under Status/Priority. It replaces the old `**Next step:**` paragraph - an entry still carrying one gets converted the next time it is touched. One short line per item, each led by its owner in bold - `**Pramod:**`, `**Together:**` or `**Claude:**`, optionally with a when after a comma (`**Together, 2026-11-04 21:00:**`) - so what is waiting, and on whom, reads at a glance; the detail goes in State, the subsections or the Log, not in the item. The dashboard shows the checklist at the top of the entry and gathers every open entry's items into one panel grouped by owner. When an item is done, delete it and add a Log bullet (don't leave it ticked); when work turns up a new task, add it. A commit that changes an entry breaking this is refused by the pre-commit hook (`tools/repo-tools/check_open_items.sh --staged`); untouched entries on the old format are left alone until someone works on them.
 
 When something happens, add a Log bullet and update Open items and State to match - don't append updates to State. Closing an entry means replacing Open items and State with Outcome, so a Done entry never carries an item that reads as open. Subsections are `####`: a `###` starts a new project.
 
@@ -380,9 +380,13 @@ The 4 LEDs are only 5mm apart, too tight for discrete sensors + individual light
 **Status:** Active
 **Priority:** P3
 
+#### Open items
+- [ ] **Pramod:** decide whether real numbers matter; if so, buy a cheap plug-in energy meter
+- [ ] **Claude:** check whether the Tinxy integration exposes energy data for the loads behind the two Tinxy units
+- [ ] **Together:** measure the fridge first (likely the biggest load), then replace the router/extender/xero/Pi estimates
+
 **Why:** triggered by a tangent while discussing whether a new WiFi button (Shelly) would raise the electricity bill - user wants to know the actual continuous background draw of always-on smart/network gear versus the usage-driven draw of major appliances, to know where money is actually going.
 **State:** first pass done (2026-08-22), estimated from specs/datasheets (no plug meter available - see caveat below). Always-on stack estimated at **~30W continuous**, roughly ₹130-175/month; the fridge is likely larger than all of it but was not measured.
-**Next step:** if precision matters, a cheap plug-in energy meter (or checking whether the Tinxy app/HA integration exposes real energy-monitoring data for whatever's wired behind the two Tinxy units) would replace the router/extender/xero/Pi estimates with real numbers cheaply. Fridge is the highest-value next target to actually measure, since it's likely the single biggest line item of everything in this audit.
 
 #### Hardware confirmed
 Confirmed real hardware details for two of the "always-on" devices by querying them directly:
@@ -413,9 +417,12 @@ All "always-on" numbers above are spec/datasheet estimates, not measured - could
 **Status:** Active
 **Priority:** P3
 
+#### Open items
+- [ ] **Pramod:** in Termius, save the xero host with `~/code/homelab/clawlight/phone-attach.sh` as its startup command
+- [ ] **Pramod:** tap a xero session on the clawlight page, connect by hand, then try the open links; report what fails
+
 **Why:** clawlight's click-to-jump (see ✅ Done) only moves a terminal on a desk machine. From the phone, the red light says a session needs you, but you still have to open Termius, pick the right host, and find the right tmux session by hand. Nothing runs Claude on the iPhone itself. Every session is on xero or the MacBook inside tmux, so tapping the session on the page should open Termius, ssh to that host, and attach at that pane.
 **State:** built on xero 2026-09-17, not yet tried from the phone. `clawlight/phone-attach.sh`, `/api/phone-jump` + `/api/phone-claim` in `server.py`, and an iOS-only tap path on the page. The unit and end-to-end tests pass (`scripts/clawlight/test_clawlight_phone_jump*`), and the server is restarted with it. The README's "Jumping to a console from the iPhone" section has the design and setup. What is left is below.
-**Next step:** on the phone, save the xero host in Termius with `~/code/homelab/clawlight/phone-attach.sh` as the startup command. Tap a xero session on the page and connect by hand. Then try the open links.
 
 #### Left to do
 - **Phone setup:** saved Termius hosts for xero and the Mac, with `phone-attach.sh` as the startup command. Then tap a session on the page and connect within a minute.
@@ -512,6 +519,10 @@ The "Approach" note above says cloud undermines self-hosting; the counter-argume
 **Status:** Active
 **Priority:** P3
 
+#### Open items
+- [ ] **Together:** list the devices and what each gets: xero (always-on peer, `datapool/documents`), the 2019 MacBook, the iPhone, the work laptop (see Open question)
+- [ ] **Claude:** Syncthing container on xero, reachable over the tailnet only
+
 **Why:** currently uses Dropbox to keep sensitive personal documents (ID cards, tax documents, etc.) available across devices.
 
 Problems with that:
@@ -523,7 +534,6 @@ Problems with that:
 This is a distinct need from the iPhone-upload SMB share (Done section) - continuous, automatic, always-available-everywhere sync, not a manual one-off drop zone.
 **State:** not started. Syncthing identified as the right fit - true peer-to-peer, no cloud storage or third-party leak surface, no storage cap, works over LAN and (via Tailscale) when away from home. Homelab server would act as an always-on peer so devices stay in sync even when not simultaneously online.
 **Requirement (user, 2026-10-30):** files readily available on every device **even when it is offline**, and devices sync whenever they come online. That is Syncthing's model (a full local copy on each device) and rules out on-demand access as the main path.
-**Next step:** list the devices and what each gets: xero (always-on peer, folder = `datapool/documents`), the personal 2019 MacBook, the iPhone, and the work laptop (see Open question). Then a Syncthing container on xero, reachable over the tailnet only.
 
 #### Options compared (2026-10-30)
 - **Syncthing - chosen, meets the requirement.** Full copy per device, peer-to-peer, no cloud, no cap; xero as the always-on peer so devices that are never online together still converge. iPhone: no official app - **Synctrain** (free, open source) or **Möbius Sync** (paid); both keep real local files, but iOS only syncs while the app is open or in short background windows, so open it to catch up. Not a backup: a deletion syncs everywhere - keep the existing gpg Dropbox backup of `documents` (`projects/certs-backup/backup_documents.sh`), and turn on Syncthing's file versioning on xero's copy.
@@ -1265,9 +1275,14 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Status:** Active
 **Priority:** P3
 
+#### Open items
+- [ ] **Pramod:** after Diwali lights: read the ratings on the relays already owned (see Relay check)
+- [ ] **Pramod:** open one Tinxy switch and note what is inside (chip ID, flashable module?) before picking a path
+
 **Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
 **State:** not started - brainstormed 2026-09-02. Two directions considered (see Options).
-**Next step:** starts after "Diwali lights 2026" (user, 2026-10-30). (1) Read the ratings on the relays already owned and check them against this job: the coil voltage (5V suits an ESP32 board's 5V; 12V needs its own supply), the **contact rating on the AC side** (printed like `10A 250VAC`), comfortably above the load - fans and lights, and mind the inrush of LED drivers and fan motors - and whether they come on a module with a transistor/optocoupler driver, since an ESP32 GPIO cannot drive a bare relay coil. (2) Crack open one existing Tinxy switch to see what is inside (chip ID, whether it is a known-flashable module) before committing to either path.
+#### Relay check
+Starts after "Diwali lights 2026" (user, 2026-10-30). Check the relays against this job: the coil voltage (5V suits an ESP32 board's 5V; 12V needs its own supply), the **contact rating on the AC side** (printed like `10A 250VAC`), comfortably above the load - fans and lights, and mind the inrush of LED drivers and fan motors - and whether they come on a module with a transistor/optocoupler driver, since an ESP32 GPIO cannot drive a bare relay coil.
 
 #### Options
 
@@ -1845,14 +1860,14 @@ A full-load run (memtester 2 x 10G or a build) on the pegboard, at normal room t
 **Status:** Active
 **Priority:** P1
 
+#### Open items
+- [ ] **Pramod:** chase Resonate for the CRU12V3A warranty repair (in progress since 2026-10-22)
+- [ ] **Claude:** before the router goes back on a UPS, land the watchdog's ping signal ("Pi audio move follow-ups" step 3), or the watchdog goes blind
+- [ ] **Claude:** when the UPS is back, restore a measured `DOWN_THRESHOLD_MIN` (10 min for now)
+- [ ] **Together:** decide on a "UPS stopped charging" alert (the ESP32 UPS LED monitor idea would cover it)
+
 **Why:** xero's RouterUPS (model CRU12V3A, 12V 3A) failed on 2026-10-08 and took xero down uncontrolled. Without a UPS, a mains cut crashes xero uncontrolled.
-**State:** the UPS is dead (all four LEDs off on mains, with a different socket and a different adapter - getting no input or failed (fuse/charger), not just a flat battery). The router's mini UPS now backs xero, and the router and ONT run with **no UPS** (user, 2026-10-22); the CRU12V3A is with Resonate under warranty and the user is chasing them. Power watchdog shutdown threshold is temporarily 10 min.
-**Next step:**
-- Chase Resonate for the CRU12V3A warranty repair (user, in progress 2026-10-22).
-- When it is back, before putting the router on a UPS again: land the watchdog's ping signal ("Pi audio move follow-ups" step 3), or the watchdog goes blind.
-- When the replacement UPS arrives, restore a measured `DOWN_THRESHOLD_MIN`.
-- Do not re-run full-load tests on the pegboard (94°C and climbing).
-- Consider an alert for "UPS stopped charging" - the ESP32 UPS LED monitor idea would cover it.
+**State:** the UPS is dead (all four LEDs off on mains, with a different socket and a different adapter - getting no input or failed (fuse/charger), not just a flat battery). The router's mini UPS now backs xero, and the router and ONT run with **no UPS** (user, 2026-10-22); the CRU12V3A is with Resonate under warranty and the user is chasing them. Power watchdog shutdown threshold is temporarily 10 min. Do not re-run full-load tests on the pegboard (94°C and climbing).
 
 #### Decision while the UPS is out (user)
 xero stays off rather than run without a UPS. Meanwhile: DNS falls back to the wol Pi's Pi-hole (LAN and, via the stopgap, the tailnet); HA, voice, Vaultwarden (clients keep an offline cache), ntfy, MirAIe-via-Mosquitto, cron jobs and backups are all down; healthchecks.io will alert on the missed heartbeat. (Superseded the same day - see Log: the user turned xero back on without a UPS.)
@@ -1993,6 +2008,7 @@ Low priority: edit support (currently read-only - would need a real backend with
   - Verified the fix survives a simulated atomic-replace edit with no container restart, and confirmed no other repo file is servable over HTTP (unmatched paths fall through to the SPA's `index.html`, not the real file - `/data` itself is never used as an nginx `root`).
 - 2026-09-15: two-pane layout. Replaced the expand-in-place `<details>` cards (and expand-all/collapse-all) with a left pane of titles grouped by status and a right pane showing the selected project; each pane scrolls on its own. The shopping list stays at the top as a collapsible panel whose summary line keeps the item count and total, with the open/collapsed state remembered across reloads. Below 760px wide the panes take turns (list, then detail with a back button). `projects/projects-ui/scripts/screenshot.sh` screenshots the live app at desktop and phone widths via the Playwright image, since xero has no browser or Node.
 - 2026-11-04: **Open items** (user: open work was not visible at a glance). Each entry now leads with a `#### Open items` checklist, items led by owner (`**Pramod:**` / `**Together, <when>:**` / `**Claude:**`), replacing the Next step paragraph. The dashboard shows it at the top of the detail, an "N open" count in the list, and a collapsible panel above the panes gathering every open entry's items by owner (open/closed state remembered). Rule in CLAUDE.md and the PROJECTS.md intro; `tools/repo-tools/check_open_items.sh` flags missing/malformed checklists and lists the 43 entries still to convert when touched. Diwali lights converted first. Also fixed `screenshot.sh`'s shopping-list step, which broke on a project whose parts have options.
+- 2026-11-04: the 9 other Active entries converted (`tools/repo-tools/convert_next_step.py`, one-off); longer Next steps kept as named subsections ("Relay check", "If the SE stays silent") or folded into State. **Enforced** (user asked how): `.githooks/pre-commit` runs `check_open_items.sh --staged`, which checks only the entries the commit changes - missing/misplaced/ownerless checklist, or a leftover Next step - so every commit converts what it touches while the 34 untouched Parked/Backlog entries do not block.
 
 ### Expose Home Assistant via Tailscale with its own clean hostname
 **Status:** Done
@@ -2180,12 +2196,16 @@ Identified along the way: the Pi has no battery backup (unlike `xero`, on the UP
 **Status:** Active
 **Priority:** P3
 
+#### Open items
+- [ ] **Pramod:** observe the SE on iOS 26 for a few days: does it send cry alerts?
+- [ ] **Together:** if it still sends nothing, run the two checks in "If the SE stays silent"
+- [ ] **Pramod:** check it fires with the SE locked on its charger while Alfred holds the mic (outstanding from the 2026-10-03 close)
+- [ ] **Pramod:** turn off (not delete) the SMS automation on the iPhone 14 once ntfy has carried a few real cries
+
 **Why:** a baby-cry alert already exists, but it goes out as an SMS. An iPhone Shortcut fires on Sound Recognition's "Baby Crying" and texts a number. The plan is to move the listening to a **different, dedicated iPhone** that stays near the baby, and have it publish to the self-hosted ntfy on xero instead of SMS. That gives a real push to every subscribed phone, at a priority that can break through, with no carrier involved.
 **State:** reopened 2026-10-05 after a Done close on 2026-10-03. Server side and the SE's Shortcut work end to end, but the SE has sent no cry alerts in real use. Its mic hears the cry (Alfred on the SE keeps sending its own baby-cry alerts), so the likely suspect is Alfred holding the mic, with iOS pausing Sound Recognition while another app records. The SE was updated to iOS 26 on 2026-10-05 and is being observed for a few days.
-**Next step:**
-- Observe the SE on iOS 26 for a few days.
-- If it still sends nothing: (1) check whether the SE shows its own Sound Recognition banner when a crying clip plays. No banner means recognition is not running; a banner but no ntfy alert means the Shortcut or Tailscale is at fault. (2) Repeat with Alfred closed. If it then fires, Alfred and Sound Recognition cannot share the SE, so either Alfred moves to another phone or the iPhone 14 becomes the listener.
-- Still outstanding from the 2026-10-03 close: check that it fires with the SE locked on its charger while Alfred holds the mic, and turn off (not delete) the SMS automation on the iPhone 14 once ntfy has carried a few real cries.
+#### If the SE stays silent
+(1) Check whether the SE shows its own Sound Recognition banner when a crying clip plays. No banner means recognition is not running; a banner but no ntfy alert means the Shortcut or Tailscale is at fault. (2) Repeat with Alfred closed. If it then fires, Alfred and Sound Recognition cannot share the SE, so either Alfred moves to another phone or the iPhone 14 becomes the listener.
 
 #### Feasibility
 **Yes, and nothing has to be bought if a second iPhone is at hand.** Shortcuts has a **Sound Recognition** personal-automation trigger, and the automation can be set to run without asking ([Apple: run automations automatically](https://support.apple.com/guide/shortcuts/apd602971e63/ios)). "Baby Crying" is one of the built-in sounds ([iPhone Life](https://iphonelife.com/content/how-to-enable-use-sound-recognition-iphone-ios-14), [iMore](https://imore.com/how-set-and-use-sound-recognition-iphone-and-ipad)). The existing SMS automation already proves the trigger works; only the action changes. Recognition happens on the phone itself. The ntfy POST only needs the tailnet, so it survives an ISP outage while the LAN is up and xero is on the UPS.
@@ -2609,9 +2629,11 @@ qty | item | est | note
 **Status:** Active
 **Priority:** P3
 
+#### Open items
+- [ ] **Claude:** after a few days of normal Immich use, run `tools/zfs/arc_max.sh stats` and compare with the Log baseline at a similar uptime; if ghost hits stop climbing and the metadata hit rate rises, set Done
+
 **Why:** with the 32GB stick in, xero sits under about 25% memory use (2026-10-18: 7.6G used, 23G available, swap untouched), so the question is whether the idle RAM can buy anything. It mostly cannot: xero is CPU-bound (load 20 on 4 cores, 0% idle while Immich's jobs ran), not memory-bound.
 **State:** ARC cap raised to 8 GiB on 2026-10-18 (live, `/etc/modprobe.d/zfs.conf` and initramfs all checked). The other options stay skipped or deferred.
-**Next step:** after a few days of normal Immich use, run `tools/zfs/arc_max.sh stats` and compare with the baseline in the Log (at a similar uptime - the counters reset on reboot). If the ghost hits stop climbing and the metadata hit rate rises, set Status to Done.
 
 #### Options
 - **Raise the ZFS ARC cap to 8 GiB - worth doing.** `/etc/modprobe.d/zfs.conf` still has `zfs_arc_max=1073741824`, a leftover from the 8GB stick. The ARC is the only read cache in front of `datapool` (the Immich library, its DB, albums, phone uploads); the Linux page cache does not cover ZFS. On 2026-10-18 after 22h of uptime: ~96% hit rate, but 137k metadata misses and ~23k MRU/MFU ghost hits (reads a bigger ARC would have served). Expect quicker timeline scrolling and thumbnail loads, and fewer disk seeks during Bhakti's Takeout import - helpful, not dramatic. Stop at 8G to leave room for the import, the ML backlog and a margin, given the bad-RAM history.
@@ -2914,9 +2936,13 @@ qty | item | est | note
 **Status:** Active
 **Priority:** P2
 
+#### Open items
+- [ ] **Pramod:** buy API credit (console -> Plans & Billing; auto-reload off makes it a hard cap)
+- [ ] **Claude:** then re-run `setup_claude_pipeline.py` (`set -a; . ./.env.healthcheck; . ./.env.anthropic; set +a; projects/voice-assistant/setup_claude_pipeline.py`): home location for web search, the two test questions
+- [ ] **Pramod:** build the Shortcut (README step 3)
+
 **Why:** raised 2026-11-03: a fully hands-free voice conversation, mainly while driving. The Claude app's mic in a Claude Code session is dictation only (tap to send, replies are text), and iOS cannot read a reply aloud without a tap or gesture. Claude's own voice mode is hands-free but only in ordinary chats, and it knows nothing about the home.
 **State:** HA side set up 2026-11-04 by `projects/voice-assistant/setup_claude_pipeline.py`: Anthropic integration (key in HA's `.storage`, copy in gitignored `.env.anthropic`), agent `conversation.claude_conversation` (claude-haiku-5-5, web search, car prompt), pipeline "Claude" (not preferred). Blocked: the API account has no credit, so every question returns "credit balance is too low".
-**Next step:** user: buy API credit (console -> Plans & Billing; auto-reload off makes it a hard cap). Then re-run `set -a; . ./.env.healthcheck; . ./.env.anthropic; set +a; projects/voice-assistant/setup_claude_pipeline.py` (turns on home location for web search and asks the two test questions), then build the Shortcut (step 3, README).
 
 #### How it works
 "Hey Siri, ask home" runs an iPhone Shortcut, which works in CarPlay with no touch:
@@ -2950,9 +2976,12 @@ Everything is off-the-shelf: setup only, no code to maintain.
 **Status:** Active
 **Priority:** P3
 
+#### Open items
+- [ ] **Pramod:** try it by voice on both satellites for a few days and report titles that fail
+- [ ] **Claude:** add `ALIASES` in `spotify_library.py` for the titles that fail
+
 **Why:** raised 2026-11-03: play music by voice the way Siri does ("play X"), from the voice satellites and, later, the car.
-**State:** phase 1 **built and tested 2026-11-04**, in a different shape from the plan below: instead of one phrase per playlist, every liked song is speakable ("play <title>", 514 titles), plus pause/resume/next/previous/volume. Synced nightly. Tested by TTS and text through HA, not yet by voice on a satellite.
-**Next step:** user to try it by voice on both satellites for a few days and report titles that fail (those get `ALIASES` in `spotify_library.py`). Phase 2 ("play anything") is parked on the no-paid rule: Moonshine is fast enough locally (0.3s) but needs a Wyoming wrapper and its own pipeline or wake phrase.
+**State:** phase 1 **built and tested 2026-11-04**, in a different shape from the plan below: instead of one phrase per playlist, every liked song is speakable ("play <title>", 514 titles), plus pause/resume/next/previous/volume. Synced nightly. Tested by TTS and text through HA, not yet by voice on a satellite. Phase 2 ("play anything") is parked on the no-paid rule: Moonshine is fast enough locally (0.3s) but needs a Wyoming wrapper and its own pipeline or wake phrase.
 
 #### Phase 1 - fixed commands (offline, both satellites)
 - One custom sentence per playlist ("play bedtime music") -> a script that calls `spotcast.play_media` on the chosen speaker; plus pause, resume, next and volume for the Spotify players. Sentences go in `projects/voice-assistant/packages/voice_commands.yaml` (lists in `custom_sentences/en/sentences.yaml`), then restart speech-to-phrase so it retrains.

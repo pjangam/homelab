@@ -11,20 +11,47 @@
 # The dashboard (projects-ui) gathers every open entry's checklist into one
 # panel, so an entry that breaks the rule is quietly missing from it.
 #
-# Usage: tools/repo-tools/check_open_items.sh [--all]
-#   Default: only entries that should have a checklist and lack one, or are
-#   malformed. Lists old Next-step entries too, as "to convert" - they are the
-#   backlog of entries to migrate the next time each is touched.
+# Usage: tools/repo-tools/check_open_items.sh [--staged]
+#   Default: the whole file. Old Next-step entries are listed as "to convert" -
+#   the backlog of entries to migrate the next time each is touched.
+#   --staged: only the entries the staged PROJECTS.md changes (new or edited
+#   against HEAD), and there an old Next step is an error too - touching an
+#   entry means converting it. This is what .githooks/pre-commit runs, so the
+#   format holds for every commit, by any session or by hand, without the
+#   untouched backlog blocking anything.
 # Exit:  0 nothing to report, 1 something to report.
 
 set -uo pipefail
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
+cd "$REPO"
 
-python3 - "$REPO/PROJECTS.md" <<'EOF'
+if [ "${1:-}" = "--staged" ]; then
+  git diff --cached --quiet -- PROJECTS.md && exit 0   # PROJECTS.md not in this commit
+  NEW=$(mktemp); OLD=$(mktemp); trap 'rm -f "$NEW" "$OLD"' EXIT
+  git show :PROJECTS.md > "$NEW"
+  git show HEAD:PROJECTS.md > "$OLD" 2>/dev/null || : > "$OLD"
+  set -- "$NEW" "$OLD"
+else
+  set -- "$REPO/PROJECTS.md"
+fi
+
+python3 - "$@" <<'EOF'
 import re, sys
 
+def split_entries(text):
+    out = {}
+    for e in re.split(r'^### ', text.split('\n## ', 1)[-1], flags=re.M)[1:]:
+        title, _, body = e.partition('\n')
+        out[title] = body
+    return out
+
 text = open(sys.argv[1]).read()
-entries = re.split(r'^### ', text.split('\n## ', 1)[-1], flags=re.M)[1:]
+staged = len(sys.argv) > 2
+current = split_entries(text)
+if staged:
+    before = split_entries(open(sys.argv[2]).read())
+    touched = {t for t, b in current.items() if before.get(t) != b}
+entries = [f'{t}\n{b}' for t, b in current.items() if not staged or t in touched]
 OWNERS = {'pramod', 'together', 'claude'}
 problems, to_convert = [], []
 
@@ -68,8 +95,14 @@ for entry in entries:
     elif status in ('Parked', 'Backlog') and has_next and not has_items:
         to_convert.append(f'{status:8} {title}')
 
+if staged:
+    problems += [f'{p}: still has a **Next step:** - convert it to #### Open items' for p in to_convert]
+    to_convert = []
+    if problems:
+        print('PROJECTS.md: an entry this commit changes breaks the Open items rule')
+        print('(see the PROJECTS.md intro / CLAUDE.md; bypass once with git commit --no-verify):')
 if problems:
-    print('Breaks the Open items rule:')
+    if not staged: print('Breaks the Open items rule:')
     print('\n'.join('  ' + p for p in problems))
 if to_convert:
     print(f'Still on the old Next step format ({len(to_convert)}) - convert when touched:')
