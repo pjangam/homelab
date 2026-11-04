@@ -52,3 +52,4 @@ projects/voice-assistant/esphome/build-out/
 
 # node-exporter textfile output - written every minute by services/node-exporter/zpool_textfile.sh
 services/node-exporter/textfile/
+projects/voice-assistant/custom_sentences/en/songs.yaml
