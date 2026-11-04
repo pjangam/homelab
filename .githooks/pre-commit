@@ -29,7 +29,8 @@ added_lines() {
 
 # PROJECTS.md format: every entry the commit changes must lead with its
 # "#### Open items" checklist (rule in CLAUDE.md and the PROJECTS.md intro).
-"$(git rev-parse --show-toplevel)/tools/repo-tools/check_open_items.sh" --staged || exit 1
+# Fixed and re-staged automatically where possible; stops only if it can't.
+"$(git rev-parse --show-toplevel)/tools/repo-tools/fix_open_items.sh" || exit 1
 
 lines="$(added_lines)"
 [ -z "$lines" ] && exit 0
