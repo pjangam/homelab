@@ -3086,3 +3086,22 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - 2026-11-04: **Spotify's search is the weaker half.** Top track result (market IN) for the *correct* text: "papercut" -> Faint (Linkin Park), "aggobai dhaggobai" -> Aga Bai (Shalmali Kholgade), "numb by Lincoln Park" -> an unrelated song; "Please shape of you" and "Bohemian Rhapsody by Queen" were right. So `spotcast.play_from_search` on a raw transcript picks wrong songs even when the words are right: match against the user's own library first, and turn "X by Y" into a track+artist search.
 - 2026-11-04: Marathi rule (user): Latin-script titles stay as Spotify spells them and recognise or fail; only hand-mapped aliases are guaranteed. `spotify_library.py` written: reads HA's Spotify integration token from `core.config_entries` read-only (never refreshes) and writes the gitignored `{song}` list `custom_sentences/en/songs.yaml` from liked songs. The first 50 liked songs are ~40 Marathi/Hindi in Latin script. Not yet wired to a sentence trigger or trained.
 - 2026-11-04: **phase 1 built.** Decided with the user: Speech-to-Phrase trained on the library rather than per-playlist phrases or Moonshine/Whisper. `spotify_library.py` now also writes `packages/spotify_songs.yaml` (gitignored): `play {song}` -> `spotcast.play_media` with that track's URI on xero, no search. 514 titles from the liked songs (3 untitled dropped); training ~31s, 59MB. TTS check: 15/16 random titles recognised incl. Hindi/Marathi/Spanish ("my dsmbr" failed - unpronounceable spelling); a title not in the list comes back empty, never a wrong song. Existing commands unaffected. Controls in `voice_commands.yaml` (`voice_spotify_control`, on `media_player.spotify_pramod`): all worked end to end with the speaker muted; "previous song" restarts the current song first (Spotify's behaviour). Fixed on the way: "music volume {x}" swallowed "music volume up" (HA matches the slot as free text), so only "set the music volume to N" takes a number. Nightly `sync_spotify_songs.sh` cron at 04:30.
+
+### Wishlist page (expensive purchases)
+**Status:** Active
+**Priority:** P3
+
+#### Open items
+- [ ] **Pramod:** enter the list at `https://xero.<tailnet>/wishlist/` and set a monthly amount if you want the "by <month>" estimates
+- [ ] **Claude:** add `projects/wishlist/data/wishlist.json` to the nightly gpg Dropbox backup (like `backup_hardware_md.sh`) once the list has real data - not backed up yet
+
+**Why:** keep track of the big-ticket things to buy, with rough prices, and decide what to buy when. Replaces the Google Sheet idea; kept server side so the phone and laptop see the same list.
+**State:** live on xero since 2026-11-04 as the `wishlist` container (port 8128, Caddy `/wishlist`). See `projects/wishlist/README.md`. The list is empty until the user fills it in.
+
+#### Design
+- A stdlib Python server and one plain-JS page. Storage is one JSON file (`projects/wishlist/data/wishlist.json`, gitignored), rewritten atomically with a `.bak` of the previous save. No database: it holds tens of items, and the only database already running (Immich's Postgres) would tie this list to Immich's container. Python rather than Node for the server because xero has no Node, and clawlight's server is the same pattern.
+- Each save carries the version it was loaded at; a stale save gets a 409 and the page reloads, so two devices can't silently overwrite each other.
+- Order on the page = priority. Running total (Σ) per item; with a monthly amount set, each item shows the month it becomes affordable buying top-down.
+
+#### Log
+- 2026-11-04: built and deployed. API checked with curl (save, stale-version 409, nameless item 400) and through Caddy over the tailnet (200). Added to `endpoints.toml` (re-rendered) and to the xero entry in `docs/hardware.md`.

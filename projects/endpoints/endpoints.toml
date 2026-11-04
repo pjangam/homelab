@@ -60,6 +60,16 @@ blurb = "Things a browser opens. Everything under xero is behind Caddy on one ho
   note = "Container projects-ui, published on 192.168.1.123:8125."
 
   [[group.endpoint]]
+  name = "Wishlist"
+  proto = "https"
+  host = "xero.{tailnet}"
+  port = 443
+  url = "https://xero.{tailnet}/wishlist/"
+  desc = "Priority-ordered list of expensive things to buy, with rough prices, running total and an optional months-to-afford estimate."
+  who = "Nothing depends on it; you edit it from the phone or laptop."
+  note = "Container wishlist, published on 192.168.1.123:8128 (no auth, no TLS on the LAN). The list is projects/wishlist/data/wishlist.json, gitignored."
+
+  [[group.endpoint]]
   name = "clawlight"
   proto = "https"
   host = "xero.{tailnet}"

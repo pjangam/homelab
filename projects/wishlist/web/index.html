@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wishlist</title>
+<style>
+:root {
+  --bg: #f7f7f5; --fg: #1f2328; --muted: #6b7280; --card-bg: #ffffff;
+  --border: #e2e2e0; --accent: #2f6f4f; --danger: #b42318; --warn-bg: #fff4e5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181d; --fg: #e6e6e6; --muted: #9aa0a6; --card-bg: #1f232a;
+    --border: #2c313a; --accent: #6cc08f; --danger: #f97066; --warn-bg: #3a2a12;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+main { max-width: 760px; margin: 0 auto; padding: 16px 16px 64px; }
+h1 { font-size: 1.4rem; margin: 8px 0 4px; }
+h2 { font-size: 1rem; margin: 28px 0 8px; color: var(--muted); font-weight: 600; }
+.sub { color: var(--muted); font-size: .9rem; margin-bottom: 16px; }
+.summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.tile { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; flex: 1 1 140px; }
+.tile .k { color: var(--muted); font-size: .8rem; }
+.tile .v { font-size: 1.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tile input { width: 100%; font-size: 1.1rem; font-weight: 600; }
+form.add, .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; }
+form.add { padding: 12px; display: grid; grid-template-columns: 1fr 140px; gap: 8px; }
+form.add .wide { grid-column: 1 / -1; }
+input, textarea {
+  font: inherit; color: var(--fg); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; width: 100%;
+}
+textarea { resize: vertical; min-height: 38px; }
+button {
+  font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card-bg); color: var(--fg); padding: 6px 10px;
+}
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button.ghost { border-color: transparent; background: none; color: var(--muted); padding: 4px 8px; }
+button.ghost:hover { color: var(--fg); background: var(--bg); }
+button.danger { color: var(--danger); }
+button:disabled { opacity: .3; cursor: default; }
+ol { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.card { padding: 10px 12px; display: grid; grid-template-columns: 28px 1fr auto; gap: 4px 10px; align-items: start; }
+.rank { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; padding-top: 2px; }
+.name { font-weight: 600; word-break: break-word; }
+.name a { color: inherit; }
+.notes { color: var(--muted); font-size: .88rem; white-space: pre-wrap; word-break: break-word; margin-top: 2px; }
+.money { text-align: right; font-variant-numeric: tabular-nums; }
+.price { font-weight: 600; }
+.cum, .when { color: var(--muted); font-size: .8rem; }
+.actions { grid-column: 2 / -1; display: flex; gap: 2px; flex-wrap: wrap; margin-top: 2px; }
+.edit { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 140px; gap: 8px; }
+.edit .wide { grid-column: 1 / -1; }
+.bought .card { opacity: .7; }
+.bought .name { text-decoration: line-through; }
+.banner { background: var(--warn-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
+.empty { color: var(--muted); padding: 16px 0; }
+.hidden { display: none; }
+@media (max-width: 480px) {
+  form.add, .edit { grid-template-columns: 1fr 110px; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Wishlist</h1>
+  <div class="sub">Expensive things to buy, top = buy first. Rough prices are fine.</div>
+
+  <div id="banner" class="banner hidden"></div>
+
+  <div class="summary">
+    <div class="tile"><div class="k">Still wanted</div><div class="v" id="total">–</div></div>
+    <div class="tile"><div class="k">Items</div><div class="v" id="count">–</div></div>
+    <div class="tile">
+      <div class="k">Can set aside per month (₹)</div>
+      <input id="budget" type="number" min="0" step="1000" inputmode="numeric" placeholder="optional">
+    </div>
+  </div>
+
+  <form class="add" id="add">
+    <input name="name" placeholder="Item" required autocomplete="off">
+    <input name="price" type="number" min="0" step="any" inputmode="numeric" placeholder="₹ approx">
+    <input name="link" class="wide" placeholder="Link (optional)" autocomplete="off">
+    <textarea name="notes" class="wide" rows="1" placeholder="Notes (optional) - which model, why, wait for a sale..."></textarea>
+    <button class="primary wide" type="submit">Add to bottom of list</button>
+  </form>
+
+  <h2>Priority order</h2>
+  <ol id="wanted"></ol>
+
+  <div id="boughtWrap" class="hidden">
+    <h2>Bought</h2>
+    <ol id="boughtList" class="bought"></ol>
+  </div>
+</main>
+
+<script>
+const API = './api/list';
+let doc = { version: 0, monthlyBudget: null, items: [] };
+let editing = null;
+
+const $ = (id) => document.getElementById(id);
+const inr = (n) => n == null ? '–' : '₹' + Math.round(n).toLocaleString('en-IN');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+
+function banner(msg) {
+  $('banner').textContent = msg || '';
+  $('banner').classList.toggle('hidden', !msg);
+}
+
+async function load() {
+  try {
+    const r = await fetch(API, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    doc = await r.json();
+    banner('');
+  } catch (e) {
+    banner('Could not load the list: ' + e.message);
+  }
+  render();
+}
+
+async function save() {
+  render();
+  try {
+    const r = await fetch(API, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(doc),
+    });
+    const body = await r.json();
+    if (r.status === 409) {
+      doc = body;
+      editing = null;
+      banner('The list was changed on another device, so your last change was not saved. Showing the latest - please redo it.');
+    } else if (!r.ok) {
+      banner('Not saved: ' + (body.error || r.status));
+      return;
+    } else {
+      doc = body;
+      banner('');
+    }
+  } catch (e) {
+    banner('Not saved (server unreachable): ' + e.message);
+    return;
+  }
+  render();
+}
+
+// Month by which item i is affordable, if a monthly budget is set:
+// cumulative cost up to and including it, divided by the budget.
+function whenLabel(cum) {
+  const b = Number(doc.monthlyBudget);
+  if (!b || b <= 0) return '';
+  const months = Math.max(0, Math.ceil(cum / b) - 1);
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  return months === 0 ? 'this month' : 'by ' + d.toLocaleString('en-IN', { month: 'short', year: 'numeric' });
+}
+
+function render() {
+  const wanted = doc.items.filter((i) => !i.bought);
+  const bought = doc.items.filter((i) => i.bought).sort((a, b) => b.bought.localeCompare(a.bought));
+
+  const total = wanted.reduce((s, i) => s + (i.price || 0), 0);
+  $('total').textContent = inr(total);
+  $('count').textContent = wanted.length;
+  if (document.activeElement !== $('budget')) $('budget').value = doc.monthlyBudget ?? '';
+
+  let cum = 0;
+  $('wanted').innerHTML = wanted.length ? wanted.map((it, idx) => {
+    cum += it.price || 0;
+    return card(it, idx, wanted.length, cum);
+  }).join('') : '<li class="empty">Nothing on the list yet.</li>';
+
+  $('boughtWrap').classList.toggle('hidden', !bought.length);
+  $('boughtList').innerHTML = bought.map((it) => card(it, -1, 0, null)).join('');
+}
+
+function card(it, idx, n, cum) {
+  if (editing === it.id) {
+    return `<li class="card" data-id="${it.id}"><form class="edit" data-act="saveEdit">
+      <input name="name" value="${esc(it.name)}" required>
+      <input name="price" type="number" min="0" step="any" inputmode="numeric" value="${it.price ?? ''}" placeholder="₹ approx">
+      <input name="link" class="wide" value="${esc(it.link)}" placeholder="Link (optional)">
+      <textarea name="notes" class="wide" rows="2" placeholder="Notes">${esc(it.notes)}</textarea>
+      <div class="wide" style="display:flex;gap:8px">
+        <button class="primary" type="submit">Save</button>
+        <button type="button" data-act="cancel">Cancel</button>
+      </div></form></li>`;
+  }
+  const name = it.link
+    ? `<a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer">${esc(it.name)}</a>`
+    : esc(it.name);
+  const isBought = idx < 0;
+  const actions = isBought
+    ? `<button class="ghost" data-act="unbuy">Undo bought</button>
+       <button class="ghost danger" data-act="del">Delete</button>`
+    : `<button class="ghost" data-act="top" ${idx === 0 ? 'disabled' : ''} title="Move to top">⤒</button>
+       <button class="ghost" data-act="up" ${idx === 0 ? 'disabled' : ''} title="Move up">↑</button>
+       <button class="ghost" data-act="down" ${idx === n - 1 ? 'disabled' : ''} title="Move down">↓</button>
+       <button class="ghost" data-act="edit">Edit</button>
+       <button class="ghost" data-act="buy">Bought ✓</button>
+       <button class="ghost danger" data-act="del">Delete</button>`;
+  const money = isBought
+    ? `<div class="price">${inr(it.price)}</div><div class="cum">${esc(it.bought)}</div>`
+    : `<div class="price">${inr(it.price)}</div>
+       <div class="cum" title="Running total up to this item">Σ ${inr(cum)}</div>
+       <div class="when">${whenLabel(cum)}</div>`;
+  return `<li class="card" data-id="${it.id}">
+    <div class="rank">${isBought ? '✓' : idx + 1}</div>
+    <div><div class="name">${name}</div>${it.notes ? `<div class="notes">${esc(it.notes)}</div>` : ''}</div>
+    <div class="money">${money}</div>
+    <div class="actions">${actions}</div></li>`;
+}
+
+// Moves operate on the full items array but only among not-yet-bought items,
+// so bought ones never get in the way of the priority order.
+function move(id, how) {
+  const wanted = doc.items.filter((i) => !i.bought);
+  const bought = doc.items.filter((i) => i.bought);
+  const i = wanted.findIndex((x) => x.id === id);
+  const [it] = wanted.splice(i, 1);
+  const to = how === 'top' ? 0 : how === 'up' ? Math.max(0, i - 1) : Math.min(wanted.length, i + 1);
+  wanted.splice(to, 0, it);
+  doc.items = [...wanted, ...bought];
+}
+
+function formItem(form) {
+  const f = new FormData(form);
+  const price = f.get('price');
+  return {
+    name: f.get('name').trim(),
+    price: price === '' ? null : Number(price),
+    link: f.get('link').trim(),
+    notes: f.get('notes').trim(),
+  };
+}
+
+$('add').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const it = formItem(e.target);
+  if (!it.name) return;
+  const wanted = doc.items.filter((i) => !i.bought);
+  const bought = doc.items.filter((i) => i.bought);
+  doc.items = [...wanted, { id: Date.now().toString(36), added: today(), bought: null, ...it }, ...bought];
+  e.target.reset();
+  save();
+});
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const id = btn.closest('[data-id]')?.dataset.id;
+  const it = doc.items.find((x) => x.id === id);
+  if (!it) return;
+  switch (btn.dataset.act) {
+    case 'top': case 'up': case 'down': move(id, btn.dataset.act); return save();
+    case 'edit': editing = id; return render();
+    case 'cancel': editing = null; return render();
+    case 'buy': it.bought = today(); return save();
+    case 'unbuy': it.bought = null; return save();
+    case 'del':
+      if (!confirm(`Delete "${it.name}"?`)) return;
+      doc.items = doc.items.filter((x) => x.id !== id);
+      return save();
+  }
+});
+
+document.addEventListener('submit', (e) => {
+  if (e.target.dataset.act !== 'saveEdit') return;
+  e.preventDefault();
+  const id = e.target.closest('[data-id]').dataset.id;
+  Object.assign(doc.items.find((x) => x.id === id), formItem(e.target));
+  editing = null;
+  save();
+});
+
+$('budget').addEventListener('change', (e) => {
+  doc.monthlyBudget = e.target.value === '' ? null : Number(e.target.value);
+  save();
+});
+
+// Pick up edits made on another device when coming back to the tab.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !editing) load();
+});
+
+load();
+</script>
+</body>
+</html>

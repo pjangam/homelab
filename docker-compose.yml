@@ -455,6 +455,24 @@ services:
       # directory mount rather than a single-file one).
       - .:/data:ro
 
+  # Wishlist of expensive purchases (projects/wishlist/README.md). Stock python
+  # image, stdlib-only server, no build: the code is bind-mounted read-only and
+  # the list itself is one JSON file in projects/wishlist/data/ (gitignored).
+  wishlist:
+    image: python:3.13-alpine
+    container_name: wishlist
+    restart: unless-stopped
+    command: ["python", "/app/server.py"]
+    user: "1000:1000"  # data/wishlist.json stays owned by pramod, not root
+    environment:
+      - DATA_FILE=/data/wishlist.json
+    ports:
+      - "8128:8128"  # LAN: http://<LAN-IP>:8128/wishlist/
+    volumes:
+      - ./projects/wishlist/server.py:/app/server.py:ro
+      - ./projects/wishlist/web:/app/web:ro
+      - ./projects/wishlist/data:/data
+
   # Self-hosted push notifications (PROJECTS.md "iOS push notifications").
   # Bound to loopback only: the tailnet path in is the sidecar below, and
   # 127.0.0.1:8127 is for publishers running on xero itself (clawlight), which

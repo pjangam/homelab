@@ -54,3 +54,5 @@ projects/voice-assistant/esphome/build-out/
 services/node-exporter/textfile/
 projects/voice-assistant/custom_sentences/en/songs.yaml
 projects/voice-assistant/packages/spotify_songs.yaml
+# projects/wishlist: the list itself (personal purchase plans), backed up separately
+projects/wishlist/data/
