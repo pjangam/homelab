@@ -3105,3 +3105,4 @@ Everything is off-the-shelf: setup only, no code to maintain.
 
 #### Log
 - 2026-11-04: built and deployed. API checked with curl (save, stale-version 409, nameless item 400) and through Caddy over the tailnet (200). Added to `endpoints.toml` (re-rendered) and to the xero entry in `docs/hardware.md`.
+- 2026-11-04: page went blank (Caddy 502) minutes after deploy: `git pull --rebase` recreated `projects/wishlist/web/`, and the container's bind mount stayed on the deleted copy. Now mounts the repo root read-only, like projects-ui.

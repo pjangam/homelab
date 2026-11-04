@@ -458,19 +458,25 @@ services:
   # Wishlist of expensive purchases (projects/wishlist/README.md). Stock python
   # image, stdlib-only server, no build: the code is bind-mounted read-only and
   # the list itself is one JSON file in projects/wishlist/data/ (gitignored).
+  #
+  # The code comes in as the whole repo root, NOT ./projects/wishlist/web etc.
+  # A rebase or checkout deletes and recreates tracked files and folders, and a
+  # bind mount of one stays pinned to the deleted copy - on 2026-11-04 a
+  # `git pull --rebase` left /app/web empty and the page 502'd while the API
+  # still worked. Same reason projects-ui mounts the root. data/ holds only
+  # untracked files, so git never removes it and mounting it directly is safe.
   wishlist:
     image: python:3.13-alpine
     container_name: wishlist
     restart: unless-stopped
-    command: ["python", "/app/server.py"]
+    command: ["python", "/repo/projects/wishlist/server.py"]
     user: "1000:1000"  # data/wishlist.json stays owned by pramod, not root
     environment:
       - DATA_FILE=/data/wishlist.json
     ports:
       - "8128:8128"  # LAN: http://<LAN-IP>:8128/wishlist/
     volumes:
-      - ./projects/wishlist/server.py:/app/server.py:ro
-      - ./projects/wishlist/web:/app/web:ro
+      - .:/repo:ro
       - ./projects/wishlist/data:/data
 
   # Self-hosted push notifications (PROJECTS.md "iOS push notifications").
