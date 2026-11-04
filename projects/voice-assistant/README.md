@@ -30,13 +30,18 @@ Added in `packages/voice_commands.yaml` (sentence-trigger automations):
 - `[set the] [bedroom] fan [to] high|fast|medium|low|slow` (bare "fan" = bedroom)
 - `hall fan fast`, `living room fan low`, ...
 
-Spotify (plays on xero's spotifyd; added 2026-11-04):
-- `play <song>`, `play the song <song>` - any title in the liked songs, as
-  spoken: suffixes like "- Remastered 2011" and "(feat. X)" dropped. Plays that
-  exact track, no Spotify search. Synced nightly (see the files below).
-- `pause|stop the music`, `resume|continue the music`, `next song`,
-  `skip this song`, `previous song` (once restarts the song, twice goes back),
-  `music volume up|down`, `turn the music up|down`, `set the music volume to 40`.
+### Spotify (added 2026-11-04)
+
+Commands to try on either satellite:
+- "Play <song title>" or "play the song <title>": works for any of your 514 liked songs and plays that exact track on xero's speaker. It never searches Spotify, so it can't pick the wrong song.
+- "Pause the music" or "stop the music"; "resume the music".
+- "Next song" or "skip this song"; "previous song" (the first time restarts the song, which is Spotify's normal behaviour, so say it twice to go back a song).
+- "Music volume up/down", "turn the music up/down", "set the music volume to 40".
+
+Notes:
+- Titles are as spoken: suffixes like "- Remastered 2011" and "(feat. X)" are
+  dropped. The list is synced nightly from the liked songs (see the files
+  below), so the 514 grows as songs are liked.
 - Marathi/Hindi titles in Latin script are recognised when Speech-to-Phrase
   guesses their pronunciation well enough, and fail otherwise (user's call).
   A title that matters and fails gets an entry in `ALIASES` in
