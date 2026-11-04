@@ -20,7 +20,8 @@ async function shoot(page, name) {
   await page.locator('.project-link', { has: page.locator('.parts-badge') }).first().click()
   await shoot(page, 'desktop-2-selected')
 
-  const add = page.getByLabel(/add to shopping list/i).first()
+  // A list with options has a box per option ("Add <option> to shopping list").
+  const add = page.getByLabel(/add (.* )?to shopping list/i).first()
   if (!(await add.isChecked())) await add.check()
   await shoot(page, 'desktop-3-shopping-list-open')
 
@@ -41,6 +42,18 @@ async function shoot(page, name) {
   await groups.last().check()
   await page.locator('.parts').scrollIntoViewIfNeeded()
   await shoot(page, 'desktop-5-option-picked')
+  await page.close()
+}
+
+// Open items: the overview panel above the panes, and clicking an item's
+// project opens that entry with its checklist at the top.
+{
+  const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
+  await page.goto(url)
+  await page.getByRole('navigation').getByRole('button').first().waitFor()
+  const panel = page.getByRole('complementary', { name: /open items across projects/i })
+  await panel.locator('.open-item-project').first().click()
+  await shoot(page, 'desktop-6-open-items')
   await page.close()
 }
 

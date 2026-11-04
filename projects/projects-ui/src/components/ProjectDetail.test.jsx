@@ -69,3 +69,16 @@ describe('ProjectDetail', () => {
     expect(screen.getByLabelText('Add to shopping list')).toBeChecked()
   })
 })
+
+describe('ProjectDetail open items', () => {
+  it('shows the checklist before the body', () => {
+    const withItems = {
+      ...project,
+      openItems: [{ owner: 'Pramod', when: null, done: false, html: 'cover the boxes' }],
+    }
+    render(<ProjectDetail project={withItems} section={section} />)
+    const items = screen.getByRole('region', { name: 'Open items' })
+    const body = screen.getByText('body').closest('.project-body')
+    expect(items.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})

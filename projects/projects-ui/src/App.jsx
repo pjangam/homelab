@@ -3,13 +3,15 @@ import { useProjects } from './hooks/useProjects'
 import { StatusSection } from './components/StatusSection'
 import { ProjectDetail } from './components/ProjectDetail'
 import { ShoppingList } from './components/ShoppingList'
+import { OpenItemsOverview } from './components/OpenItems'
 import { mergeParts, selectedParts } from './lib/parts'
 import { PRIORITIES } from './lib/parseProjects'
 import './App.css'
 
 function matchesSearch(project, term) {
   if (!term) return true
-  const haystack = `${project.title} ${project.bodyHtml}`.toLowerCase()
+  const items = (project.openItems ?? []).map((item) => `${item.owner ?? ''} ${item.html}`).join(' ')
+  const haystack = `${project.title} ${items} ${project.bodyHtml}`.toLowerCase()
   return haystack.includes(term.toLowerCase())
 }
 
@@ -63,6 +65,7 @@ export default function App() {
   // Remembered like the list itself: whether it was left open in the shop or
   // tucked away at the desk.
   const [listOpen, setListOpen] = usePersistedState('projects-ui:shopping-open', true)
+  const [openItemsOpen, setOpenItemsOpen] = usePersistedState('projects-ui:open-items-open', true)
 
   const visibleSections = useMemo(
     () =>
@@ -178,6 +181,15 @@ export default function App() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+
+          {/* All open projects, not just the filtered ones: like the shopping
+              list, a filter must not hide what is waiting on someone. */}
+          <OpenItemsOverview
+            sections={sections}
+            onSelect={select}
+            open={openItemsOpen}
+            onToggleOpen={setOpenItemsOpen}
+          />
 
           {selectedProjects.length > 0 && (
             <ShoppingList

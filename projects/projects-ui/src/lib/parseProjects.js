@@ -66,6 +66,32 @@ function takeMeta(project, paragraph) {
   return lines.slice(taken).join('\n')
 }
 
+// Every open entry starts with a "#### Open items" checklist, one item per
+// line, each led by who it waits on:
+//
+//   #### Open items
+//   - [ ] **Pramod:** cover the socket box
+//   - [ ] **Together, 2026-11-04 21:00:** tune the mic
+//   - [ ] **Claude:** update docs/hardware.md
+//
+// Held out of the body like the parts block, so the dashboard can show them
+// first and gather them across projects. The owner is whatever the bold
+// prefix says before its first comma; the rest of the prefix is `when`.
+const OPEN_ITEMS_HEADING = /^open items$/i
+const OWNER_PREFIX = /^\*\*([^*:,]+?)\s*(?:,\s*([^*]*?))?\s*:\*\*\s*/
+
+function parseOpenItem(item) {
+  const raw = item.text.replace(/^\[[ xX]\]\s*/, '').trim()
+  const match = raw.match(OWNER_PREFIX)
+  const text = match ? raw.slice(match[0].length) : raw
+  return {
+    owner: match ? match[1].trim() : null,
+    when: match?.[2]?.trim() || null,
+    done: Boolean(item.checked),
+    html: marked.parseInline(text),
+  }
+}
+
 function slugifyGroup(label) {
   return slugify(label) || 'no-status'
 }
@@ -93,8 +119,20 @@ export function parseProjects(markdown) {
         priority: null,
         tokens: [],
         parts: [],
+        openItems: [],
+        inOpenItems: false,
       }
       projects.push(currentProject)
+    } else if (currentProject && token.type === 'heading' && token.depth === 4 && OPEN_ITEMS_HEADING.test(token.text.trim())) {
+      currentProject.inOpenItems = true
+    } else if (currentProject?.inOpenItems && token.type === 'heading') {
+      // Any following heading ends the checklist and is ordinary body again.
+      currentProject.inOpenItems = false
+      currentProject.tokens.push(token)
+    } else if (currentProject?.inOpenItems && token.type === 'list') {
+      currentProject.openItems.push(...token.items.map(parseOpenItem))
+    } else if (currentProject?.inOpenItems && token.type === 'space') {
+      // Blank lines inside the checklist carry nothing.
     } else if (currentProject && token.type === 'code' && token.lang === 'parts') {
       // Held out of the body deliberately: a parts block is data, and gets
       // rendered as a table plus a shopping-list checkbox rather than as the
@@ -129,6 +167,7 @@ export function parseProjects(markdown) {
     project.bodyHtml = marked.parser(project.tokens)
     delete project.tokens
     delete project.heading
+    delete project.inOpenItems
     group.projects.push(project)
   }
 

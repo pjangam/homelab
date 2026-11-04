@@ -189,3 +189,62 @@ No status line at all.
     expect(groups.map((g) => g.label)).toEqual(['Active'])
   })
 })
+
+describe('open items', () => {
+  const WITH_ITEMS = `## Projects
+
+### Diwali lights
+**Status:** Active
+**Priority:** P1
+
+#### Open items
+- [ ] **Pramod:** cover the socket box
+- [ ] **Together, 2026-11-04 21:00:** tune the mic, see \`diwali_wled.sh\`
+- [x] **Claude:** sunset automation
+- [ ] no owner given
+
+**Why:** festival.
+
+#### Log
+- 2026-11-03: strip lights.
+
+### No checklist
+**Status:** Backlog
+
+**Why:** someday.
+`
+
+  const [active, backlog] = parseProjects(WITH_ITEMS)
+  const diwali = active.projects[0]
+
+  it('reads the checklist with owner, when and done', () => {
+    expect(diwali.openItems.map(({ owner, when, done }) => ({ owner, when, done }))).toEqual([
+      { owner: 'Pramod', when: null, done: false },
+      { owner: 'Together', when: '2026-11-04 21:00', done: false },
+      { owner: 'Claude', when: null, done: true },
+      { owner: null, when: null, done: false },
+    ])
+  })
+
+  it('renders item text as inline html without the owner prefix', () => {
+    expect(diwali.openItems[0].html).toBe('cover the socket box')
+    expect(diwali.openItems[1].html).toContain('<code>diwali_wled.sh</code>')
+  })
+
+  it('keeps the checklist out of the body but not what follows it', () => {
+    expect(diwali.bodyHtml).not.toContain('Open items')
+    expect(diwali.bodyHtml).not.toContain('cover the socket box')
+    expect(diwali.bodyHtml).toContain('<strong>Why:</strong>')
+    expect(diwali.bodyHtml).toContain('Log')
+    expect(diwali.bodyHtml).toContain('strip lights')
+  })
+
+  it('still reads status and priority when the checklist comes first', () => {
+    expect(diwali.status).toBe('Active')
+    expect(diwali.priority).toBe('P1')
+  })
+
+  it('gives an entry without a checklist an empty list', () => {
+    expect(backlog.projects[0].openItems).toEqual([])
+  })
+})

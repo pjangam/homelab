@@ -8,6 +8,7 @@ Scripts about this repo itself.
 | `rewrite_paths.py OLD=NEW ...` | rewrites repo paths across every tracked file for a move (dry run unless `--apply`) |
 | `check_hardware_md.sh` | drift check for `docs/hardware.md` |
 | `check_endpoints_toml.sh` | drift check for `projects/endpoints/endpoints.toml` |
+| `check_open_items.sh` | lists `PROJECTS.md` entries missing or misusing the `#### Open items` checklist, and those still on the old Next step format |
 | `convert_apple_to_bitwarden.py` | one-off password export conversion |
 
 ## Before moving or renaming a file

@@ -22,10 +22,14 @@ Changing a project's state is a one-line edit - never move the block. The projec
 **Status:** Active
 **Priority:** P2
 
+#### Open items
+- [ ] **Pramod:** something the user does by hand (buy, solder, mount, decide)
+- [ ] **Together, 2026-11-04 21:00:** something done in a session with the user, with when if agreed
+- [ ] **Claude:** something a session can do on its own
+
 **Why:** the motivation, one short paragraph.
 **State:** where it stands today (open entries).
-**Next step:** the concrete next action (open entries).
-**Outcome:** what shipped or was decided, and when (Done/Closed - replaces State and Next step).
+**Outcome:** what shipped or was decided, and when (Done/Closed - replaces Open items and State).
 
 #### Design / Options / Wiring / Parts / ...
 Reference detail that is not history, as named `####` subsections.
@@ -34,7 +38,9 @@ Reference detail that is not history, as named `####` subsections.
 - 2026-10-08: dated updates, oldest first.
 ```
 
-When something happens, add a Log bullet and rewrite State / Next step to match - don't append updates to State. Closing an entry means replacing State and Next step with Outcome, so a Done entry never carries a next step that reads as open. Subsections are `####`: a `###` starts a new project.
+**Open items come first** (set 2026-11-04): every Active entry, and any Parked or Backlog entry with a concrete next action, opens with a `#### Open items` checklist straight under Status/Priority. It replaces the old `**Next step:**` paragraph - an entry still carrying one gets converted the next time it is touched. One short line per item, each led by its owner in bold - `**Pramod:**`, `**Together:**` or `**Claude:**`, optionally with a when after a comma (`**Together, 2026-11-04 21:00:**`) - so what is waiting, and on whom, reads at a glance; the detail goes in State, the subsections or the Log, not in the item. The dashboard shows the checklist at the top of the entry and gathers every open entry's items into one panel grouped by owner. When an item is done, delete it and add a Log bullet (don't leave it ticked); when work turns up a new task, add it. `tools/repo-tools/check_open_items.sh` lists entries that break this.
+
+When something happens, add a Log bullet and update Open items and State to match - don't append updates to State. Closing an entry means replacing Open items and State with Outcome, so a Done entry never carries an item that reads as open. Subsections are `####`: a `###` starts a new project.
 
 **Parts lists:** a project that needs things bought carries a fenced ` ```parts ` block, one line per item:
 
@@ -1986,6 +1992,7 @@ Low priority: edit support (currently read-only - would need a real backend with
   - Fixed by bind-mounting the whole repo root read-only (`.:/data:ro`) and adding `projects/projects-ui/nginx.conf` with `location = /PROJECTS.md { alias /data/PROJECTS.md; }` - directory bind mounts resolve paths fresh on every request, so a rename inside them doesn't go stale.
   - Verified the fix survives a simulated atomic-replace edit with no container restart, and confirmed no other repo file is servable over HTTP (unmatched paths fall through to the SPA's `index.html`, not the real file - `/data` itself is never used as an nginx `root`).
 - 2026-09-15: two-pane layout. Replaced the expand-in-place `<details>` cards (and expand-all/collapse-all) with a left pane of titles grouped by status and a right pane showing the selected project; each pane scrolls on its own. The shopping list stays at the top as a collapsible panel whose summary line keeps the item count and total, with the open/collapsed state remembered across reloads. Below 760px wide the panes take turns (list, then detail with a back button). `projects/projects-ui/scripts/screenshot.sh` screenshots the live app at desktop and phone widths via the Playwright image, since xero has no browser or Node.
+- 2026-11-04: **Open items** (user: open work was not visible at a glance). Each entry now leads with a `#### Open items` checklist, items led by owner (`**Pramod:**` / `**Together, <when>:**` / `**Claude:**`), replacing the Next step paragraph. The dashboard shows it at the top of the detail, an "N open" count in the list, and a collapsible panel above the panes gathering every open entry's items by owner (open/closed state remembered). Rule in CLAUDE.md and the PROJECTS.md intro; `tools/repo-tools/check_open_items.sh` flags missing/malformed checklists and lists the 43 entries still to convert when touched. Diwali lights converted first. Also fixed `screenshot.sh`'s shopping-list step, which broke on a project whose parts have options.
 
 ### Expose Home Assistant via Tailscale with its own clean hostname
 **Status:** Done
@@ -2447,9 +2454,19 @@ Add the board to `docs/hardware.md` and its MQTT topic to `endpoints.toml`.
 **Status:** Active
 **Priority:** P1
 
+#### Open items
+- [ ] **Pramod:** cover the socket box (2-pin socket + travel adapter + charger): gift wrap outside only, vent gap clear, opening facing down
+- [ ] **Pramod:** cover the ESP32+mic box: keep a hole over the mic's sound port, paper cut away there
+- [ ] **Together, 2026-11-04 21:00:** mic baseline - finger over the mic port while sampling (real sound vs electrical noise)
+- [ ] **Together, 2026-11-04 21:00:** tune sound-reactiveness: ambient, talking and footsteps stay calm, firecrackers trigger
+- [ ] **Together, 2026-11-04 21:00:** pick the sound-reactive effect and save it as boot preset 1 (sunset shows the boot preset), plus a calm warm preset as fallback
+- [ ] **Together:** `loadtest` with the meter at B's far end (>=4.5V); touch-check the charger after ~1h on
+- [ ] **Pramod:** rename the Tinxy switch "Living Room Blank" (display name only, keep `switch.living_room_blank`)
+- [ ] **Claude:** re-add WLED in HA; point the old aarti scripts' .125 defaults at .127
+- [ ] **Claude:** `docs/hardware.md` entry and `endpoints.toml` before Done
+
 **Why:** festival decoration for Diwali, raised 2026-10-16 about three weeks out. The Ganapati WS2812B strip and the WLED software are still here, but the board that ran them is now the bedroom voice satellite. The question is whether to bring the aarti build back with plain warm effects or to try something new. **Diwali 2026 is Sun 8 Nov (Lakshmi Puja that evening), Dhanteras Fri 6 Nov, Bhai Dooj Tue 10 Nov** ([dekhopanchang](https://dekhopanchang.com/en/festivals/diwali), [101planners](https://www.101planners.com/diwali-countdown/), [kissht](https://www.kissht.com/blog/diwali-2026-date-and-lakshmi-puja-timing); some BankBazaar pages say 20 Oct, which is wrong and does not agree with itself). Lights should be up by Dhanteras, so the build deadline is **Thu 5 Nov**.
-**State:** **chosen 2026-10-28: door outline (New idea A) on the audioreactive WLED build, with a mic borrowed from a voice satellite for a switchable firecracker mode** (works non-reactive if no mic is fitted). Layout: the 180 px aarti piece runs up the socket side and across the top, ending exactly at the far top corner; the ~104 px offcut (count to confirm) runs down the far side and stops ~35-40cm short of the floor, accepted. **One supply** (the 5V 4A brick, socket outside the door) feeds the strip start, the ESP32's VIN, and a 5V injection pair to the join at the far top corner - no second adapter or power strip. Wiring diagram: `projects/diwali-lights/wiring.html` (https://claude.ai/artifact/GxLRmgjiz1pSknvwaWfGuA), with the door route, the corner joint and a firmware/settings box. Everything for the plain build is owned, including a spare ESP32 (user, 2026-10-28); only the optional firecracker mic would need buying.
-**Next step:** (2026-11-03: strip, mic and sunset schedule all working, on the door) **2026-11-04 ~21:00 with the user:** (1) mic baseline - finger over the mic port while sampling `/json/info` (real sound vs electrical noise; the mic reads a loud steady signal, AGC ~0.1x); (2) tune AudioReactive (AGC off or on, squelch, gain) so ambient, people talking and footsteps stay calm and firecrackers trigger; (3) save the sound-reactive look as **boot preset 1** (the schedule only switches the Tinxy socket, so the boot preset is what sunset shows; today it boots solid orange), plus a calm warm preset as fallback; (4) `loadtest` with the meter at B's far end (>=4.5V). User meanwhile: cover the socket box (2-pin socket + travel adapter + charger) and the ESP32+mic box. Later: HA WLED integration re-add, .125 defaults -> .127 in the old aarti scripts, `docs/hardware.md`, `endpoints.toml`, rename the Tinxy switch (display name only).
+**State:** **on the door and working (2026-11-03):** all 284 px light, the mic hears sound (not yet tuned), and the HA schedule is live: on at sunset via Tinxy `switch.living_room_blank`, off at midnight, or at sunrise after Lakshmi Puja, Padwa, Bhai Dooj and Kartik Purnima; no turn-on after 24 Nov. No preset saved yet, so it boots solid orange. Design, **chosen 2026-10-28: door outline (New idea A) on the audioreactive WLED build, with a mic borrowed from a voice satellite for a switchable firecracker mode** (works non-reactive if no mic is fitted). Layout: the 180 px aarti piece runs up the socket side and across the top, ending exactly at the far top corner; the ~104 px offcut (count to confirm) runs down the far side and stops ~35-40cm short of the floor, accepted. **One supply** (the 5V 4A brick, socket outside the door) feeds the strip start, the ESP32's VIN, and a 5V injection pair to the join at the far top corner - no second adapter or power strip. Wiring diagram: `projects/diwali-lights/wiring.html` (https://claude.ai/artifact/GxLRmgjiz1pSknvwaWfGuA), with the door route, the corner joint and a firmware/settings box. Everything for the plain build is owned, including a spare ESP32 (user, 2026-10-28); only the optional firecracker mic would need buying.
 
 #### Feasibility
 **Yes, and most of it is already built.** Everything except the board survives from Ganapati: the strip, the 5V 4A supply, `projects/aarti-lights/` (Tier 3 renderer `aarti-render.py`, `aarti-lights.service` disabled, `wled.sh`, `aarti_lights_setup.md` with the WLED flashing gotcha), and in HA the three dashboard scripts and four schedule automations, turned off in the gitignored `HOMEASSISTANT_CONFIG/automations.yaml`. **The WLED config was not saved:** the `cfg.json`/`presets.json` backup was skipped when the board was reflashed on 2026-10-06, so presets, segments, LED count and the current cap get set up again by hand. `wled.sh` does most of that from the command line. Ordinary WLED on a new classic ESP32 is a known build with no unknowns.

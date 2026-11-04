@@ -1,3 +1,7 @@
+function openCount(project) {
+  return (project.openItems ?? []).filter((item) => !item.done).length
+}
+
 // One status group in the left-hand list: titles only. The body lives in the
 // detail pane, so a long entry never pushes the rest of the list off screen.
 export function StatusSection({ section, selectedId, onSelect }) {
@@ -21,6 +25,9 @@ export function StatusSection({ section, selectedId, onSelect }) {
                 </span>
               )}
               <span className="project-link-title">{project.title}</span>
+              {openCount(project) > 0 && (
+                <span className="open-badge">{openCount(project)} open</span>
+              )}
               {project.parts?.length > 0 && (
                 <span className="parts-badge">{project.parts.length} parts</span>
               )}

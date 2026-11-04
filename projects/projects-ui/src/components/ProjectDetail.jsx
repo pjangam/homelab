@@ -1,4 +1,5 @@
 import { formatRange, listKey, parseCost, partGroups } from '../lib/parts'
+import { ProjectOpenItems } from './OpenItems'
 
 // bodyHtml comes from parseProjects(), which only ever runs on this repo's
 // own PROJECTS.md - trusted content, not user input, so rendering it
@@ -37,6 +38,7 @@ export function ProjectDetail({ project, section, listIds = new Set(), onToggleI
         )}
       </p>
       <h2>{project.title}</h2>
+      <ProjectOpenItems items={project.openItems} />
       <div
         className="project-body"
         dangerouslySetInnerHTML={{ __html: project.bodyHtml }}
