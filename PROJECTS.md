@@ -1345,6 +1345,23 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Done 2026-11-05: SONGLE SRD-05VDC-SL-C** from the stash - 5V coil (runs off the ESP32 board's 5V), contacts 10A 250VAC / 10A 30VDC: plenty for lights and a fan, not for a geyser. Still unknown: bare cube or on a driver module (the README covers both, and the 3.3V low-trigger trap). Original brief:
 Starts after "Diwali lights 2026" (user, 2026-10-30). Check the relays against this job: the coil voltage (5V suits an ESP32 board's 5V; 12V needs its own supply), the **contact rating on the AC side** (printed like `10A 250VAC`), comfortably above the load - fans and lights, and mind the inrush of LED drivers and fan motors - and whether they come on a module with a transistor/optocoupler driver, since an ESP32 GPIO cannot drive a bare relay coil.
 
+#### Parts
+Kandil build, from `projects/smart-switch/wiring.md` section 4. Kandil assumed to come with its own cable, B22 holder and plug.
+
+```parts
+qty | item | est | note
+1 | ESP32 classic devkit (esp32dev, WROOM-32) | 0 | owned: the spare
+1 | SONGLE SRD-05VDC-SL-C on a KY-019 relay module (S / + / -) | 0 | owned: from the stash
+1 | USB data cable + 5V 1A charger | 0 | owned
+3 | female-female jumper wires | 40-60 | local; the module and devkit pins are both male
+1 | small latching rocker or toggle switch | 15-30 | local; optional, Tinxy-style manual on/off on the box (low voltage)
+1 | inline fuse holder, 5x20mm | 30-60 | local; the fuse itself: a power-strip spare if it is 2-5A, else a T2A slow-blow (5-10)
+2 | lever connectors (WAGO 221, 2-way) or a 2-way cut of screw-terminal strip | 30-160 | local; joins neutral and earth in the box
+1 | plastic junction box with screw lid | 60-150 | local; relay + mains joints on one side, ESP32 on the other
+1 | 3-pin 6A plug | 40-80 | local; only if the kandil's plug is 2-pin (else the relay may switch neutral)
+1 | 7-9W LED bulb, B22 | 100-150 | local; optional but recommended: the 40-60W incandescent runs hot inside paper
+```
+
 #### Options
 
 - **Reflash existing Tinxy units with Tasmota/ESPHome** - *not taken (2026-11-05), but more viable than first thought:* ESPHome's device list has configs for the Tinxy 4N fan regulator (ESP8266 sending serial commands to a separate relay MCU; cut the W2/W3 link while flashing, web flasher fails at 115200) and the 1N 16A (ESP8266EX), and Tasmota runs on a 6-node. Newer Tuya-based boards may not flash. Original note: cheapest, reuses hardware already wired into the walls, would get fully local MQTT control with zero cloud dependency. Risk: Tinxy isn't a known-flashable brand like Sonoff, so it's a per-unit gamble (open one up, identify the chip, risk bricking it) before knowing if it's worth doing for the rest.
