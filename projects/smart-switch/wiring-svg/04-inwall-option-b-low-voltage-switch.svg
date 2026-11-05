@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="695" viewBox="0 0 960 695" role="img" aria-label="In-wall smart switch, option B, design study, not built. Inside a modular switchboard back box. Phase from the MCB goes straight to the relay module's COM terminal; the relay's NO terminal goes to the existing load wire for the light or fan; neutral goes straight to the load. Phase also feeds a mains-to-5V module (HLK-PM01 class) through a T500mA to T1A fuse, and the module's AC inputs take phase and neutral. The phase loop still runs to the other switches on the plate, but the loop to this switch is cut: the wall switch is disconnected from mains entirely. On the low-voltage side the 5V module's +5V output feeds ESP32 VIN and relay module +, and its ground joins an ESP32 GND pin. Relay module minus goes to another ESP32 GND pin, relay S to GPIO26. The reused wall switch is wired between ESP32 GND and GPIO27 with the internal pull-up, like the prototype rocker. Warning: label the switch LOW VOLTAGE - NOT MAINS; if anyone reconnects it to phase, 230V reaches the ESP32."><title>Smart switch in-wall, option B - the wall switch reused as a low-voltage input</title><desc>Design study, not built. Phase to relay COM, NO to the load, N to the load. Fused phase and neutral to a 5V module feeding ESP32 VIN and relay +. Phase loop to this switch removed; the wall switch wired GPIO27 to GND. Relay S on GPIO26.</desc><rect x="0" y="0" width="960" height="695" rx="6" fill="#ffffff" stroke="#c6d0d9"/>
+        <defs>
+          <marker id="aA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="#a3760e"></polygon>
+          </marker>
+        </defs>
+
+        <!-- back box -->
+        <rect x="150" y="30" width="790" height="548" fill="none" stroke="#9a4a10" stroke-width="2" stroke-dasharray="8 5"></rect>
+        <text x="164" y="52" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#9a4a10">switchboard back box</text>
+
+        <!-- mains / low-voltage boundary -->
+        <line x1="590" y1="40" x2="590" y2="570" stroke="#9a4a10" stroke-width="2" stroke-dasharray="8 5"></line>
+        <text x="578" y="56" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" font-weight="600" fill="#9a4a10">230V MAINS</text>
+        <text x="602" y="56" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" font-weight="600" fill="#9a4a10">LOW VOLTAGE 5V / 3.3V</text>
+
+        <!-- load (outside the box) -->
+        <rect x="20" y="100" width="110" height="115" fill="#dfe5ea" stroke="#c6d0d9" stroke-width="1.5"></rect>
+        <text x="66" y="162" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#15202b">light / fan</text>
+        <text x="66" y="177" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">existing wire</text>
+        <circle cx="130" cy="135" r="4.5" fill="#7a4a22"></circle>
+        <circle cx="130" cy="190" r="4.5" fill="#2a5fa8"></circle>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" text-anchor="end">
+          <text x="120" y="139" fill="#7a4a22">L</text>
+          <text x="120" y="194" fill="#2a5fa8">N</text>
+        </g>
+
+        <!-- supply (below the box) -->
+        <rect x="130" y="615" width="130" height="58" fill="#dfe5ea" stroke="#c6d0d9" stroke-width="1.5"></rect>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" text-anchor="middle">
+          <text x="175" y="633" fill="#2a5fa8">N</text>
+          <text x="205" y="633" fill="#7a4a22">L</text>
+        </g>
+        <text x="195" y="653" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#15202b">from the MCB</text>
+        <text x="195" y="666" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">230V</text>
+
+        <!-- neutral rail -->
+        <polyline points="130,190 175,190 175,615" fill="none" stroke="#2a5fa8" stroke-width="3"></polyline>
+        <circle cx="175" cy="615" r="4.5" fill="#2a5fa8"></circle>
+        <!-- phase rail -->
+        <polyline points="500,165 205,165 205,615" fill="none" stroke="#7a4a22" stroke-width="3"></polyline>
+        <circle cx="205" cy="615" r="4.5" fill="#7a4a22"></circle>
+
+        <!-- switched live to the load -->
+        <line x1="130" y1="135" x2="500" y2="135" stroke="#7a4a22" stroke-width="3"></line>
+        <text x="350" y="127" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">switched live to the load</text>
+        <text x="350" y="157" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">phase straight to COM, never via the switch</text>
+
+        <!-- fused feed to the 5V module -->
+        <line x1="205" y1="310" x2="290" y2="310" stroke="#7a4a22" stroke-width="3"></line>
+        <rect x="290" y="300" width="70" height="20" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></rect>
+        <line x1="290" y1="310" x2="360" y2="310" stroke="#15202b" stroke-width="1"></line>
+        <text x="325" y="292" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" font-weight="500" fill="#15202b">fuse T500mA-T1A</text>
+        <line x1="360" y1="310" x2="500" y2="310" stroke="#7a4a22" stroke-width="3"></line>
+        <circle cx="205" cy="310" r="5" fill="#7a4a22"></circle>
+        <line x1="175" y1="340" x2="500" y2="340" stroke="#2a5fa8" stroke-width="3"></line>
+        <circle cx="175" cy="340" r="5" fill="#2a5fa8"></circle>
+
+        <!-- phase loop: kept for the other switches, cut for this one -->
+        <line x1="205" y1="450" x2="290" y2="450" stroke="#7a4a22" stroke-width="3"></line>
+        <circle cx="205" cy="450" r="5" fill="#7a4a22"></circle>
+        <rect x="290" y="425" width="150" height="50" fill="#dfe5ea" stroke="#c6d0d9" stroke-width="1.5"></rect>
+        <text x="365" y="446" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#15202b">other switches</text>
+        <text x="365" y="463" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">keep the phase loop</text>
+        <line x1="440" y1="450" x2="575" y2="450" stroke="#7a4a22" stroke-width="2" stroke-dasharray="5 5"></line>
+        <line x1="500" y1="440" x2="520" y2="460" stroke="#9a4a10" stroke-width="3"></line>
+        <line x1="500" y1="460" x2="520" y2="440" stroke="#9a4a10" stroke-width="3"></line>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#9a4a10">
+          <text x="575" y="490" text-anchor="end">loop to this switch: removed</text>
+        </g>
+
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">
+          <text x="220" y="540">the wall switch is off mains entirely:</text>
+          <text x="220" y="554">no phase, no neutral on it.</text>
+          <text x="220" y="568">earth to the load: unchanged, not drawn</text>
+        </g>
+
+        <!-- relay module -->
+        <rect x="500" y="70" width="180" height="145" fill="#ffffff" stroke="#15202b" stroke-width="2"></rect>
+        <text x="590" y="90" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#15202b">relay module</text>
+        <text x="590" y="105" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">KY-019 · 10A 250VAC</text>
+        <line x1="590" y1="115" x2="590" y2="215" stroke="#9a4a10" stroke-width="1.5" stroke-dasharray="4 3"></line>
+        <circle cx="500" cy="135" r="4.5" fill="#7a4a22"></circle>
+        <circle cx="500" cy="165" r="4.5" fill="#7a4a22"></circle>
+        <circle cx="500" cy="195" r="4.5" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <circle cx="680" cy="135" r="4.5" fill="#2b3a47"></circle>
+        <circle cx="680" cy="165" r="4.5" fill="#a3760e"></circle>
+        <circle cx="680" cy="195" r="4.5" fill="#bf3327"></circle>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">
+          <text x="512" y="139">NO</text>
+          <text x="512" y="169">COM</text>
+          <text x="512" y="199">NC</text>
+          <text x="668" y="139" text-anchor="end">&#8722;</text>
+          <text x="668" y="169" text-anchor="end">S</text>
+          <text x="668" y="199" text-anchor="end">+</text>
+        </g>
+
+        <!-- 5V module -->
+        <rect x="500" y="250" width="180" height="105" fill="#ffffff" stroke="#15202b" stroke-width="2"></rect>
+        <text x="590" y="270" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#15202b">HLK-PM01 class</text>
+        <text x="590" y="285" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">230VAC in · 5V 0.6A out</text>
+        <line x1="590" y1="295" x2="590" y2="355" stroke="#9a4a10" stroke-width="1.5" stroke-dasharray="4 3"></line>
+        <circle cx="500" cy="310" r="4.5" fill="#7a4a22"></circle>
+        <circle cx="500" cy="340" r="4.5" fill="#2a5fa8"></circle>
+        <circle cx="680" cy="310" r="4.5" fill="#bf3327"></circle>
+        <circle cx="680" cy="340" r="4.5" fill="#2b3a47"></circle>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">
+          <text x="512" y="314">AC</text>
+          <text x="512" y="344">AC</text>
+          <text x="668" y="314" text-anchor="end">+Vo</text>
+          <text x="668" y="344" text-anchor="end">&#8722;Vo</text>
+        </g>
+
+        <!-- low-voltage wiring -->
+        <line x1="680" y1="135" x2="780" y2="135" stroke="#2b3a47" stroke-width="2.5"></line>
+        <line x1="780" y1="165" x2="686" y2="165" stroke="#a3760e" stroke-width="2.5" marker-end="url(#aA)"></line>
+        <polyline points="680,195 715,195 715,310" fill="none" stroke="#bf3327" stroke-width="2.5"></polyline>
+        <line x1="680" y1="310" x2="780" y2="310" stroke="#bf3327" stroke-width="2.5"></line>
+        <circle cx="715" cy="310" r="5" fill="#bf3327"></circle>
+        <line x1="680" y1="340" x2="780" y2="340" stroke="#2b3a47" stroke-width="2.5"></line>
+        <circle cx="740" cy="340" r="5" fill="#2b3a47"></circle>
+
+        <!-- reused wall switch: GND to GPIO27 -->
+        <line x1="740" y1="340" x2="740" y2="376" stroke="#2b3a47" stroke-width="2.5"></line>
+        <circle cx="740" cy="380" r="4" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <circle cx="740" cy="436" r="4" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <line x1="742" y1="383" x2="760" y2="430" stroke="#15202b" stroke-width="2"></line>
+        <polyline points="740,440 740,450 780,450" fill="none" stroke="#a3760e" stroke-width="2.5"></polyline>
+        <text x="728" y="396" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#15202b">wall switch</text>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676" text-anchor="end">
+          <text x="728" y="411">reused, now 3.3V</text>
+          <text x="728" y="425">like the rocker</text>
+        </g>
+
+        <!-- ESP32 -->
+        <rect x="780" y="70" width="145" height="410" fill="#ffffff" stroke="#15202b" stroke-width="2"></rect>
+        <text x="852" y="235" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#15202b">ESP32 devkit</text>
+        <text x="852" y="252" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">esp32dev · ESPHome</text>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676" text-anchor="middle">
+          <text x="852" y="390">two GND wires:</text>
+          <text x="852" y="404">any GND pins</text>
+        </g>
+        <circle cx="780" cy="135" r="4.5" fill="#2b3a47"></circle>
+        <circle cx="780" cy="165" r="4.5" fill="#a3760e"></circle>
+        <circle cx="780" cy="310" r="4.5" fill="#bf3327"></circle>
+        <circle cx="780" cy="340" r="4.5" fill="#2b3a47"></circle>
+        <circle cx="780" cy="450" r="4.5" fill="#a3760e"></circle>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">
+          <text x="792" y="139">GND</text>
+          <text x="792" y="169">D26 · GPIO26</text>
+          <text x="792" y="314" fill="#bf3327">VIN / 5V</text>
+          <text x="792" y="344">GND</text>
+          <text x="792" y="454">D27 · GPIO27</text>
+        </g>
+        <text x="792" y="469" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">internal pull-up</text>
+
+        <text x="604" y="510" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="700" fill="#9a4a10">LABEL IT: LOW VOLTAGE - NOT MAINS</text>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">
+          <text x="604" y="528">phase put back on this switch = 230V</text>
+          <text x="604" y="542">into the ESP32. Its 3.3V wires share a</text>
+          <text x="604" y="556">230V box: mains-rated wire, kept apart.</text>
+        </g>
+
+        <!-- legend -->
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676">
+          <line x1="290" y1="626" x2="314" y2="626" stroke="#7a4a22" stroke-width="3"></line>
+          <text x="322" y="630">L · phase</text>
+          <line x1="400" y1="626" x2="424" y2="626" stroke="#2a5fa8" stroke-width="3"></line>
+          <text x="432" y="630">N · neutral</text>
+          <line x1="530" y1="626" x2="554" y2="626" stroke="#bf3327" stroke-width="2.5"></line>
+          <text x="562" y="630">5V</text>
+          <line x1="595" y1="626" x2="619" y2="626" stroke="#2b3a47" stroke-width="2.5"></line>
+          <text x="627" y="630">GND</text>
+          <line x1="670" y1="626" x2="694" y2="626" stroke="#a3760e" stroke-width="2.5"></line>
+          <text x="702" y="630">signal</text>
+
+          <circle cx="295" cy="648" r="5" fill="#15202b"></circle>
+          <text x="307" y="652">filled dot = joined</text>
+          <line x1="455" y1="640" x2="455" y2="656" stroke="#15202b" stroke-width="2"></line>
+          <line x1="447" y1="648" x2="463" y2="648" stroke="#15202b" stroke-width="2"></line>
+          <text x="472" y="652">crossing = not joined</text>
+          <line x1="640" y1="648" x2="672" y2="648" stroke="#a3760e" stroke-width="2.5" marker-end="url(#aA)"></line>
+          <text x="682" y="652">arrow = signal direction</text>
+
+          <circle cx="295" cy="670" r="4.5" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+          <text x="307" y="674">hollow = empty</text>
+          <line x1="430" y1="670" x2="462" y2="670" stroke="#9a4a10" stroke-width="2" stroke-dasharray="8 5"></line>
+          <text x="472" y="674">mains / low-voltage boundary</text>
+          <line x1="696" y1="664" x2="708" y2="676" stroke="#9a4a10" stroke-width="2.5"></line>
+          <line x1="696" y1="676" x2="708" y2="664" stroke="#9a4a10" stroke-width="2.5"></line>
+          <text x="718" y="674">= link removed</text>
+        </g>
+      </svg>

@@ -122,3 +122,59 @@ Build the mains side only after step 6 passes.
 - **USB budget:** ESP32 ~250mA peak on WiFi + 70mA coil ≈ 320mA. Any 1A charger.
 - **Bulb:** 60W / 230V = 0.26A steady; ~2.6A for a few milliseconds when the cold
   filament switches on. Fine for 10A contacts, and far below any power strip's fuse.
+
+## 6. Later: in-wall version, two ways to read the wall switch (not built)
+
+A design study for "In-wall smart switch (Tinxy replacement, phase 2)" in `PROJECTS.md`,
+drawn 2026-11-05 to compare the two options. Nothing here is wired yet. Both options
+share the same core: inside the switchboard back box, phase from the MCB goes
+**straight to relay COM, never through the wall switch**, NO goes to the existing load
+wire, and neutral goes to the load as before. A mains-to-5V module (HLK-PM01 class) on a
+fused phase feed replaces the USB charger. Mains parts on one side of the box, low
+voltage on the other; the relay, 5V and opto modules each sit across that line.
+
+Only the switch input differs: option A keeps the wall switch on 230V and senses it,
+option B takes it off mains and wires it like the prototype's rocker.
+
+### Option A: keep the wall switch on 230V, sense it with an AC opto module
+
+![In-wall option A: the 230V wall switch read by an AC opto module](wiring-svg/03-inwall-option-a-ac-sensing.svg)
+
+| From | To | Why it matters |
+|---|---|---|
+| phase from the MCB | relay **COM** | The relay switches the load directly. The wall switch never carries the load. |
+| relay **NO** | existing load wire (light / fan) | Dead ESP32 = load off. NC stays empty. |
+| neutral | load N, 5V module AC, opto **N in** | Straight through, as now. |
+| phase, through a T500mA-T1A fuse | 5V module **AC** | The fuse protects the small module and its thin wires; the MCB is rated for the room's wiring, not for them. |
+| phase, through the **existing wall switch** | opto **L in** | The switch only feeds the opto's sensing current. This is how Tinxy wires it (L also goes through the switch into its "TO SWITCH" terminal). |
+| 5V module **+Vo** | ESP32 `VIN` and relay module **+** | One 5V supply for the board and the coil. |
+| 5V module **−Vo** | ESP32 `GND`, opto **GND** | Common ground on the low-voltage side. |
+| relay module **−** | ESP32 `GND` | Any GND pin; the devkit has more than one. |
+| ESP32 `GPIO26` | relay module **S** | Same as the prototype. |
+| ESP32 `3V3` | opto **VCC** | 3.3V, not 5V: the output goes into a GPIO, and ESP32 pins are not 5V tolerant. |
+| opto **OUT** | ESP32 `GPIO27` | The output pulses at 50Hz while the switch is on (the LED inside only lights on one half of each cycle). Firmware needs a `delayed_off` filter of ~50-100ms so it reads as steady on. Check on the bench which level means "on": many of these modules pull OUT low. |
+
+- **For:** the switchboard stays normal 230V wiring that any electrician understands. No
+  low-voltage wire goes near the plate's switches. The opto isolates the ESP32 from mains.
+- **Against:** one more module in a crowded back box. One firmware
+  change: the `delayed_off` filter, and possibly an `inverted` flag.
+
+### Option B: reuse the wall switch as a low-voltage input
+
+![In-wall option B: the wall switch rewired as a 3.3V input](wiring-svg/04-inwall-option-b-low-voltage-switch.svg)
+
+| From | To | Why it matters |
+|---|---|---|
+| phase, relay, 5V module, load | as in option A | Identical mains side, minus the opto module. |
+| phase loop on the plate | the other switches only | Indian plates loop phase from switch to switch. Break the loop at **this** switch only; the others must keep theirs. |
+| wall switch, one terminal | ESP32 `GPIO27` | Internal pull-up, same as the prototype rocker. Firmware unchanged. |
+| wall switch, other terminal | ESP32 `GND` | Joins the low-voltage ground. |
+
+- **For:** no extra part, and the firmware already works.
+- **Against:** 3.3V wiring now shares a 230V box: use mains-rated wire for it and keep it
+  away from the mains side. The switch looks like every other switch on the plate. If an
+  electrician later "fixes" it back onto the phase loop, 230V goes straight into the
+  ESP32. **Label it LOW VOLTAGE - NOT MAINS** on the plate and inside the box.
+
+**Recommendation: option A.** The board stays normal 230V wiring an electrician
+understands; it costs one module and one firmware line (`PROJECTS.md`, phase 2 entry).
