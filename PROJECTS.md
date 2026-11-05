@@ -2634,7 +2634,7 @@ Add the board to `docs/hardware.md` and its MQTT topic to `endpoints.toml`.
 - [ ] **Together, 2026-11-06 early evening:** finger over the mic port while sampling `diwali_audio_levels.py` - is the constant low/mid floor real sound or electrical noise? (thresholds work either way)
 - [ ] **Together:** `loadtest` with the meter at B's far end (>=4.5V); touch-check the charger after ~1h on
 - [ ] **Pramod:** rename the Tinxy switch "Living Room Blank" (display name only, keep `switch.living_room_blank`)
-- [ ] **Claude:** re-add WLED in HA; point the old aarti scripts' .125 defaults at .127
+- [ ] **Claude:** point the old aarti scripts' .125 defaults at .127
 - [ ] **Claude:** `docs/hardware.md` entry (incl. `diwali-cracker-fx.service` on xero) and `endpoints.toml` (audio sync multicast 239.0.0.1:11988) before Done
 - [ ] **Claude, 2026-11-25:** disable `diwali-cracker-fx` after the season
 - [ ] **Claude:** 2026-11-06 morning: check the akash kandil (`switch.smart_switch_bench_relay`, added to the `diwali_lights_*` automations 2026-11-05) went off at midnight with the door lights (automation traces)
@@ -2699,6 +2699,7 @@ qty | item | est | note
 **When built:** `docs/hardware.md` gets a new entry (and loses the stale `wled-sound` one); the WLED endpoints go back into `projects/endpoints/endpoints.toml` with the new address.
 
 #### Log
+- 2026-11-05: WLED (.127) added to HA as "Diwali Lights" (`light.diwali_lights`, `select.diwali_lights_preset`, area Living Room); Home dashboard Living Room view has "Door lights" (brightness) and "Door effect" (preset) tiles next to the Tinxy "Door" power tile, which was hidden by an empty visibility rule and is shown again.
 - 2026-10-16: noted. Diwali date confirmed as 8 Nov. Board situation, pixel count and the .125 address clash checked against the repo. Options and recommendation given; user to choose.
 - 2026-10-28: option chosen: plain WLED door outline (see State). User asked about two or three 5V adapters / a GaN charger: not needed - the ESP32 runs off the strip supply's 5V (VIN) and "both ends" is a second wire pair from the same supply; a GaN USB-C charger gives at most ~3A at 5V, below the 4A needed.
 - 2026-10-28: user idea: **react to the firecrackers outside** with a mic anyway. Feasible and cheap: a second INMP441 (already the Option 2 row in Parts) on the aarti pins 32/25/33, mounted at the door's outer side, and the audioreactive WLED build. Planned as a switchable "firecracker mode" preset (Ripple Peak / Puddlepeak, squelch high so only bangs trigger), not the default: on the night the crackers are near-continuous. The warm effect stays boot preset 1. The mic is an optional block on the diagram; buy it on the same trip if wanted. The INMP441 clips at ~120 dB SPL, which is fine for detecting bangs.

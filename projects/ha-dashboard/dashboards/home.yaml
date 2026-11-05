@@ -294,6 +294,21 @@ views:
       vertical: false
       features_position: bottom
     - type: tile
+      entity: light.diwali_lights
+      name: Door lights
+      vertical: false
+      features_position: bottom
+      features:
+      - type: light-brightness
+    - type: tile
+      entity: select.diwali_lights_preset
+      name: Door effect
+      icon: mdi:palette
+      vertical: false
+      features_position: bottom
+      features:
+      - type: select-options
+    - type: tile
       entity: fan.living_room_fan
       name: Fan
     column_span: 4
