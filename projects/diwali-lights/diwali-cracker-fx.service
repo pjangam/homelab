@@ -1,0 +1,21 @@
+# Firecracker -> burst animation on the Diwali door lights (192.168.1.127):
+# listens to the board's AudioReactive sync stream and flips WLED between
+# preset 3 (steady warm) and preset 4 (Fireworks Starburst). See
+# projects/diwali-lights/diwali_cracker_fx.py.
+#
+# Install (user service, on xero):
+#   ln -sf ~/code/homelab/projects/diwali-lights/diwali-cracker-fx.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now diwali-cracker-fx
+# Logs: journalctl --user -u diwali-cracker-fx -f
+# After the season (25 Nov): systemctl --user disable --now diwali-cracker-fx
+
+[Unit]
+Description=Diwali door lights: firecracker burst animation
+
+[Service]
+ExecStart=/usr/bin/python3 -u %h/code/homelab/projects/diwali-lights/diwali_cracker_fx.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
