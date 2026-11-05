@@ -1,0 +1,94 @@
+# Bench prototype of the in-house Tinxy replacement: one ESP32 dev board, one
+# SONGLE SRD-05VDC-SL-C relay (5V coil, contacts 10A 250VAC), one switch as
+# the "wall switch" input. Talks to HA over the ESPHome native API, LAN only:
+# no cloud, so it keeps working through an ISP outage.
+# See projects/smart-switch/README.md for wiring and the bench steps.
+substitutions:
+  name: smart-switch-bench
+  friendly_name: Smart Switch Bench
+  static_ip: 192.168.1.128
+  relay_pin: GPIO26
+  switch_pin: GPIO27
+  # Most blue single-relay modules are "low level trigger" (IN pulled to GND
+  # = relay on). Set false for a high-trigger module or a bare relay on an
+  # NPN transistor.
+  relay_inverted: "true"
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf  # same as the voice satellites, so xero's build cache is reused
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  manual_ip:
+    static_ip: ${static_ip}
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+    dns1: 192.168.1.123
+    dns2: 192.168.1.124
+  ap:
+    password: !secret ap_password
+
+captive_portal:
+
+switch:
+  - platform: gpio
+    id: relay
+    name: Relay
+    pin:
+      number: ${relay_pin}
+      inverted: ${relay_inverted}
+    # After a power cut, come back the way it was (a light that was on stays
+    # on), and off if the saved state is lost.
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - output.turn_on: status_led
+    on_turn_off:
+      - output.turn_off: status_led
+
+binary_sensor:
+  # The physical switch, wired between switch_pin and GND (low voltage only,
+  # never mains). Any flip toggles the relay, so a normal rocker works
+  # whichever way up it is - the same feel as a two-way staircase switch.
+  # This is the part that must work with WiFi and HA down.
+  - platform: gpio
+    id: wall_switch
+    name: Wall switch
+    pin:
+      number: ${switch_pin}
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_on_off: 50ms
+    on_state:
+      - switch.toggle: relay
+
+output:
+  - platform: gpio
+    id: status_led
+    pin: GPIO2  # the dev board's blue LED mirrors the relay
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi signal
+    update_interval: 60s
+  - platform: uptime
+    name: Uptime

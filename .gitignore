@@ -47,6 +47,7 @@ projects/endpoints/site/
 services/tailscale/albums/serve-config.json
 services/albums/accounts.conf
 projects/voice-assistant/esphome/secrets.yaml
+projects/smart-switch/esphome/secrets.yaml
 projects/voice-assistant/esphome/.esphome/
 projects/voice-assistant/esphome/build-out/
 
