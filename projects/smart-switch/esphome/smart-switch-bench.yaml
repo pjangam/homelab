@@ -64,13 +64,14 @@ switch:
       - output.turn_off: status_led
 
 binary_sensor:
-  # Optional push button (momentary), wired between switch_pin and GND (low
-  # voltage only, never mains). Each press toggles the relay; release does
-  # nothing. Works with WiFi and HA down. For a latching wall rocker later
-  # (in-wall build), change on_press to on_state so either flip toggles.
+  # Optional rocker (latching) switch, wired between switch_pin and GND (low
+  # voltage only, never mains). Tinxy-style (user, 2026-11-05): flipping it
+  # on turns the relay on, flipping it off turns the relay off; HA or the
+  # timer can change the relay in between, and a flip to the state the relay
+  # is already in does nothing. Works with WiFi and HA down.
   - platform: gpio
     id: wall_switch
-    name: Button
+    name: Switch position
     pin:
       number: ${switch_pin}
       mode:
@@ -80,7 +81,9 @@ binary_sensor:
     filters:
       - delayed_on_off: 50ms
     on_press:
-      - switch.toggle: relay
+      - switch.turn_on: relay
+    on_release:
+      - switch.turn_off: relay
 
 output:
   - platform: gpio

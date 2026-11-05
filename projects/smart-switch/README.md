@@ -19,7 +19,7 @@ Decided 2026-11-05: build from scratch instead of reflashing the Tinxy units.
 
 | File | What |
 |---|---|
-| `esphome/smart-switch-bench.yaml` | the firmware: relay on GPIO26, optional push button on GPIO27, blue LED (GPIO2) mirrors the relay, restores its last state after a power cut |
+| `esphome/smart-switch-bench.yaml` | the firmware: relay on GPIO26, optional rocker on GPIO27 (Tinxy-style: flip on = on, flip off = off, app can override), blue LED (GPIO2) mirrors the relay, restores its last state after a power cut |
 | `esphome/esphome.sh` | `config` / `compile` / `run` / `logs` / `flash-bin` |
 | `wiring.md`, `wiring-svg/` | wiring drawings and bench guide |
 
@@ -28,7 +28,7 @@ Decided 2026-11-05: build from scratch instead of reflashing the Tinxy units.
 **[`wiring.md`](wiring.md)** - the two drawings (`wiring-svg/`, ESP32 to the relay
 module, and the kandil's mains side), the connection tables, the parts checklist and
 the bench checks in order. In short: module **S -> `GPIO26`, + -> `VIN`, - -> `GND`**;
-an optional push button between `GPIO27` and `GND`; mains live through a T2A slow-blow fuse to
+an optional rocker between `GPIO27` and `GND`; mains live through a T2A slow-blow fuse to
 **COM** (middle terminal), **NO** (the end opposite the NC marking) to the bulb.
 
 The drawings are standalone SVG files, edited directly. They render on GitHub; keep
@@ -45,7 +45,7 @@ cd ~/code/homelab/projects/smart-switch/esphome
 ```
 
 Then in HA: Settings -> Devices -> Add integration -> ESPHome, host `192.168.1.128`,
-key = `api_key` from `esphome/secrets.yaml`. Entities: `Relay`, `Button`,
+key = `api_key` from `esphome/secrets.yaml`. Entities: `Relay`, `Switch position`,
 `WiFi signal`, `Uptime`.
 
 Then run the checks in `wiring.md` section 5, in order. Mains only after step 6.

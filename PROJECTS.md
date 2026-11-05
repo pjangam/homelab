@@ -1337,7 +1337,7 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 - [ ] **Claude:** first flash (`esphome.sh run --device /dev/ttyUSB0`), add to HA, run the README's bench checks
 - [ ] **Claude:** once it's in HA, add the kandil relay to the three Diwali Lights automations (sunset on, midnight/sunrise off)
 - [ ] **Claude:** once flashed, add the board to `docs/hardware.md` and `projects/endpoints/endpoints.toml`
-- [ ] **Together, after Diwali:** design the in-wall version (5V mains supply, fuse, enclosure, wiring diagram)
+- [ ] **Together, after Diwali:** design the in-wall version (5V mains supply, fuse, enclosure, wiring diagram; read the existing 230V wall switch through an AC optocoupler detection module, Tinxy-style)
 
 **Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
 **State:** **building from scratch, decided 2026-11-05:** an ESP32 dev board + one relay per switch, ESPHome, LAN-only to HA - not a Tinxy reflash. Bench prototype set up in `projects/smart-switch/` (config validated, not yet flashed: no board wired yet). **First job: the akash kandil for Diwali**, a plug-in load rather than a wall box, on the same schedule as the door lights. The in-wall version comes after.
