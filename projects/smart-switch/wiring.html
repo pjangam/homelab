@@ -267,6 +267,8 @@
   <p>The ESP32 side is the same in both variants: USB power in, <span class="mono">GPIO26</span> out to the relay, a switch from <span class="mono">GPIO27</span> to ground, and the board's <span class="mono">VIN</span>/<span class="mono">5V</span> pin feeding the relay coil. The ESP32 cannot drive the coil from a GPIO: the coil wants about 70mA at 5V, against roughly 20mA from a 3.3V pin. So something sits in between. On a module it is already on the board (variant A). On a bare cube you build it from one NPN transistor, one resistor and one diode (variant B).</p>
   <p><strong>Which one is yours:</strong> if the relay is soldered to a small PCB (usually blue) with a 3-pin header on one side and three screw terminals on the other, it is A. If it is just the cube with five pins underneath, it is B.</p>
 
+  <p><strong>Yours (photo, 2026-11-05): a KY-019-style module</strong> - black board, header <span class="mono">S + &#8722;</span>, an NPN transistor (Q1), a 1.5k base resistor (R1, "152"), a flyback diode and an LED, <em>no optocoupler and no JD-VCC jumper</em>. Electrically that is variant B already built on a board. Wire it like A: <span class="mono">S &rarr; GPIO26</span>, <span class="mono">+ &rarr; VIN</span>, <span class="mono">&#8722; &rarr; GND</span>. It is <strong>high-trigger</strong>, so <span class="mono">relay_inverted: "false"</span> (now the firmware default), and the JD-VCC inset below does not apply. Its three screw terminals are unmarked: with a meter on continuity and the module unpowered, the one pair that beeps is COM + NC and the third is NO; then power it with S tied to + and the terminal that beeps in both tests is COM.</p>
+
   <h3>Variant A &middot; relay on a 1-channel module</h3>
   <figure>
     <div class="scroller wide">
@@ -589,8 +591,8 @@
     <span class="pill"><b>relay_pin</b> GPIO26</span>
     <span class="pill"><b>switch_pin</b> GPIO27</span>
     <span class="pill"><b>status LED</b> GPIO2</span>
-    <span class="pill"><b>relay_inverted A</b> "true"</span>
-    <span class="pill"><b>relay_inverted B</b> "false"</span>
+    <span class="pill"><b>relay_inverted</b> "false" (yours, KY-019)</span>
+    <span class="pill"><b>low-trigger opto module</b> "true"</span>
     <span class="pill"><b>restore</b> RESTORE_DEFAULT_OFF</span>
     <span class="pill"><b>static_ip</b> 192.168.1.128</span>
   </div>

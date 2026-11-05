@@ -9,10 +9,11 @@ substitutions:
   static_ip: 192.168.1.128
   relay_pin: GPIO26
   switch_pin: GPIO27
-  # Most blue single-relay modules are "low level trigger" (IN pulled to GND
-  # = relay on). Set false for a high-trigger module or a bare relay on an
-  # NPN transistor.
-  relay_inverted: "true"
+  # The stash relay (2026-11-05) is a KY-019-style module: header S / + / -,
+  # NPN transistor (Q1) + 1.5k base resistor (R1) + flyback diode, no opto.
+  # High on S = relay on, so not inverted. A low-trigger opto module would
+  # need "true".
+  relay_inverted: "false"
 
 esphome:
   name: ${name}

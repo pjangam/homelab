@@ -27,7 +27,14 @@ Decided 2026-11-05: build from scratch instead of reflashing the Tinxy units.
 **Full diagram:** `wiring.html` (https://claude.ai/artifact/LihsPvp3Lw9rA3HVgAu71v) - both relay variants, the kandil's mains side (3-pin plug, T2A slow-blow fuse on Live -> COM, NO -> B22 holder) and a parts checklist. Summary:
 
 
-- **Relay module** (blue board with IN/VCC/GND): VCC -> ESP32 `VIN` (5V from USB),
+- **The module we have (2026-11-05):** SONGLE SRD-05VDC-SL-C on a KY-019-style
+  board, header **S / + / -**, NPN transistor + 1.5k + flyback diode on board, no
+  optocoupler. **S -> `GPIO26`, + -> `VIN` (5V), - -> `GND`.** High-trigger, so
+  `relay_inverted: "false"`, and the 3.3V low-trigger trap below does not apply.
+  Its screw terminals are unmarked: find NC/COM/NO with a meter in continuity
+  mode: unpowered, the one pair that beeps is COM+NC; power it with S
+  tied to +, and the terminal that beeps in both tests is COM. Mains on COM + NO.
+- **Other relay module** (blue board with IN/VCC/GND): VCC -> ESP32 `VIN` (5V from USB),
   GND -> `GND`, IN -> `GPIO26`.
 - **Bare relay** (just the cube): it cannot hang off a GPIO, the coil wants ~70mA.
   Drive it through an NPN (BC547/2N2222): GPIO26 -> 1k -> base, emitter -> GND,
