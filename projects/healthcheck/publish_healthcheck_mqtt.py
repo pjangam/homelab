@@ -69,6 +69,11 @@ BINARY_SENSORS = {
     "spotifyd_advertising": binary_sensor(
         "spotifyd_advertising", "Homelab Spotifyd Connect Advertising", "mdi:cast-audio"
     ),
+    # The wol Pi's spotifyd (`raspberrypi`, the bedroom speaker), watched from
+    # xero: red if it is not advertising on the LAN, Spotify no longer lists
+    # it, or its watchdogs keep restarting it. Added 2026-11-05 after it sat
+    # disabled for two days with nothing on the board noticing.
+    "pi_spotifyd": binary_sensor("pi_spotifyd", "Homelab Spotifyd (wol Pi)", "mdi:spotify"),
     # The AC entity being unusable in HA, whatever the cause. Deliberately
     # not a node-red/bridge tile: the bridge was green through both
     # 2026-09-11 outages while the entity was unusable for ~2h total.
@@ -132,7 +137,20 @@ def main():
     pub_binary(
         "spotifyd",
         data["spotifyd_problem"],
-        {"stuck_now": data["spotifyd_stuck_now"], "restarts_24h": data["spotifyd_restarts_24h"]},
+        {
+            "stuck_now": data["spotifyd_stuck_now"],
+            "restarts_24h": data["spotifyd_restarts_24h"],
+            "listed_by_spotify": data.get("spotifyd_listed", True),
+        },
+    )
+    pub_binary(
+        "pi_spotifyd",
+        data.get("pi_spotifyd_problem", False),
+        {
+            "advertising": data.get("pi_spotifyd_advertising"),
+            "listed_by_spotify": data.get("pi_spotifyd_listed"),
+            "restarts_24h": data.get("pi_spotifyd_restarts_24h"),
+        },
     )
     # device_class "problem": ON = problem, so invert - advertising is healthy.
     pub_binary(

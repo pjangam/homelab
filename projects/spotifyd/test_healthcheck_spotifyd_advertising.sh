@@ -35,6 +35,12 @@ cat > "$T/repo/projects/spotifyd/check_spotifyd_advertising.sh" <<'S'
 exit "$(cat "$ADVERT_RC_FILE")"
 S
 chmod +x "$T/repo/projects/spotifyd/check_spotifyd_advertising.sh"
+# The Spotify-device-list and wol Pi checks read live HA and ssh to the Pi:
+# stub them healthy so only the case under test can go red.
+rm -f "$T/repo/projects/spotifyd/check_spotify_listed.sh" "$T/repo/projects/spotifyd/check_pi_spotifyd.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$T/repo/projects/spotifyd/check_spotify_listed.sh"
+printf '#!/usr/bin/env bash\necho "0 0 0"\n' > "$T/repo/projects/spotifyd/check_pi_spotifyd.sh"
+chmod +x "$T/repo/projects/spotifyd/check_spotify_listed.sh" "$T/repo/projects/spotifyd/check_pi_spotifyd.sh"
 
 rm -f "$T/repo/tools/notify/send_email.sh"
 cat > "$T/repo/tools/notify/send_email.sh" <<'S'

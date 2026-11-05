@@ -1,16 +1,20 @@
 # spotifyd (headless Spotify Connect)
 
 Spotify Connect with no GUI, so HA scripts and the phone can play to the
-bedroom speaker. It runs **on the wol-sender Pi** since the 2026-09-24 audio
-move; the setup below is xero's, which is where it was first built and where
-the disabled units still sit.
+bedroom speaker. It runs on **both** hosts: the wol-sender Pi (`raspberrypi`,
+the bedroom speaker, since the 2026-09-24 audio move; Play Bedroom Track
+targets it) and xero (`xero`, enabled again since 2026-10-27). Keep both
+enabled. The setup below is xero's, which is where it was first built.
 
 | | |
 |---|---|
 | **Unit** | `spotifyd.service` (`systemd --user`, needs `loginctl enable-linger`) |
 | **Boot race guard** | `wait_for_network.sh` (`-` prefixed in the unit, so a missed copy is silent) |
 | **Watchdog** | `watchdog_spotifyd.sh`, */5 on the Pi via `deploy_watchdog_pi.sh` |
-| **Is it advertising?** | `check_spotifyd_advertising.sh` (avahi over the LAN, so xero can watch the Pi) |
+| **Is it advertising?** | `check_spotifyd_advertising.sh` (avahi over the LAN; `8 raspberrypi --remote` watches the Pi from xero) |
+| **Does Spotify still list it?** | `check_spotify_listed.sh <name>` (HA's spotcast devices sensor - catches the dead-websocket state where it advertises but the app can't see it) |
+| **Listed watchdog (xero cron, */5)** | `watchdog_spotify_listed.sh`: restarts xero's or the Pi's (over ssh) spotifyd when Spotify has lost it for 15min, once an hour at most; tested by `test_watchdog_spotify_listed.sh` |
+| **Pi in the healthcheck** | `check_pi_spotifyd.sh`, called by `healthcheck.sh` for the "Homelab Spotifyd (wol Pi)" tile |
 | **Dashboard tile** | `apply_spotifyd_advertising_dashboard_tile.sh` |
 | **Build for the Pi** | `build_spotifyd_arm64.sh`, `build_spotifyd_on_pi.sh`, `install_raspotify_pi.sh` |
 

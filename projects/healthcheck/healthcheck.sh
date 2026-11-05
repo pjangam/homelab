@@ -166,6 +166,14 @@ if [ -f "$SPOTIFYD_RESTART_LOG" ]; then
     [ "$ts_epoch" -ge "$cutoff_epoch" ] && spotifyd_restarts_24h=$((spotifyd_restarts_24h + 1))
   done < "$SPOTIFYD_RESTART_LOG"
 fi
+# Plus watchdog_spotify_listed.sh's restarts of xero (Spotify had forgotten it).
+if [ -f "$SPOTIFYD_STATE_DIR/listed-restarts-xero.log" ]; then
+  cutoff_epoch=$(date -d "-24 hours" +%s)
+  while read -r ts; do
+    ts_epoch=$(date -d "$ts" +%s 2>/dev/null) || continue
+    [ "$ts_epoch" -ge "$cutoff_epoch" ] && spotifyd_restarts_24h=$((spotifyd_restarts_24h + 1))
+  done < "$SPOTIFYD_STATE_DIR/listed-restarts-xero.log"
+fi
 
 if [ "$spotifyd_restarts_24h" -ge "$SPOTIFYD_RESTART_THRESHOLD" ]; then
   problems+=("🎵 spotifyd keeps restarting (≥${SPOTIFYD_RESTART_THRESHOLD}× in 24h)"$'\n'"  watchdog restarted it $spotifyd_restarts_24h times - investigate")
@@ -204,6 +212,57 @@ else
   # deliberate stop doesn't leave a stale countdown to alert on at restart.
   rm -f "$SPOTIFYD_ADVERT_FAIL_FILE"
 fi
+
+# Is the device still in Spotify's own device list (spotcast's sensor)? The
+# state above can all be green while Spotify has forgotten it - xero,
+# 2026-11-01 to 11-03. watchdog_spotify_listed.sh restarts it after 15m, so
+# this alerts only at 30m, i.e. when that restart did not bring it back.
+# The tile goes red on the first miss. "Can't tell" (rc 2) leaves any
+# countdown as it is.
+SPOTIFY_LISTED_ALERT_MIN=30
+spotify_listed() { # name rc fail_file -> sets spotify_listed_ok; may add a problem
+  local name=$1 rc=$2 file=$3 mins
+  spotify_listed_ok=true
+  case "$rc" in
+    0) rm -f "$file" ;;
+    1)
+      spotify_listed_ok=false
+      [ -f "$file" ] || date +%s > "$file"
+      mins=$(( ($(date +%s) - $(cat "$file")) / 60 ))
+      if [ "$mins" -ge "$SPOTIFY_LISTED_ALERT_MIN" ]; then
+        problems+=("🎵 Spotify has forgotten $name (since $(date -d "@$(cat "$file")" '+%H:%M'))"$'\n'"  not in Spotify's device list, so the app and HA scripts can't play to it; the watchdog's restart did not fix it. Spotcast devices sensor in HA; $( [ "$name" = xero ] && echo "journalctl --user -u spotifyd" || echo "ssh pramod@192.168.1.124 'journalctl _PID=\$(pgrep -x spotifyd)'") | tail")
+      fi ;;
+  esac
+}
+spotify_listed xero "$("$SCRIPT_DIR/projects/spotifyd/check_spotify_listed.sh" xero >/dev/null 2>&1; echo $?)" \
+  "$SPOTIFYD_STATE_DIR/listed-failing-since-xero"
+spotifyd_listed=$spotify_listed_ok
+
+# The wol Pi's spotifyd (`raspberrypi`, the bedroom speaker - Play Bedroom
+# Track targets it). Until 2026-11-05 nothing here watched it: it had been
+# disabled by mistake for two days and the first sign was the bedroom button
+# "failing". One tile, red on any of: not advertising on the LAN, Spotify
+# not listing it, or its watchdogs flapping. Same escalation as xero's.
+read -r pi_advert_rc pi_listed_rc pi_spotifyd_restarts_24h < <("$SCRIPT_DIR/projects/spotifyd/check_pi_spotifyd.sh" 2>/dev/null || echo "2 2 -1")
+PI_ADVERT_FAIL_FILE="$SPOTIFYD_STATE_DIR/pi-advert-failing-since"
+pi_spotifyd_advertising=true
+if [ "${pi_advert_rc:-2}" -eq 1 ]; then
+  pi_spotifyd_advertising=false
+  if [ -f "$PI_ADVERT_FAIL_FILE" ]; then
+    problems+=("🎵 Pi spotifyd (raspberrypi) not on Spotify Connect"$'\n'"  not advertising on the LAN for $(( ($(date +%s) - $(cat "$PI_ADVERT_FAIL_FILE")) / 60 ))m; the bedroom button can't play. ssh pramod@192.168.1.124 'systemctl --user status spotifyd'")
+  else
+    date +%s > "$PI_ADVERT_FAIL_FILE"
+  fi
+else
+  rm -f "$PI_ADVERT_FAIL_FILE"
+fi
+spotify_listed raspberrypi "${pi_listed_rc:-2}" "$SPOTIFYD_STATE_DIR/listed-failing-since-raspberrypi"
+pi_spotifyd_listed=$spotify_listed_ok
+[ "${pi_spotifyd_restarts_24h:--1}" -ge "$SPOTIFYD_RESTART_THRESHOLD" ] && \
+  problems+=("🎵 Pi spotifyd keeps restarting (≥${SPOTIFYD_RESTART_THRESHOLD}× in 24h)"$'\n'"  watchdogs restarted it $pi_spotifyd_restarts_24h times - investigate")
+pi_spotifyd_problem_bool=false
+{ [ "$pi_spotifyd_advertising" = false ] || [ "$pi_spotifyd_listed" = false ] || \
+  [ "${pi_spotifyd_restarts_24h:--1}" -ge "$SPOTIFYD_RESTART_THRESHOLD" ]; } && pi_spotifyd_problem_bool=true
 
 # MirAIe AC: is the climate entity actually usable in HA? Nothing watched
 # this until 2026-09-11, when it broke twice in one evening from two
@@ -521,6 +580,7 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
   spotifyd_problem_bool=$spotifyd_stuck_now
   [ "$spotifyd_restarts_24h" -ge "$SPOTIFYD_RESTART_THRESHOLD" ] && spotifyd_problem_bool=true
   [ "$spotifyd_advertising" = false ] && spotifyd_problem_bool=true
+  [ "$spotifyd_listed" = false ] && spotifyd_problem_bool=true
 
   docker_bad_json=$(jq -n --args '$ARGS.positional' "${docker_bad_containers[@]}")
   problems_json=$(jq -n --args '$ARGS.positional' "${problems[@]}")
@@ -542,6 +602,11 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
     --argjson spotifyd_stuck_now "$spotifyd_stuck_now" \
     --arg spotifyd_restarts_24h "$spotifyd_restarts_24h" \
     --argjson spotifyd_advertising "$spotifyd_advertising" \
+    --argjson spotifyd_listed "$spotifyd_listed" \
+    --argjson pi_spotifyd_problem "$pi_spotifyd_problem_bool" \
+    --argjson pi_spotifyd_advertising "$pi_spotifyd_advertising" \
+    --argjson pi_spotifyd_listed "$pi_spotifyd_listed" \
+    --arg pi_spotifyd_restarts_24h "${pi_spotifyd_restarts_24h:--1}" \
     --argjson miraie_ac_ok "$miraie_ac_ok" \
     --arg miraie_ac_unavailable_minutes "${miraie_ac_unavailable_minutes:-}" \
     --arg miraie_ac_autofixes_24h "$miraie_ac_autofixes_24h" \
@@ -566,6 +631,11 @@ curl -fsS -m 10 --retry 3 "$HEALTHCHECK_PING_URL" -o /dev/null || true
       spotifyd_stuck_now: $spotifyd_stuck_now,
       spotifyd_restarts_24h: ($spotifyd_restarts_24h|tonumber),
       spotifyd_advertising: $spotifyd_advertising,
+      spotifyd_listed: $spotifyd_listed,
+      pi_spotifyd_problem: $pi_spotifyd_problem,
+      pi_spotifyd_advertising: $pi_spotifyd_advertising,
+      pi_spotifyd_listed: $pi_spotifyd_listed,
+      pi_spotifyd_restarts_24h: (if ($pi_spotifyd_restarts_24h|tonumber) < 0 then null else ($pi_spotifyd_restarts_24h|tonumber) end),
       miraie_ac_ok: $miraie_ac_ok,
       miraie_ac_unavailable_minutes: (if $miraie_ac_unavailable_minutes == "" then null else ($miraie_ac_unavailable_minutes|tonumber) end),
       miraie_ac_autofixes_24h: ($miraie_ac_autofixes_24h|tonumber),

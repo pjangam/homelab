@@ -26,12 +26,16 @@ set -uo pipefail
 
 TIMEOUT="${1:-8}"
 SERVICE_NAME="${2:-$(hostname)}"
+# Third arg "--remote": the device is another host's (the wol Pi's
+# `raspberrypi`, watched from xero), so there is no local unit to ask and
+# "not advertising" is exit 1 - that spotifyd is meant to always be up.
+REMOTE="${3:-}"
 
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/$(id -u)/bus}"
 
 # Only meaningful if spotifyd is meant to be up right now.
-if ! systemctl --user is-active --quiet spotifyd.service 2>/dev/null; then
+if [ "$REMOTE" != "--remote" ] && ! systemctl --user is-active --quiet spotifyd.service 2>/dev/null; then
   echo "spotifyd is not running - advertisement check not applicable" >&2
   exit 2
 fi
