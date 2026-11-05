@@ -1330,7 +1330,6 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** mount the box on the wall (plug out), hang the kandil, and after its first hour feel the jute nearest the bulb (warm OK, hot = more clearance or the 40W)
 - [ ] **Claude:** 2026-11-06 morning: check the kandil went off at midnight with the door lights (automation traces)
 - [ ] **Together, after Diwali:** design the in-wall version (5V mains supply, fuse, enclosure, wiring diagram; read the existing 230V wall switch through an AC optocoupler detection module, Tinxy-style)
 
@@ -1366,6 +1365,7 @@ qty | item | est | note
 - 2026-11-05: wiring diagram `projects/smart-switch/wiring.html` (https://claude.ai/artifact/LihsPvp3Lw9rA3HVgAu71v): module and bare-relay variants, kandil mains side. Kandil bulb is a 40-60W incandescent (B22): fine for the relay, T2A slow-blow fuse; LED bulb recommended for heat (declined: the kandil is jute, and the clear filament throws its weave as a shadow pattern an LED would wash out).
 - 2026-11-05: wiring moved to Markdown + SVG so it renders on GitHub: `projects/smart-switch/wiring.md` with `wiring-svg/` (ESP32 to the KY-019 module, mains side). Only the build actually used is drawn; the other relay variants and the USB-string alternative were dropped (user: they add confusion). `wiring.html` removed.
 - 2026-11-05: **flashed and in HA.** A fresh spare ESP32 (MAC `b0:3f:d3:51:77:ec`; the board first found on xero's USB was the living room voice satellite, left alone) flashed over USB, on 192.168.1.128, added to HA with `add_satellite_ha.py` (now takes `ESPHOME_SECRETS` for another project's board). WiFi prefers the bedroom AP `dlink_pramod_bed_room` (user; same password as the router), falls back to `dlink_pramod`; joined the bedroom AP at -67 dBm from xero's spot. New `WiFi network` / `WiFi access point` sensors show which. Relay came back on after the OTA reboot (restore works).
+- 2026-11-05: box on the wall, ESP32 back on its charger, rejoined the bedroom AP at -59 dBm, bulb on. Jute heat check dropped: same kandil and 60W bulb used safely for the past two Diwalis (user).
 - 2026-11-05: **mains side built and working.** Plug pins metered: L-N open with relay off, 64 ohm on (60W cold filament), E open to both. Plugged into the fused strip: dark at plug-in, lit on HA's command. `switch.smart_switch_bench_relay` added to the three `diwali_lights_*` automations (HA backup `automations.yaml.bak-2026-11-05-kandil`); board added to `docs/hardware.md` and `endpoints.toml`.
 - 2026-11-05: **low-voltage bench checks pass** (wiring.md section 5): LED follows HA (step 1, after an on_boot fix: a restored relay did not light the LED), module wired, one click per toggle with the module LED following (3), COM-NC beeps unpowered and COM-NO beeps on / silent off (4), relay restored on after a USB unplug (6). Rocker (2, 5) not fitted.
 - 2026-11-05: the relay is on a KY-019-style module (S / + / -, NPN driver, no opto): high-trigger, works off 3.3V; firmware set to `relay_inverted: "false"`. Screw terminals unmarked, to be identified with a meter.
