@@ -3252,24 +3252,28 @@ Everything is off-the-shelf: setup only, no code to maintain.
   - **(A) Keep it on AC, sense it with an isolated AC optocoupler module** (the Tinxy way, confirmed from Tinxy's wiring diagram 2026-11-05: L and N feed the module, L also goes through the wall switch into a "TO SWITCH" terminal, load comes off the module; https://user-images.githubusercontent.com/69470381/233136920-ca890a9b-f521-4597-8cf3-79327926a38e.jpeg; and the plan): phase -> wall switch -> module input -> neutral; module output to a GPIO. The board's wiring stays normal-looking 230V, so a later electrician can't get it wrong. Costs a small module; its output pulses at mains frequency, so the firmware needs a ~50-100ms `delayed_off` filter.
   - **(B) Make the wall switch a low-voltage "rocker"**: disconnect it from mains completely and wire it GPIO-to-GND. Cheapest, and the firmware already works. Traps: Indian switchboards loop the phase from switch to switch, so that loop must be broken for this switch only; 3.3V and 230V then share a box (keep them separated, mains-rated wire); and anyone who later "fixes" the switch back onto phase puts 230V into the ESP32. Label it if chosen.
 #### Cost (2026-11-05)
-Rough local-shop prices, not checked against a supplier. One switch, option B:
+Quoted prices incl. 18% GST, from search snapshots on 2026-11-05: robu.in refuses automated fetches (HTTP 403), so robu prices are from search snippets (two from its mirror/staging pages) and the rest from other Indian stores. Recheck on the site before buying; local shop first.
 
-| Part | New, ₹ | Paid / on hand |
+One switch, option B:
+
+| Part | Quoted ₹ | Where | Paid / on hand |
+|---|---|---|---|
+| ESP32 devkit, WROOM-32 38-pin | 384 (325 + GST) | robosap.in (flyrobo.in 409) | have spares; bought a few weeks before 2026-11-05, price not remembered |
+| 1-channel 5V relay module | 59 | robu.in mirror (out of stock there); probots.co.in 59 | have one: ₹138 in 2020 (now on the kandil) |
+| HLK-PM01 5V supply | 195 | hubtronics.in (vishaworld.com 180) | buy; genuine Hi-Link, it sits on 230V in the wall |
+| 5x20mm PCB fuse holder | 7 (6 + GST) | robocomp.in | buy |
+| Fuse T500mA-T1A, 5x20mm | not quoted | - | buy, ~₹5-10 locally |
+| Enclosure that fits the back box | not quoted | - | buy, ~₹50-150 locally |
+| Wire, lever connectors, sleeving | not quoted | - | ~₹30-60 |
+| **Total, one switch** | **~645 quoted + ~100-220 unquoted ≈ ₹750-870** | | **~₹290-430** with the ESP32 and relay on hand |
+
+| Variant | Quoted ₹ | Where |
 |---|---|---|
-| ESP32 devkit | 350-450 | have spares; bought a few weeks before 2026-11-05, price not remembered (likely in range) |
-| 1-channel relay module (KY-019 type) | 60-100 | have one: ₹138 in 2020 (now on the kandil) |
-| HLK-PM01 5V supply, genuine Hi-Link | 250-400 | buy; don't economise, it sits on 230V in the wall |
-| Fuse + holder, T500mA-T1A | 20-40 | buy |
-| Enclosure that fits the back box | 50-150 | buy |
-| Wire, lever connectors, sleeving | 30-60 | buy |
-| **Total, one switch** | **~760-1,200** | **~350-650** with the ESP32 and relay on hand |
-
-| Variant | ₹ |
-|---|---|
-| Option A: add an AC opto module per switch | +60-150 |
-| 4-switch board: one ESP32 + one supply, 4-channel relay, opto per switch (A) | ~1,000-1,600 (~250-400 a switch) |
-| **Tinxy 4-node with fan regulator** (Amazon ASIN B08KZMB7HD) | **~1,200** (~300 a switch, with fan speed) |
-| Reflash test kit: CH340G USB-TTL adapter (+ soldering iron if none) | ~100-150 |
+| Option A: 1-channel 220V AC optocoupler module, per switch | +193 | robu.in (in stock in the snapshot). Active-low: OUT goes to GND when 230V is present |
+| 4-channel 5V relay module | 140 (119 + GST) | electronicscomp.com |
+| 4-switch DIY board (option A): ESP32 + HLK-PM01 + 4-ch relay + 4 opto + fuse, enclosure, wire | ~1,700-1,850 (~₹430-460 a switch) | sum of the above |
+| **Tinxy 4-node with fan regulator** (Amazon ASIN B08KZMB7HD) | **~1,200** (~₹300 a switch, with fan speed) | user |
+| Reflash test kit: CH340G USB-TTL adapter (+ soldering iron if none) | 48 | robu.in staging page (makerbazar.in 89) |
 
 #### Log
 - 2026-11-05: split out of "In-house smart switch to replace Tinxy" when the kandil prototype was marked Done.
