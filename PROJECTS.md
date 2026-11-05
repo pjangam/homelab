@@ -1330,9 +1330,8 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** confirm the relay terminals with a multimeter: middle (COM) to the NC-marked end beeps, to the other end (NO) silent
-- [ ] **Pramod:** confirm the blue LED follows the relay, then wire the module to the flashed board (S→GPIO26, +→VIN, −→GND, USB unplugged)
-- [ ] **Claude:** run the bench checks in `projects/smart-switch/wiring.md` section 5 with Pramod (step 1 waiting on the LED)
+- [ ] **Pramod:** build the kandil's mains side with the plug out of the wall (`projects/smart-switch/wiring.md` section 2), then meter it from the plug pins (section 5 step 7)
+- [ ] **Claude:** bench check step 8 with Pramod: lid on, plug in, toggle from HA, one hour in the kandil
 - [ ] **Claude:** once it's in HA, add the kandil relay to the three Diwali Lights automations (sunset on, midnight/sunrise off)
 - [ ] **Claude:** once flashed, add the board to `docs/hardware.md` and `projects/endpoints/endpoints.toml`
 - [ ] **Together, after Diwali:** design the in-wall version (5V mains supply, fuse, enclosure, wiring diagram; read the existing 230V wall switch through an AC optocoupler detection module, Tinxy-style)
@@ -1369,6 +1368,7 @@ qty | item | est | note
 - 2026-11-05: wiring diagram `projects/smart-switch/wiring.html` (https://claude.ai/artifact/LihsPvp3Lw9rA3HVgAu71v): module and bare-relay variants, kandil mains side. Kandil bulb is a 40-60W incandescent (B22): fine for the relay, T2A slow-blow fuse; LED bulb recommended for heat (declined: the kandil is jute, and the clear filament throws its weave as a shadow pattern an LED would wash out).
 - 2026-11-05: wiring moved to Markdown + SVG so it renders on GitHub: `projects/smart-switch/wiring.md` with `wiring-svg/` (ESP32 to the KY-019 module, mains side). Only the build actually used is drawn; the other relay variants and the USB-string alternative were dropped (user: they add confusion). `wiring.html` removed.
 - 2026-11-05: **flashed and in HA.** A fresh spare ESP32 (MAC `b0:3f:d3:51:77:ec`; the board first found on xero's USB was the living room voice satellite, left alone) flashed over USB, on 192.168.1.128, added to HA with `add_satellite_ha.py` (now takes `ESPHOME_SECRETS` for another project's board). WiFi prefers the bedroom AP `dlink_pramod_bed_room` (user; same password as the router), falls back to `dlink_pramod`; joined the bedroom AP at -67 dBm from xero's spot. New `WiFi network` / `WiFi access point` sensors show which. Relay came back on after the OTA reboot (restore works).
+- 2026-11-05: **low-voltage bench checks pass** (wiring.md section 5): LED follows HA (step 1, after an on_boot fix: a restored relay did not light the LED), module wired, one click per toggle with the module LED following (3), COM-NC beeps unpowered and COM-NO beeps on / silent off (4), relay restored on after a USB unplug (6). Rocker (2, 5) not fitted.
 - 2026-11-05: the relay is on a KY-019-style module (S / + / -, NPN driver, no opto): high-trigger, works off 3.3V; firmware set to `relay_inverted: "false"`. Screw terminals unmarked, to be identified with a meter.
 
 ### Remote control for scenes/scripts (Spotify, white noise, etc.)
