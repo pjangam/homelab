@@ -31,9 +31,10 @@ Decided 2026-11-05: build from scratch instead of reflashing the Tinxy units.
   board, header **S / + / -**, NPN transistor + 1.5k + flyback diode on board, no
   optocoupler. **S -> `GPIO26`, + -> `VIN` (5V), - -> `GND`.** High-trigger, so
   `relay_inverted: "false"`, and the 3.3V low-trigger trap below does not apply.
-  Its screw terminals are unmarked: find NC/COM/NO with a meter in continuity
-  mode: unpowered, the one pair that beeps is COM+NC; power it with S
-  tied to +, and the terminal that beeps in both tests is COM. Mains on COM + NO.
+  Screw terminals: one end is marked **NC** on the board (user, 2026-11-05), so
+  the middle is **COM** and the other end **NO**. Mains on COM + NO, NC empty.
+  Confirm unpowered with a meter on continuity: middle-to-NC beeps, middle-to-NO
+  stays silent.
 - **Other relay module** (blue board with IN/VCC/GND): VCC -> ESP32 `VIN` (5V from USB),
   GND -> `GND`, IN -> `GPIO26`.
 - **Bare relay** (just the cube): it cannot hang off a GPIO, the coil wants ~70mA.

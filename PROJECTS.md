@@ -1331,7 +1331,7 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 
 #### Open items
 - [ ] **Pramod:** check the parts list in `projects/smart-switch/wiring.html` against what you have
-- [ ] **Pramod:** find the relay's COM / NO / NC screw terminals with a multimeter (steps in `projects/smart-switch/README.md`)
+- [ ] **Pramod:** confirm the relay terminals with a multimeter: middle (COM) to the NC-marked end beeps, to the other end (NO) silent
 - [ ] **Pramod:** consider swapping the kandil's 40-60W incandescent for a 7-9W LED bulb (fire risk in paper, unattended)
 - [ ] **Pramod:** wire the spare ESP32 + relay on the bench (`projects/smart-switch/README.md`) and plug it into xero's USB
 - [ ] **Claude:** first flash (`esphome.sh run --device /dev/ttyUSB0`), add to HA, run the README's bench checks
