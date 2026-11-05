@@ -355,6 +355,16 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "Flashed 2026-10-24. Static IP set in firmware - keep .126 out of the router's DHCP pool. OTA on port 3232; compile on xero (the Mac cannot fetch ESP-IDF on this ISP). projects/voice-assistant/README.md"
 
   [[group.endpoint]]
+  name = "Smart switch bench - akash kandil (ESPHome API)"
+  proto = "tcp"
+  host = "192.168.1.128"
+  port = 6053
+  connect = "projects/smart-switch/esphome/esphome.sh logs --device 192.168.1.128"
+  desc = "ESPHome native API on the in-house Tinxy replacement prototype: an ESP32 + relay switching the akash kandil. LAN only, Noise-encrypted with api_key."
+  who = "Home Assistant's ESPHome integration (device \"Smart Switch Bench\", switch.smart_switch_bench_relay), driven by the Diwali Lights automations."
+  note = "Flashed 2026-11-05. Static IP in firmware; prefers the bedroom AP. OTA on port 3232. projects/smart-switch/README.md"
+
+  [[group.endpoint]]
   name = "NTP (chrony)"
   proto = "udp"
   host = "192.168.1.123"
