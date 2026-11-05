@@ -289,17 +289,8 @@ views:
       vertical: false
       features_position: bottom
     - type: tile
-      visibility:
-      - condition: not
-        conditions: []
       entity: switch.living_room_blank
       name: Door
-      vertical: false
-      features_position: bottom
-    - type: tile
-      entity: switch.smart_switch_bench_relay
-      name: Akash Kandil
-      icon: mdi:lamp
       vertical: false
       features_position: bottom
     - type: tile
@@ -349,6 +340,12 @@ views:
         name:
           type: entity
         icon: mdi:waves
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: switch.smart_switch_bench_relay
+        name: Akash Kandil
+        icon: mdi:lamp
         vertical: false
         features_position: bottom
       columns: 3
