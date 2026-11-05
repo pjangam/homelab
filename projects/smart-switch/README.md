@@ -56,7 +56,7 @@ ESPHOME_SECRETS=projects/smart-switch/esphome/secrets.yaml \
   projects/voice-assistant/add_satellite_ha.py 192.168.1.128 api_key
 ```
 
-Entities: `switch.smart_switch_bench_relay`, `Switch position`, `WiFi signal`,
+Entities: `switch.smart_switch_bench_relay` (named "Akash Kandil" in HA, area Living Room, on the Home dashboard), `Switch position`, `WiFi signal`,
 `WiFi network`, `WiFi access point`, `Uptime`.
 
 Then run the checks in `wiring.md` section 5, in order. Mains only after step 6.

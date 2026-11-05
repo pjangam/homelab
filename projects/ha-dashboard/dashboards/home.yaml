@@ -297,6 +297,12 @@ views:
       vertical: false
       features_position: bottom
     - type: tile
+      entity: switch.smart_switch_bench_relay
+      name: Akash Kandil
+      icon: mdi:lamp
+      vertical: false
+      features_position: bottom
+    - type: tile
       entity: fan.living_room_fan
       name: Fan
     column_span: 4
