@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Every project/service/tool folder must say what it is, in its own README.md.
+# Every project/service/tool folder must say what it is, in its own README.md,
+# and must be listed in the root Readme.md's folder index (added 2026-11-05,
+# after projects/smart-switch shipped without an index line).
 #
 # The rule is in CLAUDE.md, and it is deliberately tied to the folder existing
 # rather than to the work finishing: a half-built project is exactly when
@@ -18,6 +20,9 @@ cd "$(git rev-parse --show-toplevel)"
 # The four homes, plus the deferred groups that still live outside them
 # (scripts/, esp32/ - see the layout rules in CLAUDE.md).
 HOMES=(projects services tools scripts esp32)
+# Folders the root Readme.md indexes. The deferred scripts/ and esp32/ groups
+# are not indexed until they move (CLAUDE.md).
+INDEXED=(projects services tools)
 
 folders_with_tracked_files() {
     local home
@@ -40,16 +45,28 @@ else
 fi
 
 missing=()
+unindexed=()
 while read -r dir; do
     [ -n "${dir:-}" ] || continue
     case "$dir" in */) continue ;; esac
     # Only the five homes above; a staged path elsewhere is not in scope.
     printf '%s\n' "${HOMES[@]}" | grep -qx "${dir%%/*}" || continue
     [ -f "$dir/README.md" ] || missing+=("$dir")
+    if printf '%s\n' "${INDEXED[@]}" | grep -qx "${dir%%/*}"; then
+        grep -qF "$dir/" Readme.md || unindexed+=("$dir")
+    fi
 done <<< "$candidates"
 
+if [ ${#unindexed[@]} -gt 0 ]; then
+    echo "[check-readmes] Not listed in the root Readme.md's folder index:"
+    printf '  - %s/\n' "${unindexed[@]}"
+    echo "Add a line to its table (### projects/, services/ or tools/)."
+    echo
+fi
+
 if [ ${#missing[@]} -eq 0 ]; then
-    [ "$mode" = all ] && echo "Every project/service/tool folder has a README.md."
+    [ ${#unindexed[@]} -gt 0 ] && exit 1
+    [ "$mode" = all ] && echo "Every project/service/tool folder has a README.md and is in the root index."
     exit 0
 fi
 
