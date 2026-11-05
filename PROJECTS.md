@@ -2608,11 +2608,11 @@ Add the board to `docs/hardware.md` and its MQTT topic to `endpoints.toml`.
 **Priority:** P1
 
 #### Open items
-- [ ] **Pramod:** cover the socket box (2-pin socket + travel adapter + charger): gift wrap outside only, vent gap clear, opening facing down
-- [ ] **Pramod:** cover the ESP32+mic box: keep a hole over the mic's sound port, paper cut away there
-- [ ] **Together:** mic baseline - finger over the mic port while sampling (real sound vs electrical noise)
-- [ ] **Together:** tune sound-reactiveness: ambient, talking and footsteps stay calm, firecrackers trigger
-- [ ] **Together:** pick the sound-reactive effect and save it as boot preset 1, then move the boot preset (`def.ps`, now 2) to it; add a calm warm fallback preset
+- [ ] **Pramod, 2026-11-06:** cover the socket box (2-pin socket + travel adapter + charger): gift wrap outside only, vent gap clear, opening facing down
+- [ ] **Pramod, 2026-11-06:** cover the ESP32+mic box: keep a hole over the mic's sound port, paper cut away there
+- [ ] **Together, 2026-11-06 early evening:** mic baseline (before the firecrackers start) - finger over the mic port while sampling (real sound vs electrical noise)
+- [ ] **Together, 2026-11-06 evening:** tune sound-reactiveness: ambient, talking and footsteps stay calm, firecrackers trigger
+- [ ] **Together, 2026-11-06 evening:** pick the sound-reactive effect and save it as boot preset 1, then move the boot preset (`def.ps`, now 2) to it; add a calm warm fallback preset
 - [ ] **Together:** `loadtest` with the meter at B's far end (>=4.5V); touch-check the charger after ~1h on
 - [ ] **Pramod:** rename the Tinxy switch "Living Room Blank" (display name only, keep `switch.living_room_blank`)
 - [ ] **Claude:** re-add WLED in HA; point the old aarti scripts' .125 defaults at .127
@@ -2702,6 +2702,7 @@ qty | item | est | note
 - 2026-11-03: **schedule refined (user):** midnight off normally, but **on till sunrise** after Lakshmi Puja (Sun 8 Nov), Padwa (Tue 10 Nov) and Bhai Dooj (Wed 11 Nov): `diwali_lights_midnight_off` skips 2026-11-09/11/12 00:00, new `automation.diwali_lights_sunrise_off` turns it off at sunrise (no-op other days). **Season ends after Kartik Purnima (Tue 24 Nov)**: sunset-on has a date condition (<= 2026-11-24), sunrise-off runs through the 25th; after that the automations stay but never fire - delete them or change the dates for next year. Dates: Padwa/Govardhan is 10 Nov, not the 9th ([dekhopanchang](https://dekhopanchang.com/en/festivals/govardhan-puja/2026)); Bhai Dooj is 11 Nov per most sources ([shubhpanchang](https://shubhpanchang.com/festivals/bhai-dooj)) though Drik Panchang says 10 Nov - the 10 Nov in this entry's Why was that minority date; Kartik Purnima 24 Nov ([shubhpanchang](https://shubhpanchang.com/festivals/dev-diwali)). 9 Nov (between Lakshmi Puja and Padwa) is a normal midnight night.
 - 2026-11-03: Kartik Purnima (24 Nov) is also on till sunrise (user): midnight-off now also skips 2026-11-25; sunrise-off already runs through the 25th, so the season's last off is sunrise 25 Nov.
 - 2026-11-05: **boot preset set (user: solid was boring until the mic is tuned):** preset 2 "Funky (until mic tuning)" = Colorwaves (fx 67), Party palette (6), sx 140 / ix 160, bri 128; `def.ps` = 2. Verified with a reboot (came up ps 2, fx 67). Done at 10:00 by switching `switch.living_room_blank` on through the HA API for a few minutes, then off again so the schedule state is unchanged. Preset 1 stays free for the sound-reactive one; when it exists, set `def.ps` to 1.
+- 2026-11-05: wrapping and tuning moved to 2026-11-06 (Dhanteras) (user): boxes wrapped during the day, the mic baseline a little early in the evening, then tuning while firecrackers are actually going off - real targets to tune against rather than claps.
 
 ### Humidity-triggered AC dry mode and mister (temperature/humidity sensor on an ESP32)
 **Status:** Backlog
