@@ -41,6 +41,7 @@ wol-sender Pi or the Mac; they move into the layout above in a later session.
 | [`pi-health`](projects/pi-health/README.md) | the wol Pi reporting its own health over MQTT |
 | [`power-watchdog`](projects/power-watchdog/README.md) | clean shutdown on an extended power cut (armed) |
 | [`projects-ui`](projects/projects-ui/README.md) | the dashboard that renders `PROJECTS.md` at `/projects` |
+| [`smart-switch`](projects/smart-switch/README.md) | in-house ESP32 + relay switch, LAN-only (replacing Tinxy); runs the akash kandil |
 | [`spotifyd`](projects/spotifyd/README.md) | headless Spotify Connect on the Pi |
 | [`tinxy-watchdog`](projects/tinxy-watchdog/README.md) | restarts HA after a sustained ISP-outage disconnect (temporary) |
 | [`voice-assistant`](projects/voice-assistant/README.md) | local voice control through HA Assist |
