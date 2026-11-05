@@ -16,7 +16,8 @@ Run on xero, from the repo root:
 
 The key argument is the *name* of the key in esphome/secrets.yaml, never the
 key itself, so the secret stays in the gitignored file and out of shell
-history. Area is an HA area_id (see `ha_ws.py '{"type":
+history. For a board from another project, point ESPHOME_SECRETS at that
+project's secrets.yaml. Area is an HA area_id (see `ha_ws.py '{"type":
 "config/area_registry/list"}'`); omit it to leave the area unset.
 """
 import json
@@ -29,7 +30,10 @@ import urllib.request
 from ha_ws import call, call_many
 
 HA_HTTP = os.environ.get("HA_HTTP", "http://localhost:8123")
-SECRETS = pathlib.Path(__file__).resolve().parent / "esphome" / "secrets.yaml"
+# Another project's board: ESPHOME_SECRETS=projects/smart-switch/esphome/secrets.yaml
+SECRETS = pathlib.Path(os.environ.get(
+    "ESPHOME_SECRETS",
+    pathlib.Path(__file__).resolve().parent / "esphome" / "secrets.yaml"))
 
 
 def http(method, path, body=None):

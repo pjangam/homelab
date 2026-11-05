@@ -35,8 +35,15 @@ ota:
     password: !secret ota_password
 
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
+  # Bedroom access point first (user, 2026-11-05); the main router is the
+  # fallback, so a wrong bedroom password still leaves the board reachable.
+  networks:
+    - ssid: !secret wifi_ssid_bedroom
+      password: !secret wifi_password  # same as the main router
+      priority: 10
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+      priority: 0
   manual_ip:
     static_ip: ${static_ip}
     gateway: 192.168.1.1
@@ -96,3 +103,11 @@ sensor:
     update_interval: 60s
   - platform: uptime
     name: Uptime
+
+text_sensor:
+  # Which access point it joined (bedroom AP or the main router).
+  - platform: wifi_info
+    ssid:
+      name: WiFi network
+    bssid:
+      name: WiFi access point

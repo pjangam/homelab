@@ -14,7 +14,8 @@ Decided 2026-11-05: build from scratch instead of reflashing the Tinxy units.
 | Runs on | ESP32 classic dev board (`esp32dev`), static `192.168.1.128`, mDNS `smart-switch-bench.local` |
 | Relay | SONGLE SRD-05VDC-SL-C on a KY-019-style module (S / + / -, NPN driver, high-trigger), from the stash: 5V coil, contacts 10A 250VAC |
 | Talks to | HA's ESPHome integration, API `:6053` (encrypted, key `api_key` in `esphome/secrets.yaml`), OTA `:3232` |
-| Secrets | `esphome/secrets.yaml`, **gitignored**: WiFi/OTA/AP copied from the voice satellites, its own `api_key` |
+| WiFi | prefers the bedroom AP `dlink_pramod_bed_room` (same password as the router), falls back to `dlink_pramod`. HA's `WiFi network` / `WiFi access point` show which it joined |
+| Secrets | `esphome/secrets.yaml`, **gitignored**: WiFi/OTA/AP copied from the voice satellites, `wifi_ssid_bedroom`, its own `api_key` |
 | Build | `esphome/esphome.sh` - ESPHome in docker, same wrapper as `projects/voice-assistant/esphome/` |
 
 | File | What |
@@ -44,9 +45,16 @@ cd ~/code/homelab/projects/smart-switch/esphome
 ./esphome.sh run --device 192.168.1.128
 ```
 
-Then in HA: Settings -> Devices -> Add integration -> ESPHome, host `192.168.1.128`,
-key = `api_key` from `esphome/secrets.yaml`. Entities: `Relay`, `Switch position`,
-`WiFi signal`, `Uptime`.
+Then add it to HA (done 2026-11-05; re-run only after deleting the entry), from the repo root:
+
+```bash
+set -a; . ./.env.healthcheck; set +a
+ESPHOME_SECRETS=projects/smart-switch/esphome/secrets.yaml \
+  projects/voice-assistant/add_satellite_ha.py 192.168.1.128 api_key
+```
+
+Entities: `switch.smart_switch_bench_relay`, `Switch position`, `WiFi signal`,
+`WiFi network`, `WiFi access point`, `Uptime`.
 
 Then run the checks in `wiring.md` section 5, in order. Mains only after step 6.
 
