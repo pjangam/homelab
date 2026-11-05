@@ -26,10 +26,16 @@ itself the trigger - [`esp32/wol_on_boot/`](../../esp32/wol_on_boot/README.md).
 | `fix_wol_sender_overlay_hang.sh` | recovery notes for the read-only overlay filesystem that left it hanging on boot (fixed by pulling the SD card and removing `overlayroot=tmpfs`) |
 | `start_nodered_on_pi.sh`, `watchdog_nodered_pi.sh` | Node-RED on the Pi, and the */10 cron watchdog that restarts it when its MQTT bridge is not actually connected. What it does and does not cover: [`projects/miraie-ac/README.md`](../../projects/miraie-ac/README.md) |
 
-## Desk clock / screensaver
+## Desk clock / screensaver - retired 2026-11-05, code kept
+
+**Not running on the Pi any more** (removed with
+`undeploy_clock_screensaver.sh`; it kept the 27" monitor on 24/7). The files
+stay as the starting point for a small low-power clawlight display - see
+"Clawlight small low-power display" in `PROJECTS.md`.
 
 `analog_clock.py` is a fullscreen GTK3 analog clock with HA's weather beside
 it, shown by `clock_screensaver.sh` after 5 idle minutes and started at login
 by `clock-screensaver.desktop`; `deploy_clock_screensaver.sh` installs all
 three, `kanshi-config` sets the display layout. GTK3 because the desktop is
 labwc (Wayland), where xscreensaver and the X11 clocks misbehave.
+`undeploy_clock_screensaver.sh` removes it all from the Pi again.

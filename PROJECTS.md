@@ -1018,6 +1018,23 @@ Verify it the way the existing tooling does: `clawlight/diagnose-mac-focus.sh` a
 #### Log
 - 2026-09-19: noted, when the personal MacBook turned out to have no clawlight at all.
 
+### wol Pi clock screensaver (analog clock + weather + clawlight sessions)
+**Status:** Done
+
+**Why:** a desk clock on the Pi's monitor, with HA's weather, the rain chance and the clawlight sessions beside it.
+**Outcome:** ran 2026-09-19 to 2026-11-05, then retired at the user's ask (2026-11-05): it held the LG 27UK650 (~45W) on 24/7 for a clock. Removed from the Pi with `scripts/wol-sender/undeploy_clock_screensaver.sh` (stopped, login autostart and the Pi's HA token copy deleted; `kanshi-config` left). **The code stays in `scripts/wol-sender/`** - `analog_clock.py` is the starting point for "Clawlight small low-power display" below, and `deploy_clock_screensaver.sh` would put it all back.
+
+### Clawlight small low-power display (reuse of the Pi clock screensaver)
+**Status:** Backlog
+**Priority:** P3
+
+#### Open items
+- [ ] **Pramod:** pick the small low-power display (and whether it hangs off the wol Pi or its own board)
+- [ ] **Claude:** once it's chosen, trim `scripts/wol-sender/analog_clock.py` to the clawlight sessions (plus clock/weather if they fit) for that screen
+
+**Why:** the clock screensaver's clawlight panel was the part worth keeping; the 27" 4K monitor it ran on was ~45W around the clock for it. A small screen showing clawlight state does the same job at a fraction of the power.
+**State:** idea only. The renderer exists - `analog_clock.py` (GTK3, polls xero:8126 `/clawlight/api/status` and HA's weather) - so the work is picking the screen and sizing the layout for it, not plumbing. Overlaps "Big wall display (HUB75 LED matrix)" just below; decide them together.
+
 ### Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance
 **Status:** Backlog
 **Priority:** P3
