@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Screen blanking
+Comment=Turn the monitor off after 10 idle minutes
+Exec=/home/pramod/screen_blank.sh

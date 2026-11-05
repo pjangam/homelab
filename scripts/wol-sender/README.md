@@ -39,3 +39,13 @@ by `clock-screensaver.desktop`; `deploy_clock_screensaver.sh` installs all
 three, `kanshi-config` sets the display layout. GTK3 because the desktop is
 labwc (Wayland), where xscreensaver and the X11 clocks misbehave.
 `undeploy_clock_screensaver.sh` removes it all from the Pi again.
+
+## Screen blanking (since 2026-11-05)
+
+`screen_blank.sh` turns the monitor off (`wlopm --off`, DPMS) after 10 idle
+minutes and on again at any input. Started at login by
+`screen-blank.desktop`; `deploy_screen_blank.sh` installs both and restarts
+it. It exists because the clock's swayidle was the Pi's only idle handler -
+labwc and Raspberry Pi OS blank nothing on their own, so without it the 27"
+LG stays on all day. Don't run it alongside `clock_screensaver.sh`: both are
+swayidle, and each deploy script kills every swayidle before starting its own.
