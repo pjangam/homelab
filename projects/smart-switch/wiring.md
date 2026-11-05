@@ -39,7 +39,7 @@ off, never stuck on.
 
 | From | To | Why it matters |
 |---|---|---|
-| plug **L** | T2A fuse → relay **COM** (middle terminal) | Switch and fuse the live, never the neutral. Switching neutral turns the bulb off but leaves the holder at 230V. |
+| plug **L** | relay **COM** (middle terminal) | Switch the live, never the neutral. Switching neutral turns the bulb off but leaves the holder at 230V. No inline fuse: **plug the kandil into a power strip with its own fuse**, which protects the same wire; the house MCB backs it up. |
 | relay **NO** (the end opposite the NC marking) | bulb holder L (centre contact) | Relay unpowered = bulb off. |
 | plug **N** | bulb holder N | Straight through, joined in a lever connector in the box. Never through the relay. |
 | plug **E** | holder earth screw, if any | A plastic B22 holder has none: end the earth core in its own lever connector. |
@@ -83,7 +83,7 @@ Prices are rough local-shop figures.
 | 0.75mm² flexible cable, 3-core, 2-3m | maybe | 25-40 / m |
 | B22 pendant bulb holder | probably, with the kandil | 30-60 |
 | Bulb: 40-60W incandescent, clear | yes | |
-| Inline fuse holder (5x20mm) + T2A slow-blow fuse, and a spare | no | 30-60 + 5-10 |
+| Power strip with a built-in fuse, to plug the kandil into | yes | |
 | Plastic junction box with a screw lid | maybe | 60-150 |
 | 2-3 lever connectors (WAGO 221 or similar) | maybe | 20-40 each |
 | Cable gland or grommet + cable ties | maybe | 10-30 |
@@ -121,5 +121,4 @@ Build the mains side only after step 6 passes.
 - **Coil:** ~70Ω, 67-71mA at the 4.7-5V the `VIN` pin gives; closes at 3.75V or more.
 - **USB budget:** ESP32 ~250mA peak on WiFi + 70mA coil ≈ 320mA. Any 1A charger.
 - **Bulb:** 60W / 230V = 0.26A steady; ~2.6A for a few milliseconds when the cold
-  filament switches on. Fine for 10A contacts. A T2A slow-blow fuse rides through that
-  and still blows on a short; a 1A fast fuse can blow on the switch-on surge alone.
+  filament switches on. Fine for 10A contacts, and far below any power strip's fuse.

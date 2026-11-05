@@ -1330,7 +1330,6 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** check the parts list in `projects/smart-switch/wiring.md` (section 4) against what you have
 - [ ] **Pramod:** confirm the relay terminals with a multimeter: middle (COM) to the NC-marked end beeps, to the other end (NO) silent
 - [ ] **Pramod:** wire the spare ESP32 + relay on the bench (`projects/smart-switch/README.md`) and plug it into xero's USB
 - [ ] **Claude:** first flash (`esphome.sh run --device /dev/ttyUSB0`), add to HA, run the README's bench checks
@@ -1354,7 +1353,6 @@ qty | item | est | note
 1 | USB data cable + 5V 1A charger | 0 | owned
 3 | female-female jumper wires | 40-60 | local; the module and devkit pins are both male
 1 | small latching rocker or toggle switch | 15-30 | local; optional, Tinxy-style manual on/off on the box (low voltage)
-1 | inline fuse holder, 5x20mm | 30-60 | local; the fuse itself: a power-strip spare if it is 2-5A, else a T2A slow-blow (5-10)
 2 | lever connectors (WAGO 221, 2-way) or a 2-way cut of screw-terminal strip | 30-160 | local; joins neutral and earth in the box
 1 | plastic junction box with screw lid | 60-150 | local; relay + mains joints on one side, ESP32 on the other
 1 | 3-pin 6A plug | 40-80 | local; only if the kandil's plug is 2-pin (else the relay may switch neutral)

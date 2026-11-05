@@ -28,8 +28,8 @@ Decided 2026-11-05: build from scratch instead of reflashing the Tinxy units.
 **[`wiring.md`](wiring.md)** - the two drawings (`wiring-svg/`, ESP32 to the relay
 module, and the kandil's mains side), the connection tables, the parts checklist and
 the bench checks in order. In short: module **S -> `GPIO26`, + -> `VIN`, - -> `GND`**;
-an optional rocker between `GPIO27` and `GND`; mains live through a T2A slow-blow fuse to
-**COM** (middle terminal), **NO** (the end opposite the NC marking) to the bulb.
+an optional rocker between `GPIO27` and `GND`; mains live to **COM** (middle terminal; the kandil plugs into a fused power strip,
+no inline fuse), **NO** (the end opposite the NC marking) to the bulb.
 
 The drawings are standalone SVG files, edited directly. They render on GitHub; keep
 literal colours and system fonts in them (see `.claude/agents/circuit-diagram.md`).
