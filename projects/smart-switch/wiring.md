@@ -58,11 +58,12 @@ middle to the NC end beeps, middle to the other end stays silent.
   the box, so a tug pulls on the box, not on the screw terminals.
 - **Use a 3-pin plug.** A 2-pin plug fits either way round, so half the time the relay
   would switch neutral and leave the holder live while the bulb is "off".
-- **The 40-60W bulb is the fire risk, not the relay.** An incandescent bulb runs well
-  over 100°C, inside paper, on a timer. Hang it in the middle of the lantern, clear of
-  the paper on every side, with the top and bottom open. After the first hour, feel the
-  paper nearest the bulb: warm is the limit. **Simplest fix: a 7-9W LED bulb**
-  (~₹100-150), same holder, same wiring, a fraction of the heat.
+- **The 40-60W bulb is the heat source, not the relay.** The kandil is jute and keeps
+  its incandescent bulb on purpose (the clear filament throws the weave as shadows).
+  The glass runs well over 100°C, on a timer, unattended. Hang the bulb in the middle
+  of the lantern, clear of the jute on every side, with the top and bottom open so heat
+  rises out. After the first hour, feel the jute nearest the bulb: warm is the limit,
+  hot means more clearance (or the 40W instead of the 60W).
 - **Lights only.** The module's tracks and screw terminals are the weak link, not the
   cube's 10A rating. Fine at 0.26A, not for a heater, geyser or iron.
 
@@ -81,7 +82,7 @@ Prices are rough local-shop figures.
 | 3-pin 6A plug | maybe | 40-80 |
 | 0.75mm² flexible cable, 3-core, 2-3m | maybe | 25-40 / m |
 | B22 pendant bulb holder | probably, with the kandil | 30-60 |
-| Bulb: 40-60W incandescent (or a 7-9W LED bulb) | yes | LED 100-150 |
+| Bulb: 40-60W incandescent, clear | yes | |
 | Inline fuse holder (5x20mm) + T2A slow-blow fuse, and a spare | no | 30-60 + 5-10 |
 | Plastic junction box with a screw lid | maybe | 60-150 |
 | 2-3 lever connectors (WAGO 221 or similar) | maybe | 20-40 each |
@@ -113,7 +114,7 @@ Build the mains side only after step 6 passes.
    for a 60W bulb (cold filament). E to L and E to N: open. 0Ω when on = a short at the
    holder, don't plug in. Reads through when off = the bulb is on NC.
 8. **Lid on, then plug in.** Toggle from HA and from the switch: the bulb follows. Let it
-   run an hour inside the kandil and feel the paper before trusting it to the timer.
+   run an hour inside the kandil and feel the jute before trusting it to the timer.
 
 ## The numbers
 

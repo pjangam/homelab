@@ -1359,7 +1359,6 @@ qty | item | est | note
 2 | lever connectors (WAGO 221, 2-way) or a 2-way cut of screw-terminal strip | 30-160 | local; joins neutral and earth in the box
 1 | plastic junction box with screw lid | 60-150 | local; relay + mains joints on one side, ESP32 on the other
 1 | 3-pin 6A plug | 40-80 | local; only if the kandil's plug is 2-pin (else the relay may switch neutral)
-1 | 7-9W LED bulb, B22 | 100-150 | local; optional but recommended: the 40-60W incandescent runs hot inside paper
 ```
 
 #### Options
@@ -1370,7 +1369,7 @@ qty | item | est | note
 #### Log
 - 2026-10-30: moved to Active so it stays visible; work starts after the Diwali lights. Relay ratings check added as the first step.
 - 2026-11-05: relay found (SONGLE SRD-05VDC-SL-C, 10A 250VAC). Chose a from-scratch ESP32 + relay build over reflashing Tinxy. Bench prototype in `projects/smart-switch/` (ESPHome, static .128, relay GPIO26, switch input GPIO27, restores state after power loss); config validated. First use: the akash kandil, on the Diwali Lights schedule.
-- 2026-11-05: wiring diagram `projects/smart-switch/wiring.html` (https://claude.ai/artifact/LihsPvp3Lw9rA3HVgAu71v): module and bare-relay variants, kandil mains side. Kandil bulb is a 40-60W incandescent (B22): fine for the relay, T2A slow-blow fuse; LED bulb recommended for heat.
+- 2026-11-05: wiring diagram `projects/smart-switch/wiring.html` (https://claude.ai/artifact/LihsPvp3Lw9rA3HVgAu71v): module and bare-relay variants, kandil mains side. Kandil bulb is a 40-60W incandescent (B22): fine for the relay, T2A slow-blow fuse; LED bulb recommended for heat (declined: the kandil is jute, and the clear filament throws its weave as a shadow pattern an LED would wash out).
 - 2026-11-05: wiring moved to Markdown + SVG so it renders on GitHub: `projects/smart-switch/wiring.md` with `wiring-svg/` (ESP32 to the KY-019 module, mains side). Only the build actually used is drawn; the other relay variants and the USB-string alternative were dropped (user: they add confusion). `wiring.html` removed.
 - 2026-11-05: the relay is on a KY-019-style module (S / + / -, NPN driver, no opto): high-trigger, works off 3.3V; firmware set to `relay_inverted: "false"`. Screw terminals unmarked, to be identified with a meter.
 
