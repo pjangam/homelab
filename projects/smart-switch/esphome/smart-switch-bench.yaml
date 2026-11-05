@@ -64,13 +64,13 @@ switch:
       - output.turn_off: status_led
 
 binary_sensor:
-  # The physical switch, wired between switch_pin and GND (low voltage only,
-  # never mains). Any flip toggles the relay, so a normal rocker works
-  # whichever way up it is - the same feel as a two-way staircase switch.
-  # This is the part that must work with WiFi and HA down.
+  # Optional push button (momentary), wired between switch_pin and GND (low
+  # voltage only, never mains). Each press toggles the relay; release does
+  # nothing. Works with WiFi and HA down. For a latching wall rocker later
+  # (in-wall build), change on_press to on_state so either flip toggles.
   - platform: gpio
     id: wall_switch
-    name: Wall switch
+    name: Button
     pin:
       number: ${switch_pin}
       mode:
@@ -79,7 +79,7 @@ binary_sensor:
       inverted: true
     filters:
       - delayed_on_off: 50ms
-    on_state:
+    on_press:
       - switch.toggle: relay
 
 output:

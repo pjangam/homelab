@@ -18,7 +18,7 @@ Firmware: `esphome/smart-switch-bench.yaml`. How to flash it: `README.md`.
 | `VIN` (`5V` on 38-pin boards) | module **+** | USB 5V through the board, ~4.7V. The coil needs ~70mA and closes at 3.75V or more. Never `3V3`. |
 | `GPIO26` (`D26`) | module **S** | The relay command. High = relay on (`relay_inverted: "false"`). Not a strapping pin, so it can't stop the board booting. |
 | `GND` | module **−** | One supply, one ground. Any GND pin on the board. |
-| `GPIO27` (`D27`) | switch, other side to `GND` | Internal pull-up. Any flip toggles the relay, with or without WiFi. Low voltage only. |
+| `GPIO27` (`D27`) | push button, other side to `GND` | **Optional** manual on/off on the box (the "switch" in the drawing). Each press toggles the relay, with or without WiFi. Low voltage only. Leave it out and HA + the timer still work. |
 | onboard LED (`GPIO2`) | nothing to wire | The firmware mirrors the relay on it. |
 
 The module is a KY-019 type: header **S + −**, an NPN transistor (Q1), a 1.5k base
@@ -76,7 +76,7 @@ Prices are rough local-shop figures.
 | SONGLE relay on the KY-019 module | yes | |
 | 3 female-female jumper wires | likely | 40-60 |
 | USB data cable + 5V charger, 1A or more | yes | |
-| Push button or small toggle switch (a jumper wire works for the bench) | maybe | 10-40 |
+| Push button, momentary (optional; a jumper wire works for the bench) | maybe | 10-20 |
 | Multimeter with continuity | yes | |
 | 3-pin 6A plug | maybe | 40-80 |
 | 0.75mm² flexible cable, 3-core, 2-3m | maybe | 25-40 / m |
@@ -96,16 +96,16 @@ Build the mains side only after step 6 passes.
 1. **ESP32 on USB, nothing attached.** Flash it and add it to HA (`README.md`), then
    toggle `Relay` in HA. *Expected:* the blue onboard LED follows. If not, the problem is
    firmware or HA, not wiring: read `./esphome.sh logs`.
-2. **Add the switch** (or a jumper wire) between `GPIO27` and `GND`, and flip it.
-   *Expected:* the blue LED toggles and HA's `Wall switch` changes. Nothing = wrong pin.
-   Never jumper a GPIO to `VIN`.
+2. **Optional: add the push button** (or touch a jumper wire) between `GPIO27` and
+   `GND`, and press it. *Expected:* each press toggles the blue LED, and HA's `Button`
+   shows the press. Nothing = wrong pin. Never jumper a GPIO to `VIN`.
 3. **Unplug USB, wire the module** (S, +, −), plug back in. *Expected:* no click at boot,
    one click per toggle in HA, and the module's LED follows. On when HA says off = the
    wrong `relay_inverted` setting.
 4. **Meter on COM-NO while toggling.** *Expected:* beeps when on, silent when off. The
    reverse = you are on COM-NC.
-5. **Without the network:** unplug the router (or block the board's WiFi) and flip the
-   switch. *Expected:* the relay still toggles.
+5. **Without the network** (only if you fitted the button): unplug the router (or block
+   the board's WiFi) and press it. *Expected:* the relay still toggles.
 6. **Power loss:** pull USB with the relay on, plug back in. *Expected:* it comes back on.
 7. **Plug out of the wall:** build the mains side, then meter it from the plug's pins
    with the bulb fitted and the ESP32 on USB. L to N, relay off: open. Relay on: ~60-90Ω
