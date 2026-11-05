@@ -3271,7 +3271,7 @@ One switch, option B:
 |---|---|---|
 | Option A: 1-channel 220V AC optocoupler module, per switch | +193 | robu.in (in stock in the snapshot). Active-low: OUT goes to GND when 230V is present |
 | 4-channel 5V relay module | 140 (119 + GST) | electronicscomp.com |
-| 4-switch DIY board (option A): ESP32 + HLK-PM01 + 4-ch relay + 4 opto + fuse, enclosure, wire | ~1,700-1,850 (~₹430-460 a switch) | sum of the above |
+| 4-switch DIY board (option A): ESP32 + HLK-PM01 + 4-ch relay + 4 opto + fuse, enclosure, wire | ~1,600-1,700 (~₹400-430 a switch) | sum of the above (384 + 195 + 140 + 4×193 + fuse ~15 + enclosure and wire ~80-210) |
 | **Tinxy 4-node with fan regulator** (Amazon ASIN B08KZMB7HD) | **~1,200** (~₹300 a switch, with fan speed) | user |
 | Reflash test kit: CH340G USB-TTL adapter (+ soldering iron if none) | 48 | robu.in staging page (makerbazar.in 89) |
 
