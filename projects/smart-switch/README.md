@@ -28,8 +28,9 @@ the wall, on the Diwali Lights automations). Nothing is in a wall yet: that is
 
 ## Wiring
 
-**[`wiring.md`](wiring.md)** - the two drawings (`wiring-svg/`, ESP32 to the relay
-module, and the kandil's mains side), the connection tables, the parts checklist and
+**[`wiring.md`](wiring.md)** - the drawings (`wiring-svg/`): ESP32 to the relay
+module and the kandil's mains side (built), plus section 6, the in-wall design study
+(option A AC sensing, option B low-voltage switch; not built), the connection tables, the parts checklist and
 the bench checks in order. In short: module **S -> `GPIO26`, + -> `VIN`, - -> `GND`**;
 an optional rocker between `GPIO27` and `GND`; mains live to **COM** (middle terminal; the kandil plugs into a fused power strip,
 no inline fuse), **NO** (the end opposite the NC marking) to the bulb.
