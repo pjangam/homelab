@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="570" viewBox="0 0 960 570" role="img" aria-label="The stash relay module wired to the ESP32. A 5V USB charger powers the ESP32 devkit. ESP32 VIN goes to the module + pin, GPIO26 to S (high = relay on), and GND to the module minus pin. A switch runs from GPIO27 to GND. The module carries the NPN driver, base resistor, flyback diode and LED. Its screw terminals NO, COM and NC (marked) go to the load."><title>Smart switch - ESP32 to the KY-019 relay module</title><desc>ESP32 VIN to +, GPIO26 to S, GND to minus; switch from GPIO27 to GND.</desc><rect x="0" y="0" width="960" height="570" rx="6" fill="#ffffff" stroke="#c6d0d9"/>
+        <defs>
+          <marker id="aA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="#a3760e"></polygon>
+          </marker>
+          <marker id="mA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="#566676"></polygon>
+          </marker>
+        </defs>
+
+        <!-- USB charger -->
+        <rect x="60" y="16" width="200" height="50" fill="#dfe5ea" stroke="#c6d0d9" stroke-width="1.5"></rect>
+        <text x="160" y="38" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#15202b">5V USB charger</text>
+        <text x="160" y="55" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">1A or more · board + coil</text>
+        <line x1="160" y1="66" x2="160" y2="92" stroke="#566676" stroke-width="2" marker-end="url(#mA)"></line>
+
+        <!-- ESP32 -->
+        <rect x="60" y="96" width="230" height="374" fill="#ffffff" stroke="#15202b" stroke-width="2"></rect>
+        <text x="175" y="128" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#15202b">ESP32 devkit</text>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676" text-anchor="middle">
+          <text x="175" y="146">esp32dev · ESPHome</text>
+          <text x="175" y="162">.128 · smart-switch-bench</text>
+        </g>
+        <!-- onboard LED -->
+        <polygon points="86,240 86,260 104,250" fill="#566676"></polygon>
+        <line x1="104" y1="240" x2="104" y2="260" stroke="#566676" stroke-width="2.5"></line>
+        <line x1="76" y1="250" x2="86" y2="250" stroke="#566676" stroke-width="1.5"></line>
+        <line x1="104" y1="250" x2="114" y2="250" stroke="#566676" stroke-width="1.5"></line>
+        <text x="76" y="282" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" font-weight="500" fill="#15202b">blue LED · GPIO2</text>
+        <text x="76" y="297" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">onboard, mirrors relay</text>
+
+        <!-- ESP32 pins -->
+        <circle cx="290" cy="200" r="4.5" fill="#bf3327"></circle>
+        <text x="280" y="204" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#bf3327">VIN / 5V</text>
+        <text x="280" y="219" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">~4.7V from USB</text>
+        <circle cx="290" cy="340" r="4.5" fill="#a3760e"></circle>
+        <text x="280" y="344" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">D26 · GPIO26</text>
+        <text x="280" y="359" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">relay control</text>
+        <circle cx="290" cy="420" r="4.5" fill="#a3760e"></circle>
+        <text x="280" y="424" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">D27 · GPIO27</text>
+        <text x="280" y="439" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">switch in, pull-up</text>
+        <circle cx="200" cy="470" r="4.5" fill="#2b3a47"></circle>
+        <text x="200" y="460" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#2b3a47">GND</text>
+
+        <!-- 5V to module VCC -->
+        <line x1="290" y1="200" x2="600" y2="200" stroke="#bf3327" stroke-width="2.5"></line>
+        <text x="445" y="192" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">5V · ~70mA when on</text>
+
+        <!-- GPIO26 to IN -->
+        <line x1="290" y1="340" x2="594" y2="340" stroke="#a3760e" stroke-width="2.5" marker-end="url(#aA)"></line>
+        <text x="445" y="332" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">S high = relay on</text>
+
+        <!-- switch on GPIO27 -->
+        <line x1="290" y1="420" x2="346" y2="420" stroke="#a3760e" stroke-width="2.5"></line>
+        <circle cx="350" cy="420" r="4" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <circle cx="410" cy="420" r="4" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <line x1="353" y1="418" x2="404" y2="400" stroke="#15202b" stroke-width="2"></line>
+        <text x="380" y="390" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" font-weight="500" fill="#15202b">switch</text>
+        <polyline points="414,420 460,420 460,500" fill="none" stroke="#2b3a47" stroke-width="2.5"></polyline>
+
+        <!-- ground -->
+        <polyline points="200,474 200,500 560,500 560,400 600,400" fill="none" stroke="#2b3a47" stroke-width="2.5"></polyline>
+        <circle cx="460" cy="500" r="5" fill="#2b3a47"></circle>
+        <text x="300" y="492" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" font-weight="500" fill="#2b3a47">GND</text>
+
+        <!-- relay module -->
+        <rect x="600" y="100" width="300" height="350" fill="#ffffff" stroke="#15202b" stroke-width="2"></rect>
+        <text x="750" y="126" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#15202b">KY-019 relay module</text>
+        <text x="750" y="143" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">the SRD-05VDC-SL-C sits on it</text>
+
+        <circle cx="600" cy="200" r="4.5" fill="#bf3327"></circle>
+        <text x="612" y="204" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">+</text>
+        <circle cx="600" cy="340" r="4.5" fill="#a3760e"></circle>
+        <text x="612" y="344" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">S</text>
+        <circle cx="600" cy="400" r="4.5" fill="#2b3a47"></circle>
+        <text x="612" y="404" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">&#8722;</text>
+
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676">
+          <text x="712" y="200">already on the module:</text>
+          <text x="712" y="218">NPN Q1 + 1.5k R1</text>
+          <text x="712" y="236">flyback diode D1</text>
+          <text x="712" y="254">LED D2 = relay on</text>
+        </g>
+
+        <rect x="700" y="290" width="130" height="80" fill="#dfe5ea" stroke="#c6d0d9" stroke-width="1.5"></rect>
+        <text x="765" y="324" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#15202b">relay cube</text>
+        <text x="765" y="342" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">10A 250VAC</text>
+
+        <circle cx="900" cy="300" r="4.5" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <text x="888" y="304" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">NO</text>
+        <circle cx="900" cy="340" r="4.5" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <text x="888" y="344" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">COM</text>
+        <circle cx="900" cy="380" r="4.5" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <text x="888" y="384" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">NC (marked)</text>
+        <text x="750" y="430" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">screw terminals: see the load diagram</text>
+
+        <!-- legend -->
+        <circle cx="34" cy="545" r="5" fill="#15202b"></circle>
+        <text x="48" y="549" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676">filled dot = joined</text>
+        <line x1="200" y1="545" x2="232" y2="545" stroke="#a3760e" stroke-width="2.5" marker-end="url(#aA)"></line>
+        <text x="244" y="549" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676">arrow = signal direction</text>
+        <circle cx="434" cy="545" r="4.5" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <text x="446" y="549" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676">hollow = not wired here</text>
+      </svg>

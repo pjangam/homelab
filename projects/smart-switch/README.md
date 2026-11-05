@@ -12,7 +12,7 @@ Decided 2026-11-05: build from scratch instead of reflashing the Tinxy units.
 | | |
 |---|---|
 | Runs on | ESP32 classic dev board (`esp32dev`), static `192.168.1.128`, mDNS `smart-switch-bench.local` |
-| Relay | SONGLE SRD-05VDC-SL-C from the stash: 5V coil, contacts 10A 250VAC / 10A 30VDC |
+| Relay | SONGLE SRD-05VDC-SL-C on a KY-019-style module (S / + / -, NPN driver, high-trigger), from the stash: 5V coil, contacts 10A 250VAC |
 | Talks to | HA's ESPHome integration, API `:6053` (encrypted, key `api_key` in `esphome/secrets.yaml`), OTA `:3232` |
 | Secrets | `esphome/secrets.yaml`, **gitignored**: WiFi/OTA/AP copied from the voice satellites, its own `api_key` |
 | Build | `esphome/esphome.sh` - ESPHome in docker, same wrapper as `projects/voice-assistant/esphome/` |
@@ -21,28 +21,18 @@ Decided 2026-11-05: build from scratch instead of reflashing the Tinxy units.
 |---|---|
 | `esphome/smart-switch-bench.yaml` | the firmware: relay on GPIO26, switch input on GPIO27, blue LED (GPIO2) mirrors the relay, restores its last state after a power cut |
 | `esphome/esphome.sh` | `config` / `compile` / `run` / `logs` / `flash-bin` |
+| `wiring.md`, `wiring-svg/` | wiring drawings and bench guide |
 
-## Bench wiring (no mains yet)
+## Wiring
 
-**Full diagram:** `wiring.html` (https://claude.ai/artifact/LihsPvp3Lw9rA3HVgAu71v) - both relay variants, the kandil's mains side (3-pin plug, T2A slow-blow fuse on Live -> COM, NO -> B22 holder) and a parts checklist. Summary:
+**[`wiring.md`](wiring.md)** - the two drawings (`wiring-svg/`, ESP32 to the relay
+module, and the kandil's mains side), the connection tables, the parts checklist and
+the bench checks in order. In short: module **S -> `GPIO26`, + -> `VIN`, - -> `GND`**;
+a switch between `GPIO27` and `GND`; mains live through a T2A slow-blow fuse to
+**COM** (middle terminal), **NO** (the end opposite the NC marking) to the bulb.
 
-
-- **The module we have (2026-11-05):** SONGLE SRD-05VDC-SL-C on a KY-019-style
-  board, header **S / + / -**, NPN transistor + 1.5k + flyback diode on board, no
-  optocoupler. **S -> `GPIO26`, + -> `VIN` (5V), - -> `GND`.** High-trigger, so
-  `relay_inverted: "false"`, and the 3.3V low-trigger trap below does not apply.
-  Screw terminals: one end is marked **NC** on the board (user, 2026-11-05), so
-  the middle is **COM** and the other end **NO**. Mains on COM + NO, NC empty.
-  Confirm unpowered with a meter on continuity: middle-to-NC beeps, middle-to-NO
-  stays silent.
-- **Other relay module** (blue board with IN/VCC/GND): VCC -> ESP32 `VIN` (5V from USB),
-  GND -> `GND`, IN -> `GPIO26`.
-- **Bare relay** (just the cube): it cannot hang off a GPIO, the coil wants ~70mA.
-  Drive it through an NPN (BC547/2N2222): GPIO26 -> 1k -> base, emitter -> GND,
-  collector -> one coil pin, other coil pin -> 5V, and a **1N4007 across the coil**
-  (stripe to 5V) to eat the kick when it switches off. Set `relay_inverted: "false"`.
-- **Switch input:** any switch or a jumper wire between `GPIO27` and `GND`.
-  Low voltage only.
+The drawings are standalone SVG files, edited directly. They render on GitHub; keep
+literal colours and system fonts in them (see `.claude/agents/circuit-diagram.md`).
 
 ## Run it, in order
 
@@ -58,22 +48,10 @@ Then in HA: Settings -> Devices -> Add integration -> ESPHome, host `192.168.1.1
 key = `api_key` from `esphome/secrets.yaml`. Entities: `Relay`, `Wall switch`,
 `WiFi signal`, `Uptime`.
 
-Bench checks, before any mains:
-1. Toggle `Relay` in HA: it clicks, the blue LED follows, a multimeter shows
-   COM-NO closed when on and open when off.
-2. Flip the switch on GPIO27: the relay toggles, and HA updates.
-3. Unplug the router (or block the board's WiFi): the switch still toggles it.
-4. Pull USB power while on, plug back: it comes back on.
-
-Only then: a mains test with a lamp on a plug, all terminals inside a closed box.
+Then run the checks in `wiring.md` section 5, in order. Mains only after step 6.
 
 ## Traps
 
-- **Low-trigger module + 3.3V GPIO.** Many blue modules switch on when IN is pulled
-  low, through an optocoupler fed from VCC. With VCC at 5V, the ESP32's "high" is
-  only 3.3V, which can leave enough current through the opto that the relay never
-  lets go, or chatters. If it sticks on: use the module's `JD-VCC` jumper
-  (VCC to 3.3V, JD-VCC to 5V), a high-trigger module, or the bare relay + NPN above.
 - **10A on the cube is not 10A on a cheap module.** The traces and screw terminals on
   hobby boards are the weak point. Fine for lights and a ceiling fan; nothing
   heavy (geyser, AC, heater).

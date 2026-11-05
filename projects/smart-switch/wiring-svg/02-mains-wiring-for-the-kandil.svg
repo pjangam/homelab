@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="490" viewBox="0 0 960 490" role="img" aria-label="Mains wiring for the kandil lamp. A 3-pin 6 amp plug has live, neutral and earth terminals. Inside a closed plastic box, the live core goes through a T2A slow-blow fuse in an inline holder to the relay's COM terminal. The relay's NO terminal carries switched live out of the box to the L contact of a B22 bulb holder with a 60 watt incandescent bulb. The holder's N contact returns on the neutral core, which goes straight back to the plug through a lever connector in the box. The earth core goes straight through another lever connector to the holder's earth screw if it has one; a plastic B22 holder has none. The relay's NC terminal is left empty. One corner of the box is the low-voltage corner with the ESP32 and switch, kept away from every mains wire."><title>Kandil Relay Wiring - mains wiring for the kandil</title><desc>Mains wiring for the kandil lamp. A 3-pin 6 amp plug has live, neutral and earth terminals. Inside a closed plastic box, the live core goes through a T2A slow-blow fuse in an inline holder to the relay's COM terminal. The relay's NO terminal carries switched live out of the box to the L contact of a B22 bulb holder with a 60 watt incandescent bulb. The holder's N contact returns on the neutral core, which goes straight back to the plug through a lever connector in the box. The earth core goes straight through another lever connector to the holder's earth screw if it has one; a plastic B22 holder has none. The relay's NC terminal is left empty. One corner of the box is the low-voltage corner with the ESP32 and switch, kept away from every mains wire.</desc><rect x="0" y="0" width="960" height="490" rx="6" fill="#ffffff" stroke="#c6d0d9"/>
+        <!-- plug -->
+        <rect x="24" y="180" width="140" height="160" fill="#dfe5ea" stroke="#c6d0d9" stroke-width="1.5"></rect>
+        <text x="94" y="206" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#15202b">3-pin plug</text>
+        <text x="94" y="222" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">6A, 230V</text>
+        <circle cx="164" cy="240" r="4.5" fill="#7a4a22"></circle>
+        <circle cx="164" cy="280" r="4.5" fill="#2a5fa8"></circle>
+        <circle cx="164" cy="310" r="4.5" fill="#3f7a2e"></circle>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" text-anchor="end">
+          <text x="154" y="244" fill="#7a4a22">L</text>
+          <text x="154" y="284" fill="#2a5fa8">N</text>
+          <text x="154" y="314" fill="#3f7a2e">E</text>
+        </g>
+
+        <!-- box -->
+        <rect x="200" y="60" width="550" height="390" fill="none" stroke="#9a4a10" stroke-width="2" stroke-dasharray="8 5"></rect>
+        <text x="214" y="84" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#9a4a10">closed plastic box</text>
+        <text x="214" y="101" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">lid on before the plug goes in</text>
+        <text x="214" y="117" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">cable clamped at the entry</text>
+
+        <!-- low-voltage corner -->
+        <rect x="560" y="76" width="176" height="100" fill="#dfe5ea" stroke="#c6d0d9" stroke-width="1.5" stroke-dasharray="4 3"></rect>
+        <text x="648" y="104" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#15202b">ESP32 + switch</text>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676" text-anchor="middle">
+          <text x="648" y="122">low-voltage corner</text>
+          <text x="648" y="138">no mains wire can reach it</text>
+          <text x="648" y="154">if a terminal lets go</text>
+        </g>
+
+        <!-- live through fuse to COM -->
+        <line x1="164" y1="240" x2="250" y2="240" stroke="#7a4a22" stroke-width="3"></line>
+        <rect x="250" y="230" width="70" height="20" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></rect>
+        <line x1="250" y1="240" x2="320" y2="240" stroke="#15202b" stroke-width="1"></line>
+        <text x="285" y="222" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="12" font-weight="500" fill="#15202b">T2A fuse</text>
+        <text x="285" y="266" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">slow-blow</text>
+        <line x1="320" y1="240" x2="420" y2="240" stroke="#7a4a22" stroke-width="3"></line>
+
+        <!-- relay contacts -->
+        <text x="480" y="192" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#15202b">relay contacts</text>
+        <rect x="420" y="200" width="120" height="130" fill="#ffffff" stroke="#15202b" stroke-width="2"></rect>
+        <line x1="420" y1="240" x2="450" y2="240" stroke="#15202b" stroke-width="2"></line>
+        <circle cx="450" cy="240" r="3" fill="#15202b"></circle>
+        <line x1="450" y1="240" x2="502" y2="292" stroke="#15202b" stroke-width="2.5"></line>
+        <line x1="504" y1="240" x2="540" y2="240" stroke="#15202b" stroke-width="2"></line>
+        <line x1="504" y1="296" x2="540" y2="296" stroke="#15202b" stroke-width="2"></line>
+        <circle cx="420" cy="240" r="4.5" fill="#7a4a22"></circle>
+        <circle cx="540" cy="240" r="4.5" fill="#7a4a22"></circle>
+        <circle cx="540" cy="296" r="4.5" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" font-weight="500" fill="#15202b">
+          <text x="428" y="228">COM</text>
+          <text x="534" y="228" text-anchor="end">NO</text>
+          <text x="534" y="318" text-anchor="end">NC</text>
+        </g>
+
+        <!-- switched live to lamp -->
+        <line x1="540" y1="240" x2="790" y2="240" stroke="#7a4a22" stroke-width="3"></line>
+        <text x="660" y="232" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">switched live</text>
+
+        <!-- lamp holder -->
+        <rect x="790" y="190" width="150" height="180" fill="#ffffff" stroke="#15202b" stroke-width="2"></rect>
+        <text x="865" y="212" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#15202b">B22 holder</text>
+        <text x="865" y="228" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">60W incandescent</text>
+        <polyline points="790,240 865,240 865,266" fill="none" stroke="#7a4a22" stroke-width="2"></polyline>
+        <circle cx="865" cy="290" r="24" fill="none" stroke="#15202b" stroke-width="2"></circle>
+        <line x1="848" y1="273" x2="882" y2="307" stroke="#15202b" stroke-width="1.5"></line>
+        <line x1="848" y1="307" x2="882" y2="273" stroke="#15202b" stroke-width="1.5"></line>
+        <polyline points="865,314 865,330 790,330" fill="none" stroke="#2a5fa8" stroke-width="2"></polyline>
+        <circle cx="790" cy="240" r="4.5" fill="#7a4a22"></circle>
+        <circle cx="790" cy="330" r="4.5" fill="#2a5fa8"></circle>
+        <circle cx="790" cy="355" r="4.5" fill="#ffffff" stroke="#3f7a2e" stroke-width="1.5"></circle>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" font-weight="500">
+          <text x="800" y="258" fill="#7a4a22">L</text>
+          <text x="800" y="324" fill="#2a5fa8">N</text>
+          <text x="802" y="359" font-size="10" fill="#3f7a2e">E, if it has one</text>
+        </g>
+
+        <!-- neutral straight through -->
+        <polyline points="164,280 230,280 230,390 762,390 762,330 790,330" fill="none" stroke="#2a5fa8" stroke-width="3"></polyline>
+        <rect x="320" y="382" width="30" height="16" fill="#ffffff" stroke="#2a5fa8" stroke-width="2"></rect>
+        <!-- earth straight through -->
+        <polyline points="164,310 215,310 215,420 778,420 778,355 786,355" fill="none" stroke="#3f7a2e" stroke-width="3"></polyline>
+        <rect x="320" y="412" width="30" height="16" fill="#ffffff" stroke="#3f7a2e" stroke-width="2"></rect>
+        <text x="370" y="409" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#566676">N and E straight through, each joined in a lever connector</text>
+
+        <!-- legend -->
+        <line x1="24" y1="472" x2="56" y2="472" stroke="#7a4a22" stroke-width="3"></line>
+        <text x="64" y="476" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676">L · brown (or red) core</text>
+        <line x1="250" y1="472" x2="282" y2="472" stroke="#2a5fa8" stroke-width="3"></line>
+        <text x="290" y="476" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676">N · blue (or black)</text>
+        <line x1="450" y1="472" x2="482" y2="472" stroke="#3f7a2e" stroke-width="3"></line>
+        <text x="490" y="476" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676">E · green/yellow</text>
+        <rect x="640" y="465" width="24" height="14" fill="#ffffff" stroke="#566676" stroke-width="1.5"></rect>
+        <text x="672" y="476" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676">lever connector</text>
+        <circle cx="810" cy="472" r="4.5" fill="#ffffff" stroke="#15202b" stroke-width="1.5"></circle>
+        <text x="822" y="476" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="11" fill="#566676">hollow = empty</text>
+      </svg>
