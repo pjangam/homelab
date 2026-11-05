@@ -1,0 +1,975 @@
+<title>Kandil Relay Wiring</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Bench document: one reading column, diagrams scroll inside their own box on a phone. Same tokens as the other homelab wiring pages, plus three mains-core colours. */
+  :root {
+    --paper:   #eaeef2;
+    --surface: #ffffff;
+    --sunk:    #dfe5ea;
+    --ink:     #15202b;
+    --muted:   #566676;
+    --line:    #c6d0d9;
+    --w5v:     #bf3327;
+    --w33:     #6d4aa8;
+    --wgnd:    #2b3a47;
+    --wdata:   #a3760e;
+    --wlive:   #7a4a22;
+    --wneut:   #2a5fa8;
+    --wearth:  #3f7a2e;
+    --warn:    #9a4a10;
+    --ok:      #2f6b4f;
+    --part:    #22262b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:   #101822;
+      --surface: #17212c;
+      --sunk:    #0b1219;
+      --ink:     #e4ebf1;
+      --muted:   #93a5b6;
+      --line:    #2c3b4a;
+      --w5v:     #ee6155;
+      --w33:     #b292e8;
+      --wgnd:    #93a9bd;
+      --wdata:   #e3a92c;
+      --wlive:   #c98a55;
+      --wneut:   #6fa2ec;
+      --wearth:  #7fc06b;
+      --warn:    #e79a4e;
+      --ok:      #62c093;
+      --part:    #05080b;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:   #101822;
+    --surface: #17212c;
+    --sunk:    #0b1219;
+    --ink:     #e4ebf1;
+    --muted:   #93a5b6;
+    --line:    #2c3b4a;
+    --w5v:     #ee6155;
+    --w33:     #b292e8;
+    --wgnd:    #93a9bd;
+    --wdata:   #e3a92c;
+    --wlive:   #c98a55;
+    --wneut:   #6fa2ec;
+    --wearth:  #7fc06b;
+    --warn:    #e79a4e;
+    --ok:      #62c093;
+    --part:    #05080b;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 64px;
+  }
+
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 18px; margin-bottom: 32px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    font-size: clamp(30px, 6vw, 42px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+
+  .standfirst { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  h2 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    font-size: 23px;
+    margin: 44px 0 6px;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin: 26px 0 4px;
+    text-wrap: balance;
+  }
+
+  p { max-width: 65ch; }
+
+  figure { margin: 22px 0 8px; }
+
+  .scroller {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 10px;
+  }
+
+  .scroller svg { display: block; min-width: 660px; width: 100%; height: auto; }
+  .scroller.wide svg { min-width: 760px; }
+  .scroller.small svg { min-width: 560px; }
+
+  figcaption {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 10px;
+    max-width: 65ch;
+  }
+
+  code, .mono { font-family: "IBM Plex Mono", monospace; font-size: 0.92em; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 15px; margin-top: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  td:first-child { font-family: "IBM Plex Mono", monospace; white-space: nowrap; }
+  .tablewrap { overflow-x: auto; }
+
+  table.parts td:first-child { font-family: "IBM Plex Sans", sans-serif; white-space: normal; }
+  table.parts td.num { font-family: "IBM Plex Mono", monospace; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.parts label { display: flex; gap: 9px; align-items: flex-start; cursor: pointer; }
+  table.parts input { margin-top: 5px; accent-color: var(--ok); width: 16px; height: 16px; flex: none; }
+  table.parts input:focus-visible { outline: 2px solid var(--wdata); outline-offset: 2px; }
+  table.parts tr.group td {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--sunk);
+    padding-block: 6px;
+  }
+
+  .tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    border: 1px solid var(--line);
+    padding: 0 5px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .swatch {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    margin-right: 7px;
+    vertical-align: baseline;
+  }
+
+  .callout {
+    border-left: 3px solid var(--warn);
+    padding: 2px 0 2px 16px;
+    margin: 22px 0;
+  }
+  .callout p { margin: 0; }
+  .callout p + p { margin-top: 8px; }
+  .callout .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--warn);
+    display: block;
+    margin-bottom: 3px;
+  }
+  .callout.ok { border-left-color: var(--ok); }
+  .callout.ok .label { color: var(--ok); }
+
+  ol.checks { padding-left: 0; list-style: none; counter-reset: c; margin: 16px 0 0; }
+  ol.checks li {
+    counter-increment: c;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+    max-width: 68ch;
+  }
+  ol.checks li::before {
+    content: counter(c);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    color: var(--muted);
+    padding-top: 2px;
+  }
+  ol.checks li > div { min-width: 0; }
+  ol.checks strong { font-weight: 600; }
+  ol.checks .phase {
+    display: block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .settings { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .pill {
+    border: 1px solid var(--line);
+    background: var(--sunk);
+    padding: 7px 13px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+  }
+  .pill b { font-weight: 400; color: var(--muted); }
+
+  footer {
+    margin-top: 52px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--muted);
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Smart switch &middot; bench prototype, 2026-11-05</p>
+    <h1>Kandil Relay Wiring</h1>
+    <p class="standfirst">One ESP32 devkit switching one SONGLE SRD-05VDC-SL-C relay, which switches the akash kandil's 230V bulb on the Diwali timer. The relay is either on a blue module or a bare cube, and the repo does not say which, so both are drawn. The page splits into two halves. The low-voltage half (USB, ESP32, switch, relay coil) is safe to get wrong and try again. The mains half is wired with the plug out, checked with a meter, and closed in a plastic box before it ever goes into a socket.</p>
+  </header>
+
+  <h2>The whole circuit</h2>
+  <p>The ESP32 side is the same in both variants: USB power in, <span class="mono">GPIO26</span> out to the relay, a switch from <span class="mono">GPIO27</span> to ground, and the board's <span class="mono">VIN</span>/<span class="mono">5V</span> pin feeding the relay coil. The ESP32 cannot drive the coil from a GPIO: the coil wants about 70mA at 5V, against roughly 20mA from a 3.3V pin. So something sits in between. On a module it is already on the board (variant A). On a bare cube you build it from one NPN transistor, one resistor and one diode (variant B).</p>
+  <p><strong>Which one is yours:</strong> if the relay is soldered to a small PCB (usually blue) with a 3-pin header on one side and three screw terminals on the other, it is A. If it is just the cube with five pins underneath, it is B.</p>
+
+  <h3>Variant A &middot; relay on a 1-channel module</h3>
+  <figure>
+    <div class="scroller wide">
+      <svg viewBox="0 0 960 710" role="img" aria-label="Variant A wiring. A 5 volt USB charger powers an ESP32 devkit over its USB socket. The ESP32's VIN or 5V pin goes to the relay module's VCC pin. GPIO26 goes to the module's IN pin, where a low level turns the relay on. GPIO27 goes through a push button or toggle switch to ground. The ESP32's GND, the far side of the switch and the module's GND share one ground wire. The onboard blue LED on GPIO2 mirrors the relay and needs no wiring. The module's NO, COM and NC screw terminals go to the load diagram further down. An inset shows the fix for a module that will not switch off: on modules with a JD-VCC jumper, remove the jumper cap, feed JD-VCC from the ESP32's VIN, feed VCC from the ESP32's 3.3 volt pin, and keep GND to ground and IN on GPIO26.">
+        <defs>
+          <marker id="aA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--wdata)"></polygon>
+          </marker>
+          <marker id="mA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--muted)"></polygon>
+          </marker>
+        </defs>
+
+        <!-- USB charger -->
+        <rect x="60" y="16" width="200" height="50" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <text x="160" y="38" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">5V USB charger</text>
+        <text x="160" y="55" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">1A or more &middot; board + coil</text>
+        <line x1="160" y1="66" x2="160" y2="92" stroke="var(--muted)" stroke-width="2" marker-end="url(#mA)"></line>
+
+        <!-- ESP32 -->
+        <rect x="60" y="96" width="230" height="374" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <text x="175" y="128" text-anchor="middle" font-family="IBM Plex Sans Condensed, sans-serif" font-size="18" font-weight="700" fill="var(--ink)">ESP32 devkit</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)" text-anchor="middle">
+          <text x="175" y="146">esp32dev &middot; ESPHome</text>
+          <text x="175" y="162">.128 &middot; smart-switch-bench</text>
+        </g>
+        <!-- onboard LED -->
+        <polygon points="86,240 86,260 104,250" fill="var(--muted)"></polygon>
+        <line x1="104" y1="240" x2="104" y2="260" stroke="var(--muted)" stroke-width="2.5"></line>
+        <line x1="76" y1="250" x2="86" y2="250" stroke="var(--muted)" stroke-width="1.5"></line>
+        <line x1="104" y1="250" x2="114" y2="250" stroke="var(--muted)" stroke-width="1.5"></line>
+        <text x="76" y="282" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">blue LED &middot; GPIO2</text>
+        <text x="76" y="297" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">onboard, mirrors relay</text>
+
+        <!-- ESP32 pins -->
+        <circle cx="290" cy="200" r="4.5" fill="var(--w5v)"></circle>
+        <text x="280" y="204" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--w5v)">VIN / 5V</text>
+        <text x="280" y="219" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">~4.7V from USB</text>
+        <circle cx="290" cy="340" r="4.5" fill="var(--wdata)"></circle>
+        <text x="280" y="344" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">D26 &middot; GPIO26</text>
+        <text x="280" y="359" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">relay control</text>
+        <circle cx="290" cy="420" r="4.5" fill="var(--wdata)"></circle>
+        <text x="280" y="424" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">D27 &middot; GPIO27</text>
+        <text x="280" y="439" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">switch in, pull-up</text>
+        <circle cx="200" cy="470" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="200" y="460" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wgnd)">GND</text>
+
+        <!-- 5V to module VCC -->
+        <line x1="290" y1="200" x2="600" y2="200" stroke="var(--w5v)" stroke-width="2.5"></line>
+        <text x="445" y="192" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">5V &middot; ~70mA when on</text>
+
+        <!-- GPIO26 to IN -->
+        <line x1="290" y1="340" x2="594" y2="340" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#aA)"></line>
+        <text x="445" y="332" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">IN low = relay on</text>
+
+        <!-- switch on GPIO27 -->
+        <line x1="290" y1="420" x2="346" y2="420" stroke="var(--wdata)" stroke-width="2.5"></line>
+        <circle cx="350" cy="420" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <circle cx="410" cy="420" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <line x1="353" y1="418" x2="404" y2="400" stroke="var(--ink)" stroke-width="2"></line>
+        <text x="380" y="390" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">switch</text>
+        <polyline points="414,420 460,420 460,500" fill="none" stroke="var(--wgnd)" stroke-width="2.5"></polyline>
+
+        <!-- ground -->
+        <polyline points="200,474 200,500 560,500 560,400 600,400" fill="none" stroke="var(--wgnd)" stroke-width="2.5"></polyline>
+        <circle cx="460" cy="500" r="5" fill="var(--wgnd)"></circle>
+        <text x="300" y="492" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--wgnd)">GND</text>
+
+        <!-- relay module -->
+        <rect x="600" y="100" width="300" height="350" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <text x="750" y="126" text-anchor="middle" font-family="IBM Plex Sans Condensed, sans-serif" font-size="17" font-weight="700" fill="var(--ink)">1-channel relay module</text>
+        <text x="750" y="143" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">the SRD-05VDC-SL-C sits on it</text>
+
+        <circle cx="600" cy="200" r="4.5" fill="var(--w5v)"></circle>
+        <text x="612" y="204" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">VCC / DC+</text>
+        <circle cx="600" cy="340" r="4.5" fill="var(--wdata)"></circle>
+        <text x="612" y="344" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">IN</text>
+        <circle cx="600" cy="400" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="612" y="404" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">GND / DC&#8722;</text>
+
+        <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">
+          <text x="712" y="200">already on the module:</text>
+          <text x="712" y="218">opto + driver transistor</text>
+          <text x="712" y="236">flyback diode, 2 LEDs</text>
+          <text x="712" y="254">H/L trigger jumper (some)</text>
+        </g>
+
+        <rect x="700" y="290" width="130" height="80" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <text x="765" y="324" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--ink)">relay cube</text>
+        <text x="765" y="342" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">10A 250VAC</text>
+
+        <circle cx="900" cy="300" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <text x="888" y="304" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">NO</text>
+        <circle cx="900" cy="340" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <text x="888" y="344" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">COM</text>
+        <circle cx="900" cy="380" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <text x="888" y="384" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">NC</text>
+        <text x="750" y="430" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">screw terminals: see the load diagram</text>
+
+        <!-- JD-VCC inset -->
+        <rect x="600" y="480" width="340" height="190" fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="6 4"></rect>
+        <text x="614" y="502" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">If it will not switch off: JD-VCC split</text>
+        <text x="614" y="519" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">only on modules with a JD-VCC jumper</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)" text-anchor="middle">
+          <text x="670" y="540">JD-VCC</text>
+          <text x="760" y="540">VCC</text>
+          <text x="850" y="540">GND</text>
+        </g>
+        <rect x="656" y="548" width="118" height="24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="3 3"></rect>
+        <rect x="664" y="554" width="12" height="12" fill="var(--w5v)"></rect>
+        <rect x="754" y="554" width="12" height="12" fill="var(--w33)"></rect>
+        <rect x="844" y="554" width="12" height="12" fill="var(--wgnd)"></rect>
+        <text x="715" y="592" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">cap off</text>
+        <line x1="670" y1="566" x2="670" y2="614" stroke="var(--w5v)" stroke-width="2.5"></line>
+        <line x1="760" y1="566" x2="760" y2="614" stroke="var(--w33)" stroke-width="2.5"></line>
+        <line x1="850" y1="566" x2="850" y2="614" stroke="var(--wgnd)" stroke-width="2.5"></line>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" text-anchor="middle">
+          <text x="670" y="630" fill="var(--w5v)">ESP32 VIN</text>
+          <text x="760" y="630" fill="var(--w33)">ESP32 3V3</text>
+          <text x="850" y="630" fill="var(--wgnd)">GND</text>
+        </g>
+        <text x="614" y="656" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">IN stays on GPIO26 &middot; relay_inverted stays "true"</text>
+
+        <!-- legend -->
+        <circle cx="34" cy="690" r="5" fill="var(--ink)"></circle>
+        <text x="48" y="694" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">filled dot = joined</text>
+        <line x1="200" y1="690" x2="232" y2="690" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#aA)"></line>
+        <text x="244" y="694" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">arrow = signal direction</text>
+        <circle cx="434" cy="690" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <text x="446" y="694" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">hollow = not wired here</text>
+      </svg>
+    </div>
+    <figcaption>Three wires from the ESP32 to the module, two to the switch, and none to the LED. The module's header order varies between makers (<span class="mono">VCC GND IN</span>, <span class="mono">DC+ DC&#8722; IN</span>, <span class="mono">IN GND VCC</span>): go by the printed labels, not by position. The firmware defaults to <span class="mono">relay_inverted: "true"</span>, which suits the common low-level-trigger module.</figcaption>
+  </figure>
+
+  <h3>Variant B &middot; bare relay cube on an NPN</h3>
+  <figure>
+    <div class="scroller wide">
+      <svg viewBox="0 0 960 560" role="img" aria-label="Variant B wiring. A 5 volt USB charger powers an ESP32 devkit over USB. The ESP32's VIN or 5V pin feeds one coil pin of a bare SRD-05VDC-SL-C relay, roughly 70 ohms. The other coil pin goes to the collector of an NPN transistor, BC547 or 2N2222, whose emitter goes to ground. A 1N4007 diode sits across the coil with its striped cathode on the 5 volt side and its anode on the collector side. GPIO26 goes through a 1 kilohm resistor to the transistor's base; an optional 10 kilohm resistor from the base to ground holds the relay off while the board boots. GPIO27 goes through a switch to ground. The ESP32's GND, the switch, the optional 10k and the emitter share one ground wire. The relay's COM, NC and NO pins go to the load diagram further down. The onboard blue LED on GPIO2 mirrors the relay.">
+        <defs>
+          <marker id="aB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--wdata)"></polygon>
+          </marker>
+          <marker id="mB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="var(--muted)"></polygon>
+          </marker>
+          <marker id="eB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <polygon points="0,0 10,5 0,10" fill="var(--ink)"></polygon>
+          </marker>
+        </defs>
+
+        <!-- USB charger -->
+        <rect x="60" y="16" width="200" height="50" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <text x="160" y="38" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">5V USB charger</text>
+        <text x="160" y="55" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">1A or more &middot; board + coil</text>
+        <line x1="160" y1="66" x2="160" y2="92" stroke="var(--muted)" stroke-width="2" marker-end="url(#mB)"></line>
+
+        <!-- ESP32 -->
+        <rect x="60" y="96" width="230" height="374" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <text x="175" y="128" text-anchor="middle" font-family="IBM Plex Sans Condensed, sans-serif" font-size="18" font-weight="700" fill="var(--ink)">ESP32 devkit</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)" text-anchor="middle">
+          <text x="175" y="146">esp32dev &middot; ESPHome</text>
+          <text x="175" y="162">.128 &middot; smart-switch-bench</text>
+        </g>
+        <polygon points="86,240 86,260 104,250" fill="var(--muted)"></polygon>
+        <line x1="104" y1="240" x2="104" y2="260" stroke="var(--muted)" stroke-width="2.5"></line>
+        <line x1="76" y1="250" x2="86" y2="250" stroke="var(--muted)" stroke-width="1.5"></line>
+        <line x1="104" y1="250" x2="114" y2="250" stroke="var(--muted)" stroke-width="1.5"></line>
+        <text x="76" y="282" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">blue LED &middot; GPIO2</text>
+        <text x="76" y="297" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">onboard, mirrors relay</text>
+
+        <circle cx="290" cy="200" r="4.5" fill="var(--w5v)"></circle>
+        <text x="280" y="204" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--w5v)">VIN / 5V</text>
+        <text x="280" y="219" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">~4.7V from USB</text>
+        <circle cx="290" cy="340" r="4.5" fill="var(--wdata)"></circle>
+        <text x="280" y="344" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">D26 &middot; GPIO26</text>
+        <text x="280" y="359" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">relay control</text>
+        <circle cx="290" cy="420" r="4.5" fill="var(--wdata)"></circle>
+        <text x="280" y="424" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">D27 &middot; GPIO27</text>
+        <text x="280" y="439" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">switch in, pull-up</text>
+        <circle cx="200" cy="470" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="200" y="460" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wgnd)">GND</text>
+
+        <!-- 5V line to coil -->
+        <polyline points="290,200 340,200 340,160 720,160 720,180" fill="none" stroke="var(--w5v)" stroke-width="2.5"></polyline>
+        <circle cx="640" cy="160" r="5" fill="var(--w5v)"></circle>
+        <text x="460" y="152" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">5V &middot; ~70mA when on</text>
+
+        <!-- flyback diode -->
+        <line x1="640" y1="160" x2="640" y2="218" stroke="var(--w5v)" stroke-width="2.5"></line>
+        <line x1="627" y1="218" x2="653" y2="218" stroke="var(--ink)" stroke-width="3"></line>
+        <polygon points="627,244 653,244 640,220" fill="var(--ink)"></polygon>
+        <polyline points="640,244 640,300 720,300" fill="none" stroke="var(--ink)" stroke-width="2.5"></polyline>
+        <text x="618" y="228" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">1N4007</text>
+        <text x="618" y="244" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">stripe to 5V</text>
+
+        <!-- relay cube -->
+        <rect x="690" y="180" width="230" height="100" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <text x="736" y="172" font-family="IBM Plex Sans Condensed, sans-serif" font-size="15" font-weight="700" fill="var(--ink)">SRD-05VDC-SL-C</text>
+        <circle cx="720" cy="180" r="4.5" fill="var(--w5v)"></circle>
+        <line x1="720" y1="180" x2="720" y2="200" stroke="var(--w5v)" stroke-width="2.5"></line>
+        <rect x="706" y="200" width="28" height="56" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <line x1="720" y1="256" x2="720" y2="316" stroke="var(--ink)" stroke-width="2.5"></line>
+        <circle cx="720" cy="280" r="4.5" fill="var(--ink)"></circle>
+        <circle cx="720" cy="300" r="5" fill="var(--ink)"></circle>
+        <text x="746" y="222" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">coil ~70&#937;</text>
+        <text x="746" y="238" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">71mA at 5V</text>
+        <text x="746" y="268" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">contacts: load diagram</text>
+        <circle cx="920" cy="205" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <text x="908" y="209" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">COM</text>
+        <circle cx="920" cy="235" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <text x="908" y="239" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">NC</text>
+        <circle cx="920" cy="265" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <text x="908" y="269" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">NO</text>
+
+        <!-- NPN -->
+        <circle cx="708" cy="340" r="27" fill="none" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <line x1="695" y1="324" x2="695" y2="356" stroke="var(--ink)" stroke-width="3"></line>
+        <line x1="695" y1="332" x2="720" y2="316" stroke="var(--ink)" stroke-width="2"></line>
+        <line x1="695" y1="348" x2="718" y2="363" stroke="var(--ink)" stroke-width="2" marker-end="url(#eB)"></line>
+        <polyline points="720,364 720,500" fill="none" stroke="var(--wgnd)" stroke-width="2.5"></polyline>
+        <text x="748" y="336" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">BC547 or 2N2222</text>
+        <text x="748" y="352" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">NPN &middot; C up, E to GND</text>
+
+        <!-- GPIO26 through 1k to base -->
+        <line x1="290" y1="340" x2="420" y2="340" stroke="var(--wdata)" stroke-width="2.5"></line>
+        <polyline points="420,340 426,326 438,354 450,326 462,354 474,326 480,340" fill="none" stroke="var(--wdata)" stroke-width="2.5"></polyline>
+        <text x="450" y="316" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wdata)">1k</text>
+        <text x="355" y="332" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">high = relay on</text>
+        <line x1="480" y1="340" x2="689" y2="340" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#aB)"></line>
+        <text x="645" y="332" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">2.6mA</text>
+
+        <!-- optional 10k pulldown -->
+        <circle cx="600" cy="340" r="5" fill="var(--wdata)"></circle>
+        <line x1="600" y1="340" x2="600" y2="395" stroke="var(--wdata)" stroke-width="2.5"></line>
+        <polyline points="600,395 586,401 614,413 586,425 614,437 586,449 600,455" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-dasharray="5 3"></polyline>
+        <line x1="600" y1="455" x2="600" y2="500" stroke="var(--wgnd)" stroke-width="2.5"></line>
+        <text x="622" y="420" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">10k</text>
+        <text x="622" y="436" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">optional</text>
+
+        <!-- switch on GPIO27 -->
+        <line x1="290" y1="420" x2="346" y2="420" stroke="var(--wdata)" stroke-width="2.5"></line>
+        <circle cx="350" cy="420" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <circle cx="410" cy="420" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <line x1="353" y1="418" x2="404" y2="400" stroke="var(--ink)" stroke-width="2"></line>
+        <text x="380" y="390" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">switch</text>
+        <polyline points="414,420 460,420 460,500" fill="none" stroke="var(--wgnd)" stroke-width="2.5"></polyline>
+
+        <!-- ground -->
+        <polyline points="200,474 200,500 720,500" fill="none" stroke="var(--wgnd)" stroke-width="2.5"></polyline>
+        <circle cx="460" cy="500" r="5" fill="var(--wgnd)"></circle>
+        <circle cx="600" cy="500" r="5" fill="var(--wgnd)"></circle>
+        <text x="300" y="492" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--wgnd)">GND</text>
+
+        <!-- legend -->
+        <circle cx="34" cy="540" r="5" fill="var(--ink)"></circle>
+        <text x="48" y="544" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">filled dot = joined</text>
+        <line x1="200" y1="540" x2="232" y2="540" stroke="var(--wdata)" stroke-width="2.5" marker-end="url(#aB)"></line>
+        <text x="244" y="544" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">arrow = signal direction</text>
+        <circle cx="434" cy="540" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <text x="446" y="544" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">hollow = not wired here</text>
+        <line x1="640" y1="540" x2="672" y2="540" stroke="var(--muted)" stroke-width="2.5" stroke-dasharray="5 3"></line>
+        <text x="684" y="544" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">dashed = optional part</text>
+      </svg>
+    </div>
+    <figcaption>The transistor is a switch on the coil's low side: <span class="mono">GPIO26</span> high puts 2.6mA into the base, the transistor pulls the coil's bottom end to ground, and 5V across the coil closes COM to NO. When it lets go, the coil's stored energy has to go somewhere; the 1N4007 lets it circulate back into the coil rather than spike the collector. Set <span class="mono">relay_inverted: "false"</span> for this variant. Build it on the breadboard; the arrow on the transistor symbol marks the emitter, not a signal.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>From</th><th>To</th><th>Why it matters</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="swatch" style="background:var(--w5v)"></span>ESP32 <span class="mono">VIN</span>/<span class="mono">5V</span></td>
+          <td>A: module <span class="mono">VCC</span><br>B: one coil pin + diode stripe</td>
+          <td>USB 5V passed through the board, typically ~4.7V after its diode. The coil picks up at 3.75V or more, so that is plenty. It is the pin next to a <span class="mono">GND</span>, labelled <span class="mono">VIN</span> on 30-pin boards and <span class="mono">5V</span> on 38-pin ones. Never <span class="mono">3V3</span> for the coil.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wdata)"></span>ESP32 <span class="mono">GPIO26</span></td>
+          <td>A: module <span class="mono">IN</span><br>B: <span class="mono">1k</span> &rarr; NPN base</td>
+          <td>The relay command. Not a strapping pin, so it cannot stop the board booting. On a low-trigger module, low = on (<span class="mono">relay_inverted: "true"</span>, the current default). On B, high = on (<span class="mono">"false"</span>).</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wdata)"></span>ESP32 <span class="mono">GPIO27</span></td>
+          <td>switch, other side to <span class="mono">GND</span></td>
+          <td>Internal pull-up, so ~70&micro;A flows when closed. Any flip toggles the relay, with or without WiFi. Low voltage only: never put this switch anywhere near the mains side.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wgnd)"></span>ESP32 <span class="mono">GND</span></td>
+          <td>switch, module <span class="mono">GND</span> or NPN emitter (and the optional 10k)</td>
+          <td>One supply, one ground. Use any <span class="mono">GND</span> pin on the board; they are all joined.</td>
+        </tr>
+        <tr>
+          <td>B: coil, other pin</td>
+          <td>NPN collector + diode anode</td>
+          <td>The switched low side. The diode's plain (unstriped) end joins here.</td>
+        </tr>
+        <tr>
+          <td>B: NPN emitter</td>
+          <td><span class="mono">GND</span></td>
+          <td>Emitter and collector swapped still conducts a little but cannot hold the relay. If B does nothing, check this before anything else.</td>
+        </tr>
+        <tr>
+          <td>B: <span class="mono">10k</span> (optional)</td>
+          <td>base to <span class="mono">GND</span></td>
+          <td>Holds the transistor off while <span class="mono">GPIO26</span> is still an input during boot or flashing, so the kandil does not blink at every reset. Costs 0.07mA of base current.</td>
+        </tr>
+        <tr>
+          <td>onboard LED</td>
+          <td>nothing to wire</td>
+          <td><span class="mono">GPIO2</span> drives the board's blue LED and the firmware mirrors the relay on it. <span class="mono">GPIO2</span> is a strapping pin: hang nothing else on it.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="settings">
+    <span class="pill"><b>relay_pin</b> GPIO26</span>
+    <span class="pill"><b>switch_pin</b> GPIO27</span>
+    <span class="pill"><b>status LED</b> GPIO2</span>
+    <span class="pill"><b>relay_inverted A</b> "true"</span>
+    <span class="pill"><b>relay_inverted B</b> "false"</span>
+    <span class="pill"><b>restore</b> RESTORE_DEFAULT_OFF</span>
+    <span class="pill"><b>static_ip</b> 192.168.1.128</span>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">A module that clicks on and never lets go</span>Most blue modules are low-level trigger: <span class="mono">IN</span> pulled to ground lights an optocoupler LED fed from <span class="mono">VCC</span>. With <span class="mono">VCC</span> at 5V, the ESP32's "off" level is only 3.3V, which leaves 1.7V across that LED and its resistor. With no indicator LED in that path, about 0.5mA still flows, and through an opto with a 50%+ transfer ratio that can be enough to keep the driver transistor on. If the relay sticks on or chatters: on a module with a <span class="mono">JD-VCC</span> jumper, take the cap off, feed <span class="mono">VCC</span> from the ESP32's <span class="mono">3V3</span> and <span class="mono">JD-VCC</span> from <span class="mono">VIN</span> (inset above). Without that jumper, use variant B with the same cube, or a high-trigger module with <span class="mono">relay_inverted: "false"</span>.</p>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">The diode backwards is a short</span>Stripe on the collector side instead of the 5V side, and the diode conducts the moment the transistor turns on: 5V straight into the transistor with only the board's USB fuse and the diode's own resistance in the way. The transistor or the board's 5V path dies. Check the stripe against the drawing before the first power-up.</p>
+  </div>
+
+  <h2>Finding the pins and legs</h2>
+  <p><strong>On the ESP32</strong>, all four pins are on the same header row on both common devkits. Hold it antenna up, USB down. On a 30-pin DOIT-style board, the row with <span class="mono">D26</span> reads down <span class="mono">D25, D26, D27, D14, D12, D13, GND, VIN</span>. On a 38-pin DevKitC it reads <span class="mono">25, 26, 27, 14, 12, GND, 13, D2, D3, CMD, 5V</span>. The silkscreen may say <span class="mono">D26</span>, <span class="mono">IO26</span>, <span class="mono">G26</span> or just <span class="mono">26</span>. The repo does not record which board layout the spare is, so read the print rather than counting.</p>
+
+  <figure>
+    <div class="scroller wide">
+      <svg viewBox="0 0 960 320" role="img" aria-label="Physical views of the parts. Left: the SRD-05VDC-SL-C relay seen from below, pins toward you. At one end, the two coil pins sit at the corners with COM between them, set slightly inward. At the other end are NO and NC, at the two corners; which is which is found with a meter: coil to coil reads about 70 ohms, COM to NC reads about zero, COM to NO reads open. Middle: two TO-92 transistors with the flat face toward you and legs down. A BC547 reads collector, base, emitter from left to right. A 2N2222 in TO-92 reads emitter, base, collector, the other way round. Right: a 1N4007 diode, black body with a grey stripe at the cathode end; the stripe goes to plus 5 volts.">
+        <!-- relay bottom view -->
+        <text x="170" y="30" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">SRD-05VDC-SL-C, from below</text>
+        <text x="170" y="47" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">pins toward you</text>
+        <rect x="70" y="64" width="200" height="140" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <circle cx="94" cy="88" r="7" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="94" cy="180" r="7" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="114" cy="134" r="7" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="246" cy="88" r="7" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <circle cx="246" cy="180" r="7" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">
+          <text x="62" y="92" text-anchor="end">coil</text>
+          <text x="62" y="184" text-anchor="end">coil</text>
+          <text x="128" y="138">COM</text>
+          <text x="236" y="114" text-anchor="end">NO or NC</text>
+          <text x="236" y="164" text-anchor="end">NO or NC</text>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">
+          <text x="30" y="232">meter, no power:</text>
+          <text x="30" y="250">coil &#8596; coil      ~70&#937;</text>
+          <text x="30" y="268">COM &#8596; one end     ~0&#937; = NC</text>
+          <text x="30" y="286">COM &#8596; the other   open = NO</text>
+          <text x="30" y="304">the top of the cube prints it too</text>
+        </g>
+
+        <!-- transistors -->
+        <text x="500" y="30" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">TO-92, flat face toward you</text>
+        <text x="500" y="47" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">legs down</text>
+        <path d="M405,140 L405,98 Q405,72 430,72 Q455,72 455,98 L455,140 Z" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"></path>
+        <path d="M545,140 L545,98 Q545,72 570,72 Q595,72 595,98 L595,140 Z" fill="var(--sunk)" stroke="var(--ink)" stroke-width="1.5"></path>
+        <text x="430" y="114" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink)">BC547</text>
+        <text x="570" y="114" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink)">2N2222</text>
+        <g stroke="var(--ink)" stroke-width="2">
+          <line x1="415" y1="140" x2="415" y2="186"></line>
+          <line x1="430" y1="140" x2="430" y2="186"></line>
+          <line x1="445" y1="140" x2="445" y2="186"></line>
+          <line x1="555" y1="140" x2="555" y2="186"></line>
+          <line x1="570" y1="140" x2="570" y2="186"></line>
+          <line x1="585" y1="140" x2="585" y2="186"></line>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)" text-anchor="middle">
+          <text x="415" y="204">C</text><text x="430" y="204">B</text><text x="445" y="204">E</text>
+          <text x="555" y="204">E</text><text x="570" y="204">B</text><text x="585" y="204">C</text>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)" text-anchor="middle">
+          <text x="500" y="232">opposite ways round. Check yours:</text>
+          <text x="500" y="250">meter diode test, red probe on B</text>
+          <text x="500" y="268">B&#8594;E and B&#8594;C both read 0.6-0.7V</text>
+          <text x="500" y="286">the other two pairs read open</text>
+          <text x="500" y="304">middle leg is B on both</text>
+        </g>
+
+        <!-- diode -->
+        <text x="810" y="30" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">1N4007</text>
+        <text x="810" y="47" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">black body, grey stripe</text>
+        <line x1="690" y1="118" x2="750" y2="118" stroke="var(--ink)" stroke-width="2"></line>
+        <line x1="870" y1="118" x2="930" y2="118" stroke="var(--w5v)" stroke-width="2"></line>
+        <rect x="750" y="100" width="120" height="36" rx="4" fill="var(--part)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <rect x="846" y="100" width="12" height="36" fill="var(--muted)"></rect>
+        <text x="720" y="160" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">anode</text>
+        <text x="720" y="176" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">to collector</text>
+        <text x="900" y="160" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--w5v)">cathode</text>
+        <text x="900" y="176" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">stripe &#8594; +5V</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)" text-anchor="middle">
+          <text x="810" y="232">across the coil, pointing</text>
+          <text x="810" y="250">"backwards" on purpose:</text>
+          <text x="810" y="268">it only conducts the kick</text>
+          <text x="810" y="286">when the coil lets go</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>The relay's pin arrangement is the one Songle prints on top of the cube: coil pins flanking COM at one end, NO and NC at the other. The drawing does not commit to which corner is NO, because the meter answers that in ten seconds with nothing powered. On a module the screw terminals are labelled <span class="mono">NO COM NC</span>; if they are not, the same meter test works on the terminals. A metal-can 2N2222 has a tab next to the emitter instead of a flat face.</figcaption>
+  </figure>
+
+  <h2>The load side</h2>
+  <p>The relay is just a switch in the live wire. Live goes from the plug through a fuse to <span class="mono">COM</span>; <span class="mono">NO</span> goes on to the bulb holder; the bulb's other contact returns on neutral. Neutral and earth run straight through, joined with lever connectors. <span class="mono">NC</span> stays empty. Wired to <span class="mono">NO</span>, a dead ESP32 or a lost relay supply means the lamp is off, never stuck on.</p>
+
+  <figure>
+    <div class="scroller wide">
+      <svg viewBox="0 0 960 490" role="img" aria-label="Mains wiring for the kandil lamp. A 3-pin 6 amp plug has live, neutral and earth terminals. Inside a closed plastic box, the live core goes through a T2A slow-blow fuse in an inline holder to the relay's COM terminal. The relay's NO terminal carries switched live out of the box to the L contact of a B22 bulb holder with a 60 watt incandescent bulb. The holder's N contact returns on the neutral core, which goes straight back to the plug through a lever connector in the box. The earth core goes straight through another lever connector to the holder's earth screw if it has one; a plastic B22 holder has none. The relay's NC terminal is left empty. One corner of the box is the low-voltage corner with the ESP32 and switch, kept away from every mains wire.">
+        <!-- plug -->
+        <rect x="24" y="180" width="140" height="160" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <text x="94" y="206" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">3-pin plug</text>
+        <text x="94" y="222" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">6A, 230V</text>
+        <circle cx="164" cy="240" r="4.5" fill="var(--wlive)"></circle>
+        <circle cx="164" cy="280" r="4.5" fill="var(--wneut)"></circle>
+        <circle cx="164" cy="310" r="4.5" fill="var(--wearth)"></circle>
+        <g font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" text-anchor="end">
+          <text x="154" y="244" fill="var(--wlive)">L</text>
+          <text x="154" y="284" fill="var(--wneut)">N</text>
+          <text x="154" y="314" fill="var(--wearth)">E</text>
+        </g>
+
+        <!-- box -->
+        <rect x="200" y="60" width="550" height="390" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="8 5"></rect>
+        <text x="214" y="84" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--warn)">closed plastic box</text>
+        <text x="214" y="101" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">lid on before the plug goes in</text>
+        <text x="214" y="117" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">cable clamped at the entry</text>
+
+        <!-- low-voltage corner -->
+        <rect x="560" y="76" width="176" height="100" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="4 3"></rect>
+        <text x="648" y="104" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--ink)">ESP32 + switch</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)" text-anchor="middle">
+          <text x="648" y="122">low-voltage corner</text>
+          <text x="648" y="138">no mains wire can reach it</text>
+          <text x="648" y="154">if a terminal lets go</text>
+        </g>
+
+        <!-- live through fuse to COM -->
+        <line x1="164" y1="240" x2="250" y2="240" stroke="var(--wlive)" stroke-width="3"></line>
+        <rect x="250" y="230" width="70" height="20" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></rect>
+        <line x1="250" y1="240" x2="320" y2="240" stroke="var(--ink)" stroke-width="1"></line>
+        <text x="285" y="222" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">T2A fuse</text>
+        <text x="285" y="266" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">slow-blow</text>
+        <line x1="320" y1="240" x2="420" y2="240" stroke="var(--wlive)" stroke-width="3"></line>
+
+        <!-- relay contacts -->
+        <text x="480" y="192" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--ink)">relay contacts</text>
+        <rect x="420" y="200" width="120" height="130" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <line x1="420" y1="240" x2="450" y2="240" stroke="var(--ink)" stroke-width="2"></line>
+        <circle cx="450" cy="240" r="3" fill="var(--ink)"></circle>
+        <line x1="450" y1="240" x2="502" y2="292" stroke="var(--ink)" stroke-width="2.5"></line>
+        <line x1="504" y1="240" x2="540" y2="240" stroke="var(--ink)" stroke-width="2"></line>
+        <line x1="504" y1="296" x2="540" y2="296" stroke="var(--ink)" stroke-width="2"></line>
+        <circle cx="420" cy="240" r="4.5" fill="var(--wlive)"></circle>
+        <circle cx="540" cy="240" r="4.5" fill="var(--wlive)"></circle>
+        <circle cx="540" cy="296" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">
+          <text x="428" y="228">COM</text>
+          <text x="534" y="228" text-anchor="end">NO</text>
+          <text x="534" y="318" text-anchor="end">NC</text>
+        </g>
+
+        <!-- switched live to lamp -->
+        <line x1="540" y1="240" x2="790" y2="240" stroke="var(--wlive)" stroke-width="3"></line>
+        <text x="660" y="232" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">switched live</text>
+
+        <!-- lamp holder -->
+        <rect x="790" y="190" width="150" height="180" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <text x="865" y="212" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--ink)">B22 holder</text>
+        <text x="865" y="228" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">60W incandescent</text>
+        <polyline points="790,240 865,240 865,266" fill="none" stroke="var(--wlive)" stroke-width="2"></polyline>
+        <circle cx="865" cy="290" r="24" fill="none" stroke="var(--ink)" stroke-width="2"></circle>
+        <line x1="848" y1="273" x2="882" y2="307" stroke="var(--ink)" stroke-width="1.5"></line>
+        <line x1="848" y1="307" x2="882" y2="273" stroke="var(--ink)" stroke-width="1.5"></line>
+        <polyline points="865,314 865,330 790,330" fill="none" stroke="var(--wneut)" stroke-width="2"></polyline>
+        <circle cx="790" cy="240" r="4.5" fill="var(--wlive)"></circle>
+        <circle cx="790" cy="330" r="4.5" fill="var(--wneut)"></circle>
+        <circle cx="790" cy="355" r="4.5" fill="var(--surface)" stroke="var(--wearth)" stroke-width="1.5"></circle>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500">
+          <text x="800" y="258" fill="var(--wlive)">L</text>
+          <text x="800" y="324" fill="var(--wneut)">N</text>
+          <text x="802" y="359" font-size="10" fill="var(--wearth)">E, if it has one</text>
+        </g>
+
+        <!-- neutral straight through -->
+        <polyline points="164,280 230,280 230,390 762,390 762,330 790,330" fill="none" stroke="var(--wneut)" stroke-width="3"></polyline>
+        <rect x="320" y="382" width="30" height="16" fill="var(--surface)" stroke="var(--wneut)" stroke-width="2"></rect>
+        <!-- earth straight through -->
+        <polyline points="164,310 215,310 215,420 778,420 778,355 786,355" fill="none" stroke="var(--wearth)" stroke-width="3"></polyline>
+        <rect x="320" y="412" width="30" height="16" fill="var(--surface)" stroke="var(--wearth)" stroke-width="2"></rect>
+        <text x="370" y="409" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">N and E straight through, each joined in a lever connector</text>
+
+        <!-- legend -->
+        <line x1="24" y1="472" x2="56" y2="472" stroke="var(--wlive)" stroke-width="3"></line>
+        <text x="64" y="476" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">L &middot; brown (or red) core</text>
+        <line x1="250" y1="472" x2="282" y2="472" stroke="var(--wneut)" stroke-width="3"></line>
+        <text x="290" y="476" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">N &middot; blue (or black)</text>
+        <line x1="450" y1="472" x2="482" y2="472" stroke="var(--wearth)" stroke-width="3"></line>
+        <text x="490" y="476" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">E &middot; green/yellow</text>
+        <rect x="640" y="465" width="24" height="14" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5"></rect>
+        <text x="672" y="476" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">lever connector</text>
+        <circle cx="810" cy="472" r="4.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"></circle>
+        <text x="822" y="476" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">hollow = empty</text>
+      </svg>
+    </div>
+    <figcaption>Contacts drawn at rest (coil off): COM touches NC, the lamp is off. The fuse sits on live before the relay, so it protects the relay contacts, the box wiring and the cable to the lamp. The same contacts sit on the module's screw terminals in variant A and on the cube's pins in variant B; on a bare cube, solder the mains cores to the pins and sleeve each joint in heat shrink.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>From</th><th>To</th><th>Why it matters</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="swatch" style="background:var(--wlive)"></span>plug <span class="mono">L</span></td>
+          <td>T2A fuse &rarr; relay <span class="mono">COM</span></td>
+          <td>Switch and fuse the live, never the neutral. Switching neutral turns the bulb off but leaves the holder's contacts at 230V.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wlive)"></span>relay <span class="mono">NO</span></td>
+          <td>bulb holder <span class="mono">L</span> (centre contact)</td>
+          <td>Normally open: relay unpowered = lamp off. On <span class="mono">NC</span> it works inverted, and the lamp comes on whenever the ESP32 is down.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wneut)"></span>plug <span class="mono">N</span></td>
+          <td>bulb holder <span class="mono">N</span></td>
+          <td>Straight through, joined in a lever connector inside the box. Never through the relay.</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" style="background:var(--wearth)"></span>plug <span class="mono">E</span></td>
+          <td>holder earth screw, if any</td>
+          <td>A plastic B22 holder has no earth terminal. Then the earth core ends in its own lever connector in the box, connected to nothing else. The 3-pin plug is still worth it: its earth pin is what makes it go in only one way round.</td>
+        </tr>
+        <tr>
+          <td>relay <span class="mono">NC</span></td>
+          <td>nothing</td>
+          <td>Leave the terminal empty and its screw done up.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>No-mains alternative: a USB LED string</h3>
+  <p>If the kandil gets a 5V USB LED string instead of a bulb, the relay switches it on the same two contacts. Cut a USB cable (or the string's own lead), and put its <span class="mono">+5V</span> core (usually red) through <span class="mono">COM</span> and <span class="mono">NO</span>. Ground (usually black) runs straight through. Use a second charger or a power bank for the string, so the string's current never passes through the ESP32's VIN pin. Nothing on this side can hurt you, so no box or fuse is needed. It also makes a good first test of the contacts before the mains wiring is built.</p>
+
+  <figure>
+    <div class="scroller small">
+      <svg viewBox="0 0 760 220" role="img" aria-label="Low-voltage alternative. A second USB charger or power bank has plus 5 volt and ground outputs. The plus 5 volt core goes to the relay's COM terminal; the relay's NO terminal goes to the plus lead of a USB LED string. The string's minus lead returns straight to the charger's ground. The relay's NC terminal is not used.">
+        <rect x="20" y="40" width="170" height="130" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"></rect>
+        <text x="105" y="68" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">2nd USB charger</text>
+        <text x="105" y="85" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">or a power bank</text>
+        <circle cx="190" cy="115" r="4.5" fill="var(--w5v)"></circle>
+        <text x="180" y="119" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--w5v)">+5V</text>
+        <circle cx="190" cy="150" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="180" y="154" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--wgnd)">GND</text>
+
+        <text x="370" y="70" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--ink)">relay contacts</text>
+        <rect x="300" y="80" width="140" height="80" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <line x1="300" y1="115" x2="340" y2="115" stroke="var(--ink)" stroke-width="2"></line>
+        <circle cx="340" cy="115" r="3" fill="var(--ink)"></circle>
+        <line x1="340" y1="115" x2="392" y2="98" stroke="var(--ink)" stroke-width="2.5"></line>
+        <line x1="400" y1="115" x2="440" y2="115" stroke="var(--ink)" stroke-width="2"></line>
+        <circle cx="300" cy="115" r="4.5" fill="var(--w5v)"></circle>
+        <circle cx="440" cy="115" r="4.5" fill="var(--w5v)"></circle>
+        <text x="308" y="142" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">COM</text>
+        <text x="432" y="142" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--ink)">NO</text>
+
+        <line x1="190" y1="115" x2="300" y2="115" stroke="var(--w5v)" stroke-width="2.5"></line>
+        <polyline points="440,115 500,115 500,130 560,130" fill="none" stroke="var(--w5v)" stroke-width="2.5"></polyline>
+        <polyline points="190,150 250,150 250,195 520,195 520,160 560,160" fill="none" stroke="var(--wgnd)" stroke-width="2.5"></polyline>
+
+        <rect x="560" y="70" width="180" height="110" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></rect>
+        <text x="650" y="96" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--ink)">USB LED string</text>
+        <text x="650" y="112" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">cut lead: red +, black &#8722;</text>
+        <circle cx="560" cy="130" r="4.5" fill="var(--w5v)"></circle>
+        <circle cx="560" cy="160" r="4.5" fill="var(--wgnd)"></circle>
+        <text x="572" y="134" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">+</text>
+        <text x="572" y="164" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--ink)">&#8722;</text>
+      </svg>
+    </div>
+    <figcaption>Same COM and NO as the mains drawing; only the voltage changes. Check the cut cable's cores with the meter (red is not guaranteed): with the charger plugged in, +5V reads +5V against the other core.</figcaption>
+  </figure>
+
+  <h2>Mains safety</h2>
+
+  <div class="callout">
+    <p><span class="label">Plug out for every mains step</span>Every screw, strip and meter check on the 230V side happens with the plug out of the wall, not just the socket switch off. The box lid goes on before the plug goes in. If anything needs changing, unplug first, then open the box.</p>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">Keep the two halves apart</span>The ESP32, its USB cable and the switch go in one corner of the box; the fuse, relay contacts and lever connectors go in the other, at least a few centimetres apart, with the mains cores cable-tied down so a loose one cannot swing across. The mains cable is clamped where it enters (gland, grommet plus tie, or a knot inside), so a tug on the cable pulls on the box, not on the screw terminals. The USB cable is the only thing that leaves the low-voltage corner. Nothing with a metal case or exposed metal goes in.</p>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">Use a 3-pin plug, not a 2-pin one</span>Indian 2-pin sockets are not polarised: a 2-pin plug goes in either way round, and half the time the relay switches neutral instead of live. The bulb still goes off, but the holder stays at 230V with the lamp "off". A 3-pin plug only fits one way, so the core on its <span class="mono">L</span> pin really is live, assuming the socket itself is wired correctly. Brown (or red) is live, blue (or black) neutral, green/yellow earth.</p>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">A 60W bulb in a paper lantern, unattended</span>An incandescent bulb turns nearly all of its 60W into heat, and its glass runs well over 100&deg;C. Inside a paper kandil, on a timer, with nobody in the room, that is the one real fire risk in this build, and the relay does not change it. Hang the bulb so it sits in the middle of the lantern, well clear of the paper on every side, with the opening at the top and bottom left free so heat can rise out. After the first hour, feel the paper nearest the bulb: warm is the limit, hot means more clearance. Keep the timer's on-window to the evening, and do not leave it running while nobody is home. <strong>Simplest fix: a 7&ndash;9W LED bulb</strong> (~&#8377;100&ndash;150) in the same B22 holder - same wiring, same fuse, a fraction of the heat.</p>
+  </div>
+
+  <div class="callout">
+    <p><span class="label">The mains rating of a cheap module</span>The cube is rated 10A 250VAC, but a hobby module's traces and screw terminals are the weaker link. At 0.26A that does not matter. It does if this box is ever reused for a heater, geyser or iron: it is for lights and a fan, nothing heavier.</p>
+  </div>
+
+  <h2>The numbers</h2>
+  <p><strong>Relay coil.</strong> The SRD-05VDC-SL-C coil is ~70&#937;: 71mA at 5V, about 67mA at the ~4.7V the VIN pin typically gives. It picks up at 75% of rated (3.75V) or more, so 4.7V closes it reliably. <strong>Base drive (B).</strong> (3.3V &minus; 0.7V) / 1k = 2.6mA from <span class="mono">GPIO26</span>, well inside the ESP32's ~20mA per pin. For 67mA of coil current that is a forced gain of about 26, enough to saturate either transistor. The BC547 is rated 100mA collector, so it runs at about two thirds of its limit; the 2N2222 (600mA) has more headroom and is the better pick if both are in the drawer. <strong>USB budget.</strong> The ESP32 peaks at roughly 250mA on WiFi transmit, plus 70mA of coil, so ~320mA in all: any 1A charger, or a laptop port, covers it.</p>
+  <p><strong>The bulb.</strong> 60W / 230V = 0.26A steady. A cold filament has about a tenth of its hot resistance (880&#937; hot), so at switch-on it draws ~10x that, about 2.6A, for a few milliseconds while it heats. The 10A contacts take that easily. A <strong>T2A slow-blow</strong> fuse rides through the inrush and still blows on a short. A 1A fast fuse can blow on the inrush alone, so don't use one. 0.75mm&#178; flexible cable is rated well above 2A.</p>
+
+  <div class="settings">
+    <span class="pill"><b>coil</b> ~70&#937; &middot; 67-71mA</span>
+    <span class="pill"><b>pick-up</b> &le;3.75V</span>
+    <span class="pill"><b>base</b> 2.6mA</span>
+    <span class="pill"><b>switch pull-up</b> ~70&micro;A</span>
+    <span class="pill"><b>bulb</b> 60W &middot; 0.26A</span>
+    <span class="pill"><b>inrush</b> ~2.6A, ms</span>
+    <span class="pill"><b>fuse</b> T2A</span>
+  </div>
+
+  <h2>Parts checklist</h2>
+  <p>Ticks are kept in this browser only, for a bench session. "Probably owned" is a guess from what the repo records (the spare ESP32 and the SONGLE relay are confirmed); prices are rough local-shop figures.</p>
+  <div class="tablewrap">
+    <table class="parts">
+      <thead>
+        <tr><th>Part</th><th>For</th><th>Probably owned</th><th>Maybe buy, &#8377;</th></tr>
+      </thead>
+      <tbody>
+        <tr class="group"><td colspan="4">Low-voltage side</td></tr>
+        <tr><td><label><input type="checkbox" id="p-esp32"><span>ESP32 devkit (esp32dev, WROOM-32)</span></label></td><td><span class="tag">A+B</span></td><td>yes, a spare</td><td class="num">350-500</td></tr>
+        <tr><td><label><input type="checkbox" id="p-relay"><span>SONGLE SRD-05VDC-SL-C relay</span></label></td><td><span class="tag">A+B</span></td><td>yes, the stash one</td><td class="num">&mdash;</td></tr>
+        <tr><td><label><input type="checkbox" id="p-module"><span>1-channel relay module (only if the relay is bare and you would rather not build B)</span></label></td><td><span class="tag">A</span></td><td>&mdash;</td><td class="num">60-100</td></tr>
+        <tr><td><label><input type="checkbox" id="p-npn"><span>NPN transistor, 2N2222 preferred, BC547 fine</span></label></td><td><span class="tag">B</span></td><td>maybe</td><td class="num">2-5 each</td></tr>
+        <tr><td><label><input type="checkbox" id="p-res"><span>1k resistor, plus a 10k (optional)</span></label></td><td><span class="tag">B</span></td><td>likely</td><td class="num">1 each</td></tr>
+        <tr><td><label><input type="checkbox" id="p-diode"><span>1N4007 diode</span></label></td><td><span class="tag">B</span></td><td>maybe</td><td class="num">2-3</td></tr>
+        <tr><td><label><input type="checkbox" id="p-bb"><span>Breadboard</span></label></td><td><span class="tag">B</span></td><td>likely</td><td class="num">80-150</td></tr>
+        <tr><td><label><input type="checkbox" id="p-jump"><span>Dupont jumpers, male-female and male-male</span></label></td><td><span class="tag">A+B</span></td><td>yes</td><td class="num">60-100 / 40</td></tr>
+        <tr><td><label><input type="checkbox" id="p-usb"><span>USB data cable + 5V charger, 1A or more</span></label></td><td><span class="tag">A+B</span></td><td>yes</td><td class="num">&mdash;</td></tr>
+        <tr><td><label><input type="checkbox" id="p-switch"><span>Push button or small toggle switch (a jumper wire works for the bench)</span></label></td><td><span class="tag">A+B</span></td><td>maybe</td><td class="num">10-40</td></tr>
+        <tr><td><label><input type="checkbox" id="p-meter"><span>Multimeter (resistance, continuity, diode test)</span></label></td><td><span class="tag">checks</span></td><td>yes</td><td class="num">&mdash;</td></tr>
+        <tr class="group"><td colspan="4">Mains side</td></tr>
+        <tr><td><label><input type="checkbox" id="p-plug"><span>3-pin 6A plug</span></label></td><td><span class="tag">load</span></td><td>maybe</td><td class="num">40-80</td></tr>
+        <tr><td><label><input type="checkbox" id="p-cable"><span>0.75mm&#178; flexible cable, 3-core (2-core if the holder is plastic), 2-3m</span></label></td><td><span class="tag">load</span></td><td>maybe</td><td class="num">25-40 / m</td></tr>
+        <tr><td><label><input type="checkbox" id="p-holder"><span>B22 pendant bulb holder</span></label></td><td><span class="tag">load</span></td><td>probably, with the kandil</td><td class="num">30-60</td></tr>
+        <tr><td><label><input type="checkbox" id="p-bulb"><span>Bulb: 60W incandescent, B22</span></label></td><td><span class="tag">load</span></td><td>yes</td><td class="num">&mdash;</td></tr>
+        <tr><td><label><input type="checkbox" id="p-fuse"><span>Inline fuse holder (5x20mm) + T2A slow-blow fuse, plus a spare</span></label></td><td><span class="tag">load</span></td><td>&mdash;</td><td class="num">30-60 + 5-10</td></tr>
+        <tr><td><label><input type="checkbox" id="p-box"><span>Plastic junction or ABS project box with a screw lid</span></label></td><td><span class="tag">load</span></td><td>maybe</td><td class="num">60-150</td></tr>
+        <tr><td><label><input type="checkbox" id="p-wago"><span>Lever connectors (WAGO 221 or similar), 2-3, or a screw terminal strip</span></label></td><td><span class="tag">load</span></td><td>maybe</td><td class="num">20-40 each</td></tr>
+        <tr><td><label><input type="checkbox" id="p-gland"><span>Cable gland or grommet + cable ties, for strain relief</span></label></td><td><span class="tag">load</span></td><td>maybe</td><td class="num">10-30</td></tr>
+        <tr><td><label><input type="checkbox" id="p-tape"><span>Insulation tape and heat shrink</span></label></td><td><span class="tag">A+B</span></td><td>yes</td><td class="num">20-50</td></tr>
+        <tr class="group"><td colspan="4">Only for the no-mains alternative</td></tr>
+        <tr><td><label><input type="checkbox" id="p-string"><span>USB LED string + a spare USB cable to cut + a 2nd charger or power bank</span></label></td><td><span class="tag">alt</span></td><td>charger yes</td><td class="num">100-200</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Verify in this order</h2>
+  <p>Each step adds one thing, so a failure points at that thing. Steps 1-7 are all low voltage and safe to repeat. The mains wiring is built only after step 7 passes.</p>
+  <ol class="checks">
+    <li><div><span class="phase">no power</span><strong>Meter the relay.</strong> Resistance between pins (or module terminals). <em>Expected:</em> two pins read ~70&#937; (coil, B only); COM to one end pin ~0&#937; (NC); COM to the other open (NO). <strong>No ~70&#937; pair</strong> = you are on a module's screw side or the coil is open; <strong>nothing reads 0&#937;</strong> = you have not found COM yet.</div></li>
+    <li><div><span class="phase">USB only, nothing attached</span><strong>Flash and add to HA</strong> (<span class="mono">./esphome.sh run --device /dev/ttyUSB0</span>), then toggle <span class="mono">Relay</span> in HA. <em>Expected:</em> the blue onboard LED follows. <strong>LED does not follow</strong> = firmware or HA, not wiring; read <span class="mono">./esphome.sh logs</span>. Nothing external is on the board yet, so wiring cannot be the cause.</div></li>
+    <li><div><span class="phase">USB, switch only</span><strong>Wire the switch</strong> (or a jumper wire) between <span class="mono">GPIO27</span> and <span class="mono">GND</span>, and flip it. <em>Expected:</em> the blue LED toggles and HA's <span class="mono">Wall switch</span> changes. <strong>Nothing</strong> = wrong pin; check the silkscreen. This test is harmless whichever pin you hit by mistake, as long as the other end is <span class="mono">GND</span>: never jumper a GPIO to <span class="mono">VIN</span>/<span class="mono">5V</span>, which is not 3.3V-safe.</div></li>
+    <li><div><span class="phase">unplug USB, then wire</span><strong>Add the relay driver (A or B), no load.</strong> Plug USB back in and watch through a reset. <em>Expected:</em> no click at boot; toggling in HA gives one click per toggle and the module's LED (A) follows. <strong>A: relay is on when HA says off</strong> = a high-trigger module; set <span class="mono">relay_inverted: "false"</span>. <strong>A: clicks on and never off</strong> = the 3.3V low-trigger trap; use the JD-VCC split. <strong>B: no click at all</strong> = transistor legs (check E and C against the leg diagram), or the diode backwards (a warm transistor says this; unplug at once). <strong>B: clicks at every reset</strong> = fit the optional 10k.</div></li>
+    <li><div><span class="phase">USB, meter on contacts</span><strong>Continuity on COM-NO</strong> while toggling. <em>Expected:</em> beeps when on, silent when off. <strong>The reverse</strong> = you are on COM-NC.</div></li>
+    <li><div><span class="phase">USB</span><strong>Without the network:</strong> unplug the router (or block the board's WiFi) and flip the switch. <em>Expected:</em> the relay still toggles. Then pull USB with the relay on and plug it back in. <em>Expected:</em> it comes back on.</div></li>
+    <li><div><span class="phase">optional, low voltage</span><strong>Contacts under load:</strong> the USB LED string on COM/NO from its own charger. <em>Expected:</em> the string follows the relay. <strong>String on when off</strong> = it is on NC.</div></li>
+    <li><div><span class="phase">plug out of the wall</span><strong>Build the mains side, then meter it from the plug pins</strong>, with the bulb fitted and the ESP32 on USB. Plug <span class="mono">L</span> to <span class="mono">N</span>, relay off: <em>open</em>. Relay on: about <strong>60-90&#937;</strong> (the 60W bulb's cold filament; hot it would be 880&#937;). <span class="mono">E</span> to <span class="mono">L</span> and <span class="mono">E</span> to <span class="mono">N</span>: open in both states. <strong>Reads 0&#937; when on</strong> = a short across the holder; do not plug in. <strong>Open when on</strong> = the fuse, a loose terminal, or the bulb. <strong>Reads through when off</strong> = the lamp is on NC.</div></li>
+    <li><div><span class="phase">lid on, then plug in</span><strong>First mains power.</strong> Toggle from HA and from the switch. <em>Expected:</em> the bulb follows the relay. <strong>Fuse blows at switch-on</strong> = unplug, then look for a short at the holder; a T2A should not blow on the inrush. Then let it run an hour inside the kandil before trusting it to the timer, and feel the paper.</div></li>
+  </ol>
+
+  <div class="callout ok">
+    <p><span class="label">Safe probing</span>Every meter check above is made with the plug out of the wall: resistance and continuity on the bench, or from the plug's own pins with the box closed. Nothing on this page asks for a probe on live 230V. On the low-voltage side the only supply is USB 5V, and every test either goes through the board's own pins or is a switch to ground.</p>
+  </div>
+
+  <footer>
+    State 2026-11-05: config validated, not yet flashed; no board wired yet. Still open: whether the SONGLE is bare or on a module (this page covers both). ESP32 classic devkit, <span class="mono">esp32dev</span>, ESPHome, static <span class="mono">192.168.1.128</span> / <span class="mono">smart-switch-bench.local</span>; relay on GPIO26, switch on GPIO27, status LED GPIO2. Firmware: <span class="mono">projects/smart-switch/esphome/smart-switch-bench.yaml</span>, built with <span class="mono">projects/smart-switch/esphome/esphome.sh</span>. Bench runbook: <span class="mono">projects/smart-switch/README.md</span>. First job: the akash kandil, on the Diwali Lights schedule. Page source: <span class="mono">projects/smart-switch/wiring.html</span>.
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var KEY = "kandil-relay-parts";
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { saved = {}; }
+    var boxes = document.querySelectorAll("table.parts input[type=checkbox]");
+    boxes.forEach(function (b) {
+      if (saved[b.id]) b.checked = true;
+      b.addEventListener("change", function () {
+        saved[b.id] = b.checked;
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      });
+    });
+  })();
+</script>

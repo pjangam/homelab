@@ -1330,7 +1330,8 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** say whether the SONGLE relay is bare or on a module, and what lights the akash kandil (mains bulb or USB/5V LEDs)
+- [ ] **Pramod:** check the parts list in `projects/smart-switch/wiring.html` against what you have, and say whether the relay is bare or on a module
+- [ ] **Pramod:** consider swapping the kandil's 40-60W incandescent for a 7-9W LED bulb (fire risk in paper, unattended)
 - [ ] **Pramod:** wire the spare ESP32 + relay on the bench (`projects/smart-switch/README.md`) and plug it into xero's USB
 - [ ] **Claude:** first flash (`esphome.sh run --device /dev/ttyUSB0`), add to HA, run the README's bench checks
 - [ ] **Claude:** once it's in HA, add the kandil relay to the three Diwali Lights automations (sunset on, midnight/sunrise off)
@@ -1351,6 +1352,7 @@ Starts after "Diwali lights 2026" (user, 2026-10-30). Check the relays against t
 #### Log
 - 2026-10-30: moved to Active so it stays visible; work starts after the Diwali lights. Relay ratings check added as the first step.
 - 2026-11-05: relay found (SONGLE SRD-05VDC-SL-C, 10A 250VAC). Chose a from-scratch ESP32 + relay build over reflashing Tinxy. Bench prototype in `projects/smart-switch/` (ESPHome, static .128, relay GPIO26, switch input GPIO27, restores state after power loss); config validated. First use: the akash kandil, on the Diwali Lights schedule.
+- 2026-11-05: wiring diagram `projects/smart-switch/wiring.html` (https://claude.ai/artifact/LihsPvp3Lw9rA3HVgAu71v): module and bare-relay variants, kandil mains side. Kandil bulb is a 40-60W incandescent (B22): fine for the relay, T2A slow-blow fuse; LED bulb recommended for heat.
 
 ### Remote control for scenes/scripts (Spotify, white noise, etc.)
 **Status:** Backlog

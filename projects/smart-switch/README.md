@@ -24,6 +24,9 @@ Decided 2026-11-05: build from scratch instead of reflashing the Tinxy units.
 
 ## Bench wiring (no mains yet)
 
+**Full diagram:** `wiring.html` (https://claude.ai/artifact/LihsPvp3Lw9rA3HVgAu71v) - both relay variants, the kandil's mains side (3-pin plug, T2A slow-blow fuse on Live -> COM, NO -> B22 holder) and a parts checklist. Summary:
+
+
 - **Relay module** (blue board with IN/VCC/GND): VCC -> ESP32 `VIN` (5V from USB),
   GND -> `GND`, IN -> `GPIO26`.
 - **Bare relay** (just the cube): it cannot hang off a GPIO, the coil wants ~70mA.
