@@ -1326,12 +1326,10 @@ A soldering iron is assumed - it is already on the aarti lights list (₹500-800
 - 2026-09-15: LED bought - RG, not RGB.
 
 ### In-house smart switch to replace Tinxy
-**Status:** Active
-**Priority:** P3
+**Status:** Done
 
 #### Open items
-- [ ] **Claude:** 2026-11-06 morning: check the kandil went off at midnight with the door lights (automation traces)
-- [ ] **Together, after Diwali:** design the in-wall version (5V mains supply, fuse, enclosure, wiring diagram; read the existing 230V wall switch through an AC optocoupler detection module, Tinxy-style)
+(none - the in-wall version continues as "In-wall smart switch (Tinxy replacement, phase 2)")
 
 **Why:** Tinxy relay switches are cloud-dependent (`mqtt.tinxy.in`) - two concrete problems: (1) a data-breach/privacy exposure since control routes through Tinxy's cloud rather than staying local, and (2) they stop working during an ISP outage even though the LAN itself stays up (confirmed elsewhere - the whole house doesn't lose network, just internet), which defeats the point of switches that are physically on the same LAN as the HA server.
 **State:** **building from scratch, decided 2026-11-05:** an ESP32 dev board + one relay per switch, ESPHome, LAN-only to HA - not a Tinxy reflash. Bench prototype in `projects/smart-switch/`: **working on the kandil since 2026-11-05** (`switch.smart_switch_bench_relay`, on the Diwali Lights schedule). **First job: the akash kandil for Diwali**, a plug-in load rather than a wall box, on the same schedule as the door lights. The in-wall version comes after.
@@ -1365,6 +1363,7 @@ qty | item | est | note
 - 2026-11-05: wiring diagram `projects/smart-switch/wiring.html` (https://claude.ai/artifact/LihsPvp3Lw9rA3HVgAu71v): module and bare-relay variants, kandil mains side. Kandil bulb is a 40-60W incandescent (B22): fine for the relay, T2A slow-blow fuse; LED bulb recommended for heat (declined: the kandil is jute, and the clear filament throws its weave as a shadow pattern an LED would wash out).
 - 2026-11-05: wiring moved to Markdown + SVG so it renders on GitHub: `projects/smart-switch/wiring.md` with `wiring-svg/` (ESP32 to the KY-019 module, mains side). Only the build actually used is drawn; the other relay variants and the USB-string alternative were dropped (user: they add confusion). `wiring.html` removed.
 - 2026-11-05: **flashed and in HA.** A fresh spare ESP32 (MAC `b0:3f:d3:51:77:ec`; the board first found on xero's USB was the living room voice satellite, left alone) flashed over USB, on 192.168.1.128, added to HA with `add_satellite_ha.py` (now takes `ESPHOME_SECRETS` for another project's board). WiFi prefers the bedroom AP `dlink_pramod_bed_room` (user; same password as the router), falls back to `dlink_pramod`; joined the bedroom AP at -67 dBm from xero's spot. New `WiFi network` / `WiFi access point` sensors show which. Relay came back on after the OTA reboot (restore works).
+- 2026-11-05: **Done** (user) for the kandil prototype. The in-wall version moved to its own Backlog entry, "In-wall smart switch (Tinxy replacement, phase 2)"; the midnight-off check moved to "Diwali lights 2026".
 - 2026-11-05: box on the wall, ESP32 back on its charger, rejoined the bedroom AP at -59 dBm, bulb on. Jute heat check dropped: same kandil and 60W bulb used safely for the past two Diwalis (user).
 - 2026-11-05: **mains side built and working.** Plug pins metered: L-N open with relay off, 64 ohm on (60W cold filament), E open to both. Plugged into the fused strip: dark at plug-in, lit on HA's command. `switch.smart_switch_bench_relay` added to the three `diwali_lights_*` automations (HA backup `automations.yaml.bak-2026-11-05-kandil`); board added to `docs/hardware.md` and `endpoints.toml`.
 - 2026-11-05: **low-voltage bench checks pass** (wiring.md section 5): LED follows HA (step 1, after an on_boot fix: a restored relay did not light the LED), module wired, one click per toggle with the module LED following (3), COM-NC beeps unpowered and COM-NO beeps on / silent off (4), relay restored on after a USB unplug (6). Rocker (2, 5) not fitted.
@@ -2617,6 +2616,7 @@ Add the board to `docs/hardware.md` and its MQTT topic to `endpoints.toml`.
 - [ ] **Pramod:** rename the Tinxy switch "Living Room Blank" (display name only, keep `switch.living_room_blank`)
 - [ ] **Claude:** re-add WLED in HA; point the old aarti scripts' .125 defaults at .127
 - [ ] **Claude:** `docs/hardware.md` entry and `endpoints.toml` before Done
+- [ ] **Claude:** 2026-11-06 morning: check the akash kandil (`switch.smart_switch_bench_relay`, added to the `diwali_lights_*` automations 2026-11-05) went off at midnight with the door lights (automation traces)
 
 **Why:** festival decoration for Diwali, raised 2026-10-16 about three weeks out. The Ganapati WS2812B strip and the WLED software are still here, but the board that ran them is now the bedroom voice satellite. The question is whether to bring the aarti build back with plain warm effects or to try something new. **Diwali 2026 is Sun 8 Nov (Lakshmi Puja that evening), Dhanteras Fri 6 Nov, Bhai Dooj Tue 10 Nov** ([dekhopanchang](https://dekhopanchang.com/en/festivals/diwali), [101planners](https://www.101planners.com/diwali-countdown/), [kissht](https://www.kissht.com/blog/diwali-2026-date-and-lakshmi-puja-timing); some BankBazaar pages say 20 Oct, which is wrong and does not agree with itself). Lights should be up by Dhanteras, so the build deadline is **Thu 5 Nov**.
 **State:** **on the door and working (2026-11-03):** all 284 px light, the mic hears sound (not yet tuned), and the HA schedule is live: on at sunset via Tinxy `switch.living_room_blank`, off at midnight, or at sunrise after Lakshmi Puja, Padwa, Bhai Dooj and Kartik Purnima; no turn-on after 24 Nov. Boots into **preset 2 "Funky (until mic tuning)"** - Colorwaves on the Party palette, bri 128 (set 2026-11-05); preset 1 is kept free for the sound-reactive one. Design, **chosen 2026-10-28: door outline (New idea A) on the audioreactive WLED build, with a mic borrowed from a voice satellite for a switchable firecracker mode** (works non-reactive if no mic is fitted). Layout: the 180 px aarti piece runs up the socket side and across the top, ending exactly at the far top corner; the ~104 px offcut (count to confirm) runs down the far side and stops ~35-40cm short of the floor, accepted. **One supply** (the 5V 4A brick, socket outside the door) feeds the strip start, the ESP32's VIN, and a 5V injection pair to the join at the far top corner - no second adapter or power strip. Wiring diagram: `projects/diwali-lights/wiring.html` (https://claude.ai/artifact/GxLRmgjiz1pSknvwaWfGuA), with the door route, the corner joint and a firmware/settings box. Everything for the plain build is owned, including a spare ESP32 (user, 2026-10-28); only the optional firecracker mic would need buying.
@@ -3213,3 +3213,15 @@ Everything is off-the-shelf: setup only, no code to maintain.
 
 #### Log
 - 2026-11-04: raised and scoped during the repo structure review (see "Per-project READMEs"). Not started.
+
+### In-wall smart switch (Tinxy replacement, phase 2)
+**Status:** Backlog
+**Priority:** P3
+
+#### Open items
+- [ ] **Together, after Diwali:** design the in-wall version: 5V mains supply (HLK-PM01 class), fuse, enclosure, wiring diagram; read the existing 230V wall switch through an AC optocoupler detection module, Tinxy-style
+
+**Why:** same as "In-house smart switch to replace Tinxy" (Done 2026-11-05): the Tinxy switches route every click through `mqtt.tinxy.in`, leaking usage and failing in an ISP outage.
+**State:** the plug-in prototype works (ESP32 + KY-019 relay module, ESPHome, LAN-only, Tinxy-style switch logic) and runs the akash kandil: `projects/smart-switch/`. What the wall box adds: its own mains-to-5V supply instead of a USB charger, a fuse, a back-box-sized enclosure with mains and low voltage kept apart, and sensing the existing 230V rocker so the wall switch keeps working. Reuse the firmware (`projects/smart-switch/esphome/`) and the circuit-diagram agent for the drawing.
+#### Log
+- 2026-11-05: split out of "In-house smart switch to replace Tinxy" when the kandil prototype was marked Done.

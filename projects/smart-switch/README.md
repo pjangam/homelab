@@ -7,7 +7,9 @@ and so stop working in an ISP outage and leak usage to a vendor cloud. The story
 and decisions are in `PROJECTS.md` under "In-house smart switch to replace Tinxy".
 Decided 2026-11-05: build from scratch instead of reflashing the Tinxy units.
 
-**Stage now: bench prototype, one switch.** Nothing is in a wall yet.
+**Stage now: one plug-in switch, in use** on the akash kandil since 2026-11-05 (box on
+the wall, on the Diwali Lights automations). Nothing is in a wall yet: that is
+"In-wall smart switch (Tinxy replacement, phase 2)" in `PROJECTS.md`.
 
 | | |
 |---|---|
