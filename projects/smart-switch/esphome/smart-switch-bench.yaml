@@ -18,6 +18,18 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
+  # Restoring the relay at boot does not fire on_turn_on, so sync the LED once
+  # (seen 2026-11-05: relay restored on, LED dark).
+  on_boot:
+    priority: -100
+    then:
+      - if:
+          condition:
+            switch.is_on: relay
+          then:
+            - output.turn_on: status_led
+          else:
+            - output.turn_off: status_led
 
 esp32:
   board: esp32dev
