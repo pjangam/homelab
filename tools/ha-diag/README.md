@@ -1,6 +1,6 @@
 # ha-diag
 
-Three Home Assistant questions that are awkward to answer from the UI.
+Home Assistant questions that are awkward to answer from the UI.
 
 `unavailable_now_vs_before.sh` - every entity unavailable **right now**, next
 to the states it had in an earlier window, so after a restart or an outage you
@@ -24,3 +24,15 @@ traces in memory only, so a restart loses them - check soon after a failure.
 you were listening to played (2026-11-05: it played on xero while the bedroom
 Pi was off). Uses the host's `websockets` and `.env.healthcheck`'s `HA_TOKEN`.
 Run on xero.
+
+`wifi_drops.py <start> <end> [--times]` - per-hour count of how often each
+2.4GHz Wi-Fi device (Diwali WLED, both voice satellites, the kandil switch)
+went `unavailable`, times in IST. Devices on the router and the extender
+dropping in the same hour means the router's 2.4GHz radio
+([`docs/wifi.md`](../../docs/wifi.md)). The device list is at the top of the
+script. Run on xero:
+
+```
+set -a; . ./.env.healthcheck; set +a
+python3 tools/ha-diag/wifi_drops.py 2026-11-07T18:00 2026-11-08T00:00
+```

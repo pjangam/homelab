@@ -3399,3 +3399,22 @@ One switch, option B:
 - **Name it:** rename the board/entity from "Smart Switch Bench" once it has a permanent job, and update `docs/hardware.md` and `endpoints.toml`.
 #### Log
 - 2026-11-05: idea recorded (user): after Diwali the in-house plug moves from the kandil to the Alfred camera's charger, driven by the iPhone's battery level.
+
+### Home Wi-Fi: evening 2.4GHz drops
+**Status:** Active
+**Priority:** P2
+
+#### Open items
+- [ ] **Claude, 2026-11-07 after 23:00:** run `tools/ha-diag/wifi_drops.py 2026-11-07T18:00 2026-11-08T00:00` and compare with the 06 Nov table in the incident write-up
+- [ ] **Pramod, optional:** try the extender's web page (`http://tplinkrepeater.net`) for a WPA2-PSK / AES-only option; the Tether app has none
+
+**Why:** every 2.4GHz device (both voice satellites, the Diwali WLED, the kandil switch, the wol Pi) drops several times an evening, and on 2026-11-06 the router's 2.4GHz radio stalled for 7 minutes and took the whole Wi-Fi down while wired xero stayed up. Write-up: `docs/incidents/2026-11-06-router-2.4ghz-wifi-stall.md`; settings and their reasons: `docs/wifi.md`.
+**State:** router changed 2026-11-06 22:45 from channel 10 (Auto) / B+G+N / WPA2 Mixed to **channel 11 / G+N / WPA2 AES-only**; all devices rejoined. Waiting on one evening of data to see whether the drops stop.
+
+#### If drops continue
+- Try channel 1 or 6 instead of 11 (check with a Wi-Fi analyser app which is quietest).
+- Then suspect the Airtel firmware: ask Airtel for a replacement, or an own AP behind the router with the router's Wi-Fi off.
+- Retiring the extender is its own entry: "Move the Airtel router to a central spot".
+
+#### Log
+- 2026-11-06: 22:21-22:28 outage diagnosed as the router's 2.4GHz radio (devices on router and extender dropped together; no carrier loss, same public IP; router log `br0 up` at 22:29). Router settings changed 22:45. `tools/ha-diag/wifi_drops.py` and `docs/wifi.md` added.

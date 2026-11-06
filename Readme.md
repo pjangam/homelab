@@ -76,7 +76,7 @@ wol-sender Pi or the Mac; they move into the layout above in a later session.
 | [`dev-shell`](tools/dev-shell/README.md) | the Mac shell setup (iTerm + tmux + Claude Code) |
 | [`diagrams`](tools/diagrams/README.md) | screenshot a wiring diagram to check it before publishing |
 | [`esp32-tools`](tools/esp32-tools/README.md) | flashing and bring-up for the WLED boards |
-| [`ha-diag`](tools/ha-diag/README.md) | two awkward Home Assistant questions |
+| [`ha-diag`](tools/ha-diag/README.md) | awkward Home Assistant questions: what is newly unavailable, script traces, Wi-Fi drops per hour |
 | [`heic-convert`](tools/heic-convert/README.md) | HEIC to JPEG, for what lands on the shares |
 | [`host-stats`](tools/host-stats/README.md) | the per-second sampler, and the cooling benchmark |
 | [`memtest`](tools/memtest/README.md) | RAM testing on xero without a USB stick |
@@ -238,6 +238,7 @@ Full write-ups live in [`docs/incidents/`](docs/incidents/), one file per incide
 - [`2026-08-31-white-noise-mqtt-reconnect-loop.md`](docs/incidents/2026-08-31-white-noise-mqtt-reconnect-loop.md) — racy manual MQTT reconnect loop flapping HA switches "unavailable" every ~5s; found in `toggle-button-mqtt.py` (2026-08-25), recurred in `white-noise-mqtt.py` (2026-08-31)
 - [`2026-07-23-getty-tty1-crash-loop.md`](docs/incidents/2026-07-23-getty-tty1-crash-loop.md) — `getty@tty1` crash-looped after a reboot changed the console video mode; a hardcoded TTY font choice stopped fitting. Includes a corrected theory ruling this out as the cause of the same-day white-noise bug
 - [`2026-09-04-tls-cert-renewal-silently-broken.md`](docs/incidents/2026-09-04-tls-cert-renewal-silently-broken.md) — the monthly `tailscale cert` cron produced no effect for 3 months and was found 5 days from expiry; `sudo` cannot run from this crontab, the `&&`-chain sent the error to unread cron mail, and `tailscale cert` without `--min-validity` returns the cached cert rather than renewing
+- [`2026-11-06-router-2.4ghz-wifi-stall.md`](docs/incidents/2026-11-06-router-2.4ghz-wifi-stall.md) — every Wi-Fi device offline for 7 min while wired xero stayed up; the Airtel router's 2.4GHz radio stalled (channel 10, B+G+N, TKIP), fixed to channel 11 / G+N / AES. Settings and diagnosis steps in [`docs/wifi.md`](docs/wifi.md)
 
 ---
 
