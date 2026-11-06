@@ -61,7 +61,8 @@ ch 10:                              [=========]   <- overlaps BOTH 6 and 11
   | 11 | -56 dBm | ours |
 
   - On channel 10 we overlapped Airtel_moha (11) as noise; on 11 we share airtime with it.
-  - **Channel 6 is empty** apart from faint overlap from Rao on 8: the next thing to try.
+  - **Channel 6 is empty** apart from faint overlap from Rao on 8, so the router moved to 6 at 23:03.
+  - First scan on record; nothing older exists. Rescan and compare if drops return.
 - **Scanning without an app:** `curl -s http://192.168.1.127/json/net` asks the
   WLED board to scan (call it twice; the first starts the scan). The Pi needs
   root to rescan (`sudo nmcli dev wifi rescan`, from a real terminal).
@@ -84,7 +85,7 @@ ch 10:                              [=========]   <- overlaps BOTH 6 and 11
 
 | Setting | Was | Now | Why |
 |---|---|---|---|
-| Channel | 10 (Auto) | **11, fixed** | 10 overlaps both 6 and 11, so it takes interference from neighbours on either. Auto may also hop channels under evening load. Only 1, 6, 11 don't overlap. |
+| Channel | 10 (Auto) | **6, fixed** (11 for 20 minutes first) | 10 overlapped the strongest neighbour, Airtel_moha on 11, as noise. 6 has no neighbour on it (scan below). Auto had also moved it: 5 on 2026-10-24, 10 on 2026-11-06. Only 1, 6, 11 don't overlap. |
 | Band mode | B+G+N | **G+N** | Allowing 802.11b makes the router fall back to legacy timing and rates for everyone. Nothing in the house needs b. |
 | Encryption | WPA2 Mixed | **WPA2** | "Mixed" keeps WPA1/TKIP enabled. |
 | WPA2 cipher suite | TKIP + AES | **AES only** | With TKIP allowed, many routers cap N clients at legacy speeds; TKIP is also a classic radio-hang trigger on cheap firmware. |

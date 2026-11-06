@@ -3409,12 +3409,12 @@ One switch, option B:
 - [ ] **Pramod, optional:** try the extender's web page (`http://tplinkrepeater.net`) for a WPA2-PSK / AES-only option; the Tether app has none
 
 **Why:** every 2.4GHz device (both voice satellites, the Diwali WLED, the kandil switch, the wol Pi) drops several times an evening, and on 2026-11-06 the router's 2.4GHz radio stalled for 7 minutes and took the whole Wi-Fi down while wired xero stayed up. Write-up: `docs/incidents/2026-11-06-router-2.4ghz-wifi-stall.md`; settings and their reasons: `docs/wifi.md`.
-**State:** router changed 2026-11-06 22:45 from channel 10 (Auto) / B+G+N / WPA2 Mixed to **channel 11 / G+N / WPA2 AES-only**; all devices rejoined. Waiting on one evening of data to see whether the drops stop.
+**State:** router changed 2026-11-06 22:45 from channel 10 (Auto) / B+G+N / WPA2 Mixed to G+N / WPA2 AES-only, and at 23:03 to **channel 6** (empty in a neighbour scan; 11 is shared with Airtel_moha_8524 at -70 dBm); all devices rejoined. Waiting on one evening of data to see whether the drops stop.
 
 #### If drops continue
-- Try channel 1 or 6 instead of 11 (check with a Wi-Fi analyser app which is quietest).
+- Rescan (`curl -s http://192.168.1.127/json/net`, twice) and compare with the 2026-11-06 scan in `docs/wifi.md`; try 11 or 1 if 6 got crowded.
 - Then suspect the Airtel firmware: ask Airtel for a replacement, or an own AP behind the router with the router's Wi-Fi off.
 - Retiring the extender is its own entry: "Move the Airtel router to a central spot".
 
 #### Log
-- 2026-11-06: 22:21-22:28 outage diagnosed as the router's 2.4GHz radio (devices on router and extender dropped together; no carrier loss, same public IP; router log `br0 up` at 22:29). Router settings changed 22:45. `tools/ha-diag/wifi_drops.py` and `docs/wifi.md` added.
+- 2026-11-06: 22:21-22:28 outage diagnosed as the router's 2.4GHz radio (devices on router and extender dropped together; no carrier loss, same public IP; router log `br0 up` at 22:29). Router settings changed 22:45. `tools/ha-diag/wifi_drops.py` and `docs/wifi.md` added. 23:03: neighbour scan from the WLED board (first on record), channel moved 11 -> 6.
