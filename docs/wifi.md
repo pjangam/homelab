@@ -109,6 +109,27 @@ ch 10:                              [=========]   <- overlaps BOTH 6 and 11
   extender, Settings → Wireless → Extended Network, set WPA2-PSK / AES if the
   model offers it.
 
+- **LAN:** IP from the router (keep). **DHCP server: Auto** - it starts handing
+  out addresses itself when it thinks the router's DHCP is gone, which can
+  leave a phone "connected but broken". Should be **Off**.
+- **Admin password unknown** (2026-11-06): not on the label; Tether's change
+  password needs the current one. Only a factory reset gets in.
+- **Clients look identical from xero:** the extender rewrites MACs, so every
+  device behind it shows as `c2:c9:e3:09:e6:be` in `ip neigh`. Its own IP
+  doesn't serve HTTP from the LAN side.
+
+#### Resetting the extender (when there's a reason to)
+
+1. Hold reset ~10s until the lights flash.
+2. Set it up in Tether with **the same SSID `dlink_pramod_bed_room` and the
+   same Wi-Fi password** - the Pi, kandil switch and phones rejoin unchanged.
+3. Save the new admin password in Vaultwarden.
+4. Network/LAN: **DHCP server Off**. Wireless: WPA2-PSK / AES if offered.
+5. Check the Pi (`ssh 192.168.1.124`) and the kandil switch in HA.
+
+- Costs the bedroom Wi-Fi for ~15 min: wol Pi (clawlight, bedroom speaker,
+  secondary Pi-hole) and the kandil switch.
+
 ## Diagnosing "everything went offline"
 
 1. **Did xero reboot?** `uptime`, `last -x | head`.
