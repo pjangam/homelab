@@ -51,6 +51,20 @@ ch 10:                              [=========]   <- overlaps BOTH 6 and 11
   Most Auto routers land on 1/6/11, so sharing is likelier than overlapping.
   If evening drops return in `wifi_drops.py`, check an analyser app and move
   to 1 or 6.
+- **Who is around (scan 2026-11-06 23:00, from the WLED by the door):**
+
+  | Channel | Signal | Network |
+  |---|---|---|
+  | 1 | -86 to -91 dBm | Singhs, Singhs _5G, Airtel_arch_7596 |
+  | 8 | -89 dBm | Rao_TataFiber 4G |
+  | 11 | **-70 dBm** | **Airtel_moha_8524** - the only neighbour that matters |
+  | 11 | -56 dBm | ours |
+
+  - On channel 10 we overlapped Airtel_moha (11) as noise; on 11 we share airtime with it.
+  - **Channel 6 is empty** apart from faint overlap from Rao on 8: the next thing to try.
+- **Scanning without an app:** `curl -s http://192.168.1.127/json/net` asks the
+  WLED board to scan (call it twice; the first starts the scan). The Pi needs
+  root to rescan (`sudo nmcli dev wifi rescan`, from a real terminal).
 - **Channel width should be 20MHz,** not 40 or 20/40 Auto: a 40MHz network
   covers two-thirds of the 2.4GHz band and overlaps almost everyone.
 
