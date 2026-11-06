@@ -1127,6 +1127,110 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 
 #### Log
 - 2026-09-18: noted, roughly a year ahead.
+- 2026-11-06: a second 2027 makhar idea competes for the same backdrop: "Ganapati 2027: counter-rotating spiral discs (kinetic backdrop)". Pick one or combine (discs as orbit rings).
+
+### Ganapati 2027: counter-rotating spiral discs (kinetic backdrop)
+**Status:** Backlog
+**Priority:** P3
+
+#### Open items
+- [ ] **Pramod:** say whether a 3D printer or a local MDF laser-cutting shop is within reach (decides bevel vs spur gears)
+- [ ] **Together, by 2027-06:** pick this or the solar-system entry for the 2027 makhar backdrop, or say how they combine; fix the disc diameter
+- [ ] **Pramod:** bench test: a 5-10 RPM motor and two hand-cut cardboard spirals, held up behind the makhar, to judge the speed and the look before cutting anything
+- [ ] **Claude:** once the size is fixed, draw both spirals plus the spur-and-idler gears and the motor plate as one SVG for the laser shop
+- [ ] **Pramod, by 2027-07:** order the laser cutting before the makhar shops' pre-festival rush; finish it and run it for a week before 2027-09-04
+
+**Why:** a decoration idea for next Ganapati (user, 2026-11-06): two wheels on the same axle turning in opposite directions, from a Pinterest reference (https://pin.it/2RDKE7ECj).
+**State:** idea only, researched 2026-11-06, nothing decided or bought. **Deadline: Ganesh Chaturthi is Saturday 2027-09-04** ([Drik Panchang](https://www.drikpanchang.com/festivals/ganesh-chaturthi/ganesh-chaturthi-date-time.html?year=2027); one Drik page shows the tithi starting 01:48 on 2027-09-03). It must be built and have run unattended for days before then.
+
+#### The reference (what the pin shows)
+- **The link opened, but only as a still.** `pin.it` redirects to Pinterest pin 1096767315540186871, a 50s user-uploaded video. Only its cover frame and caption could be fetched, not the video, so **the mechanism itself was not seen.**
+- **The cover frame shows** a maker holding a laser-cut MDF disc of curved, sunburst-like spiral arms over a second spiral layer behind it, with a metal hub/bushing at the centre. The caption is generic ("woodworking ideas").
+- **What it is:** the counter-rotating spiral illusion. Two open spirals of opposite hand, one in front of the other, turning in opposite directions. The crossings appear to flow inwards or outwards, which reads as far faster motion than either disc has.
+
+#### Feasibility
+- **Yes, it is a known build.** Counter-rotation on one axis is a standard mechanism (the contra-rotating propeller / differential layout). Kinetic spiral wall pieces are a common laser-cut maker project:
+  - [Printables: kinetic sculpture, contra-rotating discs](https://www.printables.com/model/120260-kinetic-sculpture-contra-rotating-discs) - an angled (bevel) gear gives both rotations; 3D-printed (page blocks automated fetch, so this is from search snippets)
+  - [Instructables: Kinetic Sculpture V1](https://instructables.com/Kinetic-Sculpture-V1) - a laser-cut spiral wheel on a geared DC motor, wall-mounted (one wheel only)
+  - [Pololu: ORBIS](https://pololu.com/blog/357/orbis-wooden-kinetic-and-lighting-sculpture) - laser-cut plywood, two rings with their own speed and direction
+- **The hard part is mechanical, not electrical.** One slow motor, one DC adapter, no firmware needed.
+
+#### Mechanism options
+
+| | A. Bevel differential | B. Concentric shafts + spur gears with an idler (recommended) | C. Two motors, no gears |
+|---|---|---|---|
+| **How** | A pinion between two facing bevel gears; each bevel drives one disc, so they turn equal and opposite | Front disc on a solid rod, rear disc on a tube over it. One motor pinion drives gear A on the rod directly and gear B on the tube through an idler, so A and B turn opposite | Rear disc driven from behind; a second motor sits at the centre on a fixed tube, under a stationary medallion, and drives the front disc |
+| **Parts** | 3 bevel gears, rod, tube, bearings, 1 motor | 4 flat spur gears, rod, tube, 2 bearings, 1 motor | 2 motors, fixed tube, bearing, 1 gear pair for the rear disc |
+| **Build difficulty** | Hard to source: bevels cannot be laser-cut, and loose nylon bevels in India are imported (one listing ₹5,100 for a single gear, [cart2india](https://cart2india.com/bevel-gears/cylindrical-drive-1pcs-15m-30t-plastic-bevel-gear-15-module-30-teeth-conical-bevel-pinion-90-degree-miter-gear-1-to-1-transmission-rack-machinery10mm-bore/00000000004391728783)). Easy *if* a 3D printer is available | Medium: every gear is flat and cuts from the same MDF sheet as the discs. Alignment of two gear planes is the work | Easy mechanically, but front-motor weight sits cantilevered at the centre and its wires run down the fixed tube |
+| **Noise** | Quiet at disc speed | Quiet at 3-10 RPM; MDF teeth tick slightly | Quietest (no gear train in front) |
+| **Behind a decoration** | Bevels sit between or behind the discs; a fatter stack | All gears behind the backboard; only the hub shows | Needs a centre cap/medallion that does not turn (could be an Om or a modak) |
+| **Speed locked?** | Yes, exactly equal | Yes, exactly equal | No: two cheap motors differ by ~10%, so the pattern drifts. Harmless to the look |
+
+- **Recommended: B.** It is the only option where every special part comes off one laser-cut sheet, with the rest from a hardware shop. Equal tooth counts on A and B give equal and opposite speeds. Making A and B larger than the pinion slows the discs and multiplies torque: a 15T pinion on 45T gears turns a 10 RPM motor into 3.3 RPM.
+- **A only if a 3D printer turns up** (open item). The Printables model is exactly this.
+- **C is the fallback** if the gear train will not run smoothly.
+- **Rejected: friction drive.** A rubber wheel squeezed between the two discs is the cheapest differential, but it needs a solid track on spiral discs that are mostly holes, and it slips as MDF swells.
+
+#### Design notes and traps
+- **Motor: 12V DC centre-shaft gearmotor, 5-10 RPM, not a mains synchronous motor.** The 50KTYZ-type 230V incubator motors used in rotating displays are cheap (₹350-515 at 2.5 RPM per [search listings](https://www.theengineerstore.in/hi/collections/all/products/50ktyz-220v-2-5r-min-2-5-turn-per-minute-6w-6-watt-permanent-magnetic-electric-gear-motor-50hz-incubator-motor), 2026-11-06), but rejected for two reasons:
+  - **Exposed 230V terminals** behind a murti with flowers, water and diyas.
+  - **They start in a random direction (CW/CCW).** In B that is harmless, since both discs reverse together. In C it is fatal: half the time the discs turn the same way.
+- **Low voltage only near the murti.** The 12V adapter plugs in away from the makhar, and only the 12V lead runs to it. Keep diyas off the front of the discs: a turning disc fans a flame, and MDF burns.
+- **Monsoon warps MDF.** Ganapati falls in humid weather. Seal both faces of 50cm discs (paint or lacquer), or use 6mm rather than 3-4mm, or cut acrylic. A warped disc rubs its neighbour.
+- **Disc gap:** set by a spacer on the rod, about 5-10mm. Closer gives a sharper illusion; too close and any warp makes them touch.
+- **Balance:** spirals are symmetric, so a clean cut balances. Low-torque motors (~3 kg-cm) stall on an off-centre heavy disc. A 50cm 4mm MDF disc that is ~60% cut away is roughly 0.3-0.4kg (estimate).
+- **Plain bearing between tube and rod** is fine at this speed with grease. 608 bearings (8mm bore) hold the rod in the backboard.
+- **Pinch points:** gears behind a backboard or cover, out of a child's reach. At 3-10 RPM with ~3 kg-cm the discs themselves are not a hazard.
+- **Power cuts:** mains-only is fine for a decoration. It stops in a cut and restarts when mains returns, with nothing to recover.
+- **Backlighting (optional):** a spiral lit from behind with WS2812 is far stronger than bare MDF. But every pixel of the leftover strip is claimed by the Diwali door outline (`docs/hardware.md`, Parts on hand), so check that before counting on it.
+
+#### Home Assistant (optional, not the core)
+- **Cheapest: on/off by a smart plug, timed to the aarti.** The 12V adapter goes into a switched socket, and HA schedules it like the 2026 aarti lights (08:00-09:30, 17:45-23:00).
+  - **Which plug is open.** The in-house kandil switch (`switch.smart_switch_bench_relay`) is already claimed after Diwali by "Charge-limit the baby monitor iPhone SE with the smart plug". It would need a second relay box from "In-wall smart switch (Tinxy replacement, phase 2)", or a Tinxy socket (cloud-dependent, works only with internet).
+- **Speed control:** ESP32 + logic-level MOSFET PWM in ESPHome, speed as an HA number. Only worth it if the bench test shows one speed is wrong for both day and night. Every spare ESP32 is currently claimed (Diwali lights, smart-switch bench), so price one in if this is wanted.
+- **If it gets an ESP32, it is a device:** add it to `docs/hardware.md`, the Home dashboard in a room the user names, and `endpoints.toml`.
+
+#### Readymade alternatives
+- **LED "chakra" backdrops** sold for Ganpati murtis give a spiral of motion with no mechanics: e.g. 128 LEDs, mains plug-in, ₹999 ([chronoslights](https://chronoslights.com/products/ganpati-chakra-led-decoration-light-multi-color-220v), 2026-11-06). Cheaper than the DIY build and zero effort, but it is a light show, not the physical counter-rotating illusion.
+- **No readymade counter-rotating spiral piece was found for sale in India.** Kinetic spirals sold abroad are import-only. Buying one is not a real option, and DIY is.
+
+#### Overlap with other entries
+- **"Ganapati 2027: solar system / general relativity decoration"** wants the same makhar backdrop in the same year. Pick one, or combine them: counter-rotating discs as orbit rings with planets mounted on them.
+- **"Sound-reactive aarti lights (Ganapati decoration)"** is the precedent for schedule, HA scripts and lighting behind the makhar.
+
+#### Parts
+Option B (recommended). Laser cutting is an estimate from [IndiaMART per-sq-ft rates](https://m.indiamart.com/sigma-enterprisespune) (₹120-450/sq ft, 2026-11-06). Get a quote for the actual SVG.
+
+```parts
+qty | item | est | note
+1 | 12V DC centre-shaft geared motor, 5-10 RPM, 6mm D shaft | 150-250 | local electronics shop; search listings 2026-11-06: Robodo 10 RPM ₹150, Robocraze 6 RPM ₹217
+1 | 12V 1A DC adapter | 150-250 | local; skip if a spare 12V brick is in a drawer
+1 | DC barrel jack + inline switch | 30-60 | local
+1 | laser cutting: 2 spiral discs ~50cm, 4 spur gears, motor plate, 4-6mm MDF | 600-1500 | estimate; local MDF/makhar laser shop, order by 2027-07 (they are busiest before Ganapati)
+1 | 8mm steel rod, ~30cm (inner shaft) | 50-100 | local hardware
+1 | tube 10mm OD / 8mm ID, ~15cm (outer shaft) | 80-200 | local hardware; take the rod along and check it turns freely inside
+2 | 608 bearings | 60-120 | local bearing/hardware shop
+1 | M8 shaft collars, nuts, washers | 50-100 | local hardware
+1 | 12mm ply/MDF backboard | 200-400 | local; skip if the makhar has a rigid back
+1 | paint/sealer for both disc faces | 200-400 | local; needed against monsoon warp
+```
+
+**Cost: about ₹1,600-3,400 for option B.** Option C swaps the gears and idler for a second motor, a fixed tube and a centre medallion, at roughly the same total. The ₹999 LED chakra is the cheaper alternative if the physical illusion is not the point.
+
+#### Effort
+About 11-18h, cheapest and most decisive first:
+
+| Phase | Hours | Notes |
+|---|---|---|
+| Bench test: motor + cardboard spirals | 1-2 | Decides speed, direction feel and disc size before any money goes on cutting |
+| SVG design: spirals, gears, motor plate | 2-3 | Claude can generate it; the gear centre distances must be exact |
+| Laser-cut order and pickup | 1-2 | Long lead in July-August |
+| Assembly: shafts, bearings, gear planes, disc gap, wobble | 5-8 | **This is the phase that overruns**, as alignment work always has on this repo |
+| Finish, seal, mount on the makhar, week-long run | 2-3 | |
+| Optional HA schedule on a smart plug | 0.5 | Only if a switched socket is free |
+
+#### Log
+- 2026-11-06: idea recorded (user), Backlog. Pin opened as a still frame only. Researched: option B recommended; mains synchronous motors and imported bevel gears rejected; overlap with the solar-system entry noted.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Status:** Backlog
