@@ -39,6 +39,20 @@ ch 10:                              [=========]   <- overlaps BOTH 6 and 11
 - **Fixed, not Auto:** Auto picked 10, and can hop channels mid-session, which
   briefly knocks ESP devices off.
 - **Picking between 1/6/11:** a Wi-Fi analyser app shows the least crowded.
+- **Neighbours can still move next to us.** Fixing ours only stops the
+  interference we were causing.
+
+  | Neighbour on | Effect | Why |
+  |---|---|---|
+  | 11 (same) | mild, shared airtime | radios hear each other and take turns |
+  | 9, 10, 12, 13 | worst: retries, drops | heard only as noise |
+  | 1 or 6 | none | no overlap |
+
+  Most Auto routers land on 1/6/11, so sharing is likelier than overlapping.
+  If evening drops return in `wifi_drops.py`, check an analyser app and move
+  to 1 or 6.
+- **Channel width should be 20MHz,** not 40 or 20/40 Auto: a 40MHz network
+  covers two-thirds of the 2.4GHz band and overlaps almost everyone.
 
 **Band mode** - which Wi-Fi generations the router accepts.
 
