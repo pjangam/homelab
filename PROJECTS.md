@@ -3286,10 +3286,9 @@ Everything is off-the-shelf: setup only, no code to maintain.
 
 #### Open items
 - [ ] **Pramod:** enter the list at `https://xero.<tailnet>/wishlist/` and set a monthly amount if you want the "by <month>" estimates
-- [ ] **Claude:** add `projects/wishlist/data/wishlist.json` to the nightly gpg Dropbox backup (like `backup_hardware_md.sh`) once the list has real data - not backed up yet
 
 **Why:** keep track of the big-ticket things to buy, with rough prices, and decide what to buy when. Replaces the Google Sheet idea; kept server side so the phone and laptop see the same list.
-**State:** live on xero since 2026-11-04 as the `wishlist` container (port 8128, Caddy `/wishlist`). See `projects/wishlist/README.md`. The list is empty until the user fills it in.
+**State:** live on xero since 2026-11-04 as the `wishlist` container (port 8128, Caddy `/wishlist`). See `projects/wishlist/README.md`. The list has 7 items (2026-11-06). **No off-box backup, by choice** (user, 2026-11-06): local only, plus the `.bak` of the previous save.
 
 #### Design
 - A stdlib Python server and one plain-JS page. Storage is one JSON file (`projects/wishlist/data/wishlist.json`, gitignored), rewritten atomically with a `.bak` of the previous save. No database: it holds tens of items, and the only database already running (Immich's Postgres) would tie this list to Immich's container. Python rather than Node for the server because xero has no Node, and clawlight's server is the same pattern.
@@ -3299,6 +3298,7 @@ Everything is off-the-shelf: setup only, no code to maintain.
 #### Log
 - 2026-11-04: built and deployed. API checked with curl (save, stale-version 409, nameless item 400) and through Caddy over the tailnet (200). Added to `endpoints.toml` (re-rendered) and to the xero entry in `docs/hardware.md`.
 - 2026-11-04: page went blank (Caddy 502) minutes after deploy: `git pull --rebase` recreated `projects/wishlist/web/`, and the container's bind mount stayed on the deleted copy. Now mounts the repo root read-only, like projects-ui.
+- 2026-11-06: Dropbox backup of `wishlist.json` dropped (user): local only is enough.
 
 ### Per-project READMEs: the root Readme split, and a rule that keeps it
 **Status:** Done
