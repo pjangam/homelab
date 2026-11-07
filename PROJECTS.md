@@ -2579,6 +2579,7 @@ qty | item | est | note
 - [ ] **Pramod:** buy the speaker parts below (local shop first)
 - [ ] **Together:** wire per the plan, add the firmware pieces, OTA both boards
 - [ ] **Claude:** update both boards' `docs/hardware.md` entries (GPIOs, firmware)
+- [ ] **Pramod:** find a plain 5V 1-2A USB charger for the living room satellite (on xero's USB since 2026-11-07; the GaN adapter is suspect); tell Claude when it is swapped so HA can be watched for drops
 
 **Why:** the Assist pipeline already answers in speech (Piper), but neither ESP32 satellite can play it, so a command only shows on the LEDs and the living room entity can sit at "responding". And `hey_jarvis` is a stopgap wake word. Split out of "Local voice control (HA Assist)" (Done 2026-10-30).
 **State:** nothing bought or wired. Speaker design and parts below; community wake words `andromeda` and `dumbledore` are preloaded by `openwakeword` but untested.
@@ -2596,6 +2597,8 @@ The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satel
 
 #### Log
 - 2026-10-30: entry created, split out of "Local voice control (HA Assist)".
+- 2026-11-07: **living room satellite stuck off HA** from ~14:53 on its GaN USB adapter: it answered ping (right MAC, next to the router), but the API port refused or timed out by turns (some checks caught it in safe mode, OTA up and API down) - repeated resets or stalls. HA reconnected at 20:32, within a minute of moving it to xero's USB, and it stayed up; same firmware, no reflash. **Not proven to be the adapter:** the move was also a full power cycle and a cable change, and serial caught no reset. Left on xero's USB (user) until a spare plain charger is free.
+  - Board-side diagnosis, for next time: `tools/esp32-tools/read-esp32-serial.py --no-reset` inside the `ghcr.io/esphome/esphome:stable` image (xero has no pyserial). With reset, the log came back as garbage - use `--no-reset`.
 
 ### Grafana for all stats
 **Status:** Done
