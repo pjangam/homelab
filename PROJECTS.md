@@ -3268,7 +3268,7 @@ Everything is off-the-shelf: setup only, no code to maintain.
 
 #### Open items
 - [ ] **Pramod:** keep trying it by voice; say "<title> by <artist>" when a short title is misheard, and report titles that still fail
-- [ ] **Pramod:** decide the speaker per satellite - today every "play <song>" goes to xero; should the bedroom satellite play on the Pi (`raspberrypi`) like Play Bedroom Track does since 2026-11-05?
+- [ ] **Pramod:** try "play aggobai dhaggobai" again (phonetic aliases trained 2026-11-07 16:12); if it still fails, Claude turns on HA's debug recording for a day to hear what the satellite sends
 - [ ] **Claude:** add `ALIASES` in `spotify_library.py` for the titles that fail
 
 **Why:** raised 2026-11-03: play music by voice the way Siri does ("play X"), from the voice satellites and, later, the car.
@@ -3301,6 +3301,9 @@ Everything is off-the-shelf: setup only, no code to maintain.
 
   - **Fixes:** `PLAYLISTS` in `spotify_library.py` (user asked for `63uNCHuVgqNqXOUPoujY5Q`, Sasa To Sasa Ki Kapoos Jasa; +32 songs). Every song also gets a "<title> by <artist>" phrase, so a misheard short title can be said with more words: 1095 phrases, training 72s, 92MB.
   - **TTS check after:** "aggobai dhaggobai", "in the end", "in the end by linkin park", "billie jean by michael jackson", "faint" all recognised; "aggobai dhaggobai by salil kulkarni" was not - for Marathi, the bare title is the one to say.
+- 2026-11-07: **speaker by room** (user): a "play <song>" heard by the bedroom satellite plays on the Pi (`raspberrypi`), anything else on xero (`SPEAKERS` in `spotify_library.py`, by the satellite's HA area). Checked muted with `conversation/process` and each satellite's `device_id`: bedroom loaded Faint on the Pi, living room played it on xero.
+- 2026-11-07: **"aggobai dhaggobai" still failed by voice after it was in the list** (10:32, "no text recognised"). Speech-to-Phrase had guessed its pronunciation from the spelling as "AG-uh-bye DAG-uh-bye" (in `/train/en_US-rhasspy/missing_words_dictionary.txt`). Added `ALIASES` spelled with English words that sound like the Marathi ("ago bye the go bye", "ago by dhago by", ...); the English TTS clip now lands on an alias.
+  - `test_stt.sh` takes `TTS_LANG=mr` (phrases in Devanagari) to test with Google's Marathi voice. **Every Marathi-voice clip came back empty**, including titles the English voice gets ("tula pahile mi"): the English acoustic model does not hold up to fully Marathi-accented speech. Real voice sits in between - several songs do work - so the aliases are worth a try before anything bigger.
 
 ### Wishlist page (expensive purchases)
 **Status:** Active

@@ -4,6 +4,9 @@
 # stt.speech_to_phrase and print what came back. Nothing is executed - this
 # tests transcription only, not the command.
 #   set -a; . ./.env.healthcheck; set +a; projects/voice-assistant/test_stt.sh ["phrase" ...]
+# TTS_LANG=mr speaks the phrases with the Marathi voice (write them in
+# Devanagari) - nearer to how Marathi titles are really said than the
+# English voice reading their Latin spelling.
 set -euo pipefail
 HA=http://localhost:8123
 auth=(-H "Authorization: Bearer $HA_TOKEN")
@@ -14,7 +17,7 @@ phrases=("$@")
   "hall fan fast" "turn off the AC" "activate ojaswi sleeping scene")
 for p in "${phrases[@]}"; do
   url=$(curl -sf "${auth[@]}" -H 'Content-Type: application/json' \
-    -d "{\"engine_id\":\"tts.google_translate_en_com\",\"message\":\"$p\",\"language\":\"en\"}" \
+    -d "{\"engine_id\":\"tts.google_translate_en_com\",\"message\":\"$p\",\"language\":\"${TTS_LANG:-en}\"}" \
     "$HA/api/tts_get_url" | python3 -c 'import json,sys;print(json.load(sys.stdin)["path"])')
   curl -sf "$HA$url" -o "$work/in.mp3"
   # local sox has no mp3 support; the HA image ships ffmpeg

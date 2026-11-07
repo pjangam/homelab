@@ -37,11 +37,24 @@ ENTRIES = REPO / "HOMEASSISTANT_CONFIG/.storage/core.config_entries"
 HERE = Path(__file__).resolve().parent
 OUT_LIST = HERE / "custom_sentences/en/songs.yaml"
 OUT_PKG = HERE / "packages/spotify_songs.yaml"
-SPEAKER = "media_player.xero_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast"
+# Which spotifyd plays a "play <song>": by the HA area of the satellite that
+# heard it (user, 2026-11-07); anything else (living room, the phone app,
+# typed) plays on xero.
+SPEAKERS = {
+    "bedroom": "media_player.raspberrypi_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast",  # wol Pi's jack
+    "default": "media_player.xero_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast",
+}
 
 # how it is said -> the title as spoken() writes it. For titles that matter
 # and that Speech-to-Phrase cannot pronounce from their spelling.
-ALIASES = {}
+# Speech-to-Phrase guesses unknown words from English spelling: "aggobai" came
+# out as "AG-uh-bye" (2026-11-07), not the Marathi "uh-GO-bye". Spell aliases
+# with English words that sound right ("ago" is uh-GO).
+ALIASES = {
+    "ago bye the go bye": "aggobai dhaggobai",
+    "ago bye dago bye": "aggobai dhaggobai",
+    "ago by dhago by": "aggobai dhaggobai",
+}
 
 # Playlists whose tracks are speakable too, besides the liked songs. Liked
 # songs win when a title is in both. Add a playlist by its id (the part of the
@@ -129,6 +142,9 @@ def main():
                       "command": ["play {song}", "play [the] song {song}"]}],
         "variables": {
             "songs": songs,
+            "speakers": SPEAKERS,
+            "area": "{{ area_id(trigger.device_id) if trigger.device_id else '' }}",
+            "speaker": "{{ speakers.get(area, speakers['default']) }}",
             "key": "{{ trigger.slots.song | lower | regex_replace('[^a-z0-9\\' ]', '') | trim }}",
         },
         "actions": [{
@@ -136,7 +152,7 @@ def main():
             "then": [
                 {"action": "spotcast.play_media",
                  "data": {"spotify_uri": "{{ songs[key][0] }}",
-                          "media_player": {"entity_id": SPEAKER}}},
+                          "media_player": {"entity_id": "{{ speaker }}"}}},
                 {"set_conversation_response": "Playing {{ songs[key][1] }}"},
             ],
             "else": [{"set_conversation_response": "{{ key }} is not in your liked songs"}],

@@ -33,7 +33,7 @@ Added in `packages/voice_commands.yaml` (sentence-trigger automations):
 ### Spotify (added 2026-11-04)
 
 Commands to try on either satellite:
-- "Play \<song title\>", "play \<title\> by \<artist\>" or "play the song \<title\>": works for any of your liked songs and the playlists in `PLAYLISTS` (546 songs on 2026-11-07) and plays that exact track on xero's speaker. It never searches Spotify, so it can't pick the wrong song.
+- "Play \<song title\>", "play \<title\> by \<artist\>" or "play the song \<title\>": works for any of your liked songs and the playlists in `PLAYLISTS` (546 songs on 2026-11-07) and plays that exact track - on the Pi's speaker when the bedroom satellite heard it, on xero's otherwise (`SPEAKERS` in `spotify_library.py`). It never searches Spotify, so it can't pick the wrong song.
 - "Pause the music" or "stop the music"; "resume the music".
 - "Next song" or "skip this song"; "previous song" (the first time restarts the song, which is Spotify's normal behaviour, so say it twice to go back a song).
 - "Music volume up/down", "turn the music up/down", "set the music volume to 40".
@@ -46,6 +46,12 @@ Notes:
   list, so a short title can come out as another ("in the end" was heard as
   "billie jean", 2026-11-07). Saying "\<title\> by \<artist\>" gives it more to
   go on. For Marathi titles the bare title works better.
+- **A title that never matches:** look up the pronunciation Speech-to-Phrase
+  guessed: `docker exec speech-to-phrase grep -i '^<word>' /train/en_US-rhasspy/missing_words_dictionary.txt`.
+  It reads the spelling as English ("aggobai" -> AG-uh-bye), so add an `ALIASES`
+  entry spelled with English words that sound right ("ago bye the go bye").
+- **Marathi-voice test:** `TTS_LANG=mr projects/voice-assistant/test_stt.sh "प्ले ..."`.
+  It fails even for titles that work by voice, so treat it as a worst case.
 - **Add a playlist:** put its id (from the share link, after `/playlist/`) in
   `PLAYLISTS` in `spotify_library.py`, then run `sync_spotify_songs.sh`.
 - Marathi/Hindi titles in Latin script are recognised when Speech-to-Phrase
