@@ -2418,13 +2418,11 @@ Identified along the way: the Pi has no battery backup (unlike `xero`, on the UP
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** observe the SE on iOS 26 for a few days: does it send cry alerts?
-- [ ] **Together:** if it still sends nothing, run the two checks in "If the SE stays silent"
-- [ ] **Pramod:** check it fires with the SE locked on its charger while Alfred holds the mic (outstanding from the 2026-10-03 close)
+- [ ] **Together:** run the two checks in "If the SE stays silent" (the iOS 26 observation is over: it never sent a real alert); check (2), Alfred closed, is the same as the mic test in "Replace Alfred Camera", so do them in one sitting
 - [ ] **Pramod:** turn off (not delete) the SMS automation on the iPhone 14 once ntfy has carried a few real cries
 
 **Why:** a baby-cry alert already exists, but it goes out as an SMS. An iPhone Shortcut fires on Sound Recognition's "Baby Crying" and texts a number. The plan is to move the listening to a **different, dedicated iPhone** that stays near the baby, and have it publish to the self-hosted ntfy on xero instead of SMS. That gives a real push to every subscribed phone, at a priority that can break through, with no carrier involved.
-**State:** reopened 2026-10-05 after a Done close on 2026-10-03. Server side and the SE's Shortcut work end to end, but the SE has sent no cry alerts in real use. Its mic hears the cry (Alfred on the SE keeps sending its own baby-cry alerts), so the likely suspect is Alfred holding the mic, with iOS pausing Sound Recognition while another app records. The SE was updated to iOS 26 on 2026-10-05 and is being observed for a few days.
+**State:** reopened 2026-10-05 after a Done close on 2026-10-03. Server side and the SE's Shortcut work end to end, but the SE has sent no cry alerts in real use. Its mic hears the cry (Alfred on the SE keeps sending its own baby-cry alerts), so the likely suspect is Alfred holding the mic, with iOS pausing Sound Recognition while another app records. The SE was updated to iOS 26 on 2026-10-05; by 2026-11-07 it had still **never** sent a real cry alert over ntfy (user). Removing Alfred ("Replace Alfred Camera with a free, local baby monitor on the iPhone SE") is now the likely fix.
 #### If the SE stays silent
 (1) Check whether the SE shows its own Sound Recognition banner when a crying clip plays. No banner means recognition is not running; a banner but no ntfy alert means the Shortcut or Tailscale is at fault. (2) Repeat with Alfred closed. If it then fires, Alfred and Sound Recognition cannot share the SE, so either Alfred moves to another phone or the iPhone 14 becomes the listener.
 
@@ -2519,6 +2517,7 @@ qty | item | est | note
 - 2026-10-03: the SE's Shortcut published to `baby-cry` end to end, with the notification received on the phone (after fixing the 403s from the `Authorisation` header, see Design notes).
 - 2026-10-03: closed as Done at the user's call before the soak. They still needed to check, informally, that it fires with the SE locked on its charger while Alfred holds the mic, and to turn off (not delete) the SMS automation on the iPhone 14 once ntfy has carried a few real cries. If either check failed, reopen.
 - 2026-10-05: reopened - the SE has sent no cry alerts in real use. ntfy's cache, which holds 12h, had nothing on `baby-cry`. Over the same days Alfred on the SE kept sending its own baby-cry alerts, and the iPhone 14 still detects the cry. The SE was updated to iOS 26 the same day; observe for a few days (see Next step).
+- 2026-11-07: user: the ntfy cry alert has never worked in real use, iOS 26 did not fix it. ntfy's container logs only go back to 2026-11-01 and do not log publishes at the default level, so they could not confirm it either way. Observation item replaced by the "If the SE stays silent" checks, merged with the Alfred-replacement mic test.
 
 ### Local voice control (HA Assist)
 **Status:** Done
