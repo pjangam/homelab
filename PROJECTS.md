@@ -3437,7 +3437,7 @@ One switch, option B:
 **Priority:** P2
 
 #### Open items
-- [ ] **Claude, 2026-11-07 after 23:00:** run `tools/ha-diag/wifi_drops.py 2026-11-07T18:00 2026-11-08T00:00` and compare with the 06 Nov table in the incident write-up
+- [ ] **Claude:** recheck `wifi_drops.py` for a few evenings; the living-room satellite (on the router) still drops 3-6/h between 16:00 and 21:00
 - [ ] **Pramod, optional, next time the extender needs a reset anyway:** factory-reset it, re-create `dlink_pramod_bed_room` with the same password, save the new admin password in Vaultwarden, set its DHCP server Off and WPA2/AES if offered (steps in `docs/wifi.md`)
 
 **Why:** every 2.4GHz device (both voice satellites, the Diwali WLED, the kandil switch, the wol Pi) drops several times an evening, and on 2026-11-06 the router's 2.4GHz radio stalled for 7 minutes and took the whole Wi-Fi down while wired xero stayed up. Write-up: `docs/incidents/2026-11-06-router-2.4ghz-wifi-stall.md`; settings and their reasons: `docs/wifi.md`.
@@ -3450,6 +3450,7 @@ One switch, option B:
 
 #### Log
 - 2026-11-06: 22:21-22:28 outage diagnosed as the router's 2.4GHz radio (devices on router and extender dropped together; no carrier loss, same public IP; router log `br0 up` at 22:29). Router settings changed 22:45. `tools/ha-diag/wifi_drops.py` and `docs/wifi.md` added. 23:03: neighbour scan from the WLED board (first on record), channel moved 11 -> 6. Extender admin password unknown (not on the label, Tether's change-password needs the current one), so its DHCP server stays on Auto until a reset.
+- 2026-11-08: 07 Nov 18:00-23:00 vs 06 Nov: WLED 7 -> 0, bedroom satellite 14 -> 0, kandil 10 -> 0, living-room satellite 29 -> 12 (all before 21:00); no outage. 01:20 on 08 Nov the bedroom satellite dropped 6 times and lost 40-60% of pings while an Android phone (.18, OnePlus/OPPO-family, Instagram/Facebook) was busy on the extender; router-side devices were fine - the extender's double 2.4GHz hop, not the router.
 
 ### Replace Alfred Camera with a free, local baby monitor on the iPhone SE
 **Status:** Backlog
