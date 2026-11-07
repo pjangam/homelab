@@ -132,29 +132,30 @@ offering to save what was typed at `n) new host`.
 ## zsh-autocomplete
 
 Installed with `brew install zsh-autocomplete` (Intel prefix,
-`/usr/local/share/zsh-autocomplete`), **not** as an oh-my-zsh plugin. The trap:
-brew only puts the files on disk. Nothing sources them -- it is not in
-`$ZSH/plugins`, so listing it in `plugins=()` does nothing either, and brew's
-caveat about adding the `source` line is easy to miss. It sat installed and
-completely inert from 2026-09-19 to 2026-11-08 for that reason alone.
+`/usr/local/share/zsh-autocomplete`), **not** as an oh-my-zsh plugin. The
+`source` line is a plain hand-edit in `~/.zshrc`, outside the managed blocks.
 
-The `source` line is a plain hand-edit in `~/.zshrc`, outside the managed
-blocks, and it has to sit **after** `source $ZSH/oh-my-zsh.sh`. The plugin's own
-README says "near the top, before any `compdef`", but that advice assumes no
-oh-my-zsh: OMZ calls `compinit` unconditionally and binds keys, so sourcing
-Autocomplete first lets OMZ clobber its widgets. Sourcing it after costs
-nothing measurable at startup, because Autocomplete detects OMZ's already-built
-`$ZSH_COMPDUMP`, reuses it instead of running a second `compinit`, and writes
-OMZ's metadata lines back so OMZ does not delete the dump next time.
-`zsh-syntax-highlighting` loads from `plugins=()` above it, which is the order
-Autocomplete wants.
-
-Run `check_zsh_autocomplete.sh` to confirm it is actually active. It checks the
-install, the `source` line, the order against oh-my-zsh, and the live widget
-count. That last one needs a pty, which the script sets up: Autocomplete
-installs its ZLE widgets from a `precmd` hook, so `zsh -i -c ...` has no line
-editor, no prompt and no `precmd`, and always reports zero widgets even when
-the setup is perfect.
+- **The trap: brew only puts the files on disk.** Nothing sources them. It is
+  not in `$ZSH/plugins`, so listing it in `plugins=()` does nothing either, and
+  brew's caveat about adding the `source` line is easy to miss. It sat
+  installed and completely inert from 2026-09-19 to 2026-11-08 for that reason
+  alone - no error, no warning, just no completions.
+- **It must be sourced after `source $ZSH/oh-my-zsh.sh`.** Its own README says
+  "near the top, before any `compdef`", but that assumes no oh-my-zsh: OMZ runs
+  `compinit` unconditionally and binds keys, so sourcing Autocomplete first
+  lets OMZ clobber its widgets.
+- **That order costs nothing at startup** (measured: ~1.15s either way, which
+  is nvm plus oh-my-zsh). Autocomplete detects OMZ's already-built
+  `$ZSH_COMPDUMP`, reuses it instead of running a second `compinit`, and writes
+  OMZ's metadata lines back so OMZ does not delete the dump next time.
+- **`zsh-syntax-highlighting` has to come first**, which it does - it loads
+  from `plugins=()` above the `source` line.
+- **Check it with `check_zsh_autocomplete.sh`:** the install, the `source`
+  line, the order against oh-my-zsh, and the live widget count.
+- **A widget check needs a pty**, which the script sets up with a throwaway
+  `ZDOTDIR` chaining the real `~/.zshrc`. Autocomplete installs its ZLE widgets
+  from a `precmd` hook, so `zsh -i -c ...` has no line editor, no prompt and no
+  `precmd`, and reports zero widgets even when the setup is perfect.
 
 ## Known loose ends
 
