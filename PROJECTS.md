@@ -3267,11 +3267,12 @@ Everything is off-the-shelf: setup only, no code to maintain.
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** try it by voice on both satellites for a few days and report titles that fail
+- [ ] **Pramod:** keep trying it by voice; say "<title> by <artist>" when a short title is misheard, and report titles that still fail
+- [ ] **Pramod:** decide the speaker per satellite - today every "play <song>" goes to xero; should the bedroom satellite play on the Pi (`raspberrypi`) like Play Bedroom Track does since 2026-11-05?
 - [ ] **Claude:** add `ALIASES` in `spotify_library.py` for the titles that fail
 
 **Why:** raised 2026-11-03: play music by voice the way Siri does ("play X"), from the voice satellites and, later, the car.
-**State:** phase 1 **built and tested 2026-11-04**, in a different shape from the plan below: instead of one phrase per playlist, every liked song is speakable ("play <title>", 514 titles), plus pause/resume/next/previous/volume. Synced nightly. Tested by TTS and text through HA, not yet by voice on a satellite. Phase 2 ("play anything") is parked on the no-paid rule: Moonshine is fast enough locally (0.3s) but needs a Wyoming wrapper and its own pipeline or wake phrase.
+**State:** phase 1 **built and tested 2026-11-04**, in a different shape from the plan below: instead of one phrase per playlist, every liked song and every track of the playlists in `PLAYLISTS` is speakable ("play <title>" or "play <title> by <artist>", 1095 phrases for 546 songs), plus pause/resume/next/previous/volume. Synced nightly. In use by voice since 2026-11-07. Phase 2 ("play anything") is parked on the no-paid rule: Moonshine is fast enough locally (0.3s) but needs a Wyoming wrapper and its own pipeline or wake phrase.
 
 #### Phase 1 - fixed commands (offline, both satellites)
 - One custom sentence per playlist ("play bedtime music") -> a script that calls `spotcast.play_media` on the chosen speaker; plus pause, resume, next and volume for the Spotify players. Sentences go in `projects/voice-assistant/packages/voice_commands.yaml` (lists in `custom_sentences/en/sentences.yaml`), then restart speech-to-phrase so it retrains.
@@ -3289,6 +3290,17 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - 2026-11-04: **Spotify's search is the weaker half.** Top track result (market IN) for the *correct* text: "papercut" -> Faint (Linkin Park), "aggobai dhaggobai" -> Aga Bai (Shalmali Kholgade), "numb by Lincoln Park" -> an unrelated song; "Please shape of you" and "Bohemian Rhapsody by Queen" were right. So `spotcast.play_from_search` on a raw transcript picks wrong songs even when the words are right: match against the user's own library first, and turn "X by Y" into a track+artist search.
 - 2026-11-04: Marathi rule (user): Latin-script titles stay as Spotify spells them and recognise or fail; only hand-mapped aliases are guaranteed. `spotify_library.py` written: reads HA's Spotify integration token from `core.config_entries` read-only (never refreshes) and writes the gitignored `{song}` list `custom_sentences/en/songs.yaml` from liked songs. The first 50 liked songs are ~40 Marathi/Hindi in Latin script. Not yet wired to a sentence trigger or trained.
 - 2026-11-04: **phase 1 built.** Decided with the user: Speech-to-Phrase trained on the library rather than per-playlist phrases or Moonshine/Whisper. `spotify_library.py` now also writes `packages/spotify_songs.yaml` (gitignored): `play {song}` -> `spotcast.play_media` with that track's URI on xero, no search. 514 titles from the liked songs (3 untitled dropped); training ~31s, 59MB. TTS check: 15/16 random titles recognised incl. Hindi/Marathi/Spanish ("my dsmbr" failed - unpronounceable spelling); a title not in the list comes back empty, never a wrong song. Existing commands unaffected. Controls in `voice_commands.yaml` (`voice_spotify_control`, on `media_player.spotify_pramod`): all worked end to end with the speaker muted; "previous song" restarts the current song first (Spotify's behaviour). Fixed on the way: "music volume {x}" swallowed "music volume up" (HA matches the slot as free text), so only "set the music volume to N" takes a number. Nightly `sync_spotify_songs.sh` cron at 04:30.
+- 2026-11-07: **first real voice use** (living-room satellite), from HA's last 10 pipeline runs (it keeps no more, so the earliest tries had rolled off):
+
+  | Said | Heard / result |
+  |---|---|
+  | "play faint" | first try played another song (run rolled off, so not seen); later "play faint" -> Faint, correct |
+  | "play aggobai dhaggobai" | no text recognised, every time - **not in the list**: it is in the playlist "Sasa To Sasa Ki Kapoos Jasa", not the liked songs |
+  | "play in the end" | heard "play billie jean" -> Billie Jean played. A closed-vocabulary recogniser always returns the nearest phrase |
+  | 6 other runs | "no text recognised" (wake word fired, nothing matched) |
+
+  - **Fixes:** `PLAYLISTS` in `spotify_library.py` (user asked for `63uNCHuVgqNqXOUPoujY5Q`, Sasa To Sasa Ki Kapoos Jasa; +32 songs). Every song also gets a "<title> by <artist>" phrase, so a misheard short title can be said with more words: 1095 phrases, training 72s, 92MB.
+  - **TTS check after:** "aggobai dhaggobai", "in the end", "in the end by linkin park", "billie jean by michael jackson", "faint" all recognised; "aggobai dhaggobai by salil kulkarni" was not - for Marathi, the bare title is the one to say.
 
 ### Wishlist page (expensive purchases)
 **Status:** Active

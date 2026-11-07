@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build "play <song>" from the Spotify library (liked songs). Writes two
+"""Build "play <song>" from the Spotify library (liked songs and PLAYLISTS). Writes two
 generated, gitignored files:
   custom_sentences/en/songs.yaml - the {song} list Speech-to-Phrase trains on
   packages/spotify_songs.yaml    - the HA automation: spoken title -> that
@@ -42,6 +42,13 @@ SPEAKER = "media_player.xero_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast"
 # how it is said -> the title as spoken() writes it. For titles that matter
 # and that Speech-to-Phrase cannot pronounce from their spelling.
 ALIASES = {}
+
+# Playlists whose tracks are speakable too, besides the liked songs. Liked
+# songs win when a title is in both. Add a playlist by its id (the part of the
+# share link after /playlist/, before ?).
+PLAYLISTS = {
+    "63uNCHuVgqNqXOUPoujY5Q": "Sasa To Sasa Ki Kapoos Jasa",  # user, 2026-11-07
+}
 
 
 def token():
@@ -87,15 +94,26 @@ def spoken(title):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--limit", type=int, default=10000, help="max liked songs")
+    ap.add_argument("--limit", type=int, default=10000, help="max tracks per source")
     a = ap.parse_args()
     tok = token()
     songs, dropped = {}, []  # spoken title -> [uri, "Title - Artist"]
-    for it in paged("https://api.spotify.com/v1/me/tracks?limit=50", tok, a.limit):
-        tr = it["track"]
+    sources = [f"https://api.spotify.com/v1/me/tracks?limit=50"] + [
+        f"https://api.spotify.com/v1/playlists/{pid}/tracks?limit=100" for pid in PLAYLISTS]
+    items = (it for url in sources for it in paged(url, tok, a.limit))
+    for it in items:
+        tr = it.get("track")
+        if not tr or tr.get("type") != "track" or not tr.get("uri", "").startswith("spotify:track:"):
+            continue  # removed, local file or podcast episode
         name = spoken(tr["name"])
         if name:
-            songs.setdefault(name, [tr["uri"], f"{tr['name']} - {tr['artists'][0]['name']}"])
+            entry = [tr["uri"], f"{tr['name']} - {tr['artists'][0]['name']}"]
+            songs.setdefault(name, entry)
+            # "in the end by linkin park": more words for the recogniser to go
+            # on - a bare short title was heard as another (2026-11-07)
+            artist = spoken(tr["artists"][0]["name"])
+            if artist:
+                songs.setdefault(f"{name} by {artist}", entry)
         else:
             dropped.append(tr["name"])
     for said, title in ALIASES.items():
