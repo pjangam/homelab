@@ -124,35 +124,47 @@ offering to save what was typed at `n) new host`.
 | `test_tmux_copy_mode.sh` | the copy-mode binds in a running tmux server |
 | `test_tmux_altscreen.py` | whether dropping smcup/rmcup keeps tmux off the alternate screen |
 | `probe_tmux_scrollback.py` | why iTerm's own scrollback cannot replace tmux's (DECSTBM scroll region) |
-| `check_zsh_autocomplete.sh` | whether zsh-autocomplete is live, not merely brew-installed |
-| `probe_zsh_autocomplete_menu.sh` | what zsh-autocomplete actually draws at a live prompt |
+| `check_zsh_prompt_plugins.sh` | whether autosuggestions is live and loading before syntax-highlighting |
+| `probe_zsh_prompt.sh` | what the prompt plugins actually draw at a live prompt |
 
 `qwen_delegate_repl.py` lives here too but is unrelated: see its own
 `PROJECTS.md` entry.
 
-## zsh-autocomplete
+## Prompt plugins
 
-Installed with `brew install zsh-autocomplete` (Intel prefix,
-`/usr/local/share/zsh-autocomplete`), **not** as an oh-my-zsh plugin. The
-`source` line is a plain hand-edit in `~/.zshrc`, outside the managed blocks.
+Two plugins get confused for each other constantly. What is set up here:
 
-- **The trap: brew only puts the files on disk.** Nothing sources them. It is
-  not in `$ZSH/plugins`, so listing it in `plugins=()` does nothing either, and
-  brew's caveat about adding the `source` line is easy to miss. It sat
-  installed and completely inert from 2026-09-19 to 2026-11-08 for that reason
-  alone - no error, no warning, just no completions.
-- **It must be sourced after `source $ZSH/oh-my-zsh.sh`.** Its own README says
-  "near the top, before any `compdef`", but that assumes no oh-my-zsh: OMZ runs
-  `compinit` unconditionally and binds keys, so sourcing Autocomplete first
-  lets OMZ clobber its widgets.
-- **That order costs nothing at startup** (measured: ~1.15s either way, which
-  is nvm plus oh-my-zsh). Autocomplete detects OMZ's already-built
-  `$ZSH_COMPDUMP`, reuses it instead of running a second `compinit`, and writes
-  OMZ's metadata lines back so OMZ does not delete the dump next time.
-- **`zsh-syntax-highlighting` has to come first**, which it does - it loads
-  from `plugins=()` above the `source` line.
-- **Check it with `check_zsh_autocomplete.sh`:** the install, the `source`
-  line, the order against oh-my-zsh, and the live widget count.
+| Plugin | What you see | State |
+|---|---|---|
+| `zsh-autosuggestions` | the rest of the line in **grey ghost text**, accepted with `->` | in use, brew 0.7.1, loaded from `plugins=()` |
+| `zsh-autocomplete` | a **menu below the prompt** listing matches | brew 26.08.04 on disk, deliberately **not** sourced |
+| `zsh-syntax-highlighting` | the typed line coloured as you go | in use, oh-my-zsh custom clone, **must load last** |
+
+Chosen 2026-11-08: autosuggestions only. Autocomplete is left installed but
+dormant, so re-enabling it is one `source` line - see the history below before
+you do.
+
+- **Load order is the whole trick.** `zsh-syntax-highlighting` has to come
+  **last**. On zsh newer than 5.8 it installs a `zle-line-pre-redraw` hook and
+  its README requires it to register "after anything else that adds hooks that
+  modify the command-line buffer"; autosuggestions' own source says
+  "highlighting breaks if our widgets are wrapped by zsh-syntax-highlighting
+  widgets". Both must therefore load before it.
+- **So autosuggestions goes in `plugins=()`, not in a `source` line.** z-sy-h
+  loads from `plugins=()` inside `source $ZSH/oh-my-zsh.sh`, so any `source`
+  line after that - which is exactly what brew's caveat tells you to add - is
+  already too late. Listing it in `plugins=()` above z-sy-h is the only spot
+  that gets the order right.
+- **That needs a shim**, at
+  `$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.plugin.zsh`.
+  brew ships only `share/zsh-autosuggestions/zsh-autosuggestions.zsh`, with no
+  `.plugin.zsh`, so oh-my-zsh's `is_plugin()` cannot find it. The shim is one
+  `source` line pointing at brew's copy, which keeps brew as the updater. Do
+  not copy the plugin into it.
+- **brew only puts files on disk - nothing sources them.** Neither plugin is in
+  `$ZSH/plugins`, so naming it in `plugins=()` without the shim does nothing,
+  and there is no error when nothing loads it. `zsh-autocomplete` sat installed
+  and completely inert from 2026-09-19 to 2026-11-08 for that reason alone.
 - **"I opened a new tab and still see nothing" is usually not the plugin.** The
   picker gives an already-open session a grouped session (`new-session -t`),
   and a session group **shares its windows** - so the new tab is another view
@@ -160,18 +172,30 @@ Installed with `brew install zsh-autocomplete` (Intel prefix,
   `~/.zshrc`. `tmux list-panes -a -F '#{session_name} #{pane_pid}'` showing one
   `pane_pid` under two session names is the tell. Run `exec zsh` in the pane,
   or take `n) new session` / plain Enter in the picker.
-- **It is not `zsh-autosuggestions`.** Autocomplete draws a menu *below* the
-  prompt; autosuggestions ghosts the rest of the line in grey, accepted with
-  `->`. Wanting the second and installing the first looks exactly like "it
-  doesn't work". Only Autocomplete is installed here.
-- **See what it actually draws with `probe_zsh_autocomplete_menu.sh`**, e.g.
-  `probe_zsh_autocomplete_menu.sh 'cd co' ~`. It drives a real interactive zsh
-  in a throwaway tmux server (socket `-L acprobe`, so the real sessions are
-  untouched) and prints the screen.
-- **A widget check needs a pty**, which the script sets up with a throwaway
-  `ZDOTDIR` chaining the real `~/.zshrc`. Autocomplete installs its ZLE widgets
-  from a `precmd` hook, so `zsh -i -c ...` has no line editor, no prompt and no
-  `precmd`, and reports zero widgets even when the setup is perfect.
+- **A plain screen capture cannot tell a suggestion from real text.** Grey
+  ghost text and an accepted suggestion read identically in
+  `tmux capture-pane -p`. Use `-e`: the suggestion is `SGR 90`
+  (`^[[90mde/home_tools`), and after `->` that span is gone.
+- **Autocomplete, if you ever re-enable it,** needs its `source` line **after**
+  `source $ZSH/oh-my-zsh.sh`, not "near the top" as its README says - that
+  advice assumes no oh-my-zsh, which runs `compinit` unconditionally and binds
+  keys, so sourcing Autocomplete first lets OMZ clobber its widgets. Sourcing
+  it after costs nothing measurable (~1.15s either way, which is nvm plus
+  oh-my-zsh): it detects OMZ's already-built `$ZSH_COMPDUMP`, reuses it instead
+  of running a second `compinit`, and writes OMZ's metadata lines back so OMZ
+  does not delete the dump next time.
+
+### Checking it
+
+```sh
+tools/dev-shell/check_zsh_prompt_plugins.sh          # setup, order, and a live pty check
+tools/dev-shell/probe_zsh_prompt.sh 'cd co' ~ -e     # what the screen actually shows
+```
+
+Both need a pty, which they set up themselves in a throwaway tmux server
+(socket `-L zpluginscheck` / `-L acprobe`, so the real sessions are untouched).
+`zsh -i -c ...` proves nothing: the widgets bind from a `precmd` hook, so with
+no line editor and no prompt there is no `precmd` and the count is always zero.
 
 ## Known loose ends
 
