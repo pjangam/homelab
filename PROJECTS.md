@@ -3455,6 +3455,7 @@ One switch, option B:
 
 #### Open items
 - [ ] **Together:** RTSP bench test first - Vantage on the SE (Alfred closed), foreground, screen on, on the charger, added to HA's ONVIF integration; then soak overnight (checks in "Effort" phase 1)
+- [ ] **Together, during the test:** night-time view in the real dark room at the cot - **must pass** (user, 2026-11-07: low light is a must-have); compare side by side with Alfred's low light mode the same night
 - [ ] **Together, during the test:** play a crying clip with Vantage streaming audio, then video-only - does iOS Sound Recognition still fire? (decides the fix for "Baby-cry alert via ntfy")
 - [ ] **Pramod:** say which HA room the camera tile goes in (Bedroom is a guess, not decided)
 - [ ] **Claude, after a passing test:** HA camera tile, motion -> ntfy automation, and a "stream dropped" ntfy alert; add the SE's RTSP/ONVIF ports to `endpoints.toml` and `docs/hardware.md`
@@ -3500,7 +3501,12 @@ One switch, option B:
   1. **Video-only stream, Sound Recognition keeps the mic:** this also fixes "Baby-cry alert via ntfy". Best case.
   2. **Stream with audio:** a cry still wakes you through the HA live view, but no cry *alert*.
   3. **Frigate audio detection on xero** listening to the RTSP audio: it has a `crying` label, not on by default ([Frigate docs](https://docs.frigate.video/configuration/audio_detectors)). One user could not get it to fire with a loud baby ([discussion #10241](https://github.com/blakeblackshear/frigate/discussions/10241)), so this is a separate bench test, not a given. Frigate is a new container; xero has 32GB since 2026-10-09, so RAM is fine, but run audio only (no object detection on CPU, because of heat).
-- **Low light is the likely weak spot.** Alfred's "low light mode" is software brightening; neither Vantage nor IP Camera Lite advertises one, and the SE's sensor is poor in the dark. Test in the real night-time room before cancelling Alfred. If it is too dark, a dim warm plug-in night lamp is the cheap fix. If that does not work either, see Readymade alternatives.
+- **Low light is a must-have (user, 2026-11-07) and a pass/fail gate, not a nice-to-have.** No option gets past phase 1 without a usable night view at the cot, judged against Alfred's low light mode on the same night. Ways to get there, cheapest first:
+  1. **App exposure controls:** check whether Vantage (or IP Camera Lite) exposes exposure/ISO/frame-rate settings; a lower frame rate lets the sensor gather more light.
+  2. **Software brightening on xero**, the same idea as Alfred's mode: go2rtc's ffmpeg source re-encodes the stream with a gamma/brightness filter (e.g. `eq=gamma=2:brightness=0.1`). Costs CPU on xero 24/7 (heat), so measure with `tools/host-stats/` before keeping it.
+  3. **A dim warm night lamp** (₹150-300) out of the baby's line of sight.
+  4. **Tapo C200/C210 with IR night vision** (₹1,300-2,550) if all of the above fail. An IR illuminator does not help the iPhone: its camera filters out IR.
+- **Low light was the likely weak spot (original note).** Alfred's "low light mode" is software brightening; neither Vantage nor IP Camera Lite advertises one, and the SE's sensor is poor in the dark. Test in the real night-time room before cancelling Alfred. If it is too dark, a dim warm plug-in night lamp is the cheap fix. If that does not work either, see Readymade alternatives.
 - **Power cuts:** the phone rides through on its battery; the stream needs the router up. That is no worse than Alfred, and better in an ISP outage: local viewing over LAN or Tailscale keeps working, where Alfred needs the internet.
 - **Two-way audio is not used today** (not in Alfred's "features in use"), so it is not a requirement.
 - **Remote viewing:** via HA over Tailscale, the same as the rest of the dashboard. No Alfred cloud.
@@ -3543,3 +3549,4 @@ qty | item | est | note
 
 #### Log
 - 2026-11-07: idea recorded and researched (user: "use old iphone, currently using alfred camera ... replace alfred camera with free version"). The Alfred subscription details came from the user. The user asked for RTSP to be the first test, since the old rejection was never tested.
+- 2026-11-07: user: low light is a must-have. Made the night-time view a pass/fail gate in the first test, with the fallbacks ranked (app exposure, ffmpeg brightening on xero, night lamp, Tapo IR camera).
