@@ -3558,7 +3558,7 @@ qty | item | est | note
 - [ ] **Pramod:** buy a 22-pin SATA extension, male to female, 20-30cm (local, ~₹200-400), plus zip-ties or velcro straps
 - [ ] **Together:** with xero shut down, open the cover, check whether the stock ribbon reaches outside with slack, then move the SSD out (plan below)
 - [ ] **Claude, after the move:** check link speed, ATA errors and the CRC count, then a 20GB datapool read against the 85°C baseline
-- [ ] **Pramod:** move the monthly scrub and TRIM to 03:00: `sudo tools/zfs/scrub_time.sh set 03:00` (real terminal)
+- [ ] **Pramod:** move the monthly scrub and TRIM to 04:00: `sudo tools/zfs/scrub_time.sh set 04:00` (real terminal)
 - [ ] **Claude, before 2026-12-13 if the move has not happened:** throttle the next monthly scrub (see Incidents)
 
 **Why:** the Kingston SA400 (`sda`, the whole of `datapool`) is rated to 70°C and keeps passing 80°C under long reads: 81-87°C on 2026-10-22 and 2026-10-26, 85°C on 2026-11-08. It is screwed into xero's plastic bottom cover, which faces the Skadis board with only the rubber feet for a gap, and nothing moves air over it. Split out of "xero cooling on the Skadis pegboard" on 2026-11-08 and raised to P1 (user), because it is the cheap, independent fix and the incidents keep coming even in winter. The CPU side (standoffs, USB fan, thermal paste) stays in that entry.
@@ -3570,7 +3570,7 @@ qty | item | est | note
 | 2026-10-26 | 81-82°C | 4GB GoPro upload, then Immich conversion and ML |
 | 2026-11-08 | 85°C (00:41) | **monthly ZFS scrub**, 00:24-00:41:54, reads ~300MB/s; above 80°C for ~11 min |
 
-- **The scrub recurs:** Ubuntu's `zfsutils-linux` cron scrubs every pool on the **second Sunday of each month**, at 00:24 by default; being moved to 03:00 (`tools/zfs/scrub_time.sh`) so it runs when nobody is up. Next: 2026-12-13. Each one reads all used data (~300G today, more after the Takeout import), so it will run longer and hotter as the pool fills.
+- **The scrub recurs:** Ubuntu's `zfsutils-linux` cron scrubs every pool on the **second Sunday of each month**, at 00:24 by default; being moved to 04:00 (`tools/zfs/scrub_time.sh`), the slot that meets no other job and when nobody is up. Next: 2026-12-13. Each one reads all used data (~300G today, more after the Takeout import), so it will run longer and hotter as the pool fills.
 - It found nothing wrong (`repaired 0B ... with 0 errors`); the heat is the only problem.
 
 #### Plan
@@ -3590,3 +3590,4 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 #### Log
 - 2026-11-08: split out of "xero cooling on the Skadis pegboard" at P1 (user) after the monthly scrub took the SSD to 85°C. Plan moved here unchanged.
 - 2026-11-08: the disk was idle (0 MB/s, 45°C) until the scrub started, so the scrub alone caused it. User asked to move it to ~03:00; `tools/zfs/scrub_time.sh` written (the 01:30-05:30 window reads under 2MB/s).
+- 2026-11-08: user: no overlap with any other job. 03:00 (HA backup, Immich integrity, e2scrub) and 03:30 (backups) are taken; **04:00 chosen** (the Glacier archive at 04:00 runs on the 1st only). Job table in `tools/zfs/README.md`.

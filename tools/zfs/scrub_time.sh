@@ -2,10 +2,10 @@
 # Show or change when Ubuntu's zfsutils-linux cron runs the monthly ZFS TRIM
 # (first Sunday) and scrub (second Sunday). Both default to 00:24; the scrub
 # reads the whole pool and takes the Kingston to ~85°C (PROJECTS.md, "Move
-# xero's datapool SSD out of the case"), so it is moved to the small hours.
+# xero's datapool SSD out of the case"), so it is moved to 04:00, a slot no other job uses (tools/zfs/README.md).
 #
 #   tools/zfs/scrub_time.sh                 # show the current lines
-#   sudo tools/zfs/scrub_time.sh set 03:00  # move both jobs (real terminal)
+#   sudo tools/zfs/scrub_time.sh set 04:00  # move both jobs (real terminal)
 #
 # The file is a dpkg conffile: a package upgrade keeps this edit, or asks.
 set -euo pipefail
