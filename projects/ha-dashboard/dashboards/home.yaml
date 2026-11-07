@@ -311,6 +311,14 @@ views:
     - type: tile
       entity: fan.living_room_fan
       name: Fan
+    - type: tile
+      entity: number.xero_speaker_volume
+      name: Speaker volume
+      vertical: false
+      features_position: bottom
+      features:
+      - type: numeric-input
+        style: slider
     column_span: 4
   badges: []
 - title: Bedroom
