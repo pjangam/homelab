@@ -1134,18 +1134,23 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 **Priority:** P3
 
 #### Open items
+- [ ] **Pramod:** watch the flat2form reel (Part 1, mechanism) and note how its three gears sit (bevel pinion between two facing gears, or flat gears)
 - [ ] **Pramod:** say whether a 3D printer or a local MDF laser-cutting shop is within reach (decides bevel vs spur gears)
 - [ ] **Together, by 2027-06:** pick this or the solar-system entry for the 2027 makhar backdrop, or say how they combine; fix the disc diameter
 - [ ] **Pramod:** bench test: a 5-10 RPM motor and two hand-cut cardboard spirals, held up behind the makhar, to judge the speed and the look before cutting anything
 - [ ] **Claude:** once the size is fixed, draw both spirals plus the spur-and-idler gears and the motor plate as one SVG for the laser shop
 - [ ] **Pramod, by 2027-07:** order the laser cutting before the makhar shops' pre-festival rush; finish it and run it for a week before 2027-09-04
 
-**Why:** a decoration idea for next Ganapati (user, 2026-11-06): two wheels on the same axle turning in opposite directions, from a Pinterest reference (https://pin.it/2RDKE7ECj).
+**Why:** a decoration idea for next Ganapati (user, 2026-11-06): two wheels on the same axle turning in opposite directions, from a Pinterest reference (https://pin.it/2RDKE7ECj). Mechanism reference sent 2026-11-07: [flat2form reel](https://www.instagram.com/reel/DdRryVFNsgJ/).
 **State:** idea only, researched 2026-11-06, nothing decided or bought. **Deadline: Ganesh Chaturthi is Saturday 2027-09-04** ([Drik Panchang](https://www.drikpanchang.com/festivals/ganesh-chaturthi/ganesh-chaturthi-date-time.html?year=2027); one Drik page shows the tithi starting 01:48 on 2027-09-03). It must be built and have run unattended for days before then.
 
 #### The reference (what the pin shows)
 - **The link opened, but only as a still.** `pin.it` redirects to Pinterest pin 1096767315540186871, a 50s user-uploaded video. Only its cover frame and caption could be fetched, not the video, so **the mechanism itself was not seen.**
 - **The cover frame shows** a maker holding a laser-cut MDF disc of curved, sunburst-like spiral arms over a second spiral layer behind it, with a metal hub/bushing at the centre. The caption is generic ("woodworking ideas").
+- **Mechanism reference: [flat2form, "Part 1 - Building the mechanism"](https://www.instagram.com/reel/DdRryVFNsgJ/)** (user, 2026-11-07). Only the cover image and caption could be fetched, not the video:
+  - **It is a Ganesh decoration, in paper.** The cover shows a cardstock mandala ("two chakras"), red and gold, with spiral arms inside a fixed ring and a petal border. It stands on legs made of rolled paper tubes. Hashtags: GaneshDecoration, PaperMechanism.
+  - **The caption gives the drive:** "Two independent shafts, three gears, and a single motor". Part 1 covers the mechanism and motor; Part 2 makes the chakras.
+  - **The gear layout is not confirmed.** Three gears and two shafts is exactly the bevel layout (A below: a pinion between two facing gears), whereas the spur layout (B) needs four. But the video was not seen, so that is an inference.
 - **What it is:** the counter-rotating spiral illusion. Two open spirals of opposite hand, one in front of the other, turning in opposite directions. The crossings appear to flow inwards or outwards, which reads as far faster motion than either disc has.
 
 #### Feasibility
@@ -1167,7 +1172,8 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 | **Speed locked?** | Yes, exactly equal | Yes, exactly equal | No: two cheap motors differ by ~10%, so the pattern drifts. Harmless to the look |
 
 - **Recommended: B.** It is the only option where every special part comes off one laser-cut sheet, with the rest from a hardware shop. Equal tooth counts on A and B give equal and opposite speeds. Making A and B larger than the pinion slows the discs and multiplies torque: a 15T pinion on 45T gears turns a 10 RPM motor into 3.3 RPM.
-- **A only if a 3D printer turns up** (open item). The Printables model is exactly this.
+- **A only if a 3D printer turns up** (open item), or if the flat2form reel shows hand-made gears that hold up. The Printables model is exactly this, and the reel's "three gears, two shafts" caption most likely is too. If watching it confirms paper or card bevel/crown gears driven by one motor, A becomes the recommendation and the sourcing objection goes away.
+- **The reel also points to a cheaper build: cardstock instead of MDF.** A paper chakra is light enough for a small motor, needs no laser shop and is immune to the MDF warp trap, but not to humidity (paper softens in monsoon). It is a smaller, more fragile piece than a 50cm MDF backdrop.
 - **C is the fallback** if the gear train will not run smoothly.
 - **Rejected: friction drive.** A rubber wheel squeezed between the two discs is the cheapest differential, but it needs a solid track on spiral discs that are mostly holes, and it slips as MDF swells.
 
@@ -1215,7 +1221,7 @@ qty | item | est | note
 1 | paint/sealer for both disc faces | 200-400 | local; needed against monsoon warp
 ```
 
-**Cost: about ₹1,600-3,400 for option B.** Option C swaps the gears and idler for a second motor, a fixed tube and a centre medallion, at roughly the same total. The ₹999 LED chakra is the cheaper alternative if the physical illusion is not the point.
+**Cost: about ₹1,600-3,400 for option B.** A cardstock build per the flat2form reel is cheaper: the motor, adapter and craft supplies, roughly ₹500-1,000 (estimate). Option C swaps the gears and idler for a second motor, a fixed tube and a centre medallion, at roughly the same total. The ₹999 LED chakra is the cheaper alternative if the physical illusion is not the point.
 
 #### Effort
 About 11-18h, cheapest and most decisive first:
@@ -1231,6 +1237,7 @@ About 11-18h, cheapest and most decisive first:
 
 #### Log
 - 2026-11-06: idea recorded (user), Backlog. Pin opened as a still frame only. Researched: option B recommended; mains synchronous motors and imported bevel gears rejected; overlap with the solar-system entry noted.
+- 2026-11-07: user sent the flat2form reel as the mechanism reference. Only the cover and caption could be fetched: a paper Ganesh chakra, one motor, two shafts, three gears. That count fits the bevel layout (A); kept B as the recommendation until someone watches the video.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Status:** Backlog
