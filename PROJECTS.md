@@ -2035,8 +2035,7 @@ On xero, `sudo smartctl -a /dev/nvme0` (or `/dev/sda`, whichever `findmnt /` say
 **Priority:** P2
 
 #### Open items
-- [ ] **Pramod, by December:** buy the SATA extension, standoffs and a USB fan locally
-- [ ] **Together:** open the cover to see whether the stock SSD ribbon reaches outside with slack, then move the SSD out (plan below)
+- [ ] **Pramod, by December:** buy standoffs and a USB fan locally (the SSD move is its own entry: "Move xero's datapool SSD out of the case")
 - [ ] **Together:** CPU - standoffs + USB fan, or stand xero on its edge
 - [ ] **Claude:** use the cool months for heavy jobs (Bhakti's Takeout import, transcodes to `copies=1`)
 
@@ -2045,7 +2044,7 @@ On xero, `sudo smartctl -a /dev/nvme0` (or `/dev/sda`, whichever `findmnt /` say
 
 #### Options
 User, 2026-10-08: an external fan and better mounting are both on the table. Updated 2026-10-26 to cover the SSD as well: a mount has to give **both** sides air.
-- **SSD: move it out of the case (main SSD option, 2026-10-26).** Zip-tie it to the Skadis in open air, on the stock cable plus an extension. Plan below. Fixes the SSD without changing how xero itself is mounted.
+- **SSD: move it out of the case (main SSD option, 2026-10-26).** Zip-tie it to the Skadis in open air, on the stock cable plus an extension. Split out 2026-11-08 as its own P1 entry, "Move xero's datapool SSD out of the case". Fixes the SSD without changing how xero itself is mounted.
 - **CPU: standoffs + USB fan.** Keep the fan side facing the room, push xero 3-4cm off the board, and have a USB fan blow through the gap across the bottom cover (the SSD side). Cools the SSD without taking air from the CPU.
 - **Alternative: stand xero on its edge** on a Skadis shelf, held by a bracket or bookend so it cannot tip, so neither face touches the board. Both sides get open air, maybe no fan needed. It no longer hangs from its mounting holes, so it has to be held securely.
 - **Ruled out: flipping xero so the SSD side faces the room.** That puts the CPU fan side back against the board, the setup that hit 103°C.
@@ -2058,13 +2057,7 @@ User, 2026-10-08: an external fan and better mounting are both on the table. Upd
 - ~~**Turn the vented side away from the board**~~ - done before 2026-10-22 (the user turned the fan side to face the room). It moved the problem to the SSD side, see State.
 
 #### SSD outside the case
-The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero/case-open-ram-slot.jpg`), only long enough for the bottom cover to open like a lid. Running the pool off it with the cover off, or pulling it outside, risks tearing it, and datapool is a single disk with no mirror.
-- **Cable:** a **22-pin SATA extension, male to female** (data and power in one cable), 20-30cm, about ₹200-400 at a local shop. A 7-pin data-only cable will not work. It plugs into the ribbon's connector, so the ribbon stays where it is. First check whether the ribbon reaches outside the case with slack and the cover closed; if it does, no extension is needed (unlikely).
-- **Route:** out through a gap at the cover's edge, or a small notch if there is none. Tie the cable to the board 5-10cm from the SSD, leaving a loose loop, so a tug pulls on the tie and not on the connectors.
-- **Mount:** zip-ties through two Skadis holes, one near each end of the SSD, not tight enough to flex its plastic case (velcro straps if it should come off without cutting). Upright on its long edge, about 1cm off the board, beside or below xero, out of the CPU exhaust and not above it. **Connector end down or sideways**, never up, so dust does not settle into the joint. The drive itself is sealed, so dust only needs blowing off during the regular clean, across the joint without unplugging it.
-- **Do it with xero fully shut down.**
-- **Baseline (2026-10-26):** the kernel log has the SATA link up at 6.0 Gbps since the 2026-10-25 boot, with no resets or errors. `UDMA_CRC_Error_Count` still to be read (`sudo smartctl -A /dev/sda`, needs a real terminal).
-- **After:** confirm the link is still 6.0 Gbps with no resets in `journalctl -k`, and the CRC count has not risen (if it has, the extension is bad). Then run the 20GB datapool read and compare the Kingston's peak with 81-82°C. The mirror's second SSD can go outside the same way later.
+Moved to its own entry, "Move xero's datapool SSD out of the case" (2026-11-08).
 
 #### Done when
 A full-load run (memtester 2 x 10G or a build) on the pegboard, at normal room temperature, stays under ~85°C, **and** a 20GB datapool read keeps the Kingston under ~70°C (`node_hwmon_temp_celsius{chip="target0:0:0_0:0:0:0"}` in Prometheus). The 90°C healthcheck alert covers it until then.
@@ -2074,6 +2067,7 @@ A full-load run (memtester 2 x 10G or a build) on the pegboard, at normal room t
 - 2026-10-08: memtest86+ hit 103°C on the pegboard (a RAM bit flipped), against 86°C on the desk. A memtester run that evening (2 x 10G, pegboard) climbed to 92-95°C even with both stopgaps in place.
 - 2026-10-26: a 4GB GoPro upload, plus Immich's conversion and ML that followed, took the Kingston to 81-82°C for ~5 min (12:10-12:15). Photos show the SSD in the plastic bottom cover, which now faces the board. Flipping xero over ruled out (it puts the CPU back against the board). Options updated: standoffs + USB fan, or standing it on edge. Immich transcode policy set to `required` the same day to cut the disk load (see "Immich re-enablement").
 - 2026-10-26 (later): main SSD option is now moving it out of the case onto the Skadis on a 22-pin SATA extension (see "SSD outside the case"). Baseline recorded: 6.0 Gbps link, no ATA errors this boot.
+- 2026-11-08: the SSD move split out as its own entry at P1 (user), after the monthly scrub took the Kingston to 85°C.
 
 ### xero's UPS (CRU12V3A) dead - xero off until it is replaced
 **Status:** Active
@@ -3555,3 +3549,42 @@ qty | item | est | note
 - 2026-11-07: idea recorded and researched (user: "use old iphone, currently using alfred camera ... replace alfred camera with free version"). The Alfred subscription details came from the user. The user asked for RTSP to be the first test, since the old rejection was never tested.
 - 2026-11-07: user: low light is a must-have. Made the night-time view a pass/fail gate in the first test, with the fallbacks ranked (app exposure, ffmpeg brightening on xero, night lamp, Tapo IR camera).
 - 2026-11-07: user said the camera need not be the iPhone; GoPro checked - it is a **HERO5 Black** (all 176 files on `datapool`), not the HERO4 noted in "ESP32 UPS LED monitor" (corrected there). Rejected for low light and 24/7 heat; the non-iPhone route stays the Tapo IR camera.
+
+### Move xero's datapool SSD out of the case
+**Status:** Active
+**Priority:** P1
+
+#### Open items
+- [ ] **Pramod:** buy a 22-pin SATA extension, male to female, 20-30cm (local, ~₹200-400), plus zip-ties or velcro straps
+- [ ] **Together:** with xero shut down, open the cover, check whether the stock ribbon reaches outside with slack, then move the SSD out (plan below)
+- [ ] **Claude, after the move:** check link speed, ATA errors and the CRC count, then a 20GB datapool read against the 85°C baseline
+- [ ] **Claude, before 2026-12-13 if the move has not happened:** throttle or reschedule the next monthly scrub (see Incidents)
+
+**Why:** the Kingston SA400 (`sda`, the whole of `datapool`) is rated to 70°C and keeps passing 80°C under long reads: 81-87°C on 2026-10-22 and 2026-10-26, 85°C on 2026-11-08. It is screwed into xero's plastic bottom cover, which faces the Skadis board with only the rubber feet for a gap, and nothing moves air over it. Split out of "xero cooling on the Skadis pegboard" on 2026-11-08 and raised to P1 (user), because it is the cheap, independent fix and the incidents keep coming even in winter. The CPU side (standoffs, USB fan, thermal paste) stays in that entry.
+
+#### Incidents
+| Date | Peak | Cause |
+|---|---|---|
+| 2026-10-22 | 84-87°C | long bulk reads (Takeout SHA-1, uploads, ffmpeg checks) |
+| 2026-10-26 | 81-82°C | 4GB GoPro upload, then Immich conversion and ML |
+| 2026-11-08 | 85°C (00:41) | **monthly ZFS scrub**, 00:24-00:41:54, reads ~300MB/s; above 80°C for ~11 min |
+
+- **The scrub recurs:** Ubuntu's `zfsutils-linux` cron scrubs every pool on the **second Sunday of each month** at 00:24. Next: 2026-12-13. Each one reads all used data (~300G today, more after the Takeout import), so it will run longer and hotter as the pool fills.
+- It found nothing wrong (`repaired 0B ... with 0 errors`); the heat is the only problem.
+
+#### Plan
+The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero/case-open-ram-slot.jpg`), only long enough for the bottom cover to open like a lid. Running the pool off it with the cover off, or pulling it outside, risks tearing it, and datapool is a single disk with no mirror.
+- **Cable:** a **22-pin SATA extension, male to female** (data and power in one cable), 20-30cm, about ₹200-400 at a local shop. A 7-pin data-only cable will not work. It plugs into the ribbon's connector, so the ribbon stays where it is. First check whether the ribbon reaches outside the case with slack and the cover closed; if it does, no extension is needed (unlikely).
+- **Route:** out through a gap at the cover's edge, or a small notch if there is none. Tie the cable to the board 5-10cm from the SSD, leaving a loose loop, so a tug pulls on the tie and not on the connectors.
+- **Mount:** zip-ties through two Skadis holes, one near each end of the SSD, not tight enough to flex its plastic case (velcro straps if it should come off without cutting). Upright on its long edge, about 1cm off the board, beside or below xero, out of the CPU exhaust and not above it. **Connector end down or sideways**, never up, so dust does not settle into the joint. The drive itself is sealed, so dust only needs blowing off during the regular clean, across the joint without unplugging it.
+- **Do it with xero fully shut down.**
+- **Baseline (2026-10-26):** the kernel log has the SATA link up at 6.0 Gbps since the 2026-10-25 boot, with no resets or errors. `UDMA_CRC_Error_Count` still to be read (`sudo smartctl -A /dev/sda`, needs a real terminal).
+- **After:** confirm the link is still 6.0 Gbps with no resets in `journalctl -k`, and the CRC count has not risen (if it has, the extension is bad). Then run the 20GB datapool read and compare the Kingston's peak with 81-82°C. The mirror's second SSD can go outside the same way later.
+
+#### Done when
+- The SSD is outside the case on the Skadis, the SATA link is 6.0 Gbps with no resets, and the CRC count has not risen.
+- A 20GB datapool read, or the next scrub, keeps the Kingston under ~70°C (`node_hwmon_temp_celsius{chip="target0:0:0_0:0:0:0"}` in Prometheus).
+- `docs/hardware.md`'s xero entry notes the SSD's new position.
+
+#### Log
+- 2026-11-08: split out of "xero cooling on the Skadis pegboard" at P1 (user) after the monthly scrub took the SSD to 85°C. Plan moved here unchanged.
