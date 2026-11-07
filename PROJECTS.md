@@ -289,10 +289,10 @@ The 4 LEDs are only 5mm apart, too tight for discrete sensors + individual light
 - **Two options first considered:** (A) fiber-optic light pipes to relay light to normally-spaced sensors, or (B) a small camera reading pixel brightness at fixed, known coordinates in software (not image recognition/ML - just a threshold check on specific pixels, since the camera would be in a fixed mount).
 - **Leaning toward B** at first - turns a hard mechanical problem into an easier, more debuggable software one.
 
-**GoPro HERO4 Black considered for (B) instead of buying anything - ruled out for the *permanent* build:**
+**GoPro HERO5 Black considered for (B) instead of buying anything - ruled out for the *permanent* build:** (the model was recorded here as HERO4 until 2026-11-07, when all 176 of its files on `datapool` read `HERO5 Black`, firmware `HD5.02`)
 - No official USB webcam mode (that's HERO7+), only a WiFi AP-based UDP preview stream (community-documented, works, but the camera can't join the home WiFi as a client - only broadcasts its own isolated AP).
 - A permanent monitor would need a second network path entirely (dual WiFi radios, or WiFi+Ethernet on something like a Pi) just to reach MQTT/HA while also being connected to the GoPro - real added complexity the ESP32-CAM avoids by just joining the home WiFi directly like any other IoT device.
-- Also unverified whether a 2014-era action camera can even focus sharply on something a few cm away.
+- Also unverified whether a 2016-era action camera can even focus sharply on something a few cm away.
 - Still useful as a one-time proof-of-concept (temporarily join its WiFi, confirm the 4 LEDs are resolvable and readable) before committing to real hardware.
 
 **ESP32-CAM pricing checked:** ~₹400-700 for the module alone (Robokits ₹400, Robocraze from ₹599, Robu.in ₹699), plus a separate USB-to-serial programmer board since the bare module has no USB port (~₹150-250, e.g. Robu's ESP32-CAM-MB) - realistically ~₹550-950 total for one working, flashable unit. Not yet purchased.
@@ -3492,6 +3492,7 @@ One switch, option B:
 | Manything, AtHome Camera | - | - | cloud apps | yes | varies | varies | **Rejected**: cloud, the same problem as Alfred. Manything (Videoloft) still listed in 2026 |
 | HA companion app as the camera | - | - | - | - | - | - | **Does not exist**: the iOS companion app has no camera-streaming feature |
 | HomeKit camera via HA HomeKit Controller | - | - | - | - | - | - | **Rejected**: no iOS app found that publishes the phone itself as a HomeKit camera |
+| GoPro HERO5 Black (owned; user asked 2026-11-07) | 0 | - | no RTSP and cannot join home WiFi: only its own-AP ~480p preview, or clean micro-HDMI out into a USB capture card (~₹1,000-1,500, estimate) on xero/a Pi -> go2rtc | none | mic over HDMI only | **poor**: small sensor, no IR, worse than the SE in a dark room | **Rejected**: fails the low-light must-have, overheats running video 24/7, and needs a capture card and a wired box by the cot. Model confirmed from file metadata, not the earlier HERO4 note |
 
 #### Design notes
 - **Recommended: Vantage -> HA ONVIF integration -> HA's built-in go2rtc** for the live view on the dashboard; motion is the ONVIF binary sensor. Nothing new runs on xero.
@@ -3550,3 +3551,4 @@ qty | item | est | note
 #### Log
 - 2026-11-07: idea recorded and researched (user: "use old iphone, currently using alfred camera ... replace alfred camera with free version"). The Alfred subscription details came from the user. The user asked for RTSP to be the first test, since the old rejection was never tested.
 - 2026-11-07: user: low light is a must-have. Made the night-time view a pass/fail gate in the first test, with the fallbacks ranked (app exposure, ffmpeg brightening on xero, night lamp, Tapo IR camera).
+- 2026-11-07: user said the camera need not be the iPhone; GoPro checked - it is a **HERO5 Black** (all 176 files on `datapool`), not the HERO4 noted in "ESP32 UPS LED monitor" (corrected there). Rejected for low light and 24/7 heat; the non-iPhone route stays the Tapo IR camera.
