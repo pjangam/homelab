@@ -134,6 +134,13 @@ white noise, AC.
   in `~/.cache/healthcheck/stt-restarts.log`.
 - `test_stt.sh` - synthesises phrases with HA's Google TTS and posts them to
   the STT API; transcription check only, executes nothing.
+- `watch_satellite_power.sh [minutes] [ip] [entity]` - after changing a
+  satellite's power supply, prints each change in its HA state and API port
+  (default: living room, 15 min). **Give each satellite its own single-port
+  charger:** on 2026-11-07 a spare port on a multi-port GaN charger, shared
+  with a Mac sitting at 99%, kept knocking the living room board off HA.
+  To read a board's serial log from xero (no pyserial on the host):
+  `docker run --rm --device /dev/ttyUSB0 -v $PWD/tools/esp32-tools:/t:ro --entrypoint python3 ghcr.io/esphome/esphome:stable /t/read-esp32-serial.py --no-reset`.
 
 ```sh
 set -a; . ./.env.healthcheck; set +a      # HA_TOKEN for the scripts
