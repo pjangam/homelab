@@ -3615,7 +3615,7 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 - **The first bundle was refused**, so the run stopped there; whether earlier months' bundles are intact is not checked yet.
 - **A 403, not a network error:** credentials were accepted far enough to be refused, which points at the key, the IAM policy, a bucket policy or the storage class allowed, not at xero.
 - Also in the same run: `missing on disk: .../library/admin/2019/2019-10-13/IMG-20191013-WA0002.jpg` (an asset in Immich's DB with no file); separate, look at after the 403.
-- The cloud resources are in Terraform ("Terraform for cloud"); fix any policy there, keys by hand.
+- The bucket and IAM user are not in Terraform (no `.tf` in the repo); the policy the user should carry is `projects/immich-backup/iam-policy.json`. Any new AWS resource from the fix goes in Terraform, keys by hand.
 
 #### Log
 - 2026-11-08: found while reading the night jobs' logs for the scrub schedule. Logged as P1, Active (user); the user checks the AWS side on 2026-11-09.
