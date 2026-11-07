@@ -125,6 +125,7 @@ offering to save what was typed at `n) new host`.
 | `test_tmux_altscreen.py` | whether dropping smcup/rmcup keeps tmux off the alternate screen |
 | `probe_tmux_scrollback.py` | why iTerm's own scrollback cannot replace tmux's (DECSTBM scroll region) |
 | `check_zsh_autocomplete.sh` | whether zsh-autocomplete is live, not merely brew-installed |
+| `probe_zsh_autocomplete_menu.sh` | what zsh-autocomplete actually draws at a live prompt |
 
 `qwen_delegate_repl.py` lives here too but is unrelated: see its own
 `PROJECTS.md` entry.
@@ -152,6 +153,21 @@ Installed with `brew install zsh-autocomplete` (Intel prefix,
   from `plugins=()` above the `source` line.
 - **Check it with `check_zsh_autocomplete.sh`:** the install, the `source`
   line, the order against oh-my-zsh, and the live widget count.
+- **"I opened a new tab and still see nothing" is usually not the plugin.** The
+  picker gives an already-open session a grouped session (`new-session -t`),
+  and a session group **shares its windows** - so the new tab is another view
+  of the same pane, running the same process that started before you edited
+  `~/.zshrc`. `tmux list-panes -a -F '#{session_name} #{pane_pid}'` showing one
+  `pane_pid` under two session names is the tell. Run `exec zsh` in the pane,
+  or take `n) new session` / plain Enter in the picker.
+- **It is not `zsh-autosuggestions`.** Autocomplete draws a menu *below* the
+  prompt; autosuggestions ghosts the rest of the line in grey, accepted with
+  `->`. Wanting the second and installing the first looks exactly like "it
+  doesn't work". Only Autocomplete is installed here.
+- **See what it actually draws with `probe_zsh_autocomplete_menu.sh`**, e.g.
+  `probe_zsh_autocomplete_menu.sh 'cd co' ~`. It drives a real interactive zsh
+  in a throwaway tmux server (socket `-L acprobe`, so the real sessions are
+  untouched) and prints the screen.
 - **A widget check needs a pty**, which the script sets up with a throwaway
   `ZDOTDIR` chaining the real `~/.zshrc`. Autocomplete installs its ZLE widgets
   from a `precmd` hook, so `zsh -i -c ...` has no line editor, no prompt and no
