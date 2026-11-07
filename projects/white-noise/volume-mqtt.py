@@ -16,8 +16,14 @@ import paho.mqtt.client as mqtt
 BROKER = os.environ.get("MQTT_HOST", "localhost")
 PORT = 1883
 
-UNIQUE_ID = "server_volume"
-NODE = "volume"
+# One bridge per speaker host. The wol Pi's runs with no VOLUME_ID and keeps
+# the original names (number.server_volume on volume/*); xero's sets
+# VOLUME_ID=xero (volume-mqtt-xero.conf) and gets its own entity, topics and
+# MQTT client id - a shared client id would make the two kick each other off.
+VOLUME_ID = os.environ.get("VOLUME_ID", "")
+UNIQUE_ID = f"{VOLUME_ID}_volume" if VOLUME_ID else "server_volume"
+NODE = f"volume_{VOLUME_ID}" if VOLUME_ID else "volume"
+CLIENT_ID = f"volume-bridge-{VOLUME_ID}" if VOLUME_ID else "volume-bridge"
 COMMAND_TOPIC = f"{NODE}/set"
 STATE_TOPIC = f"{NODE}/state"
 AVAILABILITY_TOPIC = f"{NODE}/available"
@@ -35,9 +41,9 @@ CONTROL = os.environ.get("VOLUME_CONTROL", "Master")
 MAX = int(os.environ.get("VOLUME_MAX", "100"))
 
 DISCOVERY_PAYLOAD = {
-    "name": "Server Volume",
+    "name": os.environ.get("VOLUME_NAME", "Server Volume"),
     "unique_id": UNIQUE_ID,
-    "object_id": "server_volume",
+    "object_id": UNIQUE_ID,
     "icon": "mdi:volume-high",
     "command_topic": COMMAND_TOPIC,
     "state_topic": STATE_TOPIC,
@@ -98,7 +104,7 @@ def periodic_publish(client):
 # so after a broker restart it tore down and redialled every 5s forever. Same
 # race, and same fix, as docs/incidents/2026-08-31-white-noise-mqtt-reconnect-loop.md.
 def main():
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="volume-bridge")
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=CLIENT_ID)
     client.username_pw_set(os.environ["MQTT_USERNAME"], os.environ["MQTT_PASSWORD"])
     client.will_set(AVAILABILITY_TOPIC, "offline", retain=True)
     client.on_connect = on_connect

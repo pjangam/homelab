@@ -17,7 +17,8 @@ in [`scripts/pi-buttons/`](../../scripts/pi-buttons/README.md).
 | **Topics** | `whitenoise/set`, `whitenoise/state`, `whitenoise/available` (retained) |
 | **Bridge** | `white-noise-mqtt.py` + `.service` (`uv run --script`) |
 | **Player** | `white-noise.service` - `sox` brown noise with a 60s software fade |
-| **Volume** | `volume-mqtt.py` + `.service` |
+| **Volume (Pi)** | `volume-mqtt.py` + `.service` -> `number.server_volume`, topics `volume/*`, the Pi's 3.5mm jack (drop-in written by `deploy_audio_pi.sh`) |
+| **Volume (xero)** | same script + `volume-mqtt-xero.conf` drop-in -> `number.xero_speaker_volume`, topics `volume_xero/*`, xero's speaker (card 1 `Speaker`). Since 2026-11-07; install steps in the conf's header |
 | **Skip tonight's auto-off** | `skip_white_noise_auto_off_tonight.sh` |
 | **Deploy to the Pi** | `deploy_audio_pi.sh`, `install_audio_packages_pi.sh` |
 

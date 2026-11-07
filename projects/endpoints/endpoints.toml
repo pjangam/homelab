@@ -245,6 +245,10 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
     desc = "Server volume as an HA number: the Pi's 3.5mm jack, capped at 93%. Bridged by volume-mqtt.service on the wol Pi (moved from xero 2026-09-24)."
 
     [[group.endpoint.topic]]
+    name = "volume_xero/set, /state, /available"
+    desc = "xero's speaker volume as an HA number (number.xero_speaker_volume, USB card 1 Speaker, 0-100%). Bridged by volume-mqtt.service on xero with the volume-mqtt-xero.conf drop-in (since 2026-11-07); same script as the Pi's, its own topics and client id."
+
+    [[group.endpoint.topic]]
     name = "homelab/wol_pi/state, /available"
     desc = "Retained. The wol Pi's health as one JSON object (under-voltage and throttling flags, kernel under-voltage events, CPU, memory, temperature, disk) every 60s, from pi-health-mqtt.service on the Pi; /available is its last-will. HA shows it as the wol Pi device. CPU, memory and temperature are the p95 and max of per-second samples over the minute (since 2026-10-09)."
 
