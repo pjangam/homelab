@@ -1100,7 +1100,7 @@ Recorded 2026-09-19, and honestly the least likely to get built. The aarti reel 
 **Priority:** P3
 
 #### Open items
-- [ ] **Together, mid-2027:** fix the makhar size, decide the grid resolution, price the pixel count
+- [ ] **Together, mid-2027 (close to the festival):** pick one of the Ganapati 2027 ideas (this, spiral discs, or any added later); if this one, fix the makhar size, grid resolution and pixel count
 - [ ] **Pramod, by July 2027:** order anything long-lead (this year's shortlist lesson)
 
 **Why:** next year's makhar theme, picked while this year's sound-reactive strip was still up. The solar system as spacetime curvature - planets orbiting in a warped grid - is a decoration and a physics demo at once, and it is the kind of thing visiting kids will actually queue up for. Noted roughly a year ahead, which is the point: this year's shortlist was decided partly by what could still arrive in time.
@@ -1128,6 +1128,7 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 #### Log
 - 2026-09-18: noted, roughly a year ahead.
 - 2026-11-06: a second 2027 makhar idea competes for the same backdrop: "Ganapati 2027: counter-rotating spiral discs (kinetic backdrop)". Pick one or combine (discs as orbit rings).
+- 2026-11-07: both stay candidates for 2027; user may add more options. Final pick deferred to mid-2027, close to the festival.
 
 ### Ganapati 2027: counter-rotating spiral discs (kinetic backdrop)
 **Status:** Backlog
@@ -1135,8 +1136,8 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 
 #### Open items
 - [ ] **Pramod:** watch the flat2form reel (Part 1, mechanism) and note how its three gears sit (bevel pinion between two facing gears, or flat gears)
-- [ ] **Pramod:** say whether a 3D printer or a local MDF laser-cutting shop is within reach (decides bevel vs spur gears)
-- [ ] **Together, by 2027-06:** pick this or the solar-system entry for the 2027 makhar backdrop, or say how they combine; fix the disc diameter
+- [ ] **Pramod:** find a local MDF laser-cutting shop (no 3D printer, so printed bevels are out)
+- [ ] **Together, mid-2027 (close to the festival):** pick one of the Ganapati 2027 ideas (this, solar system, or any added later); if this one, fix the disc diameter
 - [ ] **Pramod:** bench test: a 5-10 RPM motor and two hand-cut cardboard spirals, held up behind the makhar, to judge the speed and the look before cutting anything
 - [ ] **Claude:** once the size is fixed, draw both spirals plus the spur-and-idler gears and the motor plate as one SVG for the laser shop
 - [ ] **Pramod, by 2027-07:** order the laser cutting before the makhar shops' pre-festival rush; finish it and run it for a week before 2027-09-04
@@ -1172,7 +1173,7 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 | **Speed locked?** | Yes, exactly equal | Yes, exactly equal | No: two cheap motors differ by ~10%, so the pattern drifts. Harmless to the look |
 
 - **Recommended: B.** It is the only option where every special part comes off one laser-cut sheet, with the rest from a hardware shop. Equal tooth counts on A and B give equal and opposite speeds. Making A and B larger than the pinion slows the discs and multiplies torque: a 15T pinion on 45T gears turns a 10 RPM motor into 3.3 RPM.
-- **A only if a 3D printer turns up** (open item), or if the flat2form reel shows hand-made gears that hold up. The Printables model is exactly this, and the reel's "three gears, two shafts" caption most likely is too. If watching it confirms paper or card bevel/crown gears driven by one motor, A becomes the recommendation and the sourcing objection goes away.
+- **A only if** - there is no 3D printer (user, 2026-11-07), so printed bevels are out - the flat2form reel shows hand-made gears that hold up. The Printables model is exactly this, and the reel's "three gears, two shafts" caption most likely is too. If watching it confirms paper or card bevel/crown gears driven by one motor, A becomes the recommendation and the sourcing objection goes away.
 - **The reel also points to a cheaper build: cardstock instead of MDF.** A paper chakra is light enough for a small motor, needs no laser shop and is immune to the MDF warp trap, but not to humidity (paper softens in monsoon). It is a smaller, more fragile piece than a 50cm MDF backdrop.
 - **C is the fallback** if the gear train will not run smoothly.
 - **Rejected: friction drive.** A rubber wheel squeezed between the two discs is the cheapest differential, but it needs a solid track on spiral discs that are mostly holes, and it slips as MDF swells.
@@ -1238,6 +1239,7 @@ About 11-18h, cheapest and most decisive first:
 #### Log
 - 2026-11-06: idea recorded (user), Backlog. Pin opened as a still frame only. Researched: option B recommended; mains synchronous motors and imported bevel gears rejected; overlap with the solar-system entry noted.
 - 2026-11-07: user sent the flat2form reel as the mechanism reference. Only the cover and caption could be fetched: a paper Ganesh chakra, one motor, two shafts, three gears. That count fits the bevel layout (A); kept B as the recommendation until someone watches the video.
+- 2026-11-07: no 3D printer (user). Both 2027 ideas stay candidates and more may be added; final pick deferred to mid-2027, close to the festival.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Status:** Backlog
