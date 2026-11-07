@@ -3558,7 +3558,8 @@ qty | item | est | note
 - [ ] **Pramod:** buy a 22-pin SATA extension, male to female, 20-30cm (local, ~₹200-400), plus zip-ties or velcro straps
 - [ ] **Together:** with xero shut down, open the cover, check whether the stock ribbon reaches outside with slack, then move the SSD out (plan below)
 - [ ] **Claude, after the move:** check link speed, ATA errors and the CRC count, then a 20GB datapool read against the 85°C baseline
-- [ ] **Pramod:** skip the extra 11 Nov scrub: `sudo tools/zfs/scrub_time.sh set 04:00 sun` now, then `... set 04:00 wed` on or after 2026-11-15
+- [ ] **Pramod, before Wed 2026-11-11 04:00:** try to get the SSD into open air; if not, the 11 Nov scrub runs hot once (accepted, user 2026-11-08)
+- [ ] **Claude, after 2026-11-11:** read the Kingston's peak during that scrub (`node_hwmon_temp_celsius{chip="target0:0:0_0:0:0:0"}`) and add it to Incidents, or to the after-move check if it moved
 - [ ] **Claude, before 2026-12-09 if the move has not happened:** throttle the next monthly scrub (see Incidents)
 
 **Why:** the Kingston SA400 (`sda`, the whole of `datapool`) is rated to 70°C and keeps passing 80°C under long reads: 81-87°C on 2026-10-22 and 2026-10-26, 85°C on 2026-11-08. It is screwed into xero's plastic bottom cover, which faces the Skadis board with only the rubber feet for a gap, and nothing moves air over it. Split out of "xero cooling on the Skadis pegboard" on 2026-11-08 and raised to P1 (user), because it is the cheap, independent fix and the incidents keep coming even in winter. The CPU side (standoffs, USB fan, thermal paste) stays in that entry.
@@ -3593,6 +3594,7 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 - 2026-11-08: user: no overlap with any other job. 03:00 (HA backup, Immich integrity, e2scrub) and 03:30 (backups) are taken; **04:00 chosen** (the Glacier archive at 04:00 runs on the 1st only). Job table in `tools/zfs/README.md`.
 - 2026-11-08: user: Saturday or Wednesday instead of Sunday. **Wednesday 04:00** chosen (a work night); `scrub_time.sh` now takes the day too.
 - 2026-11-08 02:07: user ran `set 04:00 wed`; verified both lines read `0 4 ... -eq 3`. Run before 11 Nov, so a scrub is due Wed 2026-11-11 04:00, three days after the last.
+- 2026-11-08: user leaves the 11 Nov scrub as is and aims to move the SSD before then.
 
 ### Immich Glacier archive: 2026-11-01 upload failed (S3 403 Forbidden)
 **Status:** Active
