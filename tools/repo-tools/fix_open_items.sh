@@ -71,7 +71,13 @@ if [ ! -x "$CLAUDE_BIN" ]; then
   exit 1
 fi
 echo "open-items: asking claude to convert the entries above (about a minute)..."
-prompt=$(cat <<EOF
+# Not `prompt=$(cat <<EOF ...)`: bash 3.2, which is what macOS ships and so
+# what this hook runs under on the Mac, mis-parses an apostrophe inside a
+# heredoc inside $( ). "the file's intro" below was enough to make the whole
+# script a syntax error there while parsing fine on xero's bash 5, so the
+# auto-fix was silently dead on the Mac (found 2026-11-08). `read -d ""`
+# needs no command substitution, so it parses on both.
+IFS= read -r -d '' prompt <<EOF || true
 Edit PROJECTS.md in the current directory. Only these problems, only in the entries named, nothing else in the file:
 
 $report
@@ -80,7 +86,6 @@ The rule (from the file's intro): every open entry leads with a "#### Open items
 
 Do not touch any other entry, the Log, or any other file. Do not run git or any other command. When done, reply with one line per entry saying what you changed.
 EOF
-)
 if ! timeout 300 "$CLAUDE_BIN" -p "$prompt" --allowedTools "Read,Edit" --permission-mode acceptEdits </dev/null; then
   echo "open-items: claude failed or timed out; PROJECTS.md left as it was staged. Fix by hand."
   git checkout -- PROJECTS.md 2>/dev/null
