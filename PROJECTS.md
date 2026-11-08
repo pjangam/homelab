@@ -634,7 +634,8 @@ Three shapes, cheapest first:
 **Priority:** P3
 
 #### Open items
-- [ ] **Together, 2026-11-08:** download all 32 parts to `/datapool/google-takeout/bhakti/` with `takeout_download.sh` before the links expire (about a week), part 1 first as the test on real Google
+- [ ] **Together, by 2026-11-15 (export expires):** download all 32 parts to `/datapool/google-takeout/bhakti/` through the browser on xero (`takeout_browser.sh`), about 5 at a time; `-2-001` and `-2-002` came via the Mac
+- [ ] **Claude:** when all 32 are in, test them with `unzip -t` and run `takeout_browser.sh stop`, which deletes her signed-in browser profile
 - [ ] **Claude:** once the zips are in, run `import_takeout.py --dry-run` for the real unique size and photo/video split
 - [ ] **Together:** sort out storage first: the import does not fit `datapool` as set up today, see "datapool storage headroom"
 - [ ] **Pramod:** before importing, have Bhakti make an Immich API key (all permissions), add it to `.env` as `IMMICH_API_KEY_BHAKTI`, and fix her misspelt name `Bkahti` under Administration -> Users
@@ -643,12 +644,13 @@ Three shapes, cheapest first:
 - [ ] **Pramod:** only then decide on Google One
 
 **Why:** Bhakti's photos live in Google Photos on her account, on the Rs 150/month Google One plan. Moving them into Immich (and so into the Deep Archive copy) is the precondition for dropping that plan; see the cost note under "Offsite backup for Immich photo data".
-**State:** export ready 2026-11-08: 279.36 GB in 32 parts. Downloading now, importing once storage is sorted. Importer built and tested (below); `takeout_download.sh` has so far only run against a fake Takeout, so watch its first part. Her Immich user exists, named `Bkahti`, holding 1 asset. The archive dedupes photos shared between the two libraries by SHA-1.
+**State:** export ready 2026-11-08: 279.36 GB in 32 parts. Downloading now through a browser on xero (~5 MB/s, the home connection's limit, so ~14 hours), importing once storage is sorted. Importer built and tested (below). Her Immich user exists, named `Bkahti`, holding 1 asset. The archive dedupes photos shared between the two libraries by SHA-1.
 
 #### Log
 - 2026-10-30: entry created, split out of "Immich re-enablement".
 - 2026-11-08: export started with 10 GB parts. Wrote `import_takeout.py`, because `upload_from_takeout.sh` was built for small top-ups (skips repeated filenames, extracts everything first, reads no JSON) and immich-go is still broken on Immich 3.3. `verify_takeout.py` gained `--dir` and `--owner`: without an owner, a photo already in Pramod's library counted as imported. Tested against a fake Immich, and on the live 3.3.5 server with a photo already in Pramod's library (answered "duplicate", nothing stored). Album creation has only run against the fake.
 - 2026-11-08: export is 279.36 GB in 32 parts. Worst case on disk at `copies=2` is ~558G of originals plus ~400G of transcodes against 555G free, and the zips need up to 279G more while importing. Decided: download now so the links do not lapse, import after storage is sorted. Bhakti keeps Google Photos and Google One until the import is verified.
+- 2026-11-08: `takeout_download.sh` failed against real Google: exported cookies, even with `accounts.google.com`'s, end at the interactive sign-in page. Replaced by `takeout_browser.sh`, a Chromium container on xero viewed over an SSH tunnel; she signs in there and files save straight to `datapool`. Zips are on the single-copy root dataset, at the user's request.
 
 ### datapool storage headroom
 **Status:** Parked

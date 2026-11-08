@@ -149,6 +149,7 @@ re-fetch.
 
 | Script | Use it for |
 |---|---|
+| `takeout_browser.sh` | A temporary Chromium on xero, viewed over an SSH tunnel, to download an export straight to `datapool` |
 | `import_takeout.py` | A user's whole export, into that user's library |
 | `verify_takeout.py` | Checking the import by SHA-1 afterwards |
 | `upload_from_takeout.sh` | Topping up a few rows from `verify_takeout.py`, from zips directly in `/datapool/google-takeout/` |
@@ -164,9 +165,19 @@ Run on xero, from the repo root, in tmux. `<user>` is a folder name you pick;
 1. Have that person make an API key in Immich (Account Settings -> API Keys,
    logged in as them, all permissions). Add it to `.env`:
    `IMMICH_API_KEY_<USER>=...`
-2. Download, with the inputs described in `takeout_download.sh`'s header:
+2. Download through a browser running on xero. `takeout_download.sh` does not
+   work against real Google: on 2026-11-08 it was sent to the interactive
+   sign-in page even with cookies from `takeout` and `accounts.google.com`.
    ```
-   services/immich/takeout_download.sh ~/cookies.txt '<part-1-link>' <parts> /datapool/google-takeout/<user>
+   services/immich/takeout_browser.sh start <user>
+   ```
+   On the Mac run `ssh -N -L 3001:127.0.0.1:3001 pramod@xero`, open
+   https://localhost:3001, sign in as that person and click Download on about
+   5 parts at a time. When all are in, test them and remove the browser and
+   its signed-in profile:
+   ```
+   for z in /datapool/google-takeout/<user>/*.zip; do unzip -tq "$z" || echo "BAD $z"; done
+   services/immich/takeout_browser.sh stop
    ```
 3. Look at what is in the zips (albums, counts, files with no JSON):
    ```
