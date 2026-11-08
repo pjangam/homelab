@@ -6,7 +6,12 @@ without extracting anything, and looks the hash up in Immich's own
 asset.checksum. Takeout repeats a photo once per album folder, so entries are
 counted by unique hash. Run on xero from the repo root, at low priority:
 
-    nice -n 19 ionice -c3 python3 -I services/immich/verify_takeout.py [report.tsv]
+    nice -n 19 ionice -c3 python3 -I services/immich/verify_takeout.py [report.tsv] \\
+        [--dir /datapool/google-takeout/bhakti] [--owner her@email]
+
+--owner checks against that user's library only. Without it, a photo in anyone's
+library counts as present, which is wrong for a second person's import: photos
+the two of you share would look imported when they are not in hers.
 
 Prints a summary and writes every unique hash Immich lacks to the report
 (default ~/takeout-verify.tsv): sha1, size, a same-name Immich asset if one
@@ -16,8 +21,11 @@ saved, not on ZFS) are listed too, with sha1 "bad-crc", and not checked.
 Immich assets that are in the trash count as present but are flagged, since
 emptying the trash would lose them. restore_from_takeout.sh
 needs an asset id, so it does not apply to photos Immich never had; upload
-those with immich-go instead.
+those with upload_from_takeout.sh, or re-run import_takeout.py for a user's
+import. Files Google had in the bin are in the zips but deliberately not
+imported, so they show up here as missing.
 """
+import argparse
 import hashlib
 import os
 import subprocess
@@ -36,9 +44,13 @@ def env(key):
     sys.exit(f"{key} not in .env")
 
 
-def immich_assets():
+def immich_assets(owner=None):
+    where = ""
+    if owner:
+        email = owner.replace("'", "''")
+        where = f" where \"ownerId\" = (select id from \"user\" where email = '{email}')"
     sql = ('select encode(checksum, \'hex\'), lower("originalFileName"), '
-           '"deletedAt" is not null from asset')
+           '"deletedAt" is not null from asset' + where)
     out = subprocess.run(
         ["docker", "exec", "immich_postgres", "psql", "-U", env("DB_USERNAME"),
          "-d", env("DB_DATABASE_NAME"), "-AtF", "\t", "-c", sql],
@@ -60,15 +72,21 @@ def sha1(zf, info):
 
 
 def main():
-    report = Path(sys.argv[1] if len(sys.argv) > 1 else
-                  os.path.expanduser("~/takeout-verify.tsv"))
-    by_hash, names = immich_assets()
-    print(f"Immich: {len(by_hash)} assets", flush=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("report", nargs="?", default=os.path.expanduser("~/takeout-verify.tsv"))
+    parser.add_argument("--dir", default=str(ZIPS), help="folder holding the zips")
+    parser.add_argument("--owner", help="email of the user whose library to check against")
+    args = parser.parse_args()
+    report = Path(args.report)
+    by_hash, names = immich_assets(args.owner)
+    print(f"Immich: {len(by_hash)} assets" + (f" owned by {args.owner}" if args.owner else ""), flush=True)
+    if args.owner and not by_hash:
+        sys.exit(f"no assets for {args.owner}: wrong email?")
 
     seen = {}  # sha1 -> (size, zip, entry) of its first occurrence
     bad = []   # (size, zip, entry) whose bytes fail the zip's CRC
     entries = 0
-    zips = sorted(ZIPS.glob("*.zip"))
+    zips = sorted(Path(args.dir).glob("*.zip"))
     for i, z in enumerate(zips, 1):
         with zipfile.ZipFile(z) as zf:
             for info in zf.infolist():

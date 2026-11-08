@@ -143,22 +143,88 @@ skips parts already done, and logs each Takeout request to
 `takeout-asks.log`. Usage and inputs are in the script's header;
 `test_takeout_download.sh` runs it against a fake Takeout.
 
-When exporting, pick **.zip** and the **50GB** part size: fewer parts means
-fewer links to go wrong, and resume makes a big part safe. Download into
-`/datapool/google-takeout/<user>/`, then import with immich-go
-(`~/bin/immich-go`) using an API key made by **that** user, so the photos land
-in their library and not admin's.
+When exporting, pick **.zip**. **Part size:** 50GB means fewer Takeout requests
+and cookie refreshes; 10GB makes a part that fails its zip test cheaper to
+re-fetch.
 
-immich-go 0.32 (the latest release) cannot read Immich 3.3's asset list
-(simulot/immich-go#1442), so until a fixed release exists, upload with
-`upload_from_takeout.sh` instead (curl to `/api/assets`, key from `.env`).
+| Script | Use it for |
+|---|---|
+| `import_takeout.py` | A user's whole export, into that user's library |
+| `verify_takeout.py` | Checking the import by SHA-1 afterwards |
+| `upload_from_takeout.sh` | Topping up a few rows from `verify_takeout.py`, from zips directly in `/datapool/google-takeout/` |
+
+Not immich-go: 0.32 (the latest release) cannot read Immich 3.3's asset list
+(simulot/immich-go#1442).
+
+### Running a whole-library import
+
+Run on xero, from the repo root, in tmux. `<user>` is a folder name you pick;
+`<email>` is the Immich login of the person whose photos these are.
+
+1. Have that person make an API key in Immich (Account Settings -> API Keys,
+   logged in as them, all permissions). Add it to `.env`:
+   `IMMICH_API_KEY_<USER>=...`
+2. Download, with the inputs described in `takeout_download.sh`'s header:
+   ```
+   services/immich/takeout_download.sh ~/cookies.txt '<part-1-link>' <parts> /datapool/google-takeout/<user>
+   ```
+3. Look at what is in the zips (albums, counts, files with no JSON):
+   ```
+   python3 -I services/immich/import_takeout.py /datapool/google-takeout/<user> --dry-run
+   ```
+4. Try a handful, then look at them in Immich (dates, names, that they are in
+   the right library):
+   ```
+   python3 -I services/immich/import_takeout.py /datapool/google-takeout/<user> --key-var IMMICH_API_KEY_<USER> --as <email> --limit 5
+   ```
+5. Run it all. It carries on from step 4, and can be re-run after any stop:
+   ```
+   python3 -I services/immich/import_takeout.py /datapool/google-takeout/<user> --key-var IMMICH_API_KEY_<USER> --as <email>
+   ```
+6. Check it (see below), then delete `~/cookies.txt`, the zips and the `.env` key.
+
+**What the importer does and does not carry over**
+
+- **Carried over:** capture date for files with no EXIF date, favourites,
+  archived state, original filename, albums.
+- **Left out:** photos in Google's bin; descriptions; locations added in
+  Google Photos (GPS in the file's own EXIF still works).
+- **Live Photos:** the still and video go up as separate files; Immich pairs
+  them from their metadata.
+
+**Traps**
+
+- **Wrong library:** `--as` stops the run if the key is not that person's.
+  A photo both people have is deliberately imported into both libraries.
+- **Heat:** capped at 20 MB/s (`--max-mb-per-s`), pauses at SSD 70°C or CPU
+  85°C until 62°C / 70°C. Stops at 50 GB free on the pool.
+- **Immich down:** it waits for Immich to come back, e.g. after the load guard
+  has stopped it. A tripped guard needs clearing by hand (see "Load guard").
+- **Failures:** listed in `<dir>/import-failures.tsv` and retried on the next
+  run. `<dir>/import-state.jsonl` is what makes re-runs safe: keep it until
+  the zips go.
+- **After a big import:** thumbnails, transcodes and ML catch up in the
+  background. See "ML backlog".
+
+`test_import_takeout.py` runs the importer against a fake Immich and a made-up
+export.
 
 ### Checking an import is complete
 
 `verify_takeout.py` hashes every photo and video in the zips and looks each
 SHA-1 up in `asset.checksum`; `compare_takeout_dates.py` settles the rows
 where Immich has a file of the same name but other bytes, by capture time.
-Upload what is really missing with `upload_from_takeout.sh rows.tsv`.
+For a whole-library import, pass the folder and the owner, or a photo already
+in someone else's library counts as imported:
+
+```
+nice -n 19 ionice -c3 python3 -I services/immich/verify_takeout.py ~/takeout-verify.tsv --dir /datapool/google-takeout/<user> --owner <email>
+```
+
+Photos Google had in the bin show up as missing; that is expected. For anything
+else, re-run `import_takeout.py`. For the admin zips directly in
+`/datapool/google-takeout/`, upload what is really missing with
+`upload_from_takeout.sh rows.tsv`.
 
 2026-10-22, admin's June export: 13,237 unique files, 12,906 already in
 Immich. 282 same-name rows were the same photos (time matched to the second;

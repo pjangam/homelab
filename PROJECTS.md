@@ -630,20 +630,22 @@ Three shapes, cheapest first:
 - 2026-10-30: remote ML on the MacBook. ghcr pulls on the Mac truncated twice ("unexpected EOF"), so the image went over from xero (`docker save`, 268MB with the containerd store, served on the LAN for the hour). The Mac's Wi-Fi via the TP-Link extender gave ~250KB/s even on the LAN; on the router directly (2.4GHz; its 5GHz SSID gives xero no LAN access to the Mac) ~7.3MB/s. Switched at 18:03; face detection done 18:54, smart search 19:17; switched back and the Mac container stopped. Use the Mac's tailnet address for remote ML: its LAN IP is DHCP with a randomised MAC (.105 became .13 on reassociation).
 
 ### Bhakti's Google Takeout into Immich
-**Status:** Backlog
+**Status:** Active
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** Bhakti requests a Google Photos Takeout; note its size from the export page
-- [ ] **Together:** import it as her user with `upload_from_takeout.sh` and her API key ("Importing a Google Takeout export" in `services/immich/README.md`), paced for the Kingston's temperature
-- [ ] **Claude:** check it with `verify_takeout.py`, re-measure `datapool` for "datapool storage headroom"
+- [ ] **Pramod:** when Google's email arrives, note the total size and part count (10 GB parts, requested 2026-11-08); links expire in about a week
+- [ ] **Pramod:** have Bhakti make an Immich API key (all permissions) and add it to `.env` as `IMMICH_API_KEY_BHAKTI`; fix her misspelt name `Bkahti` under Administration -> Users
+- [ ] **Together:** download to `/datapool/google-takeout/bhakti/` and import with `import_takeout.py`, following "Running a whole-library import" in `services/immich/README.md` (`--dry-run`, then `--limit 5`, then all)
+- [ ] **Claude:** check it with `verify_takeout.py --owner`, re-measure `datapool` for "datapool storage headroom"
 - [ ] **Pramod:** only then decide on Google One
 
 **Why:** Bhakti's photos live in Google Photos on her account, on the Rs 150/month Google One plan. Moving them into Immich (and so into the Deep Archive copy) is the precondition for dropping that plan; see the cost note under "Offsite backup for Immich photo data".
-**State:** not started. Her Immich user exists, named `Bkahti` (misspelt; fix under Administration -> Users), holding 1 asset. immich-go 0.32 breaks on Immich 3.3, hence the curl-based script. The archive dedupes photos shared between the two libraries by SHA-1.
+**State:** export requested, waiting on Google's links. Importer built and tested (below); `takeout_download.sh` has so far only run against a fake Takeout, so watch its first part. Her Immich user exists, named `Bkahti`, holding 1 asset. The archive dedupes photos shared between the two libraries by SHA-1.
 
 #### Log
 - 2026-10-30: entry created, split out of "Immich re-enablement".
+- 2026-11-08: export started with 10 GB parts. Wrote `import_takeout.py`, because `upload_from_takeout.sh` was built for small top-ups (skips repeated filenames, extracts everything first, reads no JSON) and immich-go is still broken on Immich 3.3. `verify_takeout.py` gained `--dir` and `--owner`: without an owner, a photo already in Pramod's library counted as imported. Tested against a fake Immich, and on the live 3.3.5 server with a photo already in Pramod's library (answered "duplicate", nothing stored). Album creation has only run against the fake.
 
 ### datapool storage headroom
 **Status:** Parked
