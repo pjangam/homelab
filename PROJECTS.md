@@ -634,30 +634,32 @@ Three shapes, cheapest first:
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** when Google's email arrives, note the total size and part count (10 GB parts, requested 2026-11-08); links expire in about a week
-- [ ] **Pramod:** have Bhakti make an Immich API key (all permissions) and add it to `.env` as `IMMICH_API_KEY_BHAKTI`; fix her misspelt name `Bkahti` under Administration -> Users
-- [ ] **Together:** download to `/datapool/google-takeout/bhakti/` and import with `import_takeout.py`, following "Running a whole-library import" in `services/immich/README.md` (`--dry-run`, then `--limit 5`, then all)
+- [ ] **Together, 2026-11-08:** download all 32 parts to `/datapool/google-takeout/bhakti/` with `takeout_download.sh` before the links expire (about a week), part 1 first as the test on real Google
+- [ ] **Claude:** once the zips are in, run `import_takeout.py --dry-run` for the real unique size and photo/video split
+- [ ] **Together:** sort out storage first: the import does not fit `datapool` as set up today, see "datapool storage headroom"
+- [ ] **Pramod:** before importing, have Bhakti make an Immich API key (all permissions), add it to `.env` as `IMMICH_API_KEY_BHAKTI`, and fix her misspelt name `Bkahti` under Administration -> Users
+- [ ] **Together:** import with `import_takeout.py`, following "Running a whole-library import" in `services/immich/README.md` (`--dry-run`, then `--limit 5`, then all)
 - [ ] **Claude:** check it with `verify_takeout.py --owner`, re-measure `datapool` for "datapool storage headroom"
 - [ ] **Pramod:** only then decide on Google One
 
 **Why:** Bhakti's photos live in Google Photos on her account, on the Rs 150/month Google One plan. Moving them into Immich (and so into the Deep Archive copy) is the precondition for dropping that plan; see the cost note under "Offsite backup for Immich photo data".
-**State:** export requested, waiting on Google's links. Importer built and tested (below); `takeout_download.sh` has so far only run against a fake Takeout, so watch its first part. Her Immich user exists, named `Bkahti`, holding 1 asset. The archive dedupes photos shared between the two libraries by SHA-1.
+**State:** export ready 2026-11-08: 279.36 GB in 32 parts. Downloading now, importing once storage is sorted. Importer built and tested (below); `takeout_download.sh` has so far only run against a fake Takeout, so watch its first part. Her Immich user exists, named `Bkahti`, holding 1 asset. The archive dedupes photos shared between the two libraries by SHA-1.
 
 #### Log
 - 2026-10-30: entry created, split out of "Immich re-enablement".
 - 2026-11-08: export started with 10 GB parts. Wrote `import_takeout.py`, because `upload_from_takeout.sh` was built for small top-ups (skips repeated filenames, extracts everything first, reads no JSON) and immich-go is still broken on Immich 3.3. `verify_takeout.py` gained `--dir` and `--owner`: without an owner, a photo already in Pramod's library counted as imported. Tested against a fake Immich, and on the live 3.3.5 server with a photo already in Pramod's library (answered "duplicate", nothing stored). Album creation has only run against the fake.
+- 2026-11-08: export is 279.36 GB in 32 parts. Worst case on disk at `copies=2` is ~558G of originals plus ~400G of transcodes against 555G free, and the zips need up to 279G more while importing. Decided: download now so the links do not lapse, import after storage is sorted. Bhakti keeps Google Photos and Google One until the import is verified.
 
 ### datapool storage headroom
 **Status:** Parked
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** before Bhakti's import, note the Takeout's size from Google's export page
 - [ ] **Claude:** after the import, re-measure (`zpool list datapool`, `zfs list -o name,used,logicalused -r datapool`)
 - [ ] **Together:** then decide between the options below
 
 **Why:** raised 2026-11-02: the user expected to run out of storage soon and was pricing bigger SSDs (4TB 870 EVO - expensive under the chip-price spike).
-**State:** measured 2026-11-02, no space problem yet. `datapool` (Kingston SA400, 888G): **302G used (33%), 586G free.** Every dataset has `copies=2` (self-healing on one disk), so data takes twice its size: `immich-upload` is 281G on disk for 143G of data. Of that 143G, about **56G is Immich's transcoded videos** (`encoded-video/`) and ~6G thumbnails (`thumbs/`), both regenerable from the originals but stored twice too. New photos look like tens of GB of data a year, so roughly 50-100G/year on disk including transcodes - **several years of runway** (rough estimate, not a measured trend). Bhakti's Takeout is the unknown that could take a big bite at once.
+**State:** measured 2026-11-02, no space problem yet. `datapool` (Kingston SA400, 888G): **302G used (33%), 586G free.** Every dataset has `copies=2` (self-healing on one disk), so data takes twice its size: `immich-upload` is 281G on disk for 143G of data. Of that 143G, about **56G is Immich's transcoded videos** (`encoded-video/`) and ~6G thumbnails (`thumbs/`), both regenerable from the originals but stored twice too. New photos look like tens of GB of data a year, so roughly 50-100G/year on disk including transcodes - **several years of runway** (rough estimate, not a measured trend). Bhakti's Takeout, measured 2026-11-08, is 279.36 GB in zips (unique size not yet known, albums repeat files): at `copies=2` it does not fit, so this entry now blocks her import.
 
 #### Options (cheapest first)
 1. **Transcodes and thumbnails to `copies=1`** - free, frees ~60-70G. **Script ready (2026-11-02): `services/immich/split_regenerable.sh`** (`check` / `run` / `finish` / `rollback`; dry-tested, not yet run). Best right after the `@pre-v3.3.5` snapshots are destroyed (mid-November), in winter. Put `encoded-video/` and `thumbs/` on their own dataset with `copies=1` (originals stay at `copies=2`); needs a short Immich stop and sudo for the `zfs create` and the move. If a block of a transcode rots, Immich regenerates it.
