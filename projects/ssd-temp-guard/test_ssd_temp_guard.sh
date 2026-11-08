@@ -37,7 +37,8 @@ run_case() {  # name "temps..." expect_clamp expect_release expect_final_param
 
   local got_clamp=no got_release=no got_param
   grep -q CLAMPED "$t/log" && got_clamp=yes
-  grep -q "^.*released:" "$t/log" && got_release=yes
+  # "released on exit:" is the trap unwinding, not a real in-run release.
+  grep -q "released:" "$t/log" && got_release=yes
   got_param=$(cat "$t/param")
 
   if [ "$got_clamp" = "$want_clamp" ] && [ "$got_release" = "$want_release" ] \

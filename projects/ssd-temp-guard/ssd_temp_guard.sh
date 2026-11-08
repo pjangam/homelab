@@ -91,14 +91,14 @@ set_active() {  # value
 }
 
 clamped=0
-release() {
+release() {  # $1: "exit" when unwinding, so the two are told apart in the log
   [ "$clamped" = 1 ] || return 0
-  set_active "$NORMAL" && log "released: zfs_vdev_max_active back to $NORMAL"
+  set_active "$NORMAL" && log "released${1:+ on exit}: zfs_vdev_max_active back to $NORMAL"
   clamped=0
 }
 # A guard that leaves the pool throttled behind it is worse than no guard, so
 # restore on any exit - stop, restart, reboot, crash.
-trap 'release; exit 0' TERM INT EXIT
+trap 'release exit; exit 0' TERM INT EXIT
 
 hot_n=0
 log "watching $TEMP_FILE: clamp at >=${CLAMP_AT}°C x$CLAMP_SAMPLES to $CLAMP, release below ${RELEASE_AT}°C to $NORMAL, every ${INTERVAL}s"
