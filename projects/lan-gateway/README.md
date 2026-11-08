@@ -5,10 +5,18 @@ gateway is `192.168.1.123`, and counts bytes per device IP on the way through.
 The counts go to Prometheus via node-exporter's textfile collector as
 `homelab_lan_gateway_bytes_total{ip, direction="up"|"down"}`.
 
-**Opt-in by design.** The router (`192.168.1.1`) stays the gateway that DHCP
-hands out, so installing this changes nothing for any device. A device only
-goes through xero once it is pointed at it. `PROJECTS.md` "Per-device network
-usage monitoring" tracks the rollout.
+**Opt-in to install, house-wide since the rollout.** Installing this changes
+nothing on its own: a device only goes through xero once it is pointed at it.
+But on **2026-10-22 the router's DHCP was changed to hand out `192.168.1.123`
+as the gateway**, so in practice every device on the LAN now routes through
+xero. `PROJECTS.md` "Per-device network usage monitoring" has the rollout and
+the rollback.
+
+> **This makes xero a single point of failure for the house's internet.**
+> Before any planned downtime - a reboot, the SSD move, a RAM swap - read
+> [`docs/xero-downtime.md`](../../docs/xero-downtime.md): it has the blast
+> radius, when to roll the gateway back to `192.168.1.1` and when not to
+> bother, and the checks to run first.
 
 ## Files
 

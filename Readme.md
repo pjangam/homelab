@@ -155,6 +155,18 @@ the compose file is the root `docker-compose.yml`.
 
 ---
 
+## Planned downtime
+
+**xero is a single point of failure for the house's internet** - since
+2026-10-22 the router's DHCP hands out `192.168.1.123` as the default
+gateway, so every device routes through it and none of them fail over.
+
+Before any shutdown or reboot, read
+[`docs/xero-downtime.md`](docs/xero-downtime.md): what stops (internet, HA,
+MQTT, LAN time for the RTC-less Pi, the public album) and what survives
+(DNS, via the Pi's secondary Pi-hole), whether to roll the gateway back,
+the "is it safe right now" checks, and the bring-up list.
+
 ## Automatic OS updates
 
 Regular point-release package updates (`noble-updates`) install automatically via `unattended-upgrades`, which was already handling security updates but not this origin - 53 packages had piled up unapplied (2026-09-01) because `Allowed-Origins` in `/etc/apt/apt.conf.d/50unattended-upgrades` only covered `-security` and GA by default.
