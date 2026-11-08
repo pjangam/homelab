@@ -108,6 +108,9 @@ services:
       # Upstream mounts /data now; this library's DB stores every path under
       # /usr/src/app/upload (MediaLocation), so it keeps the old mount point.
       - ${UPLOAD_LOCATION}:/usr/src/app/upload
+      # Thumbnails live on the boot disk once move_thumbs_to_boot.sh has set
+      # IMMICH_THUMBS_LOCATION in .env; until then this is the same folder.
+      - ${IMMICH_THUMBS_LOCATION:-/datapool/immich-upload/thumbs}:/usr/src/app/upload/thumbs
       # External library (Administration -> External Libraries): the public
       # album's files, read-only, so the albums gallery and Immich share one
       # copy. Only the album folder - the uploads _inbox stays out.

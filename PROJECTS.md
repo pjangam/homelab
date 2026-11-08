@@ -653,11 +653,15 @@ Three shapes, cheapest first:
 - 2026-11-08: `takeout_download.sh` failed against real Google: exported cookies, even with `accounts.google.com`'s, end at the interactive sign-in page. Replaced by `takeout_browser.sh`, a Chromium container on xero viewed over an SSH tunnel; she signs in there and files save straight to `datapool`. Zips are on the single-copy root dataset, at the user's request.
 
 ### datapool storage headroom
-**Status:** Parked
+**Status:** Active
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** deciding on a 4TB SSD, now or on Black Friday (2026-11-27), ahead of the H2 2027 plan below, for Bhakti's import
+- [ ] **Pramod:** spot-check Immich, then `sudo services/immich/split_regenerable.sh finish`
+- [ ] **Pramod:** destroy the `@pre-v3.3.5` snapshots of `immich-upload` and `immich-db` once happy with 3.3.5 (irreversible; returns the ~62G)
+- [ ] **Pramod:** decide whether to run `move_thumbs_to_boot.sh` (ready, not run; steps in `services/immich/README.md`)
+- [ ] **Claude:** at Bhakti's dry-run, check her thumbnails fit the boot disk if they moved there (~3G per 10,000 photos, ~43G free)
+- [ ] **Pramod:** deciding on a 4TB SSD or a USB HDD, now or on Black Friday (2026-11-27), ahead of the H2 2027 plan below, for Bhakti's import
 - [ ] **Claude:** after the import, re-measure (`zpool list datapool`, `zfs list -o name,used,logicalused -r datapool`)
 - [ ] **Together:** then decide between the options below
 
@@ -676,6 +680,8 @@ Three shapes, cheapest first:
 
 #### Log
 - 2026-11-02: entry created; measured, options recorded, parked until after Bhakti's Takeout.
+- 2026-11-08: `split_regenerable.sh run` done: `encoded-video` and `thumbs` are now `copies=1` datasets. `finish` and the snapshot destroy still to come, so the space is not back yet.
+- 2026-11-08: measured the database at 507 MB and thumbnails at 5.8G for 18,991 items. Wrote `move_thumbs_to_boot.sh` at the user's request (dry-tested, not run). Weighed a USB HDD: a 2.5" 4-5TB drive is generally SMR, a 3.5" needs its own 12V.
 
 ### Move the Airtel router to a central spot (retire the Wi-Fi extender)
 **Status:** Backlog

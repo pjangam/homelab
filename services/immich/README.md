@@ -249,7 +249,7 @@ that evening; these scripts need a fresh export to run again.
 
 ## Transcodes and thumbnails at copies=1
 
-`split_regenerable.sh` (2026-11-02, not yet run) moves `encoded-video/` and
+`split_regenerable.sh` (2026-11-02, `run` done 2026-11-08) moves `encoded-video/` and
 `thumbs/` into child datasets of `datapool/immich-upload` with `copies=1`:
 both are regenerable, and at `copies=2` they took ~124G of the Kingston for
 ~62G of data. Same paths, so compose does not change. `sudo ... check` first;
@@ -275,6 +275,27 @@ If anything looks wrong before `finish`, `rollback` puts everything back as it w
 ```
 sudo services/immich/split_regenerable.sh rollback
 ```
+
+## Thumbnails on the boot disk
+
+`move_thumbs_to_boot.sh` moves `thumbs/` to `/var/lib/immich-thumbs`, through a bind mount in `docker-compose.yml`.
+
+- **Switch:** `IMMICH_THUMBS_LOCATION` in `.env`. Without it the mount uses the datapool path.
+- **Needs first:** `split_regenerable.sh finish`.
+- **Dry test:** `services/immich/test_move_thumbs.sh`.
+
+Run steps:
+
+1. `sudo services/immich/move_thumbs_to_boot.sh check`
+2. `sudo services/immich/move_thumbs_to_boot.sh run`
+3. Spot-check: thumbnails load in the timeline, a new upload gets one.
+4. `sudo services/immich/move_thumbs_to_boot.sh finish` destroys the old dataset. Before this, `rollback` undoes the move.
+
+Traps:
+
+- **Boot disk space:** thumbnails take ~3G per 10,000 photos, and the boot disk has ~43G free. Check before a large import.
+- **After `finish`:** do not re-run `split_regenerable.sh`, which would recreate a `thumbs` dataset nothing uses.
+- **`.env` line lost:** Immich would mount an empty folder on datapool and fail its storage check. Put the line back.
 
 ## Hardware requirements
 
