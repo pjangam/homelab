@@ -3557,10 +3557,12 @@ qty | item | est | note
 **Priority:** P1
 
 #### Open items
-- [ ] **Pramod:** wall hooks for the SSD, and close the case - it is out in open air but resting loose, not mounted
+- [ ] **Pramod:** wall hooks for the SSD - it is out in open air but resting loose, not mounted
+- [ ] **Pramod:** add a dust clean to the routine now that the case stays open (the blower pulls dust straight onto the board; last clean 2026-08-21)
 - [ ] **Claude, after Wed 2026-11-11 04:00:** read the Kingston's peak during the first scrub in the new position and add it to Incidents (expect ~60°C; the 20GB test at the same MB/s peaked there)
 
-**Outcome so far (2026-11-08):** the SSD is **out of the case in open air** and the heat problem is solved - a 20.7GB read at 282 MB/s peaked at **60°C**, against **85°C** at 284 MB/s with the drive in the cover. 25°C lower at the same load, and 10°C under the 70°C rating. Not closed: it is resting loose rather than mounted, and the case is open pending wall hooks.
+**Outcome so far (2026-11-08):** the SSD is **out of the case in open air** and the heat problem is solved - a 20.7GB read at 282 MB/s peaked at **60°C**, against **85°C** at 284 MB/s with the drive in the cover. 25°C lower at the same load, and 10°C under the 70°C rating. Not closed: the SSD is resting loose rather than mounted (wall hooks pending).
+**The case stays open permanently** (user, 2026-11-08): the ribbon's 22-pin connector is far too bulky for the cover's vent slots, and notching the cover enough to pass it was not worth it. Accepted, not a pending task - do not 'fix' this later. It also helps the CPU (58°C -> 54°C idle, both faces now in open air). The cost is dust on an exposed board and blower.
 
 **Why:** the Kingston SA400 (`sda`, the whole of `datapool`) is rated to 70°C and keeps passing 80°C under long reads: 81-87°C on 2026-10-22 and 2026-10-26, 85°C on 2026-11-08. It is screwed into xero's plastic bottom cover, which faces the Skadis board with only the rubber feet for a gap, and nothing moves air over it. Split out of "xero cooling on the Skadis pegboard" on 2026-11-08 and raised to P1 (user), because it is the cheap, independent fix and the incidents keep coming even in winter. The CPU side (standoffs, USB fan, thermal paste) stays in that entry.
 
@@ -3595,7 +3597,8 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 - 2026-11-08: user: Saturday or Wednesday instead of Sunday. **Wednesday 04:00** chosen (a work night); `scrub_time.sh` now takes the day too.
 - 2026-11-08 02:07: user ran `set 04:00 wed`; verified both lines read `0 4 ... -eq 3`. Run before 11 Nov, so a scrub is due Wed 2026-11-11 04:00, three days after the last.
 - 2026-11-08: user leaves the 11 Nov scrub as is and aims to move the SSD before then.
-- 2026-11-08 12:17: **moved.** The stock flex ribbon reached outside with the case open, so **no 22-pin extension was needed** - that open item is dropped. The SSD now sits in open air; wall hooks and closing the case still to do.
+- 2026-11-08 12:17: **moved.** The stock flex ribbon reached outside with the case open, so **no 22-pin extension was needed** - that open item is dropped. The SSD now sits in open air; wall hooks still to do.
+- 2026-11-08: **the case will not be closed.** The ribbon's 22-pin SATA connector will not pass through the cover's air vents, and cutting a notch big enough for it was rejected. The user's call, and it is a decision rather than an open item: the cover comes off for good. Keep the cover - the SSD's original mounting holes are in it, so it is the rollback path. Dust is now the maintenance item.
 - 2026-11-08 12:32: **measured, and it works.** `tools/host-stats/disk_thermal_test.sh` read 20.7GB at **282 MB/s** (the 2026-11-08 scrub managed ~284 MB/s, so like for like) and peaked at **60°C**, against 85°C in the cover. Idle fell 49°C -> 33°C, now equal to the boot SSD, so the dead-air penalty is gone. `ssd-temp-guard` never fired - the drive never reached 70°C.
 - 2026-11-08: post-move health all clean: SATA link still **6.0 Gbps** both links, **0** ATA errors since boot, pool ONLINE with **READ=0 WRITE=0 CKSUM=0** after the 20.7GB read. The pre-move `UDMA_CRC_Error_Count` baseline was missed, but it is moot: ZFS checksums every block, so 20.7GB read with zero CKSUM errors is a stronger proof of the SATA path than a CRC delta would have been.
 - 2026-11-08: the first test run was **invalid and nearly recorded as a success** - it reported 51°C at 19 MB/s. `dd` counts blocks not bytes and a pipe short-reads, so `count=N bs=1M` stopped after ~285MB; and `tar` over a photo library managed 19 MB/s. Fixed with `iflag=fullblock` and whole-file reads. A thermal result is only meaningful next to the MB/s it was taken at.
