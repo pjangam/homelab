@@ -17,7 +17,7 @@ every other machine.
 | `claude` / `claude-local` wrappers, `CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1` | `dotfiles/zsh/claude-tmux.zsh` | `~/.zsh/functions/claude-tmux.zsh` | zsh, via the bottom managed block in `~/.zshrc` |
 | The two `source` lines | written by `setup-tmux-shell.sh` | `~/.zshrc`, between `# >>> homelab tmux-shell: ... >>>` markers | zsh at startup |
 | Pane/window directory, mouse, copy-mode binds, OSC 52, tab title | `dotfiles/tmux/tmux.conf` | `~/.tmux.conf`, between `# >>> homelab tmux-shell >>>` markers | the tmux server (the installer runs `tmux source-file`) |
-| Wheel to tmux, clicks and drags to iTerm | not in the repo | iTerm profile, see below | iTerm |
+| Wheel to tmux, clicks and drags to iTerm | `setup-iterm-mouse.sh` | iTerm profile (`com.googlecode.iterm2.plist`) | iTerm |
 
 So `~/.zshrc` holds only two `source` lines. Anything outside the managed
 blocks in `~/.zshrc` and `~/.tmux.conf` is left alone.
@@ -33,13 +33,21 @@ Re-running is the update path. On a Mac with no clone of the repo,
 `setup-tmux-shell.sh --bundle /tmp/install-tmux-shell.sh` writes one
 self-contained file with the dotfiles baked in; copy it over and run it.
 
-Then set these by hand in iTerm. The script cannot, and without them the
-mouse setup in `tmux.conf` does not work:
+Then the iTerm profile settings, without which the mouse setup in `tmux.conf`
+does not work. `setup-tmux-shell.sh` does **not** touch these - they live in
+iTerm's own prefs, not a dotfile:
 
-- **Profiles > Terminal**: mouse reporting ON, report wheel events ON,
-  report clicks & drags OFF.
-- **General > Selection**: "Applications in terminal may access clipboard" ON
-  (lets a tmux copy-mode copy reach the system clipboard over OSC 52).
+```sh
+tools/dev-shell/setup-iterm-mouse.sh            # check, safe any time
+tools/dev-shell/setup-iterm-mouse.sh --apply    # write them (iTerm must be quit)
+```
+
+It wants mouse reporting ON, alternate mouse scroll ON, clicks and drags **not**
+reported, and the global "Applications in terminal may access clipboard" ON (the
+last one lets a tmux copy-mode copy reach the system clipboard over OSC 52).
+With iTerm running, set it in the UI instead - it applies immediately:
+**Settings > Profiles > Terminal > Mouse reporting > [x] Don't report clicks and
+drags**, once per profile you actually use.
 
 ## What it does
 
@@ -196,6 +204,28 @@ Both need a pty, which they set up themselves in a throwaway tmux server
 (socket `-L zpluginscheck` / `-L acprobe`, so the real sessions are untouched).
 `zsh -i -c ...` proves nothing: the widgets bind from a `precmd` hook, so with
 no line editor and no prompt there is no `precmd` and the count is always zero.
+
+## When text selection stops working
+
+Hit on this MacBook 2026-11-08: a plain drag selected nothing in iTerm, though
+the same setup worked on the work MacBook.
+
+- **The tell is Option-drag.** If a plain drag selects nothing but **Option**-drag
+  does, the iTerm side is wrong, not tmux. Option forces iTerm to keep the drag
+  for itself instead of reporting it, which is precisely what the profile
+  setting is supposed to do all the time.
+- **Cause:** `Mouse Reporting allow clicks and drags` absent from the profile,
+  so at iTerm's default of *reporting* them. tmux has `mouse on` (it must, or
+  nothing scrolls), so tmux received the drag and iTerm had no selection for
+  Cmd-C to copy.
+- **Not a tmux problem.** `tmux show -g mouse` / `set-clipboard` and
+  `~/.tmux.conf` were all correct and identical to the repo copy. Check
+  `setup-iterm-mouse.sh` before touching tmux.
+- **It is per profile.** Both profiles here needed it; a new tab on the other
+  profile would have behaved differently. The script reports every profile.
+- **The settings are Mac-only.** Copying `tmux.conf` to `xero` carries none of
+  this - there is no iTerm there. A remote tmux over ssh is still governed by
+  the local iTerm profile, which is why the fix covers ssh too.
 
 ## Known loose ends
 
