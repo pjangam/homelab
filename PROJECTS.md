@@ -3629,14 +3629,12 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 **Priority:** P2
 
 #### Open items
-- [ ] **Pramod:** install the system unit on xero - two `sudo` lines in `projects/ssd-temp-guard/README.md` (sudo wants a password, so a session cannot do it)
 - [ ] **Pramod:** read `sudo smartctl -A /dev/sda` and record the lifetime max temperature and any reallocated/pending sectors in `docs/hardware.md` (needs a real terminal)
 - [ ] **Claude, after Wed 2026-11-11 04:00:** if the guard is installed by then, the already-scheduled scrub is the measurement - read the Kingston's peak and the scrub's duration and compare with 85°C / 17m53s. Otherwise trigger one by hand.
 - [ ] **Claude:** add the measured numbers to this entry and to "xero cooling on the Skadis pegboard"
-- [ ] **Claude:** add `ssd-temp-guard.service` to xero's systemd line in `docs/hardware.md` once it is installed and running
 
 **Why:** the Kingston SA400 (`sda`, `datapool`) is rated to 70°C and goes past it on any sustained bulk read or write - **85°C on 2026-11-08** (the monthly ZFS scrub), 84-87°C for 20-50 min on 2026-10-22 (SHA-1 over 43G plus ffmpeg). `healthcheck.sh` alerts at 75/85°C but nothing acts, and `immich-load-guard` watches CPU temperature only and can only stop Immich. This is the "Software limit" option from "xero cooling on the Skadis pegboard", built more generally: it throttles **every** source, not just Immich.
-**State:** written and unit-tested 2026-11-08 (`projects/ssd-temp-guard/`), **not yet installed** - the system unit needs root. `CLAMP=4` is a starting value, not a measured one.
+**State:** **live on xero since 2026-11-08 11:30** - enabled, active, watching `/sys/block/sda/device/hwmon/hwmon1/temp1_input`, idling at 45°C with the tunable at 1000. All six test cases pass on xero. `CLAMP=4` is still a starting value, not a measured one.
 **Next scrub: Wed 2026-11-11 04:00** (moved there by `tools/zfs/scrub_time.sh`, see "Move xero's datapool SSD out of the case"). Installing the guard before then turns that scrub into the measurement for free. The two fix different halves: moving the SSD into open air is the cure, this guard is the limiter for every bulk job that is not a scrub.
 
 #### Why it throttles the vdev, not the job
@@ -3652,3 +3650,4 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 
 #### Log
 - 2026-11-08: the monthly scrub (`/etc/cron.d/zfsutils-linux`, second Sunday 00:24) read all 305G in 17m53s, ~284 MB/s flat out, and took the Kingston to **85°C** at 00:45 - healthcheck's URGENT threshold. Guard written, unit-tested, not installed.
+- 2026-11-08 11:30: installed and enabled by the user (needed a real terminal for sudo). Recorded in `docs/hardware.md` under a new "systemd system units" line. Waiting on the Wed 2026-11-11 04:00 scrub for the first real measurement.
