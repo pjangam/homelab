@@ -655,6 +655,7 @@ Three shapes, cheapest first:
 **Priority:** P3
 
 #### Open items
+- [ ] **Pramod:** deciding on a 4TB SSD, now or on Black Friday (2026-11-27), ahead of the H2 2027 plan below, for Bhakti's import
 - [ ] **Claude:** after the import, re-measure (`zpool list datapool`, `zfs list -o name,used,logicalused -r datapool`)
 - [ ] **Together:** then decide between the options below
 
