@@ -43,6 +43,7 @@ wol-sender Pi or the Mac; they move into the layout above in a later session.
 | [`projects-ui`](projects/projects-ui/README.md) | the dashboard that renders `PROJECTS.md` at `/projects` |
 | [`smart-switch`](projects/smart-switch/README.md) | in-house ESP32 + relay switch, LAN-only (replacing Tinxy); runs the akash kandil |
 | [`spotifyd`](projects/spotifyd/README.md) | headless Spotify Connect on the Pi |
+| [`ssd-temp-guard`](projects/ssd-temp-guard/README.md) | throttles ZFS while the datapool SSD is over its 70°C rating |
 | [`tinxy-watchdog`](projects/tinxy-watchdog/README.md) | restarts HA after a sustained ISP-outage disconnect (temporary) |
 | [`voice-assistant`](projects/voice-assistant/README.md) | local voice control through HA Assist |
 | [`white-noise`](projects/white-noise/README.md) | the bedroom white-noise switch |

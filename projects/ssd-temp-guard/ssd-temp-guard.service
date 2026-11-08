@@ -1,0 +1,19 @@
+[Unit]
+Description=Throttle ZFS while the datapool SSD is over its temperature rating
+# Needs the pool imported (for the tunable to mean anything) and the
+# drivetemp module loaded (for the sensor to exist).
+After=zfs.target
+Wants=zfs.target
+
+[Service]
+# A system unit, not systemd --user like immich-load-guard: writing
+# /sys/module/zfs/parameters needs root.
+ExecStart=/home/pramod/code/homelab/projects/ssd-temp-guard/ssd_temp_guard.sh
+Restart=always
+RestartSec=10
+# Let the trap restore zfs_vdev_max_active before systemd kills it.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
