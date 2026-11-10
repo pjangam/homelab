@@ -536,7 +536,6 @@ The "Approach" note above says cloud undermines self-hosting; the counter-argume
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** copy `SYNCTHING_GUI_PASSWORD` from xero's `.env` into Vaultwarden
 - [ ] **Together:** pair the 2019 MacBook (`services/syncthing/README.md`, "Adding a device")
 - [ ] **Pramod:** say which of Bhakti's devices get a copy, then pair them
 - [ ] **Claude:** add Syncthing to `healthcheck.sh` (container up, Documents folder not in error)
@@ -577,6 +576,7 @@ How the work laptop fits in - same policy-visibility risk that ruled out Dropbox
 - 2026-11-10: Syncthing 2.1.7 running on xero (`services/syncthing/`), configured by `configure.sh`; Caddy route `/syncthing/`; endpoints and `docs/hardware.md` updated; `backup_documents.sh` now skips `.stversions/`.
 - 2026-11-10: work M1 paired as `work-m1` (`~/xero-documents`, 224 files, 257 MiB). Test passed: file made on the Mac reached xero, its delete was kept in xero's Versions, restore from xero brought it back to the Mac. Samba's `.deleted/` recycle bin had synced to the Mac; now in `.stignore`.
 - 2026-11-10: iPhone 14 paired as `iphone-14` via Synctrain (folder created by hand with ID `documents`; the share offer never showed). STUN off on xero too. Bug found and fixed: a `configure.sh` re-run had un-shared Documents from all devices (API restarting after the GUI patch, empty-list fallback); it now waits and aborts instead.
+- 2026-11-10: GUI password copied into Vaultwarden (user).
 
 ### Immich re-enablement
 **Status:** Done
