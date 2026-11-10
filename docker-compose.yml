@@ -630,6 +630,24 @@ services:
       - "-s"
       - "documents;/documents;yes;no;no;${SAMBA_USER},bhakti;;;Documents"
 
+  # Peer-to-peer sync of the same documents share (services/syncthing/README.md).
+  # Host networking so LAN discovery (UDP 21027 broadcast) works; sync on
+  # 22000 tcp+quic over the LAN and the tailnet. Global discovery, relays and
+  # UPnP are switched off by services/syncthing/configure.sh - never public.
+  # GUI is localhost-only, reached through Caddy at xero.<tailnet>/syncthing/.
+  syncthing:
+    image: syncthing/syncthing:2.1.7
+    container_name: syncthing
+    network_mode: host
+    environment:
+      PUID: 1000
+      PGID: 1000
+      STGUIADDRESS: 127.0.0.1:8384
+    volumes:
+      - syncthing-config:/var/syncthing/config
+      - ${DOCUMENTS_LOCATION}:/var/syncthing/documents
+    restart: unless-stopped
+
 volumes:
   model-cache:
   prometheus-data:
@@ -647,6 +665,7 @@ volumes:
   caddy_config:
   ha-tailscale-state:
   photos-tailscale-state:
+  syncthing-config:
   stp-models:
   stp-train:
   piper-data:

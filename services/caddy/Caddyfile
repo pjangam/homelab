@@ -56,6 +56,17 @@ xero.{$TAILNET_SUFFIX} {
         reverse_proxy localhost:3000
     }
 
+    # Syncthing GUI (services/syncthing/README.md) - prefix stripped: the GUI
+    # uses relative URLs and runs fine under a sub-path, but cannot route on
+    # one itself. The redir keeps relative asset paths resolving under
+    # /syncthing/. Login is Syncthing's own (SYNCTHING_GUI_PASSWORD).
+    @syncthing path /syncthing /syncthing/*
+    handle @syncthing {
+        redir /syncthing /syncthing/
+        uri strip_prefix /syncthing
+        reverse_proxy localhost:8384
+    }
+
     # A page with no icon of its own makes the browser fetch /favicon.ico,
     # which the catch-all below would hand to Vaultwarden - so every such tab
     # showed Vaultwarden's shield. Serve a neutral homelab one instead.

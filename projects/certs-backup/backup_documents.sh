@@ -7,7 +7,8 @@
 # Dropbox is small (2.75 GiB on the free plan), so unlike the Vaultwarden
 # backup this keeps only KEEP_COUNT archives and uploads only when something in
 # the share changed (by path, size and mtime). The samba recycle bin
-# (.deleted/) is left out.
+# (.deleted/) is left out, and so is Syncthing's .stversions/ (its own undo
+# history, services/syncthing/README.md) - it would only fill the Dropbox quota.
 # No local copy is kept: it would sit on the same disk as the share itself.
 #
 # Restore:
@@ -44,7 +45,7 @@ fi
 
 mkdir -p "$BACKUP_DIR"
 
-hash=$(cd "$SOURCE_DIR" && find . -path ./.deleted -prune -o -printf '%P\t%s\t%T@\n' | sort | sha256sum | cut -d' ' -f1)
+hash=$(cd "$SOURCE_DIR" && find . \( -path ./.deleted -o -path ./.stversions \) -prune -o -printf '%P\t%s\t%T@\n' | sort | sha256sum | cut -d' ' -f1)
 if [[ -f "$LAST_HASH_FILE" && "$(cat "$LAST_HASH_FILE")" == "$hash" ]]; then
   echo "[$(date)] documents unchanged since the last upload, skipping."
   echo "[$(date)] Backup complete: unchanged"
@@ -57,7 +58,7 @@ trap 'rm -f "$tmp"' EXIT
 echo "[$(date)] Creating encrypted backup..."
 # PDFs and scans are already compressed, so tar is not gzipped. The
 # passphrase goes in on fd 3 rather than argv, so ps cannot show it.
-tar -cC "$SOURCE_DIR" --exclude=./.deleted . | \
+tar -cC "$SOURCE_DIR" --exclude=./.deleted --exclude=./.stversions . | \
   gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 \
       --symmetric --cipher-algo AES256 --compress-algo none \
       --output "$tmp" 3<<<"$BACKUP_PASSPHRASE"

@@ -66,6 +66,7 @@ wol-sender Pi or the Mac; they move into the layout above in a later session.
 | [`pihole-secondary`](services/pihole-secondary/README.md) | the second Pi-hole on the wol Pi |
 | [`prometheus`](services/prometheus/README.md) | metrics store behind Grafana |
 | [`samba`](services/samba/README.md) | the `phone-uploads` and `documents` SMB shares |
+| [`syncthing`](services/syncthing/README.md) | offline copies of the `documents` share on every device |
 | [`tailscale`](services/tailscale/README.md) | the sidecars that give a service its own tailnet name |
 | [`vaultwarden`](services/vaultwarden/README.md) | the password manager every secret here points at |
 
