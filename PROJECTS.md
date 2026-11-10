@@ -539,7 +539,6 @@ The "Approach" note above says cloud undermines self-hosting; the counter-argume
 - [ ] **Pramod:** copy `SYNCTHING_GUI_PASSWORD` from xero's `.env` into Vaultwarden
 - [ ] **Together:** pair the 2019 MacBook (`services/syncthing/README.md`, "Adding a device")
 - [ ] **Pramod:** say which of Bhakti's devices get a copy, then pair them
-- [ ] **Pramod:** delete `~/xero-documents/.deleted` on the work M1 (Samba recycle bin, leaked before it was ignored)
 - [ ] **Claude:** add Syncthing to `healthcheck.sh` (container up, Documents folder not in error)
 
 **Why:** currently uses Dropbox to keep sensitive personal documents (ID cards, tax documents, etc.) available across devices.

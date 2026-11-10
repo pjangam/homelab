@@ -55,7 +55,8 @@ Each device pairs with xero only, not with the other devices. xero passes change
 5. **On the client:** accept the Documents share and pick a local path. On a Mac use `~/xero-documents`, never under `~/Documents` or `~/Desktop`: iCloud / OneDrive / company backup often sync those. The first sync copies the full share (~450 MB).
    - **Synctrain (iPhone) never showed the offer.** Instead: Folders → Add → **Regular** → Folder ID `documents` (exact), share with xero, keep all files. Matching IDs join the share straight away.
    - Synctrain's settings are named differently: turn off *Announce globally*, *Enable relaying*, *Enable NAT-PMP/UPnP* and *Enable STUN*; leave *Announce on local network* and *Announce LAN addresses* on.
-6. Check that both GUIs show the device as **Connected** and the folder as **Up to Date**.
+6. **On the client:** Documents → Edit → *Ignore Patterns*: paste the same list as xero's `.stignore` (in `configure.sh`). Ignores are per device, so without it the client offers its own `.DS_Store` and junk to everyone else.
+7. Check that both GUIs show the device as **Connected** and the folder as **Up to Date**.
 
 ## Paired devices
 
