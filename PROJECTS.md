@@ -634,7 +634,8 @@ Three shapes, cheapest first:
 **Priority:** P3
 
 #### Open items
-- [ ] **Together, by 2026-11-15 (export expires):** download all 32 parts to `/datapool/google-takeout/bhakti/` through the browser on xero (`takeout_browser.sh`), about 5 at a time; `-2-001` and `-2-002` came via the Mac
+- [ ] **Together, by 2026-11-15 (export expires):** download all 32 parts to `/datapool/google-takeout/bhakti/` through the browser on xero (`takeout_browser.sh`), about 5 at a time. Done 2026-11-10: `-2-004` to `-2-012`; downloading: `-2-003` (retry), `-1-001` to `-1-004`; left: page rows 17-32 (`-1-005` to `-1-020`)
+- [ ] **Pramod:** copy `-2-001` and `-2-002` from the personal Intel Mac (not the work Mac) with `rsync -ah --partial --progress ~/Downloads/takeout-20261108T083745Z-2-00[12].zip pramod@xero:/datapool/google-takeout/bhakti/`; keep the Mac copies until `unzip -t` passes on xero
 - [ ] **Claude:** when all 32 are in, test them with `unzip -t` and run `takeout_browser.sh stop`, which deletes her signed-in browser profile
 - [ ] **Claude:** once the zips are in, run `import_takeout.py --dry-run` for the real unique size and photo/video split
 - [ ] **Together:** sort out storage first: the import does not fit `datapool` as set up today, see "datapool storage headroom"
