@@ -649,7 +649,7 @@ Three shapes, cheapest first:
 **Priority:** P3
 
 #### Open items
-- [ ] **Together, by 2026-11-15 (export expires):** download all 32 parts to `/datapool/google-takeout/bhakti/` through the browser on xero (`takeout_browser.sh`), about 5 at a time. Done 2026-11-10: all 30 parts on xero (`-2-003` to `-2-012`, `-1-001` to `-1-020`), being tested with `test_takeout_zips.sh`; `-2-001`, `-2-002` come from the Intel Mac; delete the stale `-2-003.zip.crdownload` (3.1G) once the fresh one tests ok
+- [ ] **Together, by 2026-11-15 (export expires):** download all 32 parts to `/datapool/google-takeout/bhakti/` through the browser on xero (`takeout_browser.sh`), about 5 at a time. Done 2026-11-10: all 30 parts on xero (`-2-003` to `-2-012`, `-1-001` to `-1-020`) pass `unzip -t` (`test_takeout_zips.sh`, 23:18); left: `-2-001`, `-2-002` from the Intel Mac. Keep the browser until those two test ok, so a bad one can still be fetched
 - [ ] **Pramod:** copy `-2-001` and `-2-002` from the personal Intel Mac (not the work Mac) with `rsync -ah --partial --progress ~/Downloads/takeout-20261108T083745Z-2-00[12].zip pramod@xero:/datapool/google-takeout/bhakti/`; keep the Mac copies until `unzip -t` passes on xero
 - [ ] **Claude:** when all 32 are in, test them with `unzip -t` and run `takeout_browser.sh stop`, which deletes her signed-in browser profile
 - [ ] **Claude:** once the zips are in, run `import_takeout.py --dry-run` for the real unique size and photo/video split
