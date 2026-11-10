@@ -537,7 +537,7 @@ The "Approach" note above says cloud undermines self-hosting; the counter-argume
 
 #### Open items
 - [ ] **Together:** pair the 2019 MacBook (`services/syncthing/README.md`, "Adding a device")
-- [ ] **Pramod:** say which of Bhakti's devices get a copy, then pair them
+- [ ] **Pramod:** decide whether Bhakti's phone keeps Tailscale on (needed to sync away from home)
 - [ ] **Claude:** add Syncthing to `healthcheck.sh` (container up, Documents folder not in error)
 
 **Why:** currently uses Dropbox to keep sensitive personal documents (ID cards, tax documents, etc.) available across devices.
@@ -549,7 +549,7 @@ Problems with that:
 - The work laptop specifically avoids Dropbox's offline-files feature out of concern the employer could flag/ban Dropbox on a work machine - meaning that device currently has no reliable access at all.
 
 This is a distinct need from the iPhone-upload SMB share (Done section) - continuous, automatic, always-available-everywhere sync, not a manual one-off drop zone.
-**State (2026-11-10):** xero side is up: container `syncthing` on `datapool/documents`, GUI at `https://xero.<tailnet>/syncthing/`. Paired: the work M1 and the iPhone 14. Still to pair: the 2019 MacBook, Bhakti's devices. Details in `services/syncthing/README.md`.
+**State (2026-11-10):** xero side is up: container `syncthing` on `datapool/documents`, GUI at `https://xero.<tailnet>/syncthing/`. Paired: the work M1, the iPhone 14, Bhakti's OnePlus 7. Still to pair: the 2019 MacBook. Details in `services/syncthing/README.md`.
 
 #### Decisions (user, 2026-11-10)
 - **Devices:** xero (always-on peer), the 2019 MacBook, the iPhone, Bhakti's devices, the work laptop - all get the full copy.
@@ -577,6 +577,7 @@ How the work laptop fits in - same policy-visibility risk that ruled out Dropbox
 - 2026-11-10: work M1 paired as `work-m1` (`~/xero-documents`, 224 files, 257 MiB). Test passed: file made on the Mac reached xero, its delete was kept in xero's Versions, restore from xero brought it back to the Mac. Samba's `.deleted/` recycle bin had synced to the Mac; now in `.stignore`.
 - 2026-11-10: iPhone 14 paired as `iphone-14` via Synctrain (folder created by hand with ID `documents`; the share offer never showed). STUN off on xero too. Bug found and fixed: a `configure.sh` re-run had un-shared Documents from all devices (API restarting after the GUI patch, empty-list fallback); it now waits and aborts instead.
 - 2026-11-10: GUI password copied into Vaultwarden (user).
+- 2026-11-10: Bhakti's OnePlus 7 (Android, Syncthing-Fork) paired as `bhakti-oneplus-7`, folder created by hand; full sync in under a minute on Wi-Fi.
 
 ### Immich re-enablement
 **Status:** Done

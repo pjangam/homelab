@@ -53,6 +53,7 @@ Each device pairs with xero only, not with the other devices. xero passes change
 3. **On the client:** Add Remote Device with xero's ID (table above). Leave Addresses on `dynamic` (the field is easy to miss; on the LAN, local discovery finds xero anyway).
 4. **On xero:** accept the device and share **Documents** with it. Set *its* addresses on xero's side to `dynamic, tcp://<device's tailnet name>.<tailnet>:22000` (`tailscale status` lists the name), so xero can dial it when it is away from home. One side knowing the other's address is enough.
 5. **On the client:** accept the Documents share and pick a local path. On a Mac use `~/xero-documents`, never under `~/Documents` or `~/Desktop`: iCloud / OneDrive / company backup often sync those. The first sync copies the full share (~450 MB).
+   - **Syncthing-Fork (Android):** network options are under *Syncthing options*, shown only while Syncthing is running; set the app's battery to *Unrestricted*. The offer did not show here either - same by-hand folder ID fix.
    - **Synctrain (iPhone) never showed the offer.** Instead: Folders → Add → **Regular** → Folder ID `documents` (exact), share with xero, keep all files. Matching IDs join the share straight away.
    - Synctrain's settings are named differently: turn off *Announce globally*, *Enable relaying*, *Enable NAT-PMP/UPnP* and *Enable STUN*; leave *Announce on local network* and *Announce LAN addresses* on.
 6. **On the client:** Documents → Edit → *Ignore Patterns*: paste the same list as xero's `.stignore` (in `configure.sh`). Ignores are per device, so without it the client offers its own `.DS_Store` and junk to everyone else.
@@ -64,6 +65,7 @@ Each device pairs with xero only, not with the other devices. xero passes change
 |---|---|---|---|---|
 | `work-m1` | employer M1 MacBook Pro | `sonalis-macbook-pro` | `~/xero-documents` | 2026-11-10 |
 | `iphone-14` | iPhone 14 (Synctrain) | `iphone-14` | Synctrain regular folder | 2026-11-10 |
+| `bhakti-oneplus-7` | Bhakti's OnePlus 7 (GM1901, Syncthing-Fork) | `oneplus-7` (Bhakti's Tailscale account) | Fork's folder | 2026-11-10 |
 
 ## Traps
 
