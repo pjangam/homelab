@@ -657,10 +657,8 @@ Three shapes, cheapest first:
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** spot-check Immich, then `sudo services/immich/split_regenerable.sh finish`
 - [ ] **Pramod:** destroy the `@pre-v3.3.5` snapshots of `immich-upload` and `immich-db` once happy with 3.3.5 (irreversible; returns the ~62G)
-- [ ] **Pramod:** decide whether to run `move_thumbs_to_boot.sh` (ready, not run; steps in `services/immich/README.md`)
-- [ ] **Claude:** at Bhakti's dry-run, check her thumbnails fit the boot disk if they moved there (~3G per 10,000 photos, ~43G free)
+- [ ] **Claude:** at Bhakti's dry-run, check her thumbnails fit the boot disk (~3G per 10,000 photos, 36G free on 2026-11-10)
 - [ ] **Pramod:** buy a 4TB USB HDD in India at about Rs 15-17k (Seagate Expansion Desktop or WD My Passport), as a nightly backup disk beside the Kingston; wait for Black Friday (2026-11-27) only if it is Rs 18k or more
 - [ ] **Together, when the HDD arrives:** in the return window, read its model with `smartctl`, run a long SMART test and a full write test, then set up nightly `zfs send`
 - [ ] **Together, once that backup runs:** decide whether originals go to `copies=1` (reverses the 2026-11-02 decision; needs the data rewritten to free space)
@@ -691,6 +689,7 @@ Three shapes, cheapest first:
   - **4TB SATA SSD:** no trustworthy Indian price found. 870 EVO listings at Rs 15-21k are not believable (launched at Rs 43,999 in 2021), others Rs 53k+. Fanxiang S101 (Rs 36,600 in Sweden) rejected: flash type, DRAM and endurance unknown. Used enterprise SATA is the option if the Kingston fills, after the backup exists.
   - **M.2 SATA:** Rs 19,000/TB or worse, not a storage path. xero's boot slot takes only M.2 SATA, not NVMe.
   - **Trend:** NAND shortage, sources disagree on relief in H2 2027.
+- 2026-11-10: `split_regenerable.sh finish` done, `.old` copies deleted. Thumbnails moved to the boot disk with `move_thumbs_to_boot.sh` (34,478 files, 5.7G, ~2 minutes of downtime), `finish` run after the user's spot-check. Immich's storage check passes; boot disk 36G free. The `@pre-v3.3.5` snapshot still holds the old blocks.
 
 ### Move the Airtel router to a central spot (retire the Wi-Fi extender)
 **Status:** Backlog

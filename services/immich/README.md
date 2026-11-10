@@ -249,7 +249,7 @@ that evening; these scripts need a fresh export to run again.
 
 ## Transcodes and thumbnails at copies=1
 
-`split_regenerable.sh` (2026-11-02, `run` done 2026-11-08) moves `encoded-video/` and
+`split_regenerable.sh` (2026-11-02, done 2026-11-10) moves `encoded-video/` and
 `thumbs/` into child datasets of `datapool/immich-upload` with `copies=1`:
 both are regenerable, and at `copies=2` they took ~124G of the Kingston for
 ~62G of data. Same paths, so compose does not change. `sudo ... check` first;
@@ -278,7 +278,7 @@ sudo services/immich/split_regenerable.sh rollback
 
 ## Thumbnails on the boot disk
 
-`move_thumbs_to_boot.sh` moves `thumbs/` to `/var/lib/immich-thumbs`, through a bind mount in `docker-compose.yml`.
+`move_thumbs_to_boot.sh` moved `thumbs/` to `/var/lib/immich-thumbs` on 2026-11-10, through a bind mount in `docker-compose.yml`.
 
 - **Switch:** `IMMICH_THUMBS_LOCATION` in `.env`. Without it the mount uses the datapool path.
 - **Needs first:** `split_regenerable.sh finish`.
