@@ -659,7 +659,7 @@ Three shapes, cheapest first:
 #### Open items
 - [ ] **Pramod:** destroy the `@pre-v3.3.5` snapshots of `immich-upload` and `immich-db` once happy with 3.3.5 (irreversible; returns the ~62G)
 - [ ] **Claude:** at Bhakti's dry-run, check her thumbnails fit the boot disk (~3G per 10,000 photos, 36G free on 2026-11-10)
-- [ ] **Pramod:** buy a 4TB USB HDD in India at about Rs 15-17k (Seagate Expansion Desktop or WD My Passport), as a nightly backup disk beside the Kingston; wait for Black Friday (2026-11-27) only if it is Rs 18k or more
+- [ ] **Pramod:** buy the USB HDD on Black Friday (2026-11-27), as a nightly backup disk beside the Kingston. Price to beat: Seagate Expansion Portable 5TB at Rs 16,149 (Vijay Sales, 2026-11-10); else a 4TB Seagate Expansion Desktop or WD My Passport at Rs 15-17k
 - [ ] **Together, when the HDD arrives:** in the return window, read its model with `smartctl`, run a long SMART test and a full write test, then set up nightly `zfs send`
 - [ ] **Together, once that backup runs:** decide whether originals go to `copies=1` (reverses the 2026-11-02 decision; needs the data rewritten to free space)
 - [ ] **Claude:** after the import, re-measure (`zpool list datapool`, `zfs list -o name,used,logicalused -r datapool`)
