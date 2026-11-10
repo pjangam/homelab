@@ -50,12 +50,16 @@ Each device pairs with xero only, not with the other devices. xero passes change
    | Android | **Syncthing-Fork** (F-Droid / Play) |
 
 2. **On the client:** Settings → Connections: untick *Global Discovery*, *Enable Relaying* and *Enable NAT traversal*.
-3. **On the client:** Add Remote Device:
-   - Device ID: xero's ID (table above)
-   - Addresses: `tcp://192.168.1.123:22000, tcp://xero.<tailnet>:22000`
-4. **On xero's GUI:** accept the new device when it appears. Name it, then share **Documents** with it.
-5. **On the client:** accept the Documents share and pick a local path. The first sync copies the full share (~450 MB).
+3. **On the client:** Add Remote Device with xero's ID (table above). Leave Addresses on `dynamic` (the field is easy to miss; on the LAN, local discovery finds xero anyway).
+4. **On xero:** accept the device and share **Documents** with it. Set *its* addresses on xero's side to `dynamic, tcp://<device's tailnet name>.<tailnet>:22000` (`tailscale status` lists the name), so xero can dial it when it is away from home. One side knowing the other's address is enough.
+5. **On the client:** accept the Documents share and pick a local path. On a Mac use `~/xero-documents`, never under `~/Documents` or `~/Desktop`: iCloud / OneDrive / company backup often sync those. The first sync copies the full share (~450 MB).
 6. Check that both GUIs show the device as **Connected** and the folder as **Up to Date**.
+
+## Paired devices
+
+| name on xero | device | tailnet name | local path | since |
+|---|---|---|---|---|
+| `work-m1` | employer M1 MacBook Pro | `sonalis-macbook-pro` | `~/xero-documents` | 2026-11-10 |
 
 ## Traps
 
@@ -65,6 +69,6 @@ Each device pairs with xero only, not with the other devices. xero passes change
 - **A fresh config volume is root-owned.** Syncthing runs as uid 1000 and fails with `Failed to acquire lock ... permission denied`. `configure.sh` chowns the volume.
 - **GUI host check is off** (`insecureSkipHostcheck`). Caddy sends `Host: xero.<tailnet>`, which the GUI would otherwise reject. This is safe only because the GUI listens on 127.0.0.1. Never publish 8384.
 - **SMB and Syncthing write the same files.** The file watcher picks up SMB changes within about 10s. If two devices edit the same file offline, Syncthing keeps both, as `*.sync-conflict-*`.
-- **`.stignore` is generated.** `configure.sh` rewrites it, so edit it there. It drops `.DS_Store`, `._*`, `Thumbs.db` and `desktop.ini`.
+- **`.stignore` is generated.** `configure.sh` rewrites it, so edit it there. It drops `.DS_Store`, `._*`, `Thumbs.db`, `desktop.ini` and Samba's recycle bin `/.deleted` (keeps SMB-deleted files on xero only; it leaked to the first device before this was added).
 - **Away from home a device needs Tailscale on**, since there are no relays. The iPhone's tunnel can die silently without showing an error. If Synctrain stays "Disconnected", toggle Tailscale.
 - **Work laptop:** installing a sync client there may be visible to the employer's policy tooling. This is the same worry that kept Dropbox off it. Decide before installing (`PROJECTS.md` open question).

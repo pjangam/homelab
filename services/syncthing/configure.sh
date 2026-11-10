@@ -83,7 +83,7 @@ print(json.dumps({
 EOF
 )" >/dev/null
 
-# 7. Ignore OS clutter that Macs/Windows drop over SMB; (?d) lets Syncthing
+# 7. Ignore Samba's recycle bin and OS clutter that Macs/Windows drop over SMB; (?d) lets Syncthing
 #    delete it if it blocks a directory removal.
 cat > /datapool/documents/.stignore <<'EOF'
 // services/syncthing/configure.sh writes this file - edit it there.
@@ -91,6 +91,8 @@ cat > /datapool/documents/.stignore <<'EOF'
 (?d)._*
 (?d)Thumbs.db
 (?d)desktop.ini
+// Samba's recycle bin (services/samba): xero-only, never sent to devices.
+/.deleted
 EOF
 
 echo "Syncthing configured. Device ID:"

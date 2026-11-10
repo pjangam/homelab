@@ -537,10 +537,10 @@ The "Approach" note above says cloud undermines self-hosting; the counter-argume
 
 #### Open items
 - [ ] **Pramod:** copy `SYNCTHING_GUI_PASSWORD` from xero's `.env` into Vaultwarden
-- [ ] **Together:** pair the 2019 MacBook as the first client (`services/syncthing/README.md`, "Adding a device"), then test delete + restore from Versions
+- [ ] **Together:** pair the 2019 MacBook (`services/syncthing/README.md`, "Adding a device")
 - [ ] **Together:** pair the iPhone with Synctrain
 - [ ] **Pramod:** say which of Bhakti's devices get a copy, then pair them
-- [ ] **Pramod:** decide the work laptop's policy risk before installing a client there (Open question)
+- [ ] **Together, 2026-11-10:** pair the work M1 (user accepted the policy risk); then delete + restore test from Versions
 - [ ] **Claude:** add Syncthing to `healthcheck.sh` (container up, Documents folder not in error)
 
 **Why:** currently uses Dropbox to keep sensitive personal documents (ID cards, tax documents, etc.) available across devices.
@@ -558,6 +558,7 @@ This is a distinct need from the iPhone-upload SMB share (Done section) - contin
 - **Devices:** xero (always-on peer), the 2019 MacBook, the iPhone, Bhakti's devices, the work laptop - all get the full copy.
 - **Scope:** the whole `documents` share as one folder, `Bhakti/` included.
 - **Network:** LAN + tailnet. No global discovery, relays or UPnP, so nothing reachable from the internet.
+- **Work laptop (2026-11-10):** gets a full Syncthing client after all - user accepted the policy-visibility risk. Settles the Open question below.
 - **Versioning:** staggered, 90 days, on xero only; the Dropbox gpg archive skips `.stversions/`.
 
 **Background:** Syncthing identified as the right fit - true peer-to-peer, no cloud storage or third-party leak surface, no storage cap, works over LAN and (via Tailscale) when away from home. Homelab server would act as an always-on peer so devices stay in sync even when not simultaneously online.
