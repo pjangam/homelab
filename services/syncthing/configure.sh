@@ -31,10 +31,14 @@ fi
 PASSWORD="$(grep '^SYNCTHING_GUI_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)"
 
 # 3. Wait for the API, then read its key from the config.
-for _ in $(seq 30); do
-    curl -s -o /dev/null "$API/noauth/health" && break
-    sleep 1
-done
+wait_api() {
+    for _ in $(seq 30); do
+        curl -fs -o /dev/null "$API/noauth/health" && return 0
+        sleep 1
+    done
+    echo "Syncthing API not answering on $API" >&2; exit 1
+}
+wait_api
 KEY="$(docker exec syncthing sh -c 'sed -n "s:.*<apikey>\(.*\)</apikey>.*:\1:p" /var/syncthing/config/config.xml')"
 api() { curl -fsS -H "X-API-Key: $KEY" -H 'Content-Type: application/json' "$@"; }
 
@@ -43,6 +47,7 @@ api -X PATCH "$API/config/options" -d '{
   "globalAnnounceEnabled": false,
   "relaysEnabled": false,
   "natEnabled": false,
+  "stunServers": [],
   "localAnnounceEnabled": true,
   "listenAddresses": ["tcp://:22000", "quic://:22000"],
   "urAccepted": -1,
@@ -57,12 +62,22 @@ api -X PATCH "$API/config/gui" -d "$(python3 -c '
 import json, sys
 print(json.dumps({"user": "pramod", "password": sys.argv[1], "insecureSkipHostcheck": True}))
 ' "$PASSWORD")" >/dev/null
+# A GUI config change restarts the API listener. Reading the folder during
+# that restart once returned nothing, and the old "|| echo []" fallback then
+# un-shared Documents from every device (2026-11-10). Wait, and never guess.
+sleep 2
+wait_api
 
 # 6. The documents folder. PUT replaces it wholesale, devices included, so
-#    keep whichever devices are already shared with it.
-DEVICES="$(api "$API/config/folders/documents" 2>/dev/null | python3 -c '
-import json, sys
-print(json.dumps(json.load(sys.stdin).get("devices", [])))' 2>/dev/null || echo '[]')"
+#    keep whichever devices are already shared with it. Only a 404 (folder not
+#    created yet) means "no devices"; any other failure aborts.
+FOLDER_JSON="$(mktemp)"; trap 'rm -f "$FOLDER_JSON"' EXIT
+CODE="$(curl -sS -o "$FOLDER_JSON" -w '%{http_code}' -H "X-API-Key: $KEY" "$API/config/folders/documents")"
+case "$CODE" in
+    200) DEVICES="$(python3 -c 'import json, sys; print(json.dumps(json.load(open(sys.argv[1]))["devices"]))' "$FOLDER_JSON")" ;;
+    404) DEVICES='[]' ;;
+    *)   echo "Reading the documents folder failed (HTTP $CODE) - not touching it." >&2; exit 1 ;;
+esac
 api -X PUT "$API/config/folders/documents" -d "$(python3 - "$DEVICES" "$VERSION_DAYS" <<'EOF'
 import json, sys
 devices, days = json.loads(sys.argv[1]), int(sys.argv[2])
