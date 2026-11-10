@@ -660,9 +660,11 @@ Three shapes, cheapest first:
 #### Open items
 - [ ] **Pramod:** destroy the `@pre-v3.3.5` snapshots of `immich-upload` and `immich-db` once happy with 3.3.5 (irreversible; returns the ~62G)
 - [ ] **Claude:** at Bhakti's dry-run, check her thumbnails fit the boot disk (~3G per 10,000 photos, 36G free on 2026-11-10)
-- [ ] **Pramod:** buy the USB HDD on Black Friday (2026-11-27), as a nightly backup disk beside the Kingston. Price to beat: Seagate Expansion Portable 5TB at Rs 16,149 (Vijay Sales, 2026-11-10); else a 4TB Seagate Expansion Desktop or WD My Passport at Rs 15-17k
-- [ ] **Together, when the HDD arrives:** in the return window, read its model with `smartctl`, run a long SMART test and a full write test, then set up scheduled `zfs send` with sanoid/syncoid: originals, albums, documents and phone uploads hourly but skipped when the `written` property is 0 (so the HDD can sleep), `immich-db` every 6 hours or daily (Postgres always has changes), transcodes and thumbs not copied. Not a mirror: that would cap at 888G, slow every write to the USB HDD and copy deletions instantly
-- [ ] **Together, once that backup runs:** decide whether originals go to `copies=1` (reverses the 2026-11-02 decision; needs the data rewritten to free space)
+- [ ] **Pramod:** plug the 1TB Samsung SD card into xero through a USB 3 reader (empty it first: `f3probe` wipes it)
+- [ ] **Together:** `f3probe` the card, make it its own ZFS pool, set up sanoid/syncoid: originals, albums, documents and phone uploads hourly but skipped when `written` is 0, `immich-db` every 6 hours, transcodes and thumbs not copied. Not a mirror: it would slow every write and copy deletions instantly
+- [ ] **Claude:** monthly scrub of the card pool and an alert when a backup run fails (cards die without warning)
+- [ ] **Together, after the first full copy and a clean scrub:** rewrite the originals at `copies=1` (decided 2026-11-10, reverses 2026-11-02; frees ~80G)
+- [ ] **Pramod:** HDD only if Black Friday (2026-11-27) or early 2027 brings a crazy deal; price to beat: Seagate Expansion Portable 5TB at Rs 16,149 (Vijay Sales, 2026-11-10)
 - [ ] **Claude:** after the import, re-measure (`zpool list datapool`, `zfs list -o name,used,logicalused -r datapool`)
 - [ ] **Together:** then decide between the options below
 
@@ -690,6 +692,7 @@ Three shapes, cheapest first:
   - **4TB SATA SSD:** no trustworthy Indian price found. 870 EVO listings at Rs 15-21k are not believable (launched at Rs 43,999 in 2021), others Rs 53k+. Fanxiang S101 (Rs 36,600 in Sweden) rejected: flash type, DRAM and endurance unknown. Used enterprise SATA is the option if the Kingston fills, after the backup exists.
   - **M.2 SATA:** Rs 19,000/TB or worse, not a storage path. xero's boot slot takes only M.2 SATA, not NVMe.
   - **Trend:** NAND shortage, sources disagree on relief in H2 2027.
+- 2026-11-10: **decided (user):** Kingston at 1 copy + the 1TB Samsung SD card (scheduled `zfs send`) + S3 Deep Archive, because the wishlist total is too high. HDD or SSD only for a crazy Black Friday deal or a big price drop in early 2027. Revives the SD-card copy that "Offsite backup for Immich photo data" set aside on 2026-10-26.
 - 2026-11-10: `split_regenerable.sh finish` done, `.old` copies deleted. Thumbnails moved to the boot disk with `move_thumbs_to_boot.sh` (34,478 files, 5.7G, ~2 minutes of downtime), `finish` run after the user's spot-check. Immich's storage check passes; boot disk 36G free. The `@pre-v3.3.5` snapshot still holds the old blocks.
 
 ### Move the Airtel router to a central spot (retire the Wi-Fi extender)
