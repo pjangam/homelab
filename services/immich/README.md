@@ -150,6 +150,7 @@ re-fetch.
 | Script | Use it for |
 |---|---|
 | `takeout_browser.sh` | A temporary Chromium on xero, viewed over an SSH tunnel, to download an export straight to `datapool` |
+| `watch_takeout.sh` | Waits on the browser's downloads and exits at the first finished, failed or stalled part, so a background Claude session can notify and re-run it |
 | `import_takeout.py` | A user's whole export, into that user's library |
 | `verify_takeout.py` | Checking the import by SHA-1 afterwards |
 | `upload_from_takeout.sh` | Topping up a few rows from `verify_takeout.py`, from zips directly in `/datapool/google-takeout/` |
