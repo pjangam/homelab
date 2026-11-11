@@ -1175,8 +1175,11 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 **Priority:** P3
 
 #### Open items
+- [ ] **Pramod:** measure a golden-snitch spinner bearing (bore / OD, likely 608 = 8mm / 22mm) and pick the axle to match
+- [ ] **Pramod:** try the motor already owned on a cardboard disc; note its RPM (target 3-10 RPM at the disc)
+- [ ] **Pramod:** buy an assorted plastic gear kit (~₹200-300, Amazon); prefer one with crown/bevel gears and a worm
 - [ ] **Pramod:** watch the flat2form reel (Part 1, mechanism) and note how its three gears sit (bevel pinion between two facing gears, or flat gears)
-- [ ] **Pramod:** find a local MDF laser-cutting shop (no 3D printer, so printed bevels are out)
+- [ ] **Pramod:** find a local MDF laser-cutting shop for the discs, or settle on cardboard/cardstock discs
 - [ ] **Together, mid-2027 (close to the festival):** pick one of the Ganapati 2027 ideas (this, solar system, or any added later); if this one, fix the disc diameter
 - [ ] **Pramod:** bench test: a 5-10 RPM motor and two hand-cut cardboard spirals, held up behind the makhar, to judge the speed and the look before cutting anything
 - [ ] **Claude:** once the size is fixed, draw both spirals plus the spur-and-idler gears and the motor plate as one SVG for the laser shop
@@ -1200,6 +1203,20 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
   - [Instructables: Kinetic Sculpture V1](https://instructables.com/Kinetic-Sculpture-V1) - a laser-cut spiral wheel on a geared DC motor, wall-mounted (one wheel only)
   - [Pololu: ORBIS](https://pololu.com/blog/357/orbis-wooden-kinetic-and-lighting-sculpture) - laser-cut plywood, two rings with their own speed and direction
 - **The hard part is mechanical, not electrical.** One slow motor, one DC adapter, no firmware needed.
+
+#### User's build plan (2026-11-11)
+- **Bearings:** reuse the ones from the golden-snitch fidget spinners already owned. Disc 2 sits on a bearing around the axle; disc 1 is fixed to the axle.
+- **Gears:** an assorted plastic gear kit from Amazon (~₹200-300) supplies the reversing gears, replacing the laser-cut MDF gears of option B.
+- **Motor:** drives the first wheel directly (motor shaft = axle, or coupled to it). Try a motor already owned first; if it is too fast, buy a slower one, later reused in a toy car for Ojaswi.
+
+| Way to reverse disc 2 with kit gears | Gears | Fixed pins | Notes |
+|---|---|---|---|
+| **Bevel/crown** (option A, matches the reel's "three gears") | 3: one on the axle (disc 1), one on disc 2's bearing hub, a pinion between them | 1, radial, between the discs | Needs a matching crown/bevel pair in the kit; equal speeds automatically; the pinion's support arm sits in the disc gap |
+| **Spur only:** axle gear → idler → layshaft gear; second layshaft gear → hub gear on disc 2 | 4 + idler | 2 (idler pin, layshaft) | Works with any flat gears; all of it behind the rear disc; equal speeds if both layshaft ratios match |
+
+- **Trap: speed vs the toy car.** Direct drive needs a 3-10 RPM motor, which is far too slow for a car. A typical toy-car motor (yellow TT gearmotor, ~100-200 RPM) suits the car but needs ~20-40x reduction here. A **kit worm + worm wheel** gives that in one stage (single-start worm: ratio = wheel's tooth count), so one TT motor can serve both - but then the motor is not on the axle directly.
+- **Trap: bore mismatch.** Kit gears have 2-3mm bores; the spinner bearing likely wants an 8mm axle. Glue gears to the disc face / a hub disc, or drill them out; don't count on press fits.
+- **Trap: spinner bearings are made to free-spin**, with little or no grease. Fine at this speed, but a wobbly disc on one narrow bearing tilts - use two bearings spaced apart on disc 2's hub if it rocks.
 
 #### Mechanism options
 
@@ -1280,6 +1297,7 @@ About 11-18h, cheapest and most decisive first:
 - 2026-11-06: idea recorded (user), Backlog. Pin opened as a still frame only. Researched: option B recommended; mains synchronous motors and imported bevel gears rejected; overlap with the solar-system entry noted.
 - 2026-11-07: user sent the flat2form reel as the mechanism reference. Only the cover and caption could be fetched: a paper Ganesh chakra, one motor, two shafts, three gears. That count fits the bevel layout (A); kept B as the recommendation until someone watches the video.
 - 2026-11-07: no 3D printer (user). Both 2027 ideas stay candidates and more may be added; final pick deferred to mid-2027, close to the festival.
+- 2026-11-11: user's build plan: golden-snitch spinner bearings, an assorted plastic gear kit (~₹200-300) for the reversal, motor direct on the first wheel; try an owned motor first, else buy one to reuse in a toy car for Ojaswi. Noted the slow-motor vs car-speed conflict (worm gear fixes it) and the gear-bore mismatch.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Status:** Backlog
