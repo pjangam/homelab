@@ -3326,7 +3326,8 @@ Everything is off-the-shelf: setup only, no code to maintain.
 
 #### Open items
 - [ ] **Pramod:** keep trying it by voice; say "<title> by <artist>" when a short title is misheard, and report titles that still fail
-- [ ] **Pramod:** try "play aggobai dhaggobai" again (phonetic aliases trained 2026-11-07 16:12); if it still fails, Claude turns on HA's debug recording for a day to hear what the satellite sends
+- [ ] **Pramod:** say whether "aggobai dhaggobai" was the try heard as "azad", "chali" or "kaun" on 2026-11-13 (bedroom)
+- [ ] **Together, when Pramod agrees:** turn on HA debug recording for a day (one HA restart) to hear the bedroom tries that came back empty or wrong; turn it off and move the folder out of HOMEASSISTANT_CONFIG after
 - [ ] **Claude:** add `ALIASES` in `spotify_library.py` for the titles that fail
 
 **Why:** raised 2026-11-03: play music by voice the way Siri does ("play X"), from the voice satellites and, later, the car.
@@ -3361,6 +3362,12 @@ Everything is off-the-shelf: setup only, no code to maintain.
   - **TTS check after:** "aggobai dhaggobai", "in the end", "in the end by linkin park", "billie jean by michael jackson", "faint" all recognised; "aggobai dhaggobai by salil kulkarni" was not - for Marathi, the bare title is the one to say.
 - 2026-11-07: **speaker by room** (user): a "play <song>" heard by the bedroom satellite plays on the Pi (`raspberrypi`), anything else on xero (`SPEAKERS` in `spotify_library.py`, by the satellite's HA area). Checked muted with `conversation/process` and each satellite's `device_id`: bedroom loaded Faint on the Pi, living room played it on xero.
 - 2026-11-07: **"aggobai dhaggobai" still failed by voice after it was in the list** (10:32, "no text recognised"). Speech-to-Phrase had guessed its pronunciation from the spelling as "AG-uh-bye DAG-uh-bye" (in `/train/en_US-rhasspy/missing_words_dictionary.txt`). Added `ALIASES` spelled with English words that sound like the Marathi ("ago bye the go bye", "ago by dhago by", ...); the English TTS clip now lands on an alias.
+- 2026-11-13: **bedroom test session (05:22-05:35 UTC), live-watched with `watch_assist.sh`:**
+  - switch and fan commands: all heard right
+  - "play faint" and "play numb": heard right, played on the Pi (routing by area checked in the automation trace)
+  - wrong song: heard as "play azad", "play chali" and "play kaun" (probably the "aggobai dhaggobai" tries)
+  - about 8 tries "No text recognized"; for at least 2 of them Speech-to-Phrase logged "decoded no frames", so no audio reached it. Most were made while a song was already playing on the Pi beside the satellite
+  - TTS clips of the same phrases all match, so the model is fine; the open question is the bedroom audio (music, distance)
   - `test_stt.sh` takes `TTS_LANG=mr` (phrases in Devanagari) to test with Google's Marathi voice. **Every Marathi-voice clip came back empty**, including titles the English voice gets ("tula pahile mi"): the English acoustic model does not hold up to fully Marathi-accented speech. Real voice sits in between - several songs do work - so the aliases are worth a try before anything bigger.
 
 ### Wishlist page (expensive purchases)
