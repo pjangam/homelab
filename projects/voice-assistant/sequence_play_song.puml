@@ -50,7 +50,8 @@ spd -> spd : audio out of the 3.5mm jack
 auto --> pipe : response "Playing Faint - Linkin Park"
 pipe -> piper : text
 piper --> pipe : speech audio
-pipe -> sat : spoken reply
+pipe -> sat : reply audio URL
+note right of sat : no speaker on the satellite (mic only):\nthe reply is generated but never played.\nOnly the HA phone app plays it.
 
 == every night 04:30 (only if the library changed) ==
 note over auto, stp

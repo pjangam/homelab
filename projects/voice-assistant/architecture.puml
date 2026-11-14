@@ -80,8 +80,8 @@ stp ..> stptrain : trained phrases
 pipeline --> cmds : 3. text -> intent
 pipeline --> playsong
 pipeline --> builtin
-pipeline --> piper : 4. reply -> speech
-pipeline --> sat_bed : spoken reply
+pipeline --> piper : 4. reply -> speech\n(heard only in the phone app)
+pipeline ..> sat_bed : reply audio URL\n(no speaker on the satellite:\nnot played - phone app only)
 
 ' --- playing music ---
 playsong --> spotcast : track URI +\nPi (bedroom) or xero
