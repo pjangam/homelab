@@ -23,7 +23,18 @@ services:
   # All host-networked and bound to 127.0.0.1: Grafana is reached through
   # Caddy at https://xero.<tailnet>/grafana/, the rest only by each other.
   prometheus:
-    image: prom/prometheus:v3.15.0
+    image: prom/prometheus:v3
+    # Diun: alert when a release this tag will not reach appears; the regex
+    # must also match the running tag, or a later release counts as Diun's
+    # silent first check (next major; v3 follows 3.x).
+    # services/container-updates/README.md
+    labels:
+      diun.enable: "true"
+      diun.watch_repo: "true"
+      diun.notify_on: new
+      diun.sort_tags: semver
+      diun.max_tags: "5"
+      diun.include_tags: '^v3$$;^v([4-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$$'
     container_name: prometheus
     network_mode: host
     command:
@@ -38,7 +49,18 @@ services:
     restart: unless-stopped
 
   node-exporter:
-    image: prom/node-exporter:v1.12.1
+    image: prom/node-exporter:v1
+    # Diun: alert when a release this tag will not reach appears; the regex
+    # must also match the running tag, or a later release counts as Diun's
+    # silent first check (next major; v1 follows 1.x).
+    # services/container-updates/README.md
+    labels:
+      diun.enable: "true"
+      diun.watch_repo: "true"
+      diun.notify_on: new
+      diun.sort_tags: semver
+      diun.max_tags: "5"
+      diun.include_tags: '^v1$$;^v([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$$'
     container_name: node-exporter
     network_mode: host
     pid: host
@@ -53,7 +75,18 @@ services:
     restart: unless-stopped
 
   cadvisor:
-    image: ghcr.io/google/cadvisor:v0.60.6
+    image: ghcr.io/google/cadvisor:0.60
+    # Diun: alert when a release this tag will not reach appears; the regex
+    # must also match the running tag, or a later release counts as Diun's
+    # silent first check (next minor; 0.60 follows patches only).
+    # services/container-updates/README.md
+    labels:
+      diun.enable: "true"
+      diun.watch_repo: "true"
+      diun.notify_on: new
+      diun.sort_tags: semver
+      diun.max_tags: "5"
+      diun.include_tags: '^0\.60$$;^v0\.(6[1-9]|[7-9][0-9])\.[0-9]+$$;^v[1-9][0-9]*\.[0-9]+\.[0-9]+$$'
     container_name: cadvisor
     command:
       - --docker_only=true
@@ -74,7 +107,7 @@ services:
     restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:13.2.3
+    image: grafana/grafana:latest
     container_name: grafana
     network_mode: host
     environment:
@@ -104,6 +137,17 @@ services:
   immich-server:
     container_name: immich_server
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
+    # Diun: alert when a release this tag will not reach appears; the regex
+    # must also match the running tag, or a later release counts as Diun's
+    # silent first check (every release; pinned, upgrade with services/immich/upgrade.sh).
+    # services/container-updates/README.md
+    labels:
+      diun.enable: "true"
+      diun.watch_repo: "true"
+      diun.notify_on: new
+      diun.sort_tags: semver
+      diun.max_tags: "5"
+      diun.include_tags: '^v([3-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$$'
     volumes:
       # Upstream mounts /data now; this library's DB stores every path under
       # /usr/src/app/upload (MediaLocation), so it keeps the old mount point.
@@ -171,7 +215,7 @@ services:
 
   redis:
     container_name: immich_redis
-    image: docker.io/valkey/valkey:9@sha256:c123e3715db63d06d4ad6964884037aa0d5d4d703939b9929954112889708e1d
+    image: docker.io/valkey/valkey:9@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
     healthcheck:
       test: redis-cli ping | grep -q PONG || exit 1
     restart: always
@@ -379,7 +423,7 @@ services:
     restart: unless-stopped
 
   watchtower:
-    image: containrrr/watchtower
+    image: nickfedor/watchtower:latest
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -387,7 +431,6 @@ services:
       - WATCHTOWER_SCHEDULE=0 0 4 * * 0  # Sundays at 4am
       - WATCHTOWER_CLEANUP=true           # remove old images after update
       - WATCHTOWER_INCLUDE_STOPPED=false
-      - DOCKER_API_VERSION=1.40
       - WATCHTOWER_NOTIFICATIONS=shoutrrr
       # Two destinations, space separated. Watchtower renders the template
       # ONCE and posts that same body to both, which is why the body is shaped
@@ -427,7 +470,44 @@ services:
       # "{{range , := .Updated}}" - a broken template that only shows up when
       # an update actually fires.
       - WATCHTOWER_NOTIFICATION_REPORT=true
-      - 'WATCHTOWER_NOTIFICATION_TEMPLATE={{- if .Report -}}{{- with .Report -}}{{- if or .Updated .Failed -}}{"topic":"homelab-updates","priority":2,"tags":["package"],"title":"Homelab: {{len .Updated}} container(s) updated{{if .Failed}}, {{len .Failed}} failed{{end}}","message":"{{range $$i,$$e := .Updated}}{{if $$i}}\n{{end}}{{slice $$e.Name 1}} ({{$$e.ImageName}}): {{$$e.CurrentImageID.ShortID}} -> {{$$e.LatestImageID.ShortID}}{{end}}{{if and .Updated .Failed}}\n{{end}}{{range $$i,$$e := .Failed}}{{if $$i}}\n{{end}}FAILED {{slice $$e.Name 1}} ({{$$e.ImageName}}){{end}}","scanned":{{len .Scanned}},"updated":[{{range $$i,$$e := .Updated}}{{if $$i}},{{end}}{"name":{{printf "%q" $$e.Name}},"image":{{printf "%q" $$e.ImageName}},"from":{{printf "%q" $$e.CurrentImageID.ShortID}},"to":{{printf "%q" $$e.LatestImageID.ShortID}}}{{end}}],"failed":[{{range $$i,$$e := .Failed}}{{if $$i}},{{end}}{"name":{{printf "%q" $$e.Name}},"image":{{printf "%q" $$e.ImageName}},"error":{{printf "%q" $$e.Error}}}{{end}}]}{{- end -}}{{- end -}}{{- end -}}'
+      - 'WATCHTOWER_NOTIFICATION_TEMPLATE={{- if .Report -}}{{- with .Report -}}{{- if or .Updated .Failed -}}{"topic":"homelab-updates","priority":2,"tags":["package"],"title":"Homelab: {{len .Updated}} container(s) updated{{if .Failed}}, {{len .Failed}} failed{{end}}","message":"{{range $$i,$$e := .Updated}}{{if $$i}}\n{{end}}{{$$e.Name}} ({{$$e.ImageName}}): {{$$e.CurrentImageID.ShortID}} -> {{$$e.LatestImageID.ShortID}}{{end}}{{if and .Updated .Failed}}\n{{end}}{{range $$i,$$e := .Failed}}{{if $$i}}\n{{end}}FAILED {{$$e.Name}} ({{$$e.ImageName}}){{end}}","scanned":{{len .Scanned}},"updated":[{{range $$i,$$e := .Updated}}{{if $$i}},{{end}}{"name":{{printf "%q" $$e.Name}},"image":{{printf "%q" $$e.ImageName}},"from":{{printf "%q" $$e.CurrentImageID.ShortID}},"to":{{printf "%q" $$e.LatestImageID.ShortID}}}{{end}}],"failed":[{{range $$i,$$e := .Failed}}{{if $$i}},{{end}}{"name":{{printf "%q" $$e.Name}},"image":{{printf "%q" $$e.ImageName}},"error":{{printf "%q" $$e.Error}}}{{end}}]}{{- end -}}{{- end -}}{{- end -}}'
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    restart: unless-stopped
+
+  # Diun: tells you when a release exists that no running tag will pick up -
+  # every Immich release (pinned on purpose) and the next major/minor of the
+  # images on a major or minor tag. Watchtower can't: it only re-pulls the tag a
+  # container already has. Watch-by-label only (diun.* labels on each service);
+  # alerts go to the same homelab-updates ntfy topic as Watchtower's. The first
+  # run records the tags that already exist without alerting.
+  # services/container-updates/README.md
+  diun:
+    image: crazymax/diun:latest
+    container_name: diun
+    command: serve
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - diun-data:/data
+    environment:
+      - TZ=Asia/Kolkata
+      - LOG_LEVEL=info
+      - DIUN_WATCH_SCHEDULE=0 9 * * *
+      - DIUN_WATCH_JITTER=30s
+      - DIUN_WATCH_RUNONSTARTUP=true
+      - DIUN_WATCH_FIRSTCHECKNOTIF=false
+      - DIUN_PROVIDERS_DOCKER=true
+      - DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=false
+      - DIUN_NOTIF_NTFY_ENDPOINT=http://ntfy-server
+      - DIUN_NOTIF_NTFY_TOPIC=homelab-updates
+      - DIUN_NOTIF_NTFY_TOKEN=${NTFY_UPDATES_TOKEN}
+      - DIUN_NOTIF_NTFY_PRIORITY=3
+      - DIUN_NOTIF_NTFY_TAGS=new
+      - 'DIUN_NOTIF_NTFY_TEMPLATETITLE=New release: {{ .Entry.Image.Path }} {{ .Entry.Image.Tag }}'
+      - 'DIUN_NOTIF_NTFY_TEMPLATEBODY={{ .Entry.Image }} is out. The running tag will not pick it up - upgrade by hand (services/container-updates/README.md).'
     logging:
       driver: json-file
       options:
@@ -636,7 +716,18 @@ services:
   # UPnP are switched off by services/syncthing/configure.sh - never public.
   # GUI is localhost-only, reached through Caddy at xero.<tailnet>/syncthing/.
   syncthing:
-    image: syncthing/syncthing:2.1.7
+    image: syncthing/syncthing:2
+    # Diun: alert when a release this tag will not reach appears; the regex
+    # must also match the running tag, or a later release counts as Diun's
+    # silent first check (next major; 2 follows 2.x).
+    # services/container-updates/README.md
+    labels:
+      diun.enable: "true"
+      diun.watch_repo: "true"
+      diun.notify_on: new
+      diun.sort_tags: semver
+      diun.max_tags: "5"
+      diun.include_tags: '^2$$;^([3-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$$'
     container_name: syncthing
     network_mode: host
     environment:
@@ -669,6 +760,7 @@ volumes:
   stp-models:
   stp-train:
   piper-data:
+  diun-data:
 
 networks:
   # Public album (services/albums/README.md): the gallery lives only on

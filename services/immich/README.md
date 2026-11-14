@@ -98,16 +98,13 @@ activity: 63°C under load, 51°C fifteen seconds after a pause.
 
 ## Upgrading
 
-Never go back to `IMMICH_VERSION=release`: a floating tag pulled 3.x over a
-2.x database once a plain pull happened. Read the release notes, change the
-pin, and compare the compose file and `example.env` at the old and new tags
-(`gh api 'repos/immich-app/immich/contents/docker/docker-compose.yml?ref=vX.Y.Z'`).
-Snapshot first, with Immich stopped:
-
-    sudo zfs snapshot datapool/immich-db@<name> datapool/immich-upload@<name>
-
-`upgrade.sh vX.Y.Z` does the stop, snapshot (`@pre-vX.Y.Z`), `.env` change
-and restart in one go; run it from a real terminal for the sudo prompt.
+- **Never go back to `IMMICH_VERSION=release`:** once, a plain pull of the floating tag put 3.x on a 2.x database.
+- **You hear about new releases from Diun:** a notification on ntfy `homelab-updates` (`services/container-updates/`).
+- **Steps** (from a real terminal, because the snapshot needs sudo):
+  1. `services/immich/upgrade.sh --check` lists the releases in between with links, diffs upstream `docker-compose.yml` and `example.env`, and pulls the images. It changes nothing.
+  2. Read the releases it lists. Copy into our `docker-compose.yml` / `.env` whatever from the upstream diff applies to us.
+  3. `services/immich/upgrade.sh` (latest) or `upgrade.sh vX.Y.Z`. It asks for `yes`, then stops server and ML, snapshots both datasets as `@pre-vX.Y.Z`, sets `.env`, starts server, ML and redis, waits for healthy and prints the migration lines.
+  4. Check the web UI and the phone app, add a line below, and delete the previous `@pre-*` snapshots.
 
 2026-10-09: 2.7.5 -> 3.3.1 went through 2.7.5 on the
 `ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0` image first,

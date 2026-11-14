@@ -57,6 +57,7 @@ wol-sender Pi or the Mac; they move into the layout above in a later session.
 | [`albums`](services/albums/README.md) | public photo albums over Tailscale Funnel |
 | [`caddy`](services/caddy/README.md) | the HTTPS front door for `xero.<tailnet>` |
 | [`chrony`](services/chrony/README.md) | xero as the LAN time server (the Pi has no RTC) |
+| [`container-updates`](services/container-updates/README.md) | Watchtower + Diun: keeping every container on its latest version |
 | [`grafana`](services/grafana/README.md) | graphs of everything xero and the Pi do |
 | [`immich`](services/immich/README.md) | self-hosted photos |
 | [`mosquitto`](services/mosquitto/README.md) | the MQTT broker every local integration uses |

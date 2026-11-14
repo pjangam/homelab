@@ -12,7 +12,7 @@ and there is no storage cap. Why it was picked over the alternatives:
 | | |
 |---|---|
 | **Host** | xero |
-| **Container** | `syncthing` (`syncthing/syncthing:2.1.7`, pinned), `docker-compose.yml`, `network_mode: host` |
+| **Container** | `syncthing` (`syncthing/syncthing:2`, Watchtower follows 2.x, Diun reports 3.x - `services/container-updates/`), `docker-compose.yml`, `network_mode: host` |
 | **Synced folder** | ID `documents`, label "Documents" = `/datapool/documents` (`DOCUMENTS_LOCATION`), the **same files** as the `documents` SMB share ([`services/samba`](../samba/README.md)) |
 | **Config + device keys** | named volume `homelab_syncthing-config` (`/var/syncthing/config`) |
 | **GUI** | `https://xero.<tailnet>/syncthing/`, through Caddy to `127.0.0.1:8384` |
