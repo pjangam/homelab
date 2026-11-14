@@ -9,6 +9,18 @@ installed. That is very likely why an earlier attempt at a voice plugin never
 worked. Each voice piece runs as its own container in `docker-compose.yml`,
 connected to HA through the Wyoming integration.
 
+## Architecture
+
+Every part and what talks to what (source `architecture.puml`):
+
+![Voice assistant architecture](architecture.svg)
+
+One "Hey Jarvis, play faint" in the bedroom, step by step (source `sequence_play_song.puml`):
+
+![Play a song, end to end](sequence_play_song.svg)
+
+Edit the `.puml`, then run `render_architecture.sh` (PlantUML in Docker) and commit the `.svg`/`.png` with it.
+
 ## Pieces
 
 | Piece | Where |
@@ -17,7 +29,7 @@ connected to HA through the Wyoming integration.
 | Command matching | HA's own conversation agent (`prefer_local_intents` on), plus `packages/voice_commands.yaml` for what its built-in sentences do not cover |
 | Text-to-speech | `piper` container, `127.0.0.1:10200`, voice `en_US-lessac-medium`. **Required, not optional** - see Gotchas. |
 | Pipeline | The preferred "Home Assistant" Assist pipeline: `stt.speech_to_phrase` + `tts.piper` |
-| Mic | The HA phone app's Assist button, for now. Planned: the packed-away aarti-lights ESP32 + INMP441, reflashed to ESPHome, with a custom "Alejandro" openWakeWord model on xero (the board is an original ESP32, not an S3). Wiring: `wiring.html` (https://claude.ai/artifact/UWMZYLRTNdLTgHvdU6Vz6m) |
+| Mic | Two ESP32 + INMP441 satellites on ESPHome (Voice Satellite in the bedroom, Voice Living Room), streaming audio to HA all the time; wake word "Hey Jarvis" in the `openwakeword` container on xero (the boards are original ESP32s, no on-device wake word). Also the HA phone app's Assist button. Wiring: `wiring.html` |
 
 ## Commands
 
@@ -86,6 +98,7 @@ white noise, AC.
   training for ~500 titles, when the satellites hear nothing). Log
   `spotify-songs.log`. Run by hand after liking a song you want now.
 - `bench_whisper.sh`, `bench_moonshine.sh` - timing of free-form STT on xero
+- `architecture.puml`, `sequence_play_song.puml` + `render_architecture.sh` - the diagrams above (renders `.svg`/`.png`)
   for a future "play anything" (results in PROJECTS.md, 2026-11-04).
 - `ha_ws.py` - tiny HA websocket client used by the above.
 - `test_pipeline_ws.py file.wav [end_stage]` - runs the pipeline over the

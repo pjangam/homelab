@@ -1,0 +1,120 @@
+@startuml
+' Voice assistant: every part, where it runs and what talks to what.
+' Render: projects/voice-assistant/render_architecture.sh  (-> architecture.svg/.png)
+title Voice assistant - architecture (2026-11-14)
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam componentStyle rectangle
+skinparam ArrowColor #555555
+skinparam rectangle {
+  BorderColor #777777
+  RoundCorner 8
+}
+skinparam database {
+  BackgroundColor #FFF8E1
+}
+skinparam legend {
+  BackgroundColor #FAFAFA
+  BorderColor #BBBBBB
+}
+
+actor "You" as user
+
+rectangle "Bedroom" as bedroom #E3F2FD {
+  node "Voice Satellite\nESP32 + INMP441 mic\n(ESPHome)" as sat_bed
+  node "wol Pi" as pi #FFFFFF {
+    component "spotifyd\n(Connect: raspberrypi)" as spd_pi
+    component "volume-mqtt\n(Pi Speaker Volume)" as vol_pi
+  }
+  rectangle "3.5mm jack speaker" as spk_pi
+}
+
+rectangle "Living room" as living #E8F5E9 {
+  node "Voice Living Room\nESP32 + INMP441 mic\n(ESPHome)" as sat_liv
+  rectangle "Bluetooth speaker" as spk_xero
+}
+
+node "xero (N5105 server)" as xero #F3E5F5 {
+  rectangle "Docker" as docker #FFFFFF {
+    component "Home Assistant" as ha #FFFDE7 {
+      component "Assist pipeline\n(wake -> STT -> intent -> TTS)" as pipeline
+      component "voice_commands.yaml\nAC / fans / turn off everything\nSpotify pause, next, volume" as cmds
+      component "voice_play_song\n(spotify_songs.yaml)\nplay {song} -> track URI\nroom -> speaker" as playsong
+      component "Spotify integration\nmedia_player.spotify_pramod" as spint
+      component "Spotcast\nplay_media on a device" as spotcast
+      component "Built-in intents\nturn on/off <name>" as builtin
+    }
+    component "openwakeword\n:10400\nHey Jarvis" as oww
+    component "speech-to-phrase\n:10300\nKaldi, closed vocabulary" as stp
+    component "piper\n:10200\nspoken replies" as piper
+    component "mosquitto\nMQTT :1883" as mqtt
+    database "stp-models\nRhasspy en_US Kaldi\n(2021, 127MB)" as stpmodels
+    database "stp-train\nphrase graph HCLG.fst\n(rebuilt on restart)" as stptrain
+  }
+  rectangle "Host (cron, systemd --user)" as host #FFFFFF {
+    component "spotify_library.py\nvia sync_spotify_songs.sh\ncron 04:30" as lib
+    component "healthcheck.sh -> check_stt.sh\nevery 15 min" as hc
+    component "spotifyd\n(Connect: xero)" as spd_xero
+    component "volume-mqtt\n(xero Speaker Volume)" as vol_xero
+  }
+  folder "repo: projects/voice-assistant" as repo {
+    file "custom_sentences/en/\nsentences.yaml (lists)\nsongs.yaml (generated)" as cs
+    file "packages/\nvoice_commands.yaml\nspotify_songs.yaml (generated)" as pkgs
+  }
+}
+
+cloud "Spotify" as spotify {
+  component "Web API\nliked songs, playlists,\nplayback control" as spapi
+}
+
+' --- speaking a command ---
+user --> sat_bed : "Hey Jarvis,\nplay faint"
+user --> sat_liv
+sat_bed --> pipeline : mic audio, streamed\nall the time (ESPHome API)
+sat_liv --> pipeline
+pipeline --> oww : 1. wake word?
+pipeline --> stp : 2. speech -> text
+stp ..> stpmodels : acoustic model
+stp ..> stptrain : trained phrases
+pipeline --> cmds : 3. text -> intent
+pipeline --> playsong
+pipeline --> builtin
+pipeline --> piper : 4. reply -> speech
+pipeline --> sat_bed : spoken reply
+
+' --- playing music ---
+playsong --> spotcast : track URI +\nPi (bedroom) or xero
+cmds --> spint : pause / next / volume
+spotcast --> spapi
+spint --> spapi
+spapi --> spd_pi : play on device
+spapi --> spd_xero
+spd_pi --> spk_pi
+spd_xero --> spk_xero
+
+' --- training ---
+lib --> spapi : read library\n(HA's Spotify token)
+lib --> cs : writes songs.yaml
+lib --> pkgs : writes spotify_songs.yaml
+lib --> ha : reload automations
+lib --> stp : restart = retrain
+pkgs ..> ha : bind mount\n/config/packages
+cs ..> stp : bind mount\n/custom_sentences
+stp ..> ha : reads sentence triggers\nat training (websocket)
+hc --> stp : test phrase; restart\nif custom commands deaf
+
+' --- volume sliders ---
+vol_pi --> mqtt
+vol_xero --> mqtt
+mqtt --> ha : number.* sliders
+
+legend right
+  |= Arrow |= Meaning |
+  | solid | runtime call / data flow |
+  | dotted | config or model read |
+  Numbered arrows: order inside one voice command.
+  Wake word and speech-to-text run on xero,
+  not the satellite (original ESP32, no on-device wake word).
+endlegend
+@enduml

@@ -1,0 +1,61 @@
+@startuml
+' One "Hey Jarvis, play faint" said in the bedroom, step by step.
+' Render: projects/voice-assistant/render_architecture.sh
+title "Hey Jarvis, play faint" in the bedroom - one command end to end
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam sequenceMessageAlign left
+skinparam ParticipantPadding 8
+autonumber
+
+actor "You" as user
+participant "Bedroom satellite\n(ESP32 + mic)" as sat
+box "xero" #F3E5F5
+  participant "HA Assist\npipeline" as pipe
+  participant "openwakeword" as oww
+  participant "speech-to-phrase" as stp
+  participant "voice_play_song\nautomation" as auto
+  participant "Spotcast" as sc
+  participant "piper" as piper
+end box
+participant "Spotify\nWeb API" as sp
+box "wol Pi" #E3F2FD
+  participant "spotifyd" as spd
+end box
+
+== always on ==
+sat -> pipe : mic audio, streamed continuously
+pipe -> oww : audio frames
+user -> sat : "Hey Jarvis"
+oww --> pipe : wake word detected
+note over pipe : the other satellite heard it too:\nHA drops that run (duplicate wake-up)
+
+== command ==
+user -> sat : "play faint"
+sat -> pipe : audio until silence (VAD)
+pipe -> stp : audio clip
+stp -> stp : decode against the trained phrases,\nfuzzy-match to the nearest one
+alt close to a trained phrase
+  stp --> pipe : "play faint"
+else too far from every phrase, or no audio
+  stp --> pipe : "" -> "No text recognized", stops here
+end
+pipe -> auto : sentence trigger "play {song}", song = "faint"
+auto -> auto : song list -> spotify:track:...\nsatellite area bedroom -> Pi
+auto -> sc : play_media(track URI, Pi)
+sc -> sp : start playback on device "raspberrypi"
+sp -> spd : Spotify Connect: play track
+spd -> spd : audio out of the 3.5mm jack
+auto --> pipe : response "Playing Faint - Linkin Park"
+pipe -> piper : text
+piper --> pipe : speech audio
+pipe -> sat : spoken reply
+
+== every night 04:30 (only if the library changed) ==
+note over auto, stp
+  sync_spotify_songs.sh: spotify_library.py reads liked songs + playlists,
+  writes songs.yaml + spotify_songs.yaml (with ALIASES),
+  reloads HA automations, restarts speech-to-phrase (retrains, ~75s)
+end note
+@enduml
