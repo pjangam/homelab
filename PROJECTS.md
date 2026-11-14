@@ -3741,3 +3741,46 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 #### Log
 - 2026-11-14: a tone on the AUX line was not heard: the speaker was in Bluetooth mode, and signal does not switch it. Found it advertising over Bluetooth from xero, paired it; tone and Spotify (via spotcast) played on it. Volume 18%.
 - 2026-11-14: tested by disconnecting on purpose: the script reconnects in ~4s and restores the default sink; a typed "play sasa to sasa ki kapoos jasa" reconnected and played in ~5s (20s before replacing `bluetoothctl --timeout` with polling). HA slider reads the Bluetooth volume (18).
+
+### USB charge switch: ESP32 + current sensor to stop charging when full
+**Status:** Backlog
+**Priority:** P3
+
+#### Open items
+- [ ] **Pramod:** decide the build (USB-A 5V only, or USB-C with Power Delivery passed through) and which devices it will charge
+- [ ] **Pramod:** buy the parts at a local shop (table below)
+- [ ] **Claude:** wiring diagram (circuit-diagram agent), ESPHome config, and the HA charge automations
+
+**Why:** the Portronics Apollo One (xero's Bluetooth speaker since 2026-11-14) stays on its charger, and a Li-ion battery held at 100% ages faster. Neither the speaker nor its Bluetooth link reports a battery level (checked from xero, the phone and the MacBook on 2026-11-14), so a plain timer or a smart plug can only guess when it is full. Building it on the 5V USB side, not as a mains plug, keeps it away from 230V.
+
+#### Design
+```
+USB charger 5V -> [INA219 current sensor] -> [switch] -> USB cable -> device
+                          |                     |
+                          +------ ESP32 --------+   (ESPHome, Wi-Fi to HA)
+```
+- **Switch:** 5V relay module (simplest, clicks) or P-channel MOSFET (silent).
+- **Speaker logic (HA):** turn charging on every N days or after X hours played; off when the current stays under ~50 mA for 5 min (full).
+- **Phone logic (HA):** off at 80% from the Companion app's battery sensor; current is no use there, a phone in use keeps drawing when full.
+- **Placement:** wall-mounted near the speaker.
+
+#### Parts
+| Part | Price (rough) | Have it? |
+|---|---|---|
+| ESP32-C3 SuperMini, or a spare ESP32 | ~Rs 250 | Spares may all be claimed |
+| INA219 current sensor module (up to 26V, ~3.2A) | ~Rs 150-250 | No |
+| 5V relay module or P-MOSFET (e.g. AO3401) | ~Rs 60 | Relay modules mentioned elsewhere here - check |
+| USB-A male + female breakouts (or USB-C ones, see below) | ~Rs 50 | ? |
+| Small box | - | - |
+
+#### Phones and fast charging
+| Charging | Through the box? |
+|---|---|
+| Plain 5V USB | Yes; slower, gentler on the battery |
+| Quick Charge over USB-A | Only if the breakouts pass D+/D- through; OnePlus's own fast charging needs its own cable, so expect normal speed |
+| USB-C Power Delivery (9-20V) | Only with USB-C in and out that passes CC; the INA219 copes to 26V, the switch must too |
+
+- Many phones can cap charging themselves (iPhone 80% limit, Android "Protect battery"); then the box mainly helps the speaker.
+
+#### Log
+- 2026-11-14: idea from the speaker-to-Bluetooth session; confirmed the speaker reports no battery level. Recorded as backlog.
