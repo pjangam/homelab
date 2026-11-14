@@ -3406,6 +3406,10 @@ Everything is off-the-shelf: setup only, no code to maintain.
   - **TTS check after:** "aggobai dhaggobai", "in the end", "in the end by linkin park", "billie jean by michael jackson", "faint" all recognised; "aggobai dhaggobai by salil kulkarni" was not - for Marathi, the bare title is the one to say.
 - 2026-11-07: **speaker by room** (user): a "play <song>" heard by the bedroom satellite plays on the Pi (`raspberrypi`), anything else on xero (`SPEAKERS` in `spotify_library.py`, by the satellite's HA area). Checked muted with `conversation/process` and each satellite's `device_id`: bedroom loaded Faint on the Pi, living room played it on xero.
 - 2026-11-07: **"aggobai dhaggobai" still failed by voice after it was in the list** (10:32, "no text recognised"). Speech-to-Phrase had guessed its pronunciation from the spelling as "AG-uh-bye DAG-uh-bye" (in `/train/en_US-rhasspy/missing_words_dictionary.txt`). Added `ALIASES` spelled with English words that sound like the Marathi ("ago bye the go bye", "ago by dhago by", ...); the English TTS clip now lands on an alias.
+- 2026-11-14: **more "aggobai dhaggobai" aliases** (user: people say it several ways; बाई is "baa-ee"):
+  - added "agg-bai dha-g-bai", "ah-go-bai dha-ga-bai" and "ug-go-baa-ee dhug-go-baa-ee" forms, spelled from words in the model's lexicon (`bah ee`, `dug go`, `uh go`, `ag by`)
+  - every alias now uses "by", never "bye": mixing the two homophones made Speech-to-Phrase's fuzzy match fail, so the title returned nothing even for clips that matched before
+  - English TTS: the "by" forms match; the "bah ee" forms and the Marathi-voice clip return nothing, so only real voice can tell
 - 2026-11-13: **bedroom test session (05:22-05:35 UTC), live-watched with `watch_assist.sh`:**
   - switch and fan commands: all heard right
   - "play faint" and "play numb": heard right, played on the Pi (routing by area checked in the automation trace)

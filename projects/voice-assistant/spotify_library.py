@@ -51,9 +51,23 @@ SPEAKERS = {
 # out as "AG-uh-bye" (2026-11-07), not the Marathi "uh-GO-bye". Spell aliases
 # with English words that sound right ("ago" is uh-GO).
 ALIASES = {
-    "ago bye the go bye": "aggobai dhaggobai",
-    "ago bye dago bye": "aggobai dhaggobai",
+    # All spelled with "by", never "bye": they sound the same, "by" is in
+    # every "<title> by <artist>" phrase, and mixing them made the decoder
+    # land between two phrases and return nothing (2026-11-14).
+    # Words picked from the model's lexicon for their sounds: ago=əgoʊ,
+    # uh=ʌ, duh=dʌ, dug=dʌg, ag=æg.
+    "ago by the go by": "aggobai dhaggobai",
     "ago by dhago by": "aggobai dhaggobai",
+    "uh go by duh go by": "aggobai dhaggobai",   # ah-go-bai dhu-go-bai
+    "ago by dug a by": "aggobai dhaggobai",      # ah-go-bai dha-ga-bai
+    "ag by dug by": "aggobai dhaggobai",         # agg-bai dha-g-bai
+    "ag by dag by": "aggobai dhaggobai",
+    # बाई is two syllables, "baa-ee" (user): bah=bɑ, ee=i. This is the
+    # correct Marathi; the "by" forms above are the anglicised ones.
+    "uh go bah ee dug go bah ee": "aggobai dhaggobai",  # अग्गोबाई ढग्गोबाई
+    "ago bah ee dug go bah ee": "aggobai dhaggobai",
+    "ago bah ee dhago bah ee": "aggobai dhaggobai",
+    "uh go by dug go by": "aggobai dhaggobai",
 }
 
 # Playlists whose tracks are speakable too, besides the liked songs. Liked
