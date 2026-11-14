@@ -119,6 +119,14 @@ compose or `example.env` changes; one migration, `AddAssetFaceAssetState`
 middle of the ML backlog run; the queue sat in Redis and carried on. The
 `@pre-v3` and `@pre-v3.3.4` snapshots were deleted the same day (~32G).
 
+2026-11-14: 3.3.5 -> 3.4.1 with the new `upgrade.sh` (snapshots `@pre-v3.4.1`). Three
+migrations (`AddPasskeyTable`, `AddUpdateIdIndexes`, `AddAssetOwnerIdUpdateIdIndex`) in
+about a second. Copied upstream's valkey digest; **not** upstream's new
+`MACHINE_LEARNING_MODEL_REVISION: v2` on the ML service (it downloads new model
+files; untested whether search/face results stay compatible or the ML backlog reruns).
+3.4 adds built-in backups (`futo-backups`, "Yucca"): it generates a key on start,
+nothing is configured.
+
 **v3 needs video metadata re-extracted.** 3.x stores video stream details in
 a new `asset_video` table, filled by metadata extraction. Videos extracted
 under 2.x have `asset_job_status."metadataExtractedAt"` set but no
