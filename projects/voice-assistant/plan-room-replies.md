@@ -1,6 +1,6 @@
 # Plan: spoken replies on the room speakers
 
-**Status:** agreed 2026-11-14, ready to build. Nothing built yet.
+**Status:** agreed 2026-11-14, on hold until the user says go. Nothing built yet.
 
 ## Why
 
@@ -29,6 +29,8 @@
 | 6 | Reply script | HA script `voice_reply(room, url or message)`, called by the firmware hook in 3 | save the room speaker's volume -> set the room's preset -> play the reply -> wait until the player is idle (max 20s) -> put the volume back |
 | 7 | Resume | HA automation `voice_music_resume`, on the satellite going back to **idle** | wait until `voice_reply` is not running, then resume Spotify if this room's flag is on; clear the flag |
 | 8 | Presets | `input_number.voice_reply_volume_bedroom`, `..._living_room` (0-100) | the volume replies play at, per room |
+
+Why a reflash is needed: HA sends the reply's audio URL only to the satellite that heard the command; automations never see it (no event). Only the firmware can forward it. The no-reflash alternative - a service polling HA's pipeline debug runs like `watch_assist.sh` - adds 1-3s per reply and relies on a 10-run debug buffer, so it was rejected (2026-11-14). Pause/resume and the presets need no reflash.
 
 Why the volume dance works: the music is paused while the reply plays, so changing the speaker's volume (`number.server_volume` on the Pi, `number.xero_speaker_volume` on xero - the existing sliders) is not heard on the music, and it is restored before the music resumes.
 

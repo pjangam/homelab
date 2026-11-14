@@ -2657,7 +2657,7 @@ qty | item | est | note
 #### Open items
 - [ ] **Claude:** try `andromeda` / `dumbledore` against `hey_jarvis` (`WAKE_WORD_ID` in `projects/voice-assistant/setup_assist.py`, restart speech-to-phrase, temporary `--debug` on openwakeword); train on Colab only if neither works
 - [ ] **Pramod:** check which end (DIN, follow the arrows) of the bedroom strip is wired before connecting it
-- [ ] **Claude:** build `projects/voice-assistant/plan-room-replies.md` (agreed 2026-11-14): pause/resume first, then VLC players, reply script, reflash
+- [ ] **Together, when Pramod says go:** build `projects/voice-assistant/plan-room-replies.md` (agreed 2026-11-14, on hold): pause/resume first, then VLC players, reply script, reflash
 - [ ] **Pramod:** decide whether the speaker parts below are still wanted once room replies work
 - [ ] **Pramod:** buy the speaker parts below (local shop first)
 - [ ] **Together:** wire per the plan, add the firmware pieces, OTA both boards
