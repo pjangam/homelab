@@ -117,7 +117,7 @@ if [[ $st == healthy ]]; then
   for img in immich-server immich-machine-learning; do
     docker images --format '{{.Tag}}' "ghcr.io/immich-app/$img" \
       | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -vx -e "$new" -e "$old" \
-      | while read -r t; do docker rmi -f "ghcr.io/immich-app/$img:$t" >/dev/null && echo "removed $img:$t"; done
+      | while read -r t; do docker rmi -f "ghcr.io/immich-app/$img:$t" >/dev/null && echo "removed $img:$t"; done || true
   done
 fi
 
