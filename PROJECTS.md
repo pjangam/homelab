@@ -678,7 +678,7 @@ Three shapes, cheapest first:
 
 #### Open items
 - [ ] **Pramod:** delete the Mac copies of `-2-001`/`-2-002` (both tested ok on xero 2026-11-14)
-- [ ] **Together:** sort out storage first: her ~248 GiB of originals fit only at `copies=1` and with the zips off `datapool` (219G free with them, ~496G without), so after the SD-card backup is running, see "datapool storage headroom"
+- [ ] **Together:** sort out storage first: her ~248 GiB of originals fit only at `copies=1` and with the zips off `datapool` (219G free with them, ~496G without), so after the backup HDD (Black Friday, 2026-11-27) is running, see "datapool storage headroom"
 - [ ] **Pramod:** before importing, have Bhakti make an Immich API key (all permissions), add it to `.env` as `IMMICH_API_KEY_BHAKTI`, and fix her misspelt name `Bkahti` under Administration -> Users
 - [ ] **Together:** import with `import_takeout.py`, following "Running a whole-library import" in `services/immich/README.md` (`--dry-run`, then `--limit 5`, then all)
 - [ ] **Claude:** check it with `verify_takeout.py --owner`, re-measure `datapool` for "datapool storage headroom"
