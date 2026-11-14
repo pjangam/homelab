@@ -3161,10 +3161,12 @@ qty | item | est | note
 100 | Dupont crimp pins, female, 2.54mm | 80-150 | local - loose pins for the crimp tool; usually sold per 100
 100 | Dupont crimp pins, male, 2.54mm | 80-150 | local - loose pins for the crimp tool; usually sold per 100
 2 | Small ABS project box (~85x55x30mm), spare | 120-200 | local - for the next ESP32 or sensor build; the voice satellite and Diwali boxes are on their own entries
+1 | DS3231 RTC module (ZS-042) + CR2032 cell | 150-250 | local - keeps time through power cuts for an ESP32 or Pi (I2C, 4 wires). With a CR2032, remove the board's charging resistor/diode first (it is built for a rechargeable LIR2032)
 ```
 
 #### Log
 - 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here. Jumpers doubled and a 10cm set added: current stock is running out. Berg strip (dupont) housings added for multi-pin plugs, then a dupont crimp tool and 100 each male/female crimp pins.
+- 2026-11-14: DS3231 RTC module + CR2032 added (user), general stock - not needed by the USB charge switch.
 ### xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet
 **Status:** Parked
 **Priority:** P3
