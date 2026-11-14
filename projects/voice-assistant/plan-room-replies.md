@@ -111,7 +111,7 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 | Pause when the music is in another room | yes / only if it is the same room | only the same room |
 | Preset values | bedroom __ %, living room __ % | bedroom 40%, living room 50%, then tune |
 | Quiet hours | always speak / errors only at night / silent while white noise is on | silent while white noise is on |
-| Which replies | all / only errors and songs / only errors | all |
+| Which replies | **all, as HA already writes them (user, 2026-11-14)**; changed later per reply as needed | decided |
 | Error wording | "Sorry, I didn't catch that" / a short tone instead of words | the sentence |
 | Dashboard | a "Reply volume" slider tile per room (the presets) / none | a tile in each room's view |
 | Phone app | unchanged (it plays replies itself) | unchanged |
@@ -120,4 +120,5 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 
 - **Pause music on wake word, resume after the reply** (2026-11-14) - in Goal and Design 5-7.
 - **Reply volume preset per room, set before the reply and restored after** (2026-11-14) - Design 6, 8.
+- **Which replies:** all, as already built; adjust individual replies later (2026-11-14).
 - 
