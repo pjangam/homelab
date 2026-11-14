@@ -88,20 +88,29 @@ adjectives. Structure:
   under the title (Status first), then a blank line. Use `Active` or `Parked`
   if the idea plainly is one. New ideas start at P3; the user raises them to
   P2 or P1 themselves.
+- `#### Open items` straight under Status/Priority: a checklist, one short line
+  per item, each led by its owner - `- [ ] **Pramod:** ...`, `- [ ] **Claude:** ...`,
+  `- [ ] **Together, <when>:** ...`. The first item is the one concrete action
+  that decides the whole thing (usually a measurement or a bench test); add
+  "buy the parts" for Pramod when there is a parts block. Never a
+  `**Next step:**` paragraph: the commit hook rejects it, and the dashboard's
+  open-items panel reads only the checklist.
 - **Why:** the itch, in one or two sentences, with the date noted.
 - **State:** idea only / researched / decided, and what is already true.
 - **The feasibility answer**, with links.
 - **Design notes** as bold-led bullets: the options, the one recommended and
   why, the traps that decide whether it works.
 - **Readymade alternatives** and how they compare.
-- A ` ```parts ` block: `qty | item | est | note`, `est` in rupees for the whole
-  quantity, note saying local or online and what to skip if a part is freed.
+- A ` ```parts ` block under `#### Parts`: `qty | item | est | note`, `est` in
+  rupees for the whole quantity, note saying local or online and what to skip
+  if a part is freed. **Never a markdown table** - the dashboard's "Add to
+  shopping list" button reads only these blocks. For either/or parts, a
+  `# Option name` line starts each alternative's rows; rows above the first
+  such line are shared.
 - **Cost:** a single total line, and the cheaper variant if there is one.
 - **Effort:** hours split into phases, cheapest and most decisive first, naming
   the phase that will overrun (on this repo's history, that is always the
   mechanical or alignment work, never the code).
-- **Next step:** one concrete action, usually a measurement or a bench test that
-  decides the whole thing. If the project is meant to be built, say so.
 
 **Record what was rejected and why.** A repriced option, a dismissed board, a
 readymade product that turned out to be US-only - all of it saves the next
