@@ -325,6 +325,28 @@ The 4 LEDs are only 5mm apart, too tight for discrete sensors + individual light
 2. Whether the LEDs are on flying wires already connected to the main board (trivial to tap) or mounted directly on the PCB (would need to solder at whatever pad pitch the board actually uses, not necessarily the same 5mm as the LEDs' visible spacing).
 3. If it's PCB-mounted, whether that pitch is something comfortable to hand-solder at all.
 
+#### Parts
+Nothing to buy until the case inspection decides between the options; each `#` line is one option.
+
+```parts
+qty | item | est | note
+# (E) Inline power sensor - current favourite
+1 | ESP32 devkit | 400-600 | or a spare if one is free
+1 | INA219 or INA226 current/voltage sensor breakout | 150-300 | local
+1 | DC barrel jack pair (male + female) to splice into the UPS-to-xero cable | | local, match the UPS output plug
+# (D) Tap the LED driver circuit
+1 | ESP32 devkit | 400-600 | or a spare
+8 | Resistors for 4 voltage dividers | 10-20 | local, values after measuring the LED voltages
+# (B) Camera
+1 | ESP32-CAM module | 400-700 | local (Robokits 400, Robocraze 599, Robu 699)
+1 | ESP32-CAM-MB USB programmer board | 150-250 | local - the bare module has no USB
+# (A) Fiber light pipes
+1 | ESP32 devkit | 400-600 | or a spare
+1 | PMMA optical fiber, 0.75-1mm, roll | 200-500 | local craft/decor shop - estimate; only ~30cm needed
+4 | Phototransistors | 100-150 | local
+4 | Resistors | 10-20 | local
+```
+
 #### Log
 - 2026-10-26: moved to Backlog by the user. Nothing bought; the case inspection is still the next step whenever it is picked up.
 
@@ -422,6 +444,12 @@ Fridge is the only major appliance with a comparable continuous-ish profile (com
 
 #### Caveat
 All "always-on" numbers above are spec/datasheet estimates, not measured - could realistically be off ±30-40% per device without a real inline meter. Good enough to rank contributors and sanity-check "does this add to my bill" questions (context: prompted by the Shelly WiFi-button power question), not precise enough to reconcile against an actual bill.
+
+#### Parts
+```parts
+qty | item | est | note
+1 | Plug-in energy meter (socket type, kWh + live watts) | | local - only if real numbers are wanted (see Open items); fridge first
+```
 
 #### Log
 - 2026-08-22: first pass done, estimated from specs/datasheets.
@@ -2791,6 +2819,20 @@ No grinder and no water heating. **Hopper 1** takes pre-ground coffee, and the m
 
 **Effort (rough estimate):** **30-45h, about 4-6 weekends.** Water pour, scale and timer are 1-2 weekends; the spiral turntable is 1 weekend; coffee dosing is 2-3 weekends. The mechanical work (spout alignment, hopper and auger) will overrun, not the code.
 
+#### Parts
+Not priced per part yet: only the ESP32 has a figure; the whole build is budgeted at ₹3,500-6,500.
+
+```parts
+qty | item | est | note
+1 | ESP32 devkit | 400-600 | the aarti ESP32 is claimed elsewhere, so a new one
+1 | 12V peristaltic pump | | water dosing
+1 | Stepper motor + driver | | turntable for the spiral pour
+1 | Load cell + HX711 amplifier | | dose by weight
+1 | 12V power supply | |
+1 | Buzzer | | the "coffee's ready" bell
+1 | Frame or enclosure | |
+```
+
 #### When built
 Add the board to `docs/hardware.md` and its MQTT topic to `endpoints.toml`.
 
@@ -3454,26 +3496,36 @@ Everything is off-the-shelf: setup only, no code to maintain.
 #### Cost (2026-11-05)
 Quoted prices incl. 18% GST, from search snapshots on 2026-11-05: robu.in refuses automated fetches (HTTP 403), so robu prices are from search snippets (two from its mirror/staging pages) and the rest from other Indian stores. Recheck on the site before buying; local shop first.
 
-One switch, option B:
+#### Parts
+Each `#` line is one option, so the dashboard can add just that one to the shopping list.
 
-| Part | Quoted ₹ | Where | Paid / on hand |
-|---|---|---|---|
-| ESP32 devkit, WROOM-32 38-pin | 384 (325 + GST) | robosap.in (flyrobo.in 409) | have spares; bought a few weeks before 2026-11-05, price not remembered |
-| 1-channel 5V relay module | 59 | robu.in mirror (out of stock there); probots.co.in 59 | have one: ₹138 in 2020 (now on the kandil) |
-| HLK-PM01 5V supply | 195 | hubtronics.in (vishaworld.com 180) | buy; genuine Hi-Link, it sits on 230V in the wall |
-| 5x20mm PCB fuse holder | 7 (6 + GST) | robocomp.in | buy |
-| Fuse T500mA-T1A, 5x20mm | not quoted | - | buy, ~₹5-10 locally |
-| Enclosure that fits the back box | not quoted | - | buy, ~₹50-150 locally |
-| Wire, lever connectors, sleeving | not quoted | - | ~₹30-60 |
-| **Total, one switch** | **~645 quoted + ~100-220 unquoted ≈ ₹750-870** | | **~₹290-430** with the ESP32 and relay on hand |
+```parts
+qty | item | est | note
+# Next: ESPHome reflash test on a Tinxy 4N
+1 | Tinxy 4 Node with Fan Regulator (Amazon ASIN B08KZMB7HD) | 1200 | online, Tinxy store - test unit; skip if testing on an installed one
+1 | CH340G USB-TTL adapter | 48-89 | local - for flashing (robu 48, makerbazar 89); plus a soldering iron if none
+# DIY one switch (option B)
+1 | ESP32 devkit, WROOM-32 38-pin | 384 | have spares - skip
+1 | 1-channel 5V relay module | 59 | have one (on the kandil) - skip unless it is still in use there
+1 | HLK-PM01 5V supply, genuine Hi-Link | 180-195 | local - sits on 230V in the wall, no clones (hubtronics 195, vishaworld 180)
+1 | 5x20mm PCB fuse holder | 7 | local
+1 | Fuse T500mA-T1A, 5x20mm | 5-10 | local
+1 | Enclosure that fits the back box | 50-150 | local
+1 | Wire, lever connectors, sleeving | 30-60 | local
+# DIY 4-switch board (option A)
+1 | ESP32 devkit, WROOM-32 38-pin | 384 | have spares - skip
+1 | HLK-PM01 5V supply, genuine Hi-Link | 180-195 | local
+1 | 4-channel 5V relay module | 140 | local (electronicscomp 140)
+4 | 220V AC optocoupler module, 1 channel | 772 | local (robu 193 each) - active-low: OUT to GND when 230V is present
+1 | 5x20mm PCB fuse holder + T500mA-T1A fuse | 15 | local
+1 | Enclosure and wire | 80-210 | local
+```
 
-| Variant | Quoted ₹ | Where |
+| Option | Total | Per switch |
 |---|---|---|
-| Option A: 1-channel 220V AC optocoupler module, per switch | +193 | robu.in (in stock in the snapshot). Active-low: OUT goes to GND when 230V is present |
-| 4-channel 5V relay module | 140 (119 + GST) | electronicscomp.com |
-| 4-switch DIY board (option A): ESP32 + HLK-PM01 + 4-ch relay + 4 opto + fuse, enclosure, wire | ~1,600-1,700 (~₹400-430 a switch) | sum of the above (384 + 195 + 140 + 4×193 + fuse ~15 + enclosure and wire ~80-210) |
-| **Tinxy 4-node with fan regulator** (Amazon ASIN B08KZMB7HD) | **~1,200** (~₹300 a switch, with fan speed) | user |
-| Reflash test kit: CH340G USB-TTL adapter (+ soldering iron if none) | 48 | robu.in staging page (makerbazar.in 89) |
+| DIY one switch (option B) | ~₹750-870; ~₹290-430 with the ESP32 and relay on hand | same |
+| DIY 4-switch board (option A) | ~₹1,600-1,700 | ~₹400-430 |
+| **Tinxy 4-node with fan regulator** | **~₹1,200** | **~₹300, with fan speed** |
 
 #### Log
 - 2026-11-05: split out of "In-house smart switch to replace Tinxy" when the kandil prototype was marked Done.
