@@ -702,12 +702,10 @@ Three shapes, cheapest first:
 
 #### Open items
 - [ ] **Pramod:** destroy the `@pre-v3.3.5` snapshots of `immich-upload` and `immich-db` once happy with 3.3.5 (irreversible; returns the ~62G)
-- [ ] **Claude:** at Bhakti's dry-run, check her thumbnails fit the boot disk (~3G per 10,000 photos, 36G free on 2026-11-10)
-- [ ] **Pramod:** plug the 1TB Samsung SD card into xero through a USB 3 reader (empty it first: `f3probe` wipes it)
-- [ ] **Together:** `f3probe` the card, make it its own ZFS pool, set up sanoid/syncoid: originals, albums, documents and phone uploads hourly but skipped when `written` is 0, `immich-db` every 6 hours, transcodes and thumbs not copied. Not a mirror: it would slow every write and copy deletions instantly
-- [ ] **Claude:** monthly scrub of the card pool and an alert when a backup run fails (cards die without warning)
-- [ ] **Together, after the first full copy and a clean scrub:** rewrite the originals at `copies=1` (decided 2026-11-10, reverses 2026-11-02; frees ~80G)
-- [ ] **Pramod:** HDD only if Black Friday (2026-11-27) or early 2027 brings a crazy deal; price to beat: Seagate Expansion Portable 5TB at Rs 16,149 (Vijay Sales, 2026-11-10)
+- [ ] **Together, when the HDD arrives:** SMART long test, make it its own ZFS pool, set up sanoid/syncoid: originals, albums, documents and phone uploads hourly but skipped when `written` is 0, `immich-db` every 6 hours, transcodes and thumbs not copied. Not a mirror: it would slow every write and copy deletions instantly
+- [ ] **Claude:** monthly scrub of the backup pool and an alert when a backup run fails
+- [ ] **Together, with the backup:** rewrite the originals at `copies=1` (decided 2026-11-10, reverses 2026-11-02; frees ~80G) in this order: rsync into a new `copies=1` dataset (old one kept), first full send of the new one to the HDD + clean scrub, then destroy the old dataset and its snapshots. xero's zfs userland is 2.2.2, so no `zfs rewrite`
+- [ ] **Pramod, Black Friday (2026-11-27):** buy the backup HDD (the SD card is lost, 2026-11-14); shortlist Seagate Expansion Desktop 4TB, WD My Passport 4TB; price to beat: Seagate Expansion Portable 5TB at Rs 16,149 (Vijay Sales, 2026-11-10). SMR is fine for this
 - [ ] **Claude:** after the import, re-measure (`zpool list datapool`, `zfs list -o name,used,logicalused -r datapool`)
 - [ ] **Together:** then decide between the options below
 
@@ -737,6 +735,7 @@ Three shapes, cheapest first:
   - **Trend:** NAND shortage, sources disagree on relief in H2 2027.
 - 2026-11-10: **decided (user):** Kingston at 1 copy + the 1TB Samsung SD card (scheduled `zfs send`) + S3 Deep Archive, because the wishlist total is too high. HDD or SSD only for a crazy Black Friday deal or a big price drop in early 2027. Revives the SD-card copy that "Offsite backup for Immich photo data" set aside on 2026-10-26.
 - 2026-11-10: `split_regenerable.sh finish` done, `.old` copies deleted. Thumbnails moved to the boot disk with `move_thumbs_to_boot.sh` (34,478 files, 5.7G, ~2 minutes of downtime), `finish` run after the user's spot-check. Immich's storage check passes; boot disk 36G free. The `@pre-v3.3.5` snapshot still holds the old blocks.
+- 2026-11-14: the 1TB Samsung SD card cannot be found, so the backup copy waits for an HDD bought at Black Friday (2026-11-27). Bhakti's thumbnails checked against her dry run: ~7G for 23k files, 34G free on the boot disk. Transcodes to the boot disk ruled out: 57G today vs 34G free.
 
 ### Move the Airtel router to a central spot (retire the Wi-Fi extender)
 **Status:** Backlog
