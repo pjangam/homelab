@@ -650,8 +650,7 @@ Three shapes, cheapest first:
 
 #### Open items
 - [ ] **Pramod:** delete the Mac copies of `-2-001`/`-2-002` (both tested ok on xero 2026-11-14)
-- [ ] **Claude:** once the zips are in, run `import_takeout.py --dry-run` for the real unique size and photo/video split
-- [ ] **Together:** sort out storage first: the import does not fit `datapool` as set up today, see "datapool storage headroom"
+- [ ] **Together:** sort out storage first: her ~248 GiB of originals fit only at `copies=1` and with the zips off `datapool` (219G free with them, ~496G without), so after the SD-card backup is running, see "datapool storage headroom"
 - [ ] **Pramod:** before importing, have Bhakti make an Immich API key (all permissions), add it to `.env` as `IMMICH_API_KEY_BHAKTI`, and fix her misspelt name `Bkahti` under Administration -> Users
 - [ ] **Together:** import with `import_takeout.py`, following "Running a whole-library import" in `services/immich/README.md` (`--dry-run`, then `--limit 5`, then all)
 - [ ] **Claude:** check it with `verify_takeout.py --owner`, re-measure `datapool` for "datapool storage headroom"
@@ -667,6 +666,7 @@ Three shapes, cheapest first:
 - 2026-11-08: `takeout_download.sh` failed against real Google: exported cookies, even with `accounts.google.com`'s, end at the interactive sign-in page. Replaced by `takeout_browser.sh`, a Chromium container on xero viewed over an SSH tunnel; she signs in there and files save straight to `datapool`. Zips are on the single-copy root dataset, at the user's request.
 - 2026-11-10: 30 parts downloaded through the xero browser, 5-8 at a time at ~4.8 MB/s total; `watch_takeout.sh` reported each finish, `test_takeout_zips.sh` tested all 30 ok (paced by SSD temperature, peaked ~61C). No part needed a second attempt except `-2-003`, whose first try stalled on 2026-11-08.
 - 2026-11-14: `-2-001`/`-2-002` copied from the Intel Mac (landed in `~/Downloads`, moved to datapool), both ok. Ran `takeout_browser.sh stop` (her signed-in profile deleted) and removed `~/takeout-url.txt`.
+- 2026-11-14: dry run (report kept next to the zips, not in git): 23,236 files to import, 266.1 GB; 57 in Google's bin left out; 194 favourites, 1,723 archived, 11 albums; every file matched its JSON. By extension: 22,380 photos = 24.4 GiB, 913 videos = 223.4 GiB, so transcodes depend on her video codecs. Thumbnails ~7G on the boot disk (34G free).
 
 ### datapool storage headroom
 **Status:** Active
