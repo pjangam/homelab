@@ -10,6 +10,7 @@ Scripts about this repo itself.
 | `check_endpoints_toml.sh` | drift check for `projects/endpoints/endpoints.toml` |
 | `check_readmes.sh [--staged]` | every project/service/tool folder has a `README.md`; `--staged` checks only folders the commit creates (pre-commit) |
 | `check_open_items.sh` | lists `PROJECTS.md` entries missing or misusing the `#### Open items` checklist, and those still on the old Next step format |
+| `require_idea_dump.py` | Claude Code `PreToolUse` hook (`.claude/settings.json`): denies a main-session Edit/Write/Bash that adds a new Backlog/Parked entry to `PROJECTS.md` and tells it to use the `idea-dump` agent; the agent itself (hook input `agent_type`) is let through. Test: `test_require_idea_dump.sh` |
 | `fix_open_items.sh` | pre-commit: fixes the changed `PROJECTS.md` entries into the Open items format (mechanical move, else headless `claude -p`) and re-stages; `OPEN_ITEMS_AUTOFIX=0` only reports |
 | `convert_apple_to_bitwarden.py` | one-off password export conversion |
 
