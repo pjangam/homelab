@@ -1,6 +1,6 @@
 # Plan: spoken replies on the room speakers
 
-**Status:** draft for review (2026-11-14). Nothing built yet. Edit freely, or tell Claude what to change.
+**Status:** agreed 2026-11-14, ready to build. Nothing built yet.
 
 ## Why
 
@@ -108,12 +108,12 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 |---|---|---|
 | Reply volume | ~~same as music / ducking~~ **preset per room, volume set before and restored after (user, 2026-11-14)** | decided |
 | Pause music on wake word | ~~mix over music~~ **pause, resume after the reply (user, 2026-11-14)** | decided |
-| Pause when the music is in another room | yes / only if it is the same room | only the same room |
+| Pause when the music is in another room | **only the same room (user, 2026-11-14)** | decided |
 | Preset values | **bedroom 93%, living room 35% (user, 2026-11-14)**, tune later on the sliders | decided |
-| Quiet hours | always speak / errors only at night / silent while white noise is on | silent while white noise is on |
+| Quiet hours | **no replies while white noise is on (user, 2026-11-14)** | decided |
 | Which replies | **all, as HA already writes them (user, 2026-11-14)**; changed later per reply as needed | decided |
-| Error wording | "Sorry, I didn't catch that" / a short tone instead of words | the sentence |
-| Dashboard | a "Reply volume" slider tile per room (the presets) / none | a tile in each room's view |
+| Error wording | **"Sorry, I didn't catch that" (user, 2026-11-14)** | decided |
+| Dashboard | **a "Reply volume" slider tile in each room's view (user, 2026-11-14)** | decided |
 | Phone app | unchanged (it plays replies itself) | unchanged |
 
 ## Your additions
@@ -122,4 +122,4 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 - **Reply volume preset per room, set before the reply and restored after** (2026-11-14) - Design 6, 8.
 - **Which replies:** all, as already built; adjust individual replies later (2026-11-14).
 - **Preset reply volumes:** bedroom 93%, living room 35% to start (2026-11-14).
-- 
+- **Other defaults accepted:** same-room pause only, no replies while white noise is on, "Sorry, I didn't catch that", a reply-volume tile per room (2026-11-14).
