@@ -3752,7 +3752,7 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** decide the build (USB-A 5V only, or USB-C with Power Delivery passed through) and which devices it will charge
+- [ ] **Pramod:** say which devices besides the speaker it will charge (phones only at plain 5V)
 - [ ] **Pramod:** buy the parts at a local shop (table below)
 - [ ] **Claude:** wiring diagram (circuit-diagram agent), ESPHome config, and the HA charge automations
 
@@ -3775,10 +3775,12 @@ USB charger 5V -> [INA219 current sensor] -> [switch] -> USB cable -> device
 | ESP32-C3 SuperMini, or a spare ESP32 | ~Rs 250 | Spares may all be claimed |
 | INA219 current sensor module (up to 26V, ~3.2A) | ~Rs 150-250 | No |
 | 5V relay module or P-MOSFET (e.g. AO3401) | ~Rs 60 | Relay modules mentioned elsewhere here - check |
-| USB-A male + female breakouts (or USB-C ones, see below) | ~Rs 50 | ? |
+| USB-A male + female breakouts (pass D+/D- straight through) | ~Rs 50 | ? |
 | Small box | - | - |
 
 #### Phones and fast charging
+**Decided 2026-11-14 (user): USB-A, 5V only.** Phones charge at plain 5V through it; no Power Delivery, so the switch and breakouts only ever see 5V.
+
 | Charging | Through the box? |
 |---|---|
 | Plain 5V USB | Yes; slower, gentler on the battery |
@@ -3789,3 +3791,4 @@ USB charger 5V -> [INA219 current sensor] -> [switch] -> USB cable -> device
 
 #### Log
 - 2026-11-14: idea from the speaker-to-Bluetooth session; confirmed the speaker reports no battery level. Recorded as backlog.
+- 2026-11-14: build decided: USB-A in and out, 5V only (user).
