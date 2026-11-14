@@ -2657,6 +2657,7 @@ qty | item | est | note
 #### Open items
 - [ ] **Claude:** try `andromeda` / `dumbledore` against `hey_jarvis` (`WAKE_WORD_ID` in `projects/voice-assistant/setup_assist.py`, restart speech-to-phrase, temporary `--debug` on openwakeword); train on Colab only if neither works
 - [ ] **Pramod:** check which end (DIN, follow the arrows) of the bedroom strip is wired before connecting it
+- [ ] **Pramod:** review `projects/voice-assistant/plan-room-replies.md` (replies on the existing room speakers, no parts) and add changes; decide whether the parts below are still wanted
 - [ ] **Pramod:** buy the speaker parts below (local shop first)
 - [ ] **Together:** wire per the plan, add the firmware pieces, OTA both boards
 - [ ] **Claude:** update both boards' `docs/hardware.md` entries (GPIOs, firmware)
@@ -2677,6 +2678,7 @@ The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satel
 
 #### Log
 - 2026-10-30: entry created, split out of "Local voice control (HA Assist)".
+- 2026-11-14: **software alternative drafted**: play the Piper reply on the speaker already in each room (Pi jack, xero Bluetooth) via VLC + HA's VLC telnet integration and an `on_tts_end` firmware hook; plan in `projects/voice-assistant/plan-room-replies.md`, waiting on the user's changes.
 - 2026-11-07: **living room satellite stuck off HA** from ~14:53 on its GaN USB adapter: it answered ping (right MAC, next to the router), but the API port refused or timed out by turns (some checks caught it in safe mode, OTA up and API down) - repeated resets or stalls. HA reconnected at 20:32, within a minute of moving it to xero's USB, and it stayed up; same firmware, no reflash. **Not proven to be the adapter:** the move was also a full power cycle and a cable change, and serial caught no reset. Left on xero's USB (user) until a spare plain charger is free.
   - **Moved to its own 5V 1A charger** the same evening: `watch_satellite_power.sh` saw no change in 15 min (20:39-20:54, idle, API up). **Likely cause (not proven):** the GaN charger also powered the user's Mac, sitting at 99%. Near full charge the Mac keeps switching between topping up and running off the adapter, which can make a multi-port charger re-split power across its ports and briefly cut the others. An empty iPhone cable on the same charger, maybe loose, could do the same. Rule: one single-port charger per satellite.
   - Board-side diagnosis, for next time: `tools/esp32-tools/read-esp32-serial.py --no-reset` inside the `ghcr.io/esphome/esphome:stable` image (xero has no pyserial). With reset, the log came back as garbage - use `--no-reset`.
