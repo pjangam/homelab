@@ -145,7 +145,11 @@ def main():
             "speakers": SPEAKERS,
             "area": "{{ area_id(trigger.device_id) if trigger.device_id else '' }}",
             "speaker": "{{ speakers.get(area, speakers['default']) }}",
-            "key": "{{ trigger.slots.song | lower | regex_replace('[^a-z0-9\\' ]', '') | trim }}",
+            # "play the song X" can match "play {song}" with song = "the song X"
+            # (2026-11-14: "the song immigrant song is not in your liked songs"),
+            # so drop a leading "[the] song " before the lookup.
+            "key": "{{ trigger.slots.song | lower | regex_replace('[^a-z0-9\\' ]', '') | trim"
+                   " | regex_replace('^(the )?song ', '') }}",
         },
         "actions": [{
             "if": "{{ key in songs }}",

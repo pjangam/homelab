@@ -3371,6 +3371,8 @@ Everything is off-the-shelf: setup only, no code to maintain.
   - about 8 tries "No text recognized"; for at least 2 of them Speech-to-Phrase logged "decoded no frames", so no audio reached it. Most were made while a song was already playing on the Pi beside the satellite
   - TTS clips of the same phrases all match, so the model is fine; the open question is the bedroom audio (music, distance)
   - `test_stt.sh` takes `TTS_LANG=mr` (phrases in Devanagari) to test with Google's Marathi voice. **Every Marathi-voice clip came back empty**, including titles the English voice gets ("tula pahile mi"): the English acoustic model does not hold up to fully Marathi-accented speech. Real voice sits in between - several songs do work - so the aliases are worth a try before anything bigger.
+- 2026-11-14: bedroom test of three songs. "play the song immigrant song" was heard right but matched `play {song}` with song="the song immigrant song" -> "not in your liked songs"; the key now drops a leading "[the] song " (text-tested: Immigrant Song, Chop Suey play). Aggobai and Chop Suey got `stt-no-text-recognized` on the bedroom satellite: audio, not the song list (Aggobai was heard fine by the living room one the same morning). `projects/voice-assistant/recent_runs.py` added to read recent pipeline runs; `tools/ha-diag/script_traces.py` now reads automations too.
+
 
 ### Wishlist page (expensive purchases)
 **Status:** Active
