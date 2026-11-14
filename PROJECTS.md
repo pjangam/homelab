@@ -3770,13 +3770,18 @@ USB charger 5V -> [INA219 current sensor] -> [switch] -> USB cable -> device
 - **Placement:** wall-mounted near the speaker.
 
 #### Parts
-| Part | Price (rough) | Have it? |
-|---|---|---|
-| ESP32-C3 SuperMini, or a spare ESP32 | ~Rs 250 | Spares may all be claimed |
-| INA219 current sensor module (up to 26V, ~3.2A) | ~Rs 150-250 | No |
-| 5V relay module or P-MOSFET (e.g. AO3401) | ~Rs 60 | Relay modules mentioned elsewhere here - check |
-| USB-A male + female breakouts (pass D+/D- straight through) | ~Rs 50 | ? |
-| Small box | - | - |
+```parts
+qty | item | est | note
+1 | ESP32-C3 SuperMini | 250 | local - or a spare ESP32 if one is free (they may all be claimed)
+1 | INA219 current sensor module | 150-250 | local - measures the device's charging current (up to 26V, ~3.2A)
+1 | USB-A male breakout board | 25 | local - input from the charger; must pass D+/D- through
+1 | USB-A female breakout board | 25 | local - output to the device's cable; must pass D+/D- through
+1 | Small ABS project box (~85x55x30mm) | 120-200 | local - wall-mounted near the speaker
+# Switch: 5V relay module
+1 | 5V relay module (1 channel) | 60 | local - simplest, clicks; check the workbench first
+# Switch: P-channel MOSFET
+1 | P-channel MOSFET AO3401 (or a module with one) | 30-60 | local - silent; plus a 10k pull-up resistor
+```
 
 #### Phones and fast charging
 **Decided 2026-11-14 (user): USB-A, 5V only.** Phones charge at plain 5V through it; no Power Delivery, so the switch and breakouts only ever see 5V.
