@@ -1,0 +1,57 @@
+@startuml
+' Which way one voice command goes: every decision between "Hey Jarvis"
+' and what you hear. Render: projects/voice-assistant/render_architecture.sh
+title One voice command - every decision
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ActivityDiamondBackgroundColor #FFF3E0
+
+start
+:Satellite streams mic audio to HA (always);
+if (openwakeword hears "Hey Jarvis"?) then (no)
+  stop
+endif
+if (the other satellite already took this wake word?) then (yes)
+  #EEEEEE:This run dropped
+  (error duplicate_wake_up_detected);
+  stop
+endif
+:Record until silence (VAD);
+:speech-to-phrase: audio -> nearest trained phrase;
+if (close enough to a trained phrase?) then (no)
+  #FFCDD2:"No text recognized"
+  run ends, nothing happens;
+  stop
+endif
+if (matches "play {song}"?) then (yes)
+  #E3F2FD:voice_play_song (4a);
+  if (title in the song list?) then (yes)
+    if (satellite's area is bedroom?) then (yes)
+      #E3F2FD:Spotcast: play the track on the Pi;
+    else (no)
+      #E3F2FD:Spotcast: play the track on xero
+      (reconnect the Bluetooth speaker first);
+    endif
+    :reply "Playing <title> - <artist>";
+  else (no)
+    :reply "<title> is not in your liked songs";
+  endif
+elseif (matches a sentence in voice_commands.yaml?) then (yes)
+  #E8F5E9:that automation (4b): AC, fan speed,
+  turn off everything, Spotify pause / next / volume;
+  :its reply ("AC on", "Bedroom fan low", ...);
+elseif (matches a built-in sentence?) then (yes)
+  #FFF8E1:HA built-in intent (4c):
+  turn on/off <name>, timers, time;
+  :built-in reply ("Turned off the switch");
+else (no)
+  :reply "Sorry, I couldn't understand that"
+  (rare: speech-to-phrase only returns
+  phrases HA already knows);
+endif
+:Piper turns the reply into speech;
+#EEEEEE:Reply URL sent to the satellite:
+dropped (no speaker; plan-room-replies.md);
+stop
+@enduml

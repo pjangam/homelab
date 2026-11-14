@@ -15,6 +15,10 @@ Every part and what talks to what (source `architecture.puml`):
 
 ![Voice assistant architecture](architecture.svg)
 
+Every decision one command passes through - which of the three handlers (4a/4b/4c above) runs, and where a command can end early (source `intent_routing.puml`):
+
+![One voice command - every decision](intent_routing.svg)
+
 One "Hey Jarvis, play faint" in the bedroom, step by step (source `sequence_play_song.puml`):
 
 ![Play a song, end to end](sequence_play_song.svg)
@@ -98,7 +102,7 @@ white noise, AC.
   training for ~500 titles, when the satellites hear nothing). Log
   `spotify-songs.log`. Run by hand after liking a song you want now.
 - `bench_whisper.sh`, `bench_moonshine.sh` - timing of free-form STT on xero
-- `architecture.puml`, `sequence_play_song.puml` + `render_architecture.sh` - the diagrams above (renders `.svg`/`.png`)
+- `architecture.puml`, `intent_routing.puml`, `sequence_play_song.puml` + `render_architecture.sh` - the diagrams above (renders `.svg`/`.png`)
   for a future "play anything" (results in PROJECTS.md, 2026-11-04).
 - `ha_ws.py` - tiny HA websocket client used by the above.
 - `test_pipeline_ws.py file.wav [end_stage]` - runs the pipeline over the

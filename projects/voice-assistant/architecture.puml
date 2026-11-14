@@ -68,52 +68,63 @@ cloud "Spotify" as spotify {
   component "Web API\nliked songs, playlists,\nplayback control" as spapi
 }
 
-' --- speaking a command ---
-user --> sat_bed : "Hey Jarvis,\nplay faint"
-user --> sat_liv
-sat_bed --> pipeline : mic audio, streamed\nall the time (ESPHome API)
-sat_liv --> pipeline
-pipeline --> oww : 1. wake word?
-pipeline --> stp : 2. speech -> text
-stp ..> stpmodels : acoustic model
-stp ..> stptrain : trained phrases
-pipeline --> cmds : 3. text -> intent
-pipeline --> playsong
-pipeline --> builtin
-pipeline --> piper : 4. reply -> speech\n(heard only in the phone app)
-pipeline ..> sat_bed : reply audio URL\n(no speaker on the satellite:\nnot played - phone app only)
+' Colours: black = every command, in order 1-6 | orange = exactly ONE of
+' these per command (which one depends on the words; see intent_routing.puml)
+' | blue = music | grey dotted = setup / training, not per command | green = volume sliders.
+' <--> = request and its answer; --> = one way.
 
-' --- playing music ---
-playsong --> spotcast : track URI +\nPi (bedroom) or xero
-cmds --> spint : pause / next / volume
-spotcast --> spapi
-spint --> spapi
-spapi --> spd_pi : play on device
-spapi --> spd_xero
-spd_pi --> spk_pi
-spd_xero --> spk_xero
+' --- every command, in order ---
+user -[#000000]-> sat_bed : "Hey Jarvis,\nplay faint"
+user -[#000000]-> sat_liv
+sat_bed -[#000000,bold]-> pipeline : 1. mic audio, streamed\nall the time (ESPHome API)
+sat_liv -[#000000,bold]-> pipeline
+pipeline <-[#000000,bold]-> oww : 2. audio frames /\n"wake word heard"
+pipeline <-[#000000,bold]-> stp : 3. audio clip /\ntext (or "")
+pipeline <-[#000000,bold]-> piper : 5. reply text /\nspeech audio
+pipeline .[#000000].> sat_bed : 6. reply audio URL\n(satellite has no speaker:\ndropped; phone app plays it)
 
-' --- training ---
-lib --> spapi : read library\n(HA's Spotify token)
-lib --> cs : writes songs.yaml
-lib --> pkgs : writes spotify_songs.yaml
-lib --> ha : reload automations
-lib --> stp : restart = retrain
-pkgs ..> ha : bind mount\n/config/packages
-cs ..> stp : bind mount\n/custom_sentences
-stp ..> ha : reads sentence triggers\nat training (websocket)
-hc --> stp : test phrase; restart\nif custom commands deaf
+' --- step 4: exactly one handler per command ---
+pipeline <-[#E65100,bold]-> playsong : 4a. "play {song}" /\nreply text
+pipeline <-[#E65100,bold]-> cmds : 4b. custom sentence /\nreply text
+pipeline <-[#E65100,bold]-> builtin : 4c. built-in sentence /\nreply text
+
+' --- music ---
+playsong -[#1565C0]-> spotcast : track URI +\nPi (bedroom) or xero
+cmds -[#1565C0]-> spint : pause / next / volume
+spotcast -[#1565C0]-> spapi
+spint -[#1565C0]-> spapi
+spapi -[#1565C0]-> spd_pi : play on device
+spapi -[#1565C0]-> spd_xero
+spd_pi -[#1565C0]-> spk_pi
+spd_xero -[#1565C0]-> spk_xero
+
+' --- setup and training (not per command) ---
+stp .[#888888].> stpmodels : acoustic model
+stp .[#888888].> stptrain : trained phrases
+lib .[#888888].> spapi : read library\n(HA's Spotify token)
+lib .[#888888].> cs : writes songs.yaml
+lib .[#888888].> pkgs : writes spotify_songs.yaml
+lib .[#888888].> ha : reload automations
+lib .[#888888].> stp : restart = retrain
+pkgs .[#888888].> ha : bind mount\n/config/packages
+cs .[#888888].> stp : bind mount\n/custom_sentences
+stp .[#888888].> ha : reads sentence triggers\nat training (websocket)
+hc .[#888888].> stp : test phrase; restart\nif custom commands deaf
 
 ' --- volume sliders ---
-vol_pi --> mqtt
-vol_xero --> mqtt
-mqtt --> ha : number.* sliders
+vol_pi -[#2E7D32]-> mqtt
+vol_xero -[#2E7D32]-> mqtt
+mqtt -[#2E7D32]-> ha : number.* sliders
 
 legend right
   |= Arrow |= Meaning |
-  | solid | runtime call / data flow |
-  | dotted | config or model read |
-  Numbered arrows: order inside one voice command.
+  | <color:#000000>**black, numbered**</color> | every command, steps 1-6 in order |
+  | <color:#E65100>**orange 4a/4b/4c**</color> | step 4: exactly **one** of these per command\n(which one: intent_routing diagram) |
+  | <color:#1565C0>**blue**</color> | music, after 4a or 4b |
+  | <color:#2E7D32>**green**</color> | volume sliders (MQTT) |
+  | <color:#888888>**grey dotted**</color> | setup / nightly training, not per command |
+  | <-> | request and its answer |
+  | -> | one way |
   Wake word and speech-to-text run on xero,
   not the satellite (original ESP32, no on-device wake word).
 endlegend
