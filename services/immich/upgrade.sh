@@ -18,6 +18,7 @@
 #     @pre-vX.Y.Z, sets IMMICH_VERSION in .env, starts server + ML + redis
 #     (redis so a valkey digest bump in docker-compose.yml applies too)
 #   - waits for immich_server to report healthy and prints the migration lines
+#   - if healthy, deletes immich images older than the previous version
 #
 # Run it from a real terminal: the snapshot needs sudo's password prompt.
 # Diun posts to ntfy homelab-updates when a new release is out
@@ -110,6 +111,16 @@ echo "== Migration log lines:"
 docker logs immich_server 2>&1 | grep -i -E 'migrat|error' | tail -20 || true
 
 echo
+# Keep only the new and the previous version's images (the previous one is
+# the rollback); older ones just fill the boot disk.
+if [[ $st == healthy ]]; then
+  for img in immich-server immich-machine-learning; do
+    docker images --format '{{.Tag}}' "ghcr.io/immich-app/$img" \
+      | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -vx -e "$new" -e "$old" \
+      | while read -r t; do docker rmi -f "ghcr.io/immich-app/$img:$t" >/dev/null && echo "removed $img:$t"; done
+  done
+fi
+
 echo "Done: $old -> $new, snapshots @$snap."
 echo "  Check the web UI and the phone app, then record it in services/immich/README.md."
 echo "  Remote ML on the Mac, if in use: remote_ml_mac.sh $new"
