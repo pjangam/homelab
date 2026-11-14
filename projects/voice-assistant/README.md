@@ -34,6 +34,7 @@ Added in `packages/voice_commands.yaml` (sentence-trigger automations):
 
 Commands to try on either satellite:
 - "Play \<song title\>", "play \<title\> by \<artist\>" or "play the song \<title\>": works for any of your liked songs and the playlists in `PLAYLISTS` (546 songs on 2026-11-07) and plays that exact track - on the Pi's speaker when the bedroom satellite heard it, on xero's otherwise (`SPEAKERS` in `spotify_library.py`). It never searches Spotify, so it can't pick the wrong song.
+  - **xero's speaker is Bluetooth (2026-11-14):** before playing there, the automation asks xero over MQTT (`bt_speaker_xero/connect`) to reconnect the speaker and waits up to 25s for the answer; ~5s when it was disconnected. See `projects/spotifyd/README.md`.
 - "Pause the music" or "stop the music"; "resume the music".
 - "Next song" or "skip this song"; "previous song" (the first time restarts the song, which is Spotify's normal behaviour, so say it twice to go back a song).
 - "Music volume up/down", "turn the music up/down", "set the music volume to 40".

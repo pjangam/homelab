@@ -34,7 +34,12 @@ PERCENT_RE = re.compile(r"\[(\d+)%\]")
 # Which mixer the slider drives. Defaults are xero's (default card, Master);
 # the wol Pi sets VOLUME_CARD/VOLUME_CONTROL in a systemd drop-in, because its
 # default ALSA device is PipeWire and the speaker's own control is not Master.
-AMIXER = ["amixer"] + (["-c", os.environ["VOLUME_CARD"]] if os.environ.get("VOLUME_CARD") else [])
+# VOLUME_DEVICE=pipewire (xero since 2026-11-14) drives whatever PipeWire's
+# default sink is - the Bluetooth speaker - instead of one ALSA card.
+if os.environ.get("VOLUME_DEVICE"):
+    AMIXER = ["amixer", "-D", os.environ["VOLUME_DEVICE"]]
+else:
+    AMIXER = ["amixer"] + (["-c", os.environ["VOLUME_CARD"]] if os.environ.get("VOLUME_CARD") else [])
 CONTROL = os.environ.get("VOLUME_CONTROL", "Master")
 # The slider's top. The Pi's 3.5mm jack goes above 0 dB and clips past ~97%,
 # so deploy_audio_pi.sh caps it at 93 there.

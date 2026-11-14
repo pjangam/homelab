@@ -16,10 +16,36 @@ enabled. The setup below is xero's, which is where it was first built.
 | **Listed watchdog (xero cron, */5)** | `watchdog_spotify_listed.sh`: restarts xero's or the Pi's (over ssh) spotifyd when Spotify has lost it for 15min, once an hour at most; tested by `test_watchdog_spotify_listed.sh` |
 | **Pi in the healthcheck** | `check_pi_spotifyd.sh`, called by `healthcheck.sh` for the "Homelab Spotifyd (wol Pi)" tile |
 | **Dashboard tile** | `apply_spotifyd_advertising_dashboard_tile.sh` |
+| **xero's speaker: Bluetooth reconnect (cron, every minute)** | `bt_speaker_reconnect.sh`: connects the Portronics Apollo One if it is not, and makes it PipeWire's default output; `--dry-run` reports only. Log: `~/code/homelab/bt-speaker-reconnect.log` |
+| **xero's speaker: reconnect on voice play** | `bt_speaker_mqtt.py` as `bt-speaker-mqtt.service` (`systemd --user`): HA publishes `bt_speaker_xero/connect`, it reconnects and answers on `bt_speaker_xero/state` |
 | **Build for the Pi** | `build_spotifyd_arm64.sh`, `build_spotifyd_on_pi.sh`, `install_raspotify_pi.sh` |
 
 
-Running spotifyd as a Spotify Connect daemon — no GUI needed. Speakers connected to headphone jack (USB Audio Device / C-Media chip, card 1).
+Running spotifyd as a Spotify Connect daemon — no GUI needed.
+
+### xero's speaker is Bluetooth (since 2026-11-14)
+
+| | |
+|---|---|
+| **Speaker** | Portronics Apollo One, `0D:67:1F:80:92:22`, paired and trusted on xero's Intel Bluetooth (`hci0`) |
+| **Why not AUX** | It boots into Bluetooth mode. AUX comes back only with its M button or a cable reseat; audio on the line does not switch it (tested 2026-11-14), so "plays but silent" needed a hand every time |
+| **Path** | spotifyd -> ALSA `default` -> PipeWire (pipewire-alsa) -> default sink = the Apollo One |
+| **Volume** | `wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.18`, or HA's "xero Speaker Volume" slider (`volume-mqtt` with `VOLUME_DEVICE=pipewire`) |
+| **Fallback** | When the speaker is away, PipeWire falls back to the USB adapter (card 1); the reconnect script sets the speaker back as default |
+
+Install on xero (already done 2026-11-14):
+1. `bluetoothctl pair 0D:67:1F:80:92:22 && bluetoothctl trust 0D:67:1F:80:92:22` (speaker on, in Bluetooth mode)
+2. `crontab -e`: `* * * * * /home/pramod/code/homelab/projects/spotifyd/bt_speaker_reconnect.sh >> /home/pramod/code/homelab/bt-speaker-reconnect.log 2>&1`
+3. `cp projects/spotifyd/bt-speaker-mqtt.service ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now bt-speaker-mqtt`
+
+Traps:
+- **`bluetoothctl --timeout N connect` always takes N seconds**, even after connecting. The script polls `bluetoothctl info` instead; with the timeout a voice "play" took 20s, now ~5s.
+- **cron has no session env**: `wpctl` needs `XDG_RUNTIME_DIR`, which the script sets.
+- **One source at a time**: while xero holds the speaker, the phone cannot pair to it directly. Play to `xero` from the Spotify app instead.
+
+### Original AUX setup (2026-08, superseded on xero)
+
+The speaker used to be on the USB adapter's headphone jack (USB Audio Device / C-Media chip, card 1).
 
 **Install:**
 ```bash
@@ -74,10 +100,7 @@ systemctl --user enable --now spotifyd
 
 **Usage:** "xero" appears as a Spotify Connect device in the Spotify app. Select it to play through the speakers.
 
-**Volume:**
-```bash
-amixer sset Master 50%
-```
+**Volume:** see the Bluetooth table above (`wpctl`, or the HA slider).
 
 **Troubleshooting:**
 - **Stuck "active" but throwing 429/websocket errors** - just restart it: `systemctl --user restart spotifyd`.

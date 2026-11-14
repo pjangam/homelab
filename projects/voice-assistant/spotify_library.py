@@ -150,6 +150,17 @@ def main():
         "actions": [{
             "if": "{{ key in songs }}",
             "then": [
+                # xero's speaker is Bluetooth since 2026-11-14: ask xero
+                # (projects/spotifyd/bt_speaker_mqtt.py) to reconnect it and
+                # wait for the answer, so a speaker switched on a moment ago
+                # plays instead of xero falling back to its USB jack.
+                {"if": "{{ speaker == speakers['default'] }}",
+                 "then": [
+                     {"action": "mqtt.publish",
+                      "data": {"topic": "bt_speaker_xero/connect", "payload": "play"}},
+                     {"wait_for_trigger": [{"trigger": "mqtt", "topic": "bt_speaker_xero/state"}],
+                      "timeout": 25, "continue_on_timeout": True},
+                 ]},
                 {"action": "spotcast.play_media",
                  "data": {"spotify_uri": "{{ songs[key][0] }}",
                           "media_player": {"entity_id": "{{ speaker }}"}}},

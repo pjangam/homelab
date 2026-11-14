@@ -1,0 +1,15 @@
+# xero only. Install:
+#   cp projects/spotifyd/bt-speaker-mqtt.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now bt-speaker-mqtt
+[Unit]
+Description=Bluetooth speaker reconnect on MQTT request (HA voice play)
+
+[Service]
+EnvironmentFile=/home/pramod/code/homelab/.env.mqtt
+ExecStart=%h/.local/bin/uv run --script /home/pramod/code/homelab/projects/spotifyd/bt_speaker_mqtt.py
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

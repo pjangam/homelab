@@ -256,7 +256,11 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
 
     [[group.endpoint.topic]]
     name = "volume_xero/set, /state, /available"
-    desc = "xero's speaker volume as an HA number (number.xero_speaker_volume, USB card 1 Speaker, 0-100%). Bridged by volume-mqtt.service on xero with the volume-mqtt-xero.conf drop-in (since 2026-11-07); same script as the Pi's, its own topics and client id."
+    desc = "xero's speaker volume as an HA number (number.xero_speaker_volume, 0-100%). Since 2026-11-14 it drives PipeWire's default sink (the Bluetooth speaker), not USB card 1. Bridged by volume-mqtt.service on xero with the volume-mqtt-xero.conf drop-in (since 2026-11-07); same script as the Pi's, its own topics and client id."
+
+    [[group.endpoint.topic]]
+    name = "bt_speaker_xero/connect, /state"
+    desc = "Not retained. HA's voice play publishes /connect before playing on xero; bt-speaker-mqtt.service (systemd --user on xero) reconnects the Bluetooth speaker and answers connected or unavailable on /state (since 2026-11-14)."
 
     [[group.endpoint.topic]]
     name = "homelab/wol_pi/state, /available"
