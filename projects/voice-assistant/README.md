@@ -29,11 +29,38 @@ Edit the `.puml`, then run `render_architecture.sh` (PlantUML in Docker) and com
 
 | Piece | Where |
 |---|---|
-| Speech-to-text | `speech-to-phrase` container, `127.0.0.1:10300`. Legacy v1.4 (Kaldi) image: the newer Speech-to-Phrase ships only as an HA OS app. Fast on xero's CPU, where Whisper would not be. |
+| Speech-to-text | `speech-to-phrase` container, `127.0.0.1:10300`. Legacy v1.4 (Kaldi) image: the newer Speech-to-Phrase ships only as an HA OS app. Why this one: "Choosing the speech-to-text" below. |
 | Command matching | HA's own conversation agent (`prefer_local_intents` on), plus `packages/voice_commands.yaml` for what its built-in sentences do not cover |
 | Text-to-speech | `piper` container, `127.0.0.1:10200`, voice `en_US-lessac-medium`. **Required, not optional** - see Gotchas. |
 | Pipeline | The preferred "Home Assistant" Assist pipeline: `stt.speech_to_phrase` + `tts.piper` |
 | Mic | Two ESP32 + INMP441 satellites on ESPHome (Voice Satellite in the bedroom, Voice Living Room), streaming audio to HA all the time; wake word "Hey Jarvis" in the `openwakeword` container on xero (the boards are original ESP32s, no on-device wake word). Also the HA phone app's Assist button. Wiring: `wiring.html` |
+
+## Choosing the speech-to-text
+
+**Speech-to-Phrase** has been in use since 2026-10-05 and was confirmed for songs on 2026-11-04. Whisper was benchmarked but never deployed. Constraints:
+- **Free:** no paid or cloud speech-to-text (user, 2026-11-04).
+- **Hardware:** xero's N5105 CPU, no GPU.
+- **Speed:** a reply within about a second.
+
+Timing per request on xero, using clean Google TTS clips of 1.4-2.8s. Real satellite audio does worse. Scripts: `bench_whisper.sh`, `bench_moonshine.sh`.
+
+| Engine | Time per request | English song titles | Marathi ("aggobai dhaggobai") | Verdict |
+|---|---|---|---|---|
+| **Speech-to-Phrase** (Kaldi, closed vocabulary) | **~0.5s** | 15/16 random titles from the library | only through hand-made aliases ("ago by dhago by"), borderline with real voice | **in use**: fast, and it never invents a command |
+| Whisper `tiny.en` | ~1.5s | wrong ("papercut" -> "people good") | garbled | too inaccurate |
+| Whisper `base.en` | ~3s | mostly right ("papercut" -> "people gut") | garbled | slow, and still misses some |
+| Whisper `small.en` / `distil-small.en` | 10-15s / ~9.5s | all right | garbled | far too slow |
+| Moonshine `tiny` / `base` | 0.2-0.4s / 0.5-0.9s | like Whisper base | garbled | fast, but not accurate enough on its own |
+| IndicConformer Marathi (AI4Bharat) | being measured (2026-11-15) | not meant for English | made for it | candidate **fallback** for Marathi titles |
+
+Why Speech-to-Phrase:
+- **Speed:** it is the only accurate option fast enough on the N5105.
+- **No made-up commands:** it can only return a phrase it was trained on (or nothing), so noise never becomes a wrong command. The cost is that it can't hear anything it wasn't trained on: every song title must be in the trained list, and Marathi needs aliases.
+- **The English model fails on Marathi pronunciation.** Speech-to-Phrase uses Rhasspy's English Kaldi model (2021). Google's Marathi voice failed on every clip; real voice sits in between.
+
+Under consideration (PROJECTS.md "Spotify by voice", 2026-11-15): a Marathi fallback that runs only when Speech-to-Phrase returns nothing.
+- **Recogniser:** IndicConformer writes Devanagari.
+- **Matching:** the text is matched against our own titles first, then Spotify search, which found 21/27 Devanagari queries (`spotify_devanagari_search.py`).
 
 ## Commands
 
@@ -102,8 +129,10 @@ white noise, AC.
   training for ~500 titles, when the satellites hear nothing). Log
   `spotify-songs.log`. Run by hand after liking a song you want now.
 - `bench_whisper.sh`, `bench_moonshine.sh` - timing of free-form STT on xero
+  for a future "play anything" (results: "Choosing the speech-to-text" above).
+- `spotify_devanagari_search.py` - does Spotify search find our Marathi songs
+  from Devanagari titles (read-only; 2026-11-15: 21/27).
 - `architecture.puml`, `intent_routing.puml`, `sequence_play_song.puml` + `render_architecture.sh` - the diagrams above (renders `.svg`/`.png`)
-  for a future "play anything" (results in PROJECTS.md, 2026-11-04).
 - `ha_ws.py` - tiny HA websocket client used by the above.
 - `test_pipeline_ws.py file.wav [end_stage]` - runs the pipeline over the
   websocket exactly as the phone app does for voice (binary audio frames).
