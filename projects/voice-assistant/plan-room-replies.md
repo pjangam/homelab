@@ -94,6 +94,17 @@ Found 2026-11-15: on the Pi, PipeWire runs but no program plays through it (0 st
 
 Rollback: put the two spotifyd lines and the old white-noise ExecStart back, restart both.
 
+## The reply audio link (checked 2026-11-15)
+
+| Question | Answer | Evidence |
+|---|---|---|
+| What does the satellite get in `on_tts_end`? | a **full** URL: `http://192.168.1.123:8123/api/tts_proxy/<token>.mp3` | HA's ESPHome satellite code turns the pipeline's relative path into an absolute one with `async_process_play_media_url` before sending it (HA 2026.11, `esphome/assist_satellite.py`, TTS_END) |
+| Can the Pi fetch it? | yes, no login needed (the token in the path is the key): HTTP 200, 22.6kB, 0.03s | `curl` from the Pi of a Piper reply ("Playing Faint by Linkin Park") |
+| What is it? | MP3, 22.05kHz mono, ~1.5s for a short reply | `file` on the download |
+| How long does it live? | HA keeps TTS files in its cache; the reply is played within a second or two, so expiry is not a concern | |
+
+So the player only needs to fetch an HTTP URL and decode MP3 - no address rewriting.
+
 ## No "Sorry" on false wakes
 
 The review (2026-11-15) found ~6-10 wake-ups per room per day that end in "No text recognized" - mostly false wakes with nothing said after. Each would say "Sorry" out loud, at night too (user: fix this).
