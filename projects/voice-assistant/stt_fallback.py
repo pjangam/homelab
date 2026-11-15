@@ -38,6 +38,12 @@ UPSTREAM = os.environ.get("UPSTREAM", "speech-to-phrase:10300")
 MODEL_DIR = os.environ.get("MODEL_DIR", "/model")
 MODEL_REPO = "OpenVoiceOS/ai4bharat-indicconformer-mr-onnx"
 MIN_SECS = 0.4  # shorter audio is no song title
+# PARALLEL=1: start IndicConformer on every request as soon as the audio ends,
+# alongside speech-to-phrase, and use it only if speech-to-phrase hears
+# nothing - saves speech-to-phrase's time on Marathi misses, costs CPU on every
+# command. IC_THREADS: ONNX Runtime threads (0 = its default, all cores).
+PARALLEL = os.environ.get("PARALLEL", "0") == "1"
+IC_THREADS = int(os.environ.get("IC_THREADS", "0"))
 
 model = None  # set by load_model() in the background
 
@@ -55,10 +61,15 @@ def load_model():
             snapshot_download(MODEL_REPO, local_dir=MODEL_DIR,
                               allow_patterns=["config.json", "vocab.txt", "model.int8.onnx"])
         t = time.time()
-        m = onnx_asr.load_model("nemo-conformer-ctc", MODEL_DIR, quantization="int8")
+        import onnxruntime as ort
+        so = ort.SessionOptions()
+        if IC_THREADS:
+            so.intra_op_num_threads = IC_THREADS
+        m = onnx_asr.load_model("nemo-conformer-ctc", MODEL_DIR, quantization="int8", sess_options=so)
         m.recognize(np.zeros(16000, dtype=np.float32), sample_rate=16000)  # warm-up
         model = m
-        log(f"fallback ready: IndicConformer loaded in {time.time() - t:.1f}s")
+        log(f"fallback ready: IndicConformer loaded in {time.time() - t:.1f}s "
+            f"(parallel={PARALLEL}, threads={IC_THREADS or 'default'})")
     except Exception as e:  # stay a plain proxy
         log(f"fallback DISABLED, model failed to load: {e!r}")
 
@@ -89,23 +100,22 @@ def spotify_token():
 
 
 def fallback(pcm, rate, width, channels):
-    """Blocking: audio -> 'play <title>' or ''. Runs in a worker thread."""
+    """Blocking: audio -> ('play <title>' or '', log line). Worker thread."""
     t = time.time()
     a = np.frombuffer(pcm[: len(pcm) - len(pcm) % (width * channels)],
                       dtype={2: np.int16, 4: np.int32}[width])
     a = a.reshape(-1, channels)[:, 0].astype(np.float32) / float(2 ** (8 * width - 1))
     secs = len(a) / rate
     if secs < MIN_SECS:
-        return ""
+        return "", f"fallback: {secs:.1f}s audio, too short"
     heard = model.recognize(a, sample_rate=rate).strip()
     hit = None
     if heard:
         lib_map, keys = songs.get()
         hit = dm.match(heard, lib_map, keys, spotify_token())
     out = f"play {hit[0]}" if hit else ""
-    log(f"fallback: {secs:.1f}s audio, heard {heard!r} -> "
-        f"{(repr(out) + ' [' + hit[2] + ']') if hit else 'nothing'} ({time.time() - t:.2f}s)")
-    return out
+    return out, (f"fallback: {secs:.1f}s audio, heard {heard!r} -> "
+                 f"{(repr(out) + ' [' + hit[2] + ']') if hit else 'nothing'} ({time.time() - t:.2f}s)")
 
 
 async def read_event(reader):
@@ -143,7 +153,8 @@ async def handle(c_reader, c_writer):
         log(f"upstream {UPSTREAM} unreachable: {e}")
         c_writer.close()
         return
-    audio = {"pcm": bytearray(), "fmt": (16000, 2, 1)}
+    audio = {"pcm": bytearray(), "fmt": (16000, 2, 1), "job": None}
+    loop = asyncio.get_running_loop()
 
     async def client_to_upstream():
         while ev := await read_event(c_reader):
@@ -153,6 +164,8 @@ async def handle(c_reader, c_writer):
                 audio["fmt"] = (data.get("rate", 16000), data.get("width", 2), data.get("channels", 1))
             elif hdr["type"] == "audio-chunk":
                 audio["pcm"] += payload
+            elif hdr["type"] == "audio-stop" and PARALLEL and model is not None and audio["pcm"]:
+                audio["job"] = loop.run_in_executor(None, fallback, bytes(audio["pcm"]), *audio["fmt"])
             u_writer.write(raw)
             await u_writer.drain()
 
@@ -162,8 +175,10 @@ async def handle(c_reader, c_writer):
             if (hdr["type"] == "transcript" and not (data.get("text") or "").strip()
                     and model is not None and audio["pcm"]):
                 try:
-                    text = await asyncio.get_running_loop().run_in_executor(
+                    job = audio["job"] or loop.run_in_executor(
                         None, fallback, bytes(audio["pcm"]), *audio["fmt"])
+                    text, line = await job
+                    log(line)
                 except Exception as e:
                     log(f"fallback error, passing the empty transcript: {e!r}")
                     text = ""

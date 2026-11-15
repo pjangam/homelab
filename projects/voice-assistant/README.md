@@ -75,6 +75,7 @@ A Wyoming proxy (`stt_fallback.py`) in front of Speech-to-Phrase. Built 2026-11-
 - **Fails safe:** model not loaded, an error, Spotify down -> the empty answer goes through as before. If the container itself is down, voice is down: `docker compose up -d stt-fallback`, or point HA at 10301.
 - **Image:** `indicconformer` is local (Immich's ML image + onnx-asr), built by `build_indicconformer_image.sh`; watchtower skips it. Model in the `indicconformer-cache` volume (downloaded on first start).
 - **Song list:** re-read whenever the nightly sync rewrites `packages/spotify_songs.yaml`; no restart needed. Code is bind-mounted: `docker restart stt-fallback` after editing it.
+- **Fallback, not parallel** (measured 2026-11-15, `bench_stt_parallel.sh`): starting IndicConformer alongside Speech-to-Phrase on every request saves ~0.6-0.9s on a Marathi miss, but slows **every** English command by ~0.4-0.6s (2 threads) or up to ~1.2s (all 4 cores) on xero's CPU. English commands are far more common, so it stays a fallback. `PARALLEL=1` / `IC_THREADS=2` in the container's environment switch it on if that changes.
 - **Test without HA:** `wyoming_transcribe.py 127.0.0.1:10300 clip.wav` (proxy) vs `127.0.0.1:10301` (Speech-to-Phrase alone).
 
 ## Commands
@@ -154,6 +155,7 @@ white noise, AC.
 - `bench_indicconformer.sh` - IndicConformer timing and matches on TTS clips
   (results: "Choosing the speech-to-text" above).
 - `wyoming_transcribe.py` - send a WAV straight to a Wyoming STT port.
+- `bench_stt_parallel.sh` - fallback vs parallel timing of the proxy (test copy on :10302).
 - `architecture.puml`, `intent_routing.puml`, `sequence_play_song.puml` + `render_architecture.sh` - the diagrams above (renders `.svg`/`.png`)
 - `ha_ws.py` - tiny HA websocket client used by the above.
 - `test_pipeline_ws.py file.wav [end_stage]` - runs the pipeline over the

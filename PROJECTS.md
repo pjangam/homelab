@@ -2681,6 +2681,18 @@ The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satel
 
 #### Log
 - 2026-10-30: entry created, split out of "Local voice control (HA Assist)".
+- 2026-11-15: **parallel vs fallback measured** (user: run both models at once for "play" if the CPU can take it, else keep the fallback). `bench_stt_parallel.sh`, 5 runs per clip, p50 seconds per request:
+
+  | Clip | Speech-to-Phrase alone | fallback (live) | parallel, 4 cores | parallel, 2 threads |
+  |---|---|---|---|---|
+  | "play faint" | 2.18 | 2.26 | 2.62 | 2.66 |
+  | "turn on the hall fan" | 2.37 | 2.34 | 3.40 | 2.84 |
+  | "set the AC to 24 degrees" | 2.49 | 2.77 | 3.69 | 3.07 |
+  | Marathi aggobai (stp misses) | 3.89 (empty) | 5.16 | 4.73 | 4.31 |
+  | Marathi manu tai aali (stp misses) | 3.65 (empty) | 4.68 | 4.50 | 4.08 |
+
+  - parallel saves 0.6-0.9s on a Marathi miss but costs every English command 0.4-0.6s (2 threads) to 1.2s (4 cores): the CPU can't do it for free, so **the fallback stays** (user's rule). The switch is in the code (`PARALLEL`, `IC_THREADS`), off. CPU peak 70C during the bench
+  - side finding: Speech-to-Phrase itself took 2.2-2.5s per English clip here, not the ~0.5s in the README table (measured with 514 titles on 2026-11-04; 1095 phrases now) - worth a look
 - 2026-11-15: **room-replies plan revised** after the first `architecture-review` agent run (new agent, `.claude/agents/architecture-review.md`). Main changes: resume driven by the reply script and firmware `on_end` (satellites without a speaker stay "responding" for hours, never idle); an MQTT bridge per host driving an always-running VLC instead of HA's VLC telnet integration (10s polling; per-reply start-up is ~1.1s on the Pi 3); volume saved on the host; Spotify state refreshed before pausing; no "Sorry" on false wakes (speech >= 1s); Pi plays straight to ALSA (8 streams) with the PipeWire move as fallback. User decisions: other room's music keeps playing; white noise mutes bedroom replies only; only "stop white noise" must work under white noise; wrong-room wake word accepted for now.
 - 2026-11-14: **software alternative drafted**: play the Piper reply on the speaker already in each room (Pi jack, xero Bluetooth) via VLC + HA's VLC telnet integration and an `on_tts_end` firmware hook; plan in `projects/voice-assistant/plan-room-replies.md`, waiting on the user's changes.
 - 2026-11-07: **living room satellite stuck off HA** from ~14:53 on its GaN USB adapter: it answered ping (right MAC, next to the router), but the API port refused or timed out by turns (some checks caught it in safe mode, OTA up and API down) - repeated resets or stalls. HA reconnected at 20:32, within a minute of moving it to xero's USB, and it stayed up; same firmware, no reflash. **Not proven to be the adapter:** the move was also a full power cycle and a cable change, and serial caught no reset. Left on xero's USB (user) until a spare plain charger is free.
