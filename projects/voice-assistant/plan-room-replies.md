@@ -24,7 +24,7 @@
 |---|---|---|---|
 | 1 | Reply player | Pi and xero, `systemd --user` unit `voice-reply.service` | `cvlc -I telnet` (already installed on both), output to PipeWire, so it mixes with spotifyd instead of fighting it for the sound card. **On the Pi this needs step 0 first:** today spotifyd and white noise open the card directly (ALSA), not through PipeWire |
 | 2 | HA media players | HA, built-in **VLC telnet** integration (UI config flow, no restart) | one entity per room, e.g. `media_player.bedroom_voice_reply` (Pi), `media_player.living_room_voice_reply` (xero) |
-| 3 | Satellite firmware | `esphome/voice-satellite-common.yaml` + a `reply_player` substitution per board | `on_tts_end`: play the reply URL on its room's player. `on_error`: speak the error with `tts.speak` (Piper) on the same player |
+| 3 | Satellite firmware | `esphome/voice-satellite-common.yaml` + a `reply_player` substitution per board | `on_tts_end`: play the reply URL on its room's player. `on_error`: speak the error with `tts.speak` (Piper) on the same player **only when you clearly spoke** - see "No \"Sorry\" on false wakes" below |
 | 4 | Permission | ESPHome integration options in HA, per satellite | turn on "Allow the device to perform Home Assistant actions" (off by default) |
 | 5 | Pause on wake word | HA automation `voice_music_pause`, on each `assist_satellite.*` going **listening** | if Spotify is playing **on that room's device**: pause it and remember that per room (`input_boolean.voice_paused_<room>`). No firmware needed |
 | 6 | Reply script | HA script `voice_reply(room, url or message)`, called by the firmware hook in 3 | save the room speaker's volume -> set the room's preset -> play the reply -> wait until the player is idle (max 20s) -> put the volume back |
@@ -94,6 +94,24 @@ Found 2026-11-15: on the Pi, PipeWire runs but no program plays through it (0 st
 
 Rollback: put the two spotifyd lines and the old white-noise ExecStart back, restart both.
 
+## No "Sorry" on false wakes
+
+The review (2026-11-15) found ~6-10 wake-ups per room per day that end in "No text recognized" - mostly false wakes with nothing said after. Each would say "Sorry" out loud, at night too (user: fix this).
+
+The rule, in the satellite firmware (`voice-satellite-common.yaml`): say "Sorry, I didn't catch that" only if **all** of these hold.
+
+| # | Condition | Why |
+|---|---|---|
+| 1 | the error code is exactly `stt-no-text-recognized` | not `duplicate_wake_up_detected` (the other room), not timeouts or connection errors - those stay silent |
+| 2 | HA's voice detector saw speech start **and** end in this run (`on_stt_vad_start` and `on_stt_vad_end` both fired; the firmware already has `on_stt_vad_end`) | a false wake usually has no speech after it, and the run times out without them |
+| 3 | the speech lasted at least **1.0s** (time between the two, kept in a firmware global) | a cough, a door or a word of the TV is shorter than a command. 1.0s is the start value: real failed commands on 2026-11-15 had 3-6s of speech |
+
+Calibrate before the reflash:
+- `stt-fallback` already logs every empty run with its audio length and what IndicConformer heard (`docker logs stt-fallback`). After a week, compare: runs where it heard words (you spoke) vs nothing or one short word (false wake), and pick the threshold that separates them.
+- Count how many would have said "Sorry" with the rule; aim for zero on nights with nobody speaking.
+
+Still happens on a false wake, by design: the music in that room pauses and resumes (seconds). If that also bothers, a later change can pause on speech start (`on_stt_vad_start`) instead of on the wake word, at the cost of the first words of a command being under the music.
+
 ## Docs to update
 
 | File | What changes |
@@ -110,7 +128,7 @@ Rollback: put the two spotifyd lines and the old white-noise ExecStart back, res
 
 ## Traps known in advance
 
-- **Duplicate wake-up:** both satellites often hear "Hey Jarvis"; HA drops one with an error. `on_error` must ignore `duplicate_wake_up_detected`, or the other room says "Sorry" every time.
+- **Duplicate wake-up:** both satellites often hear "Hey Jarvis"; HA drops one with an error. `on_error` speaks only for `stt-no-text-recognized` (see "No \"Sorry\" on false wakes"), so the other room stays silent.
 - **"Stop white noise" must work through the hiss** (user, 2026-11-15); every other command may fail while white noise plays. The hiss is beside the bedroom mic and has drowned commands since 2026-10-06. Ideas, to test in the build: pause on the wake word could also lower the white noise for the command and put it back after (the reverse of the music pause); and HA's "stop white noise" sentence variants ("stop the noise", "white noise off") all trained. Test it in the bedroom at the usual night volume before calling the build done.
 - **White noise:** it plays from the Pi's speaker, through the same volume control (`number.server_volume`, PCM). The volume dance would change the white noise level mid-reply; while white noise is on, either skip the reply or leave the volume alone.
 - **Pausing only the room's own device:** Spotify is one account-wide player, playing on one device at a time. The pause automation checks which device is playing (the Pi = bedroom, xero = living room) and does nothing when it is the other room's - music in the living room keeps playing through a bedroom command, and the other way round (user, 2026-11-15).
@@ -148,6 +166,7 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 | Commands while white noise plays | **may fail, except "stop white noise", which must work** (user, 2026-11-15). Judge white noise as it was **at the wake word**, so the "white noise off" reply after "stop white noise" stays silent too | decided |
 | Which replies | **all, as HA already writes them (user, 2026-11-14)**; changed later per reply as needed | decided |
 | Error wording | **"Sorry, I didn't catch that" (user, 2026-11-14)** | decided |
+| "Sorry" on false wakes | **must not happen** (user, 2026-11-15): only when you clearly spoke - see "No \"Sorry\" on false wakes" | decided |
 | Dashboard | **a "Reply volume" slider tile in each room's view (user, 2026-11-14)** | decided |
 | Phone app | unchanged (it plays replies itself) | unchanged |
 
@@ -160,6 +179,7 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 - **Music in the other room keeps playing**, only the same room's music pauses (2026-11-15) - Goal, Traps.
 - **README and the architecture diagrams are updated as part of the build** (2026-11-15) - Steps 8, "Docs to update".
 - **Pi audio through PipeWire first** (spotifyd, and white noise too - user: "okay to move that too"), 2026-11-15 - Step 0.
+- **No "Sorry" on false wakes**: only when you clearly spoke (2026-11-15) - its own section.
 - **Wrong room winning the wake word is fine for now**; observe and change later (2026-11-15) - Decisions.
 - **While white noise plays, commands may fail; only "stop white noise" has to work** (2026-11-15) - Decisions, Traps.
 - **Other defaults accepted:** same-room pause only, no replies while white noise is on, "Sorry, I didn't catch that", a reply-volume tile per room (2026-11-14).
