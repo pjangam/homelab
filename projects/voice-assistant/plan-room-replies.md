@@ -96,6 +96,7 @@ Commands that change the music themselves:
 ## Traps known in advance
 
 - **Duplicate wake-up:** both satellites often hear "Hey Jarvis"; HA drops one with an error. `on_error` must ignore `duplicate_wake_up_detected`, or the other room says "Sorry" every time.
+- **"Stop white noise" must work through the hiss** (user, 2026-11-15); every other command may fail while white noise plays. The hiss is beside the bedroom mic and has drowned commands since 2026-10-06. Ideas, to test in the build: pause on the wake word could also lower the white noise for the command and put it back after (the reverse of the music pause); and HA's "stop white noise" sentence variants ("stop the noise", "white noise off") all trained. Test it in the bedroom at the usual night volume before calling the build done.
 - **White noise:** it plays from the Pi's speaker, through the same volume control (`number.server_volume`, PCM). The volume dance would change the white noise level mid-reply; while white noise is on, either skip the reply or leave the volume alone.
 - **Pausing only the room's own device:** Spotify is one account-wide player, playing on one device at a time. The pause automation checks which device is playing (the Pi = bedroom, xero = living room) and does nothing when it is the other room's - music in the living room keeps playing through a bedroom command, and the other way round (user, 2026-11-15).
 - **Pause latency:** Spotify takes ~0.5-1s to pause after "Hey Jarvis"; the first words of a fast command may still be under the music.
@@ -128,6 +129,7 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 | Pause when the music is in another room | **only the same room (user, 2026-11-14)** | decided |
 | Preset values | **bedroom 93%, living room 35% (user, 2026-11-14)**, tune later on the sliders | decided |
 | Quiet hours | **no replies while white noise is on (user, 2026-11-14)** | decided |
+| Commands while white noise plays | **may fail, except "stop white noise", which must work** (user, 2026-11-15). Judge white noise as it was **at the wake word**, so the "white noise off" reply after "stop white noise" stays silent too | decided |
 | Which replies | **all, as HA already writes them (user, 2026-11-14)**; changed later per reply as needed | decided |
 | Error wording | **"Sorry, I didn't catch that" (user, 2026-11-14)** | decided |
 | Dashboard | **a "Reply volume" slider tile in each room's view (user, 2026-11-14)** | decided |
@@ -141,4 +143,5 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 - **Preset reply volumes:** bedroom 93%, living room 35% to start (2026-11-14).
 - **Music in the other room keeps playing**, only the same room's music pauses (2026-11-15) - Goal, Traps.
 - **README and the architecture diagrams are updated as part of the build** (2026-11-15) - Steps 8, "Docs to update".
+- **While white noise plays, commands may fail; only "stop white noise" has to work** (2026-11-15) - Decisions, Traps.
 - **Other defaults accepted:** same-room pause only, no replies while white noise is on, "Sorry, I didn't catch that", a reply-volume tile per room (2026-11-14).
