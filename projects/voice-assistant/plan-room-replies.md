@@ -22,7 +22,7 @@
 
 | # | Piece | Where | What |
 |---|---|---|---|
-| 1 | Reply player | Pi and xero, `systemd --user` unit `voice-reply.service` | `cvlc -I telnet` (already installed on both), output to PipeWire, so it mixes with spotifyd instead of fighting it for the sound card |
+| 1 | Reply player | Pi and xero, `systemd --user` unit `voice-reply.service` | `cvlc -I telnet` (already installed on both), output to PipeWire, so it mixes with spotifyd instead of fighting it for the sound card. **On the Pi this needs step 0 first:** today spotifyd and white noise open the card directly (ALSA), not through PipeWire |
 | 2 | HA media players | HA, built-in **VLC telnet** integration (UI config flow, no restart) | one entity per room, e.g. `media_player.bedroom_voice_reply` (Pi), `media_player.living_room_voice_reply` (xero) |
 | 3 | Satellite firmware | `esphome/voice-satellite-common.yaml` + a `reply_player` substitution per board | `on_tts_end`: play the reply URL on its room's player. `on_error`: speak the error with `tts.speak` (Piper) on the same player |
 | 4 | Permission | ESPHome integration options in HA, per satellite | turn on "Allow the device to perform Home Assistant actions" (off by default) |
@@ -69,15 +69,30 @@ Commands that change the music themselves:
 
 | # | Step | Owner | Notes |
 |---|---|---|---|
+| 0 | **Pi audio through PipeWire** (user, 2026-11-15; details below). Do it in the daytime: it restarts spotifyd and white noise | Claude | first, on its own; useful even without the rest |
 | 1 | Write `voice-reply.service` + install script for Pi and xero; telnet password in a gitignored `.env` | Claude | user units, no sudo; linger already on |
 | 2 | Add the two VLC telnet integrations in HA; name entities, set areas (Bedroom / Living Room) | Claude | |
-| 3 | Test by hand: `tts.speak` to each player with music playing and stopped | Claude | checks mixing and volume |
+| 3 | Test by hand: `tts.speak` to each player with music playing and stopped | Claude | checks mixing and volume; on the Pi only after step 0 |
 | 3b | `input_boolean`/`input_number` helpers, `voice_reply` script, pause and resume automations (a new package `packages/voice_replies.yaml`) | Claude | pause/resume works before the reflash (it only needs the satellites' states, which change today); the reply part needs the reflash |
 | 4 | Firmware change in `voice-satellite-common.yaml`; `reply_player` per board | Claude | |
 | 5 | Build and OTA-flash both satellites from the Mac (`build_on_mac.sh`, `build_on_mac.sh living`) | Pramod (Mac) or Claude via the Mac session | not on xero: heavy builds |
 | 6 | Enable "allow HA actions" on both satellites in HA | Claude | |
 | 7 | Live test in each room: a working command, a song, a nonsense phrase | Together | `watch_assist.sh` running |
 | 8 | Docs, **part of the build, not after it** (user, 2026-11-15) - see "Docs to update" below | Claude | the work is not done until these are committed |
+
+## Step 0: Pi audio through PipeWire
+
+Found 2026-11-15: on the Pi, PipeWire runs but no program plays through it (0 streams). spotifyd (`backend = alsa`, `device = default:CARD=Headphones`) and white noise (SoX `play`, `ALSA_CARD=Headphones`) each open the sound card directly, and whoever opens it first holds it - a third player (the reply) would get "device busy". White noise and music never overlap today only because `white-noise.service` pauses spotifyd before it starts.
+
+| # | Change | Notes |
+|---|---|---|
+| 1 | spotifyd: `backend = pulseaudio`, drop `device` (`~/.config/spotifyd/spotifyd.conf` on the Pi), restart | spotifyd 0.4.2 has the backend; `pipewire-pulse` and `libpulse0` are installed. Same as xero's spotifyd |
+| 2 | White noise through PipeWire too: SoX to the pulse device, or `play ... -t raw - \| pw-play` | User: ALSA "might be okay" but fine to move. Moving it is safer: after a pause PipeWire keeps the card open for a few seconds, so white noise started right after pausing the music (as `white-noise.service` does) could hit "device busy" if it stays on ALSA |
+| 3 | PipeWire's sink volume fixed at 100%; the "Pi Speaker Volume" slider keeps setting the card's `PCM` control | today the sink shows 69%; two volumes in a row would make the slider's range wrong |
+| 4 | Test | Spotify plays and the slider changes it; white noise plays **at the same loudness as before** (`WHITE_NOISE_LEVEL=91`, fade steps); `pw-play` of a test clip is heard over the music (mixing works); white noise starts within 1s of a song pause |
+| 5 | Record | `projects/spotifyd/README.md`, `projects/white-noise/README.md`, `docs/hardware.md` (Pi), PROJECTS.md log |
+
+Rollback: put the two spotifyd lines and the old white-noise ExecStart back, restart both.
 
 ## Docs to update
 
@@ -143,5 +158,6 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 - **Preset reply volumes:** bedroom 93%, living room 35% to start (2026-11-14).
 - **Music in the other room keeps playing**, only the same room's music pauses (2026-11-15) - Goal, Traps.
 - **README and the architecture diagrams are updated as part of the build** (2026-11-15) - Steps 8, "Docs to update".
+- **Pi audio through PipeWire first** (spotifyd, and white noise too - user: "okay to move that too"), 2026-11-15 - Step 0.
 - **While white noise plays, commands may fail; only "stop white noise" has to work** (2026-11-15) - Decisions, Traps.
 - **Other defaults accepted:** same-room pause only, no replies while white noise is on, "Sorry, I didn't catch that", a reply-volume tile per room (2026-11-14).
