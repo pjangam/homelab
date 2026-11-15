@@ -1,4 +1,5 @@
-# Image for bench_indicconformer.sh: onnx-asr to run AI4Bharat's
+# Image "indicconformer" for the stt-fallback container and
+# bench_indicconformer.sh: onnx-asr to run AI4Bharat's
 # IndicConformer Marathi model on the CPU. The model is downloaded on first
 # use into the docker volume indicconformer-cache, not baked in.
 #
@@ -6,7 +7,7 @@
 # it brings onnxruntime, numpy and huggingface_hub: pip from xero to pypi.org
 # stalls on half of its Fastly addresses (2026-11-04, again 2026-11-15), so a
 # python:slim + pip build kept failing. onnx-asr is pure Python with no other
-# runtime deps; bench_indicconformer.sh downloads its wheel with curl (with
+# runtime deps; build_indicconformer_image.sh downloads its wheel with curl (with
 # retries) into the build context. Bump the Immich tag if its image is upgraded.
 FROM ghcr.io/immich-app/immich-machine-learning:v3.4.1
 COPY onnx_asr-0.12.0-py3-none-any.whl /tmp/

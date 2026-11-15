@@ -10,7 +10,7 @@
 #   projects/voice-assistant/bench_indicconformer.sh [extra.wav ...]
 # Extra 16kHz mono WAVs (e.g. HA debug recordings of real attempts) are
 # transcribed too, labelled by file name.
-# Image: Dockerfile.indicconformer (built on first run). Model:
+# Image: "indicconformer", from build_indicconformer_image.sh (built on first run). Model:
 # OpenVoiceOS/ai4bharat-indicconformer-mr-onnx (MIT, 138MB int8), cached in
 # the docker volume indicconformer-cache.
 set -euo pipefail
@@ -18,17 +18,7 @@ cd "$(dirname "$0")"
 HA=http://localhost:8123
 auth=(-H "Authorization: Bearer $HA_TOKEN")
 work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
-if ! docker image inspect indicconformer-bench >/dev/null 2>&1; then
-  mkdir "$work/ctx"
-  whl="$work/ctx/onnx_asr-0.12.0-py3-none-any.whl"
-  # resume (-C -) until complete: downloads from xero get cut off midway
-  for _ in $(seq 1 15); do
-    curl -s -C - -m 60 -o "$whl" https://files.pythonhosted.org/packages/6a/60/2fa469a2ee674c35ab48821a1039762ae7b9d0b88188ac1012e779477f76/onnx_asr-0.12.0-py3-none-any.whl || true
-    [ "$(stat -c%s "$whl" 2>/dev/null)" = 3980006 ] && break
-  done
-  echo "5e7ceca454609819ea7833f61e2302e0c8f6ece4f8a78b66c5daba53cb51de4a  $whl" | sha256sum -c --quiet
-  docker build -t indicconformer-bench -f Dockerfile.indicconformer "$work/ctx"
-fi
+docker image inspect indicconformer >/dev/null 2>&1 || ./build_indicconformer_image.sh
 
 # Latin title as in Spotify | the same in Devanagari
 titles=(
@@ -84,9 +74,9 @@ for f, said in rows:
     print(json.dumps({"said": said, "text": text, "secs": time.time() - t}, ensure_ascii=False), flush=True)
 EOF
 # the model files, once, into the cache volume (Hugging Face, not pypi)
-docker run --rm -v indicconformer-cache:/model indicconformer-bench python -c "
+docker run --rm -v indicconformer-cache:/model indicconformer python -c "
 from huggingface_hub import snapshot_download
 snapshot_download('OpenVoiceOS/ai4bharat-indicconformer-mr-onnx', local_dir='/model',
                   allow_patterns=['config.json', 'vocab.txt', 'model.int8.onnx'])" >/dev/null
-docker run --rm --cpus 4 -v indicconformer-cache:/model:ro -v "$work:/w" indicconformer-bench \
+docker run --rm --cpus 4 -v indicconformer-cache:/model:ro -v "$work:/w" indicconformer \
   python /w/bench.py | python3 devanagari_match.py

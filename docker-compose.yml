@@ -331,15 +331,16 @@ services:
   # Recognises only commands for entities exposed to Assist (plus the sentence
   # triggers in projects/voice-assistant/packages/), so it stays fast on this
   # CPU where Whisper would not. Legacy v1.4 image: newer Speech-to-Phrase
-  # ships only as an HA OS app. Published on loopback only - HA is on the host
-  # network and is its only client. Restart it to retrain after exposing or
-  # renaming entities.
+  # ships only as an HA OS app. HA reaches it through stt-fallback below
+  # (127.0.0.1:10300); 10301 is speech-to-phrase alone, for debugging
+  # (wyoming_transcribe.py). Restart it to retrain after exposing or renaming
+  # entities.
   speech-to-phrase:
     image: rhasspy/wyoming-speech-to-phrase:latest
     container_name: speech-to-phrase
     restart: unless-stopped
     ports:
-      - "127.0.0.1:10300:10300"
+      - "127.0.0.1:10301:10300"
     volumes:
       - stp-models:/models
       - stp-train:/train
@@ -349,6 +350,40 @@ services:
       - --hass-token=${HA_TOKEN_SPEECH_TO_PHRASE}
       - --custom-sentences-dir=/custom_sentences
       - --retrain-on-start
+
+  # Wyoming proxy in front of speech-to-phrase, on the port HA was already
+  # configured for (stt.speech_to_phrase -> 127.0.0.1:10300). Passes every
+  # request through; only when speech-to-phrase hears nothing does it run the
+  # audio through AI4Bharat's IndicConformer (Marathi) and, if that is clearly
+  # one of our songs, answers "play <title>" (projects/voice-assistant/
+  # stt_fallback.py, README "Marathi fallback"). Local image: build it with
+  # projects/voice-assistant/build_indicconformer_image.sh. Code bind-mounted
+  # read-only - restart after editing it. Reads HA's .storage (read-only) only
+  # for the Spotify token, as spotify_library.py does on the host.
+  stt-fallback:
+    image: indicconformer
+    pull_policy: never
+    container_name: stt-fallback
+    restart: unless-stopped
+    depends_on:
+      - speech-to-phrase
+    ports:
+      - "127.0.0.1:10300:10300"
+    environment:
+      - UPSTREAM=speech-to-phrase:10300
+      - MODEL_DIR=/model
+    volumes:
+      - indicconformer-cache:/model
+      - ./projects/voice-assistant:/app/projects/voice-assistant:ro
+      - ./HOMEASSISTANT_CONFIG/.storage:/app/HOMEASSISTANT_CONFIG/.storage:ro
+    command: ["python", "-u", "/app/projects/voice-assistant/stt_fallback.py"]
+    # the base image's own check probes Immich's port 3003; check ours instead
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 10300), 3)"]
+      interval: 60s
+      timeout: 5s
+    labels:
+      - com.centurylinklabs.watchtower.enable=false
 
   # Local text-to-speech for HA's Assist (projects/voice-assistant/README.md).
   # Not optional: the HA phone app's voice mode always asks for a spoken reply,
@@ -759,6 +794,9 @@ volumes:
   syncthing-config:
   stp-models:
   stp-train:
+  # created by bench_indicconformer.sh before stt-fallback existed; kept by name
+  indicconformer-cache:
+    name: indicconformer-cache
   piper-data:
   diun-data:
 

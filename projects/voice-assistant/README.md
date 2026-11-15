@@ -29,7 +29,7 @@ Edit the `.puml`, then run `render_architecture.sh` (PlantUML in Docker) and com
 
 | Piece | Where |
 |---|---|
-| Speech-to-text | `speech-to-phrase` container, `127.0.0.1:10300`. Legacy v1.4 (Kaldi) image: the newer Speech-to-Phrase ships only as an HA OS app. Why this one: "Choosing the speech-to-text" below. |
+| Speech-to-text | `stt-fallback` container on `127.0.0.1:10300` (what HA's `stt.speech_to_phrase` points at) -> `speech-to-phrase` container (`127.0.0.1:10301` for direct tests). Legacy v1.4 (Kaldi) image: the newer Speech-to-Phrase ships only as an HA OS app. Why this one: "Choosing the speech-to-text" below; the proxy: "Marathi fallback" below. |
 | Command matching | HA's own conversation agent (`prefer_local_intents` on), plus `packages/voice_commands.yaml` for what its built-in sentences do not cover |
 | Text-to-speech | `piper` container, `127.0.0.1:10200`, voice `en_US-lessac-medium`. **Required, not optional** - see Gotchas. |
 | Pipeline | The preferred "Home Assistant" Assist pipeline: `stt.speech_to_phrase` + `tts.piper` |
@@ -51,16 +51,31 @@ Timing per request on xero, using clean Google TTS clips of 1.4-2.8s. Real satel
 | Whisper `base.en` | ~3s | mostly right ("papercut" -> "people gut") | garbled | slow, and still misses some |
 | Whisper `small.en` / `distil-small.en` | 10-15s / ~9.5s | all right | garbled | far too slow |
 | Moonshine `tiny` / `base` | 0.2-0.4s / 0.5-0.9s | like Whisper base | garbled | fast, but not accurate enough on its own |
-| IndicConformer Marathi (AI4Bharat, int8 ONNX) | p50 0.7s, p95 1.4s | not meant for English (non-songs come out as nothing) | **28/30 right, 0 wrong** (Marathi and English TTS voices) | candidate **fallback** for Marathi titles (2026-11-15) |
+| IndicConformer Marathi (AI4Bharat, int8 ONNX) | p50 0.7s, p95 1.4s | not meant for English (non-songs come out as nothing) | **28/30 right, 0 wrong** (Marathi and English TTS voices) | **fallback** for Marathi titles, live since 2026-11-15 (below) |
 
 Why Speech-to-Phrase:
 - **Speed:** it is the only accurate option fast enough on the N5105.
 - **No made-up commands:** it can only return a phrase it was trained on (or nothing), so noise never becomes a wrong command. The cost is that it can't hear anything it wasn't trained on: every song title must be in the trained list, and Marathi needs aliases.
 - **The English model fails on Marathi pronunciation.** Speech-to-Phrase uses Rhasspy's English Kaldi model (2021). Google's Marathi voice failed on every clip; real voice sits in between.
 
-Under consideration (PROJECTS.md "Spotify by voice", 2026-11-15): a Marathi fallback that runs only when Speech-to-Phrase returns nothing.
-- **Recogniser:** IndicConformer writes Devanagari.
-- **Matching:** the text is matched against our own titles first, then Spotify search, which found 21/27 Devanagari queries (`spotify_devanagari_search.py`).
+## Marathi fallback (`stt-fallback`, since 2026-11-15)
+
+A Wyoming proxy (`stt_fallback.py`) in front of Speech-to-Phrase. Built 2026-11-15 after Marathi titles kept coming back "No text recognized".
+
+| Step | What happens |
+|---|---|
+| 1 | HA sends the audio to `127.0.0.1:10300`, the proxy, as it did to Speech-to-Phrase before - HA's config did not change |
+| 2 | The proxy passes it to `speech-to-phrase:10300` and returns its answer unchanged |
+| 3 | **Only if that answer is empty:** the same audio goes through IndicConformer (Marathi, ~1s), which writes Devanagari |
+| 4 | `devanagari_match.py`: to rough Latin -> fuzzy match against our song titles (needs a clear winner), else Spotify search top 3 if the track is in our library |
+| 5 | A song -> the transcript becomes `play <spoken title>` and the usual "play {song}" automation plays it. No song -> stays empty, as before |
+
+- **Logs:** `docker logs stt-fallback` - one line per fallback: what it heard in Devanagari, the song or "nothing", the time.
+- **Cost:** only failed commands get slower (~1s). Working commands pass through untouched.
+- **Fails safe:** model not loaded, an error, Spotify down -> the empty answer goes through as before. If the container itself is down, voice is down: `docker compose up -d stt-fallback`, or point HA at 10301.
+- **Image:** `indicconformer` is local (Immich's ML image + onnx-asr), built by `build_indicconformer_image.sh`; watchtower skips it. Model in the `indicconformer-cache` volume (downloaded on first start).
+- **Song list:** re-read whenever the nightly sync rewrites `packages/spotify_songs.yaml`; no restart needed. Code is bind-mounted: `docker restart stt-fallback` after editing it.
+- **Test without HA:** `wyoming_transcribe.py 127.0.0.1:10300 clip.wav` (proxy) vs `127.0.0.1:10301` (Speech-to-Phrase alone).
 
 ## Commands
 
@@ -132,9 +147,13 @@ white noise, AC.
   for a future "play anything" (results: "Choosing the speech-to-text" above).
 - `spotify_devanagari_search.py` - does Spotify search find our Marathi songs
   from Devanagari titles (read-only; 2026-11-15: 21/27).
-- `bench_indicconformer.sh` + `Dockerfile.indicconformer`, `devanagari_match.py` -
-  AI4Bharat IndicConformer (Marathi) on xero, and Devanagari -> one of our songs
+- `stt_fallback.py` - the `stt-fallback` Wyoming proxy ("Marathi fallback" above).
+- `devanagari_match.py` - Devanagari transcript -> one of our songs, or nothing.
+- `Dockerfile.indicconformer` + `build_indicconformer_image.sh` - the local
+  `indicconformer` image (stt-fallback and the bench).
+- `bench_indicconformer.sh` - IndicConformer timing and matches on TTS clips
   (results: "Choosing the speech-to-text" above).
+- `wyoming_transcribe.py` - send a WAV straight to a Wyoming STT port.
 - `architecture.puml`, `intent_routing.puml`, `sequence_play_song.puml` + `render_architecture.sh` - the diagrams above (renders `.svg`/`.png`)
 - `ha_ws.py` - tiny HA websocket client used by the above.
 - `test_pipeline_ws.py file.wav [end_stage]` - runs the pipeline over the

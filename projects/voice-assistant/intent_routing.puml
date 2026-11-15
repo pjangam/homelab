@@ -20,9 +20,15 @@ endif
 :Record until silence (VAD);
 :speech-to-phrase: audio -> nearest trained phrase;
 if (close enough to a trained phrase?) then (no)
-  #FFCDD2:"No text recognized"
-  run ends, nothing happens;
-  stop
+  #E1BEE7:stt-fallback: IndicConformer (Marathi)
+  same audio -> Devanagari;
+  if (clearly one of our songs?\n(local title match, then Spotify top 3)) then (yes)
+    #E1BEE7:text = "play <title>";
+  else (no)
+    #FFCDD2:"No text recognized"
+    run ends, nothing happens;
+    stop
+  endif
 endif
 if (matches "play {song}"?) then (yes)
   #E3F2FD:voice_play_song (4a);

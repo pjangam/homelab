@@ -11,6 +11,7 @@ tail -n0 -F HOMEASSISTANT_CONFIG/home-assistant.log 2>/dev/null \
   | grep --line-buffered -vE "wyoming.coordinator|non-existing handler|chat_log|Exposed entities|slot lists" \
   | sed -u "s/^/[ha] /" &
 docker logs -f --since 1s speech-to-phrase 2>&1 | grep --line-buffered -vE '^(LOG \(|online2-cli)' | sed -u 's/^/[stp] /' &
+docker logs -f --since 1s stt-fallback 2>&1 | sed -u 's/^/[fallback] /' &
 trap 'kill $(jobs -p) 2>/dev/null' EXIT
 python3 -u - <<'PY'
 import json, time, sys

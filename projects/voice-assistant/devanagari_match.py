@@ -10,7 +10,8 @@ stranger's song:
   2. Spotify search with the Devanagari text; accept the best of the top 3
      results only if that track is in our library
        (spotify_devanagari_search.py, 2026-11-15: 21/27 right)
-Library use: match(text) -> (title, uri, how) or None.
+Library use: match(text, library(), keys, token) -> (spoken title, uri, how)
+or None; stt_fallback.py uses it.
 CLI: reads JSON lines {"said": ..., "text": ..., "secs": ...} on stdin
 (bench_indicconformer.sh) and prints what each would play.
 """
@@ -104,13 +105,24 @@ def match_local(text, lib_map, keys=None):
 def match_spotify(text, lib_map, tok):
     import urllib.parse
     q = PLAY.sub("", text).strip()
+    if not q:
+        return None
     url = ("https://api.spotify.com/v1/search?type=track&market=from_token&limit=3&q="
            + urllib.parse.quote(q))
-    mine = {u.split(":")[-1]: n for u, n in lib_map.values()}
+    # track id -> its spoken title, the key "play {song}" looks up
+    # (sorted: the plain title before its "... by <artist>" form)
+    key_of = {}
+    for k, (u, _) in sorted(lib_map.items(), key=lambda kv: " by " in kv[0]):
+        key_of.setdefault(u.split(":")[-1], k)
     for t in lib.get(url, tok)["tracks"]["items"]:
-        if t["id"] in mine:
-            return mine[t["id"]], "spotify:track:" + t["id"], "spotify top-3"
+        if t["id"] in key_of:
+            return key_of[t["id"]], "spotify:track:" + t["id"], "spotify top-3"
     return None
+
+
+def match(text, lib_map, keys, tok=None):
+    """Local first, then Spotify (when a token is given). None = no song."""
+    return match_local(text, lib_map, keys) or (tok and match_spotify(text, lib_map, tok)) or None
 
 
 def main():
@@ -119,7 +131,7 @@ def main():
     tok = lib.token()
     for line in sys.stdin:
         r = json.loads(line)
-        hit = match_local(r["text"], lib_map, keys) or (r["text"].strip() and match_spotify(r["text"], lib_map, tok))
+        hit = match(r["text"], lib_map, keys, tok)
         got = f"{hit[0]}  [{hit[2]}]" if hit else "nothing"
         print(f"{r['secs']:5.2f}s  {r['said']:34} heard {r['text']!r:40} -> {got}")
 

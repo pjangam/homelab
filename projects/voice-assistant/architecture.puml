@@ -1,7 +1,7 @@
 @startuml
 ' Voice assistant: every part, where it runs and what talks to what.
 ' Render: projects/voice-assistant/render_architecture.sh  (-> architecture.svg/.png)
-title Voice assistant - architecture (2026-11-14)
+title Voice assistant - architecture (2026-11-15)
 
 skinparam shadowing false
 skinparam defaultFontName Helvetica
@@ -46,7 +46,9 @@ node "xero (N5105 server)" as xero #F3E5F5 {
       component "Built-in intents\nturn on/off <name>" as builtin
     }
     component "openwakeword\n:10400\nHey Jarvis" as oww
-    component "speech-to-phrase\n:10300\nKaldi, closed vocabulary" as stp
+    component "stt-fallback\n:10300\nWyoming proxy" as fb
+    component "speech-to-phrase\n:10301\nKaldi, closed vocabulary" as stp
+    component "IndicConformer\n(Marathi, in stt-fallback)\nonly when stp hears nothing" as indic
     component "piper\n:10200\nspoken replies" as piper
     component "mosquitto\nMQTT :1883" as mqtt
     database "stp-models\nRhasspy en_US Kaldi\n(2021, 127MB)" as stpmodels
@@ -79,7 +81,9 @@ user -[#000000]-> sat_liv
 sat_bed -[#000000,bold]-> pipeline : 1. mic audio, streamed\nall the time (ESPHome API)
 sat_liv -[#000000,bold]-> pipeline
 pipeline <-[#000000,bold]-> oww : 2. audio frames /\n"wake word heard"
-pipeline <-[#000000,bold]-> stp : 3. audio clip /\ntext (or "")
+pipeline <-[#000000,bold]-> fb : 3. audio clip /\ntext (or "")
+fb <-[#000000,bold]-> stp : 3a. same audio /\ntext (or "")
+fb <-[#6A1B9A]-> indic : 3b. only if "":\nDevanagari -> one of\nour songs, or nothing
 pipeline <-[#000000,bold]-> piper : 5. reply text /\nspeech audio
 pipeline .[#000000].> sat_bed : 6. reply audio URL\n(satellite has no speaker:\ndropped; phone app plays it)
 
@@ -123,6 +127,7 @@ legend right
   | <color:#1565C0>**blue**</color> | music, after 4a or 4b |
   | <color:#2E7D32>**green**</color> | volume sliders (MQTT) |
   | <color:#888888>**grey dotted**</color> | setup / nightly training, not per command |
+  | <color:#6A1B9A>**purple 3b**</color> | Marathi fallback: only when speech-to-phrase hears nothing |
   | <-> | request and its answer |
   | -> | one way |
   Wake word and speech-to-text run on xero,

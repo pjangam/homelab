@@ -325,14 +325,24 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "Read-only, LAN only. services/node-exporter/deploy_pi.sh"
 
   [[group.endpoint]]
-  name = "Speech-to-Phrase (Wyoming STT)"
+  name = "Speech-to-text proxy (Wyoming STT, stt-fallback)"
   proto = "tcp"
   host = "127.0.0.1"
   port = 10300
-  connect = "projects/voice-assistant/test_stt.sh   (round-trips TTS audio through it via HA)"
-  desc = "Local speech-to-text for HA's Assist, over the Wyoming protocol. Recognises only commands for entities exposed to Assist plus the voice sentence triggers."
-  who = "Home Assistant's Assist pipeline (stt.speech_to_phrase) - the HA phone app's mic button today."
-  note = "Loopback only; HA (host network) is its only client. Restart the container to retrain after exposing or renaming entities. projects/voice-assistant/README.md"
+  connect = "projects/voice-assistant/wyoming_transcribe.py 127.0.0.1:10300 clip.wav"
+  desc = "What HA's Assist talks to for speech-to-text (stt.speech_to_phrase). Passes every request to Speech-to-Phrase; only when that hears nothing does it try AI4Bharat IndicConformer (Marathi) and answer 'play <title>' if it is one of our songs."
+  who = "Home Assistant's Assist pipeline - both voice satellites and the HA phone app."
+  note = "Loopback only. Container stt-fallback, local image (build_indicconformer_image.sh). Logs: docker logs stt-fallback. projects/voice-assistant/README.md 'Marathi fallback'"
+
+  [[group.endpoint]]
+  name = "Speech-to-Phrase (Wyoming STT, direct)"
+  proto = "tcp"
+  host = "127.0.0.1"
+  port = 10301
+  connect = "projects/voice-assistant/wyoming_transcribe.py 127.0.0.1:10301 clip.wav"
+  desc = "Speech-to-Phrase alone, without the Marathi fallback. Recognises only commands for entities exposed to Assist plus the voice sentence triggers. The proxy on 10300 reaches it over the compose network (speech-to-phrase:10300)."
+  who = "Nobody in normal use - for debugging, and HA's fallback target if stt-fallback is down."
+  note = "Loopback only. Restart the container to retrain after exposing or renaming entities. projects/voice-assistant/README.md"
 
   [[group.endpoint]]
   name = "Piper (Wyoming TTS)"
