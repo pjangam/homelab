@@ -15,6 +15,7 @@
 | A command worked | HA's reply ("Playing Faint - Linkin Park", "AC set to 24 degrees") | the speaker in the room of the satellite that heard you |
 | Nothing recognised | a short error ("Sorry, I didn't catch that") | same |
 | Music is playing in that room | the music **pauses on "Hey Jarvis"**, you give the command, hear the reply, then the music resumes | same |
+| Music is playing in the **other** room | it **keeps playing**, untouched (user, 2026-11-15) | - |
 | Any reply | at that room's **preset reply volume**; the speaker's own volume is put back afterwards | same |
 
 ## Design
@@ -76,13 +77,27 @@ Commands that change the music themselves:
 | 5 | Build and OTA-flash both satellites from the Mac (`build_on_mac.sh`, `build_on_mac.sh living`) | Pramod (Mac) or Claude via the Mac session | not on xero: heavy builds |
 | 6 | Enable "allow HA actions" on both satellites in HA | Claude | |
 | 7 | Live test in each room: a working command, a song, a nonsense phrase | Together | `watch_assist.sh` running |
-| 8 | Docs: README, diagrams, `endpoints.toml` (telnet ports), `docs/hardware.md`, PROJECTS.md | Claude | |
+| 8 | Docs, **part of the build, not after it** (user, 2026-11-15) - see "Docs to update" below | Claude | the work is not done until these are committed |
+
+## Docs to update
+
+| File | What changes |
+|---|---|
+| `README.md` | Pieces table (reply players, `voice_replies.yaml`); a "Spoken replies" section: how a reply reaches the room speaker, pause/resume, preset volumes, white-noise rule, how to test; Files list; Gotchas (duplicate wake-up, Bluetooth sleep) |
+| `architecture.puml` | step 6 no longer "dropped": satellite -> HA script `voice_reply` -> VLC on the Pi / xero -> room speaker; pause/resume automations; reply-volume sliders; legend |
+| `sequence_play_song.puml` | the reply is played on the Pi's speaker; music pause on "Hey Jarvis" and resume after |
+| `intent_routing.puml` | end of the flow: white noise on? -> no reply; else play at the preset volume; the error reply on "No text recognized" |
+| `render_architecture.sh` | re-run; commit the `.svg`/`.png` with the `.puml` |
+| `projects/endpoints/endpoints.toml` | the two VLC telnet ports; re-render |
+| `docs/hardware.md` | `voice-reply.service` on the Pi and xero; satellite firmware date |
+| `projects/ha-dashboard/dashboards/home.yaml` | the reply-volume tile in each room (`shot_dashboard.sh` to check) |
+| `PROJECTS.md` | Log, open items; Status of "Voice satellites: speakers and wake word" |
 
 ## Traps known in advance
 
 - **Duplicate wake-up:** both satellites often hear "Hey Jarvis"; HA drops one with an error. `on_error` must ignore `duplicate_wake_up_detected`, or the other room says "Sorry" every time.
 - **White noise:** it plays from the Pi's speaker, through the same volume control (`number.server_volume`, PCM). The volume dance would change the white noise level mid-reply; while white noise is on, either skip the reply or leave the volume alone.
-- **Pausing only the room's own device:** Spotify is one account-wide player, playing on one device at a time. Music in the living room is not paused by a bedroom command (decision below).
+- **Pausing only the room's own device:** Spotify is one account-wide player, playing on one device at a time. The pause automation checks which device is playing (the Pi = bedroom, xero = living room) and does nothing when it is the other room's - music in the living room keeps playing through a bedroom command, and the other way round (user, 2026-11-15).
 - **Pause latency:** Spotify takes ~0.5-1s to pause after "Hey Jarvis"; the first words of a fast command may still be under the music.
 - **Stuck paused:** if HA restarts or the satellite drops mid-command, the resume never runs and the flag stays on. The pause automation should clear stale flags (older than ~1 min).
 - **The mic hears the reply:** the speaker is next to the mic. The reply ends before the next wake word, and no reply sounds like "Hey Jarvis", so this should be harmless; worth watching.
@@ -124,4 +139,6 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 - **Reply volume preset per room, set before the reply and restored after** (2026-11-14) - Design 6, 8.
 - **Which replies:** all, as already built; adjust individual replies later (2026-11-14).
 - **Preset reply volumes:** bedroom 93%, living room 35% to start (2026-11-14).
+- **Music in the other room keeps playing**, only the same room's music pauses (2026-11-15) - Goal, Traps.
+- **README and the architecture diagrams are updated as part of the build** (2026-11-15) - Steps 8, "Docs to update".
 - **Other defaults accepted:** same-room pause only, no replies while white noise is on, "Sorry, I didn't catch that", a reply-volume tile per room (2026-11-14).
