@@ -51,7 +51,7 @@ Timing per request on xero, using clean Google TTS clips of 1.4-2.8s. Real satel
 | Whisper `base.en` | ~3s | mostly right ("papercut" -> "people gut") | garbled | slow, and still misses some |
 | Whisper `small.en` / `distil-small.en` | 10-15s / ~9.5s | all right | garbled | far too slow |
 | Moonshine `tiny` / `base` | 0.2-0.4s / 0.5-0.9s | like Whisper base | garbled | fast, but not accurate enough on its own |
-| IndicConformer Marathi (AI4Bharat) | being measured (2026-11-15) | not meant for English | made for it | candidate **fallback** for Marathi titles |
+| IndicConformer Marathi (AI4Bharat, int8 ONNX) | p50 0.7s, p95 1.4s | not meant for English (non-songs come out as nothing) | **28/30 right, 0 wrong** (Marathi and English TTS voices) | candidate **fallback** for Marathi titles (2026-11-15) |
 
 Why Speech-to-Phrase:
 - **Speed:** it is the only accurate option fast enough on the N5105.
@@ -132,6 +132,9 @@ white noise, AC.
   for a future "play anything" (results: "Choosing the speech-to-text" above).
 - `spotify_devanagari_search.py` - does Spotify search find our Marathi songs
   from Devanagari titles (read-only; 2026-11-15: 21/27).
+- `bench_indicconformer.sh` + `Dockerfile.indicconformer`, `devanagari_match.py` -
+  AI4Bharat IndicConformer (Marathi) on xero, and Devanagari -> one of our songs
+  (results: "Choosing the speech-to-text" above).
 - `architecture.puml`, `intent_routing.puml`, `sequence_play_song.puml` + `render_architecture.sh` - the diagrams above (renders `.svg`/`.png`)
 - `ha_ws.py` - tiny HA websocket client used by the above.
 - `test_pipeline_ws.py file.wav [end_stage]` - runs the pipeline over the
