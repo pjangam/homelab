@@ -144,6 +144,7 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 | Pause when the music is in another room | **only the same room (user, 2026-11-14)** | decided |
 | Preset values | **bedroom 93%, living room 35% (user, 2026-11-14)**, tune later on the sliders | decided |
 | Quiet hours | **no replies while white noise is on (user, 2026-11-14)** | decided |
+| Wrong room wins the wake word | **accepted for now: pause and reply in whichever room HA picked; observe, change later if it bothers** (user, 2026-11-15). HA keeps the first satellite to report "Hey Jarvis" and has no loudness or confidence to pick the nearer one, so a real fix is a separate project. Note each wrong-room case in the PROJECTS.md log during use | decided |
 | Commands while white noise plays | **may fail, except "stop white noise", which must work** (user, 2026-11-15). Judge white noise as it was **at the wake word**, so the "white noise off" reply after "stop white noise" stays silent too | decided |
 | Which replies | **all, as HA already writes them (user, 2026-11-14)**; changed later per reply as needed | decided |
 | Error wording | **"Sorry, I didn't catch that" (user, 2026-11-14)** | decided |
@@ -159,5 +160,6 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 - **Music in the other room keeps playing**, only the same room's music pauses (2026-11-15) - Goal, Traps.
 - **README and the architecture diagrams are updated as part of the build** (2026-11-15) - Steps 8, "Docs to update".
 - **Pi audio through PipeWire first** (spotifyd, and white noise too - user: "okay to move that too"), 2026-11-15 - Step 0.
+- **Wrong room winning the wake word is fine for now**; observe and change later (2026-11-15) - Decisions.
 - **While white noise plays, commands may fail; only "stop white noise" has to work** (2026-11-15) - Decisions, Traps.
 - **Other defaults accepted:** same-room pause only, no replies while white noise is on, "Sorry, I didn't catch that", a reply-volume tile per room (2026-11-14).
