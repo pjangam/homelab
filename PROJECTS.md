@@ -3976,7 +3976,7 @@ qty | item | est | note
 #### Log
 - 2026-11-16: split from the relay entry (user): relay first, this one to try later. Recorded the high-side AO3401 design and found the Digispark pin trap (zener-clamped USB pins, LED on PB1).
 
-### Speaker power slider: servo (or wire-across) to switch the Apollo One on and off
+### Speaker power slider: servo to switch the Apollo One on and off
 **Status:** Backlog
 **Priority:** P3
 
@@ -3985,7 +3985,7 @@ qty | item | est | note
 - [ ] **Pramod:** decide how phase 1's manual on/off is pressed: a button on the box (ATtiny85 is enough) or a toggle from HA/phone (needs an ESP32)
 - [ ] **Together, at the bench:** SG90 test sketch against the real switch: does it move it both ways, and at what angles
 - [ ] **Together, at the bench:** after a servo power-on, check the speaker reconnects to xero over Bluetooth and plays
-- [ ] **Pramod:** buy the parts for the option picked (parts block below)
+- [ ] **Pramod:** buy the servo parts (parts block below; the ESP32 group only if HA/phone control)
 
 **Why:** user, 2026-11-16: "can we automate a slider switch using maybe servo motor or something", then "add that as a seperate project". The slider is the **Portronics Apollo One's power switch** (xero's Bluetooth speaker since 2026-11-14), confirmed by the user the same day.
 **State:** idea only. Nothing bought, nothing measured. Goal decided by the user, 2026-11-16 - see "Goal" below.
@@ -4005,19 +4005,9 @@ qty | item | est | note
 **Yes, a known build.** A micro servo pushing a slide switch is a common hobby build ("servo light switch" / slide-switch pushers); ESPHome has a `servo` component driven from an `output` (LEDC on ESP32), so HA control is a few lines ([ESPHome servo](https://esphome.io/components/servo/)). On the ATtiny85 the usual route is a software servo library (e.g. Adafruit SoftServo) on a free pin.
 - **Apollo One switch type not confirmed from the manual:** the [Apollo One manual](https://www.portronics.com/cdn/shop/files/Apollo_One_Manual.pdf) labels the control only as "Power." with no type (checked 2026-11-16). Hence the first open item.
 
-#### Options
-| | Wire across the switch | Micro servo (SG90 / MG90S) | Linear actuator / solenoid |
-|---|---|---|---|
-| How | Open the speaker, relay across the switch contacts, switch left OFF | Servo arm or fork pushes the slider both ways | Pushes the slider along its axis |
-| Reliability | Best: no mechanics | Good once aligned; alignment is the whole job | Good for long/stiff sliders |
-| Keeps state through a power cut | **No** with a plain relay (drops out, speaker goes off) | **Yes** - the slider stays where it was pushed | Yes (actuator); solenoid needs a spring return |
-| Opens the speaker | Yes (warranty; manual says do not dismantle) | No | No |
-| Cost (est.) | ~₹60-100 | ~₹150-250 + mount | ~₹600-1,500 |
-| Verdict | **Alternative** if the servo cannot move it cleanly | **Recommended first try** | Only if the switch is too stiff for an MG90S |
-
-- **Recommended: micro servo**, SG90 for the bench test, MG90S (metal gears, ~2.2 kg-cm) if the slider is stiff. No opening the speaker, and the slider keeps its position when the box loses power.
-- **Wire across:** a relay is polarity-agnostic, so it works whichever side the switch sits on (unknown until opened). Not an optocoupler: a PC817's transistor cannot carry a 20W speaker's battery current. Only ever inside a low-voltage DC device - this speaker is 5V USB-C charged, so it qualifies.
-- **Solenoid:** pushes one way only; a slider needs two (two solenoids or a spring). Rejected unless the actuator option is needed.
+#### Approach: micro servo only (user, 2026-11-16)
+- **SG90** for the bench test, **MG90S** (metal gears, ~2.2 kg-cm) only if the slider is too stiff. The speaker is never opened, and the slider keeps its position when the box loses power.
+- **Not doing:** opening the speaker to wire a relay across its switch - risky, dropped for good (user, 2026-11-16). Linear actuators and solenoids are not pursued either.
 
 #### Design notes / traps
 - **Mounting is the hard part, not code.** The servo must be rigidly fixed to the speaker body, its arm in line with the slider. **No 3D printer** (user, 2026-11-07), so the fork is a servo horn with a bent wire or a cut acrylic/aluminium tab, and the mount is a small bracket stuck on with 3M VHB tape or epoxy. A print service is the fallback for a printed fork.
@@ -4031,7 +4021,7 @@ qty | item | est | note
   - In HA, report "unknown" when the signals disagree; an ESPHome node gives an availability topic for free.
 - **Reconnect needs no change while the speaker is off** (decided 2026-11-16, checked against the repo). With the speaker off, `projects/spotifyd/bt_speaker_reconnect.sh` (cron every minute) fails fast and exits quietly, no log spam; PipeWire falls back to the USB adapter. The same script is what reconnects it within a minute after the servo turns it back on. Pausing it only matters if the speaker should play from the phone instead of xero (it takes one source at a time).
 - **After switching on, check it reconnects to xero.** xero has auto-reconnect since 2026-11-14 (`bt_speaker_reconnect.sh` every minute, `bt-speaker-mqtt` on a voice "play"), but the speaker boots into Bluetooth mode and must actually pair back, or playback after a power-on is silent. Test it at the bench: servo on, time until xero's sink is back; worst case is ~1 min (the cron interval) unless the on command also kicks `bt_speaker_xero/connect`.
-- **Power cuts:** the speaker has its own battery, xero is on the UPS. With the servo variant a box reboot changes nothing; with a relay wire-across a box power loss turns the speaker off.
+- **Power cuts:** the speaker has its own battery, xero is on the UPS. A box reboot or power loss changes nothing: the slider stays where the servo left it.
 
 #### Readymade alternatives
 - **SwitchBot Bot / Fingerbot-style button pushers** - made to **press** a button, not slide one; a slider needs a push in two directions along its face. They are BLE + vendor cloud/hub (SwitchBot needs a Hub, or HA's BLE integration via xero's Bluetooth or an ESP32 proxy - see "Remote controlled curtains"). Not a fit for a slider; ~₹2,000+ (estimate) vs ~₹200 for a servo.
@@ -4041,30 +4031,28 @@ qty | item | est | note
 Resistors, jumpers and a 5V supply assumed owned (`docs/hardware.md` parts on hand); controller and 5V come from the USB charge switch box if shared.
 ```parts
 qty | item | est | note
-1 | Electrolytic capacitor 470-1000uF 10V+ | 5-15 | local - across the servo's 5V, stops brown-outs; estimate
-# Option 1 - micro servo (recommended)
 1 | SG90 micro servo (plastic gears) | 100-150 | local - for the bench test; estimate
-1 | MG90S micro servo (metal gears, 180 deg) | 200-250 | local, or online Robu ~199 / Robocraze ~229 (search, 2026-11-16) - only if the SG90 cannot move the slider; skip otherwise
+1 | Electrolytic capacitor 470-1000uF 10V+ | 5-15 | local - across the servo's 5V, stops brown-outs; estimate
 1 | 3M VHB double-sided tape (small roll) or 2-part epoxy | 100-200 | local hardware shop - fixes the servo bracket to the speaker; estimate
 1 | Small acrylic or aluminium sheet offcut | 50-100 | local - bracket and fork; no 3D printer here; estimate
+# Stiff slider: MG90S
+1 | MG90S micro servo (metal gears, 180 deg) | 200-250 | local, or online Robu ~199 / Robocraze ~229 (search, 2026-11-16) - only if the SG90 cannot move the slider
+# Position feedback: limit switch
 1 | Micro limit switch (lever) | 10-20 | local - only if true position feedback is wanted; estimate
-# Option 2 - wire across the switch
-1 | 5V relay module (1 channel, high-trigger like the KY-019) | 60 | local - check the stash first; a second one if the charge switch's is in use
-1 | Thin hookup wire (26-28 AWG) + heatshrink | 20-50 | local - two leads out of the speaker case; estimate
-# Option 3 - ESP32 controller (if HA control, not sharing the ATtiny box)
+# ESP32 controller (if HA control, not sharing the ATtiny box)
 1 | ESP32-C3 SuperMini | 250 | local - or a spare ESP32 dev board from the stash (skip then)
 ```
-**Cost:** servo option ~₹200-300 (SG90, tape, offcut, capacitor); ~₹300-450 with an MG90S. Wire-across ~₹70-120. Add ~₹250 for an ESP32-C3 if not sharing the charge box or a spare board. All estimates except the MG90S online prices.
+**Cost:** servo option ~₹200-300 (SG90, tape, offcut, capacitor); ~₹300-450 with an MG90S. Add ~₹250 for an ESP32-C3 if not sharing the charge box or a spare board. All estimates except the MG90S online prices.
 
 **Effort:** ~4-7 h for the servo option.
 - Measure the switch, bench-test an SG90 with a test sketch: 1 h - **decides the whole thing**.
 - Bracket, fork and alignment on the speaker: 2-4 h - **the phase that overruns**, as mechanical work always does on this repo.
 - Firmware (angles, detach, state): 0.5-1 h on the ATtiny; ESPHome + HA tile ~1 h.
 - Reconnect-cron tie-in: 0.5 h.
-- Wire-across instead: ~2-3 h, most of it opening and re-closing the speaker.
 - If it ends up as its own device (ESP32), it needs a `docs/hardware.md` entry, and an HA name, area and Home dashboard tile.
 
 #### Log
 - 2026-11-16: idea recorded (user), right after the USB charge switch entries. The slider is the Apollo One's power switch (user). Options compared: wire-across, servo, actuator/solenoid, button pushers.
 - 2026-11-16: goal set (user): phase 1 manual on/off, phase 2 timers or other triggers later. Controller still open.
 - 2026-11-16: reconnect cron and `bt-speaker-mqtt` need no pausing while the speaker is off (user asked; checked against the repo).
+- 2026-11-16: servo only (user): wire-across dropped as risky (would mean opening the speaker), actuator/solenoid dropped too; parts block reduced to the servo build.
