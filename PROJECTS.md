@@ -3350,7 +3350,7 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - [ ] **Pramod:** try "Dumbledore" by voice in both rooms (live next to "Hey Jarvis" since 2026-11-16); `docker logs wake-proxy` shows which word woke it
 - [ ] **Claude, after a week:** count false wakes per word from `docker logs wake-proxy`; drop Dumbledore if it adds many
 - [ ] **Pramod:** check which end (DIN, follow the arrows) of the bedroom strip is wired before connecting it
-- [ ] **Together, when Pramod says go:** build `projects/voice-assistant/plan-room-replies.md` (revised 2026-11-15 after review, on hold): Pi audio test, MQTT reply bridge + VLC, HA scripts, then the reflash
+- [ ] **Together, when Pramod says go:** build `projects/voice-assistant/plan-room-replies.md` (two reviews applied, 2026-11-16; on hold): Pi audio test, MQTT reply bridge + VLC, HA scripts, a week of tone calibration, then the reflash
 - [ ] **Claude, when Pramod says go:** "stop white noise" sentences (HA matches them to a lawn mower today) - plan step 1
 - [ ] **Together, a night with white noise on:** 10 x "Hey Jarvis" from the bed to see whether the wake word gets through the hiss (0 of 77 wake-ups in 8 days did)
 - [ ] **Pramod:** decide whether the speaker parts below are still wanted once room replies work
