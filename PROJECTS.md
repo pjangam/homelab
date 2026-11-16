@@ -4032,7 +4032,7 @@ Resistors, jumpers and a 5V supply assumed owned (`docs/hardware.md` parts on ha
 ```parts
 qty | item | est | note
 1 | SG90 micro servo (plastic gears) | 100-150 | local - for the bench test; estimate
-1 | Electrolytic capacitor 470-1000uF 10V+ | 5-15 | local - across the servo's 5V, stops brown-outs; estimate
+1 | Electrolytic capacitor 1000uF 10V+ (25V fine) | 5-15 | local - across the servo's 5V, stops brown-outs. Same type as the Diwali strip's 1000uF 25V 105C, which is fitted there: buy another, or reuse it once the Diwali lights come down
 1 | 3M VHB double-sided tape (small roll) or 2-part epoxy | 100-200 | local hardware shop - fixes the servo bracket to the speaker; estimate
 1 | Small acrylic or aluminium sheet offcut | 50-100 | local - bracket and fork; no 3D printer here; estimate
 # Stiff slider: MG90S
