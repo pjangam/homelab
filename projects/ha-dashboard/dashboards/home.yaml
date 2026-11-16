@@ -467,6 +467,10 @@ views:
           confirmation:
             text: Restart the AC bridge (node-red on the Pi)? Takes about a minute.
       title: AC
+    - type: tile
+      entity: number.server_volume
+      features:
+      - type: numeric-input
     column_span: 4
   - type: grid
     cards:
@@ -477,6 +481,12 @@ views:
       name:
         type: entity
       icon: mdi:play
+      tap_action:
+        action: perform-action
+        perform_action: script.play_bedroom_track
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.play_bedroom_track
       vertical: false
       features_position: bottom
     - type: heading
