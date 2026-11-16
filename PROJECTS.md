@@ -2650,55 +2650,6 @@ qty | item | est | note
 - 2026-10-28: more phrasings on the same automation: "turn off all [the] lights" (this room, lights only - fans stay on), "...all lights in the house", "turn off [the] bedroom", "turn off [the] living room / hall" (that room from either satellite, lights and fans). Single-device commands ("turn off bedroom light", "hall fan") still go to their device. Checked with the debug API and by rendering each case; not yet said out loud.
 - 2026-10-30: closed (user: both satellites live). Speakers and the wake-word trial split out to "Voice satellites: speakers and wake word".
 
-### Voice satellites: speakers and wake word
-**Status:** Backlog
-**Priority:** P3
-
-#### Open items
-- [ ] **Claude:** try `andromeda` / `dumbledore` against `hey_jarvis` (`WAKE_WORD_ID` in `projects/voice-assistant/setup_assist.py`, restart speech-to-phrase, temporary `--debug` on openwakeword); train on Colab only if neither works
-- [ ] **Pramod:** check which end (DIN, follow the arrows) of the bedroom strip is wired before connecting it
-- [ ] **Together, when Pramod says go:** build `projects/voice-assistant/plan-room-replies.md` (revised 2026-11-15 after review, on hold): Pi audio test, MQTT reply bridge + VLC, HA scripts, then the reflash
-- [ ] **Claude, when Pramod says go:** "stop white noise" sentences (HA matches them to a lawn mower today) - plan step 1
-- [ ] **Together, a night with white noise on:** 10 x "Hey Jarvis" from the bed to see whether the wake word gets through the hiss (0 of 77 wake-ups in 8 days did)
-- [ ] **Pramod:** decide whether the speaker parts below are still wanted once room replies work
-- [ ] **Pramod:** buy the speaker parts below (local shop first)
-- [ ] **Together:** wire per the plan, add the firmware pieces, OTA both boards
-- [ ] **Claude:** update both boards' `docs/hardware.md` entries (GPIOs, firmware)
-
-**Why:** the Assist pipeline already answers in speech (Piper), but neither ESP32 satellite can play it, so a command only shows on the LEDs and the living room entity can sit at "responding". And `hey_jarvis` is a stopgap wake word. Split out of "Local voice control (HA Assist)" (Done 2026-10-30).
-**State:** nothing bought or wired. Speaker design and parts below; community wake words `andromeda` and `dumbledore` are preloaded by `openwakeword` but untested.
-
-#### Parts
-```parts
-qty | item | est | note
-2 | MAX98357A I2S amplifier breakout | 300-600 | one per satellite, for spoken replies; I2S digital in, 3W class-D out, runs off the board's 5V VIN
-2 | Speaker driver, 4 ohm, 3W, 40-50mm | 100-350 | one per satellite; a bare driver, not a powered/Bluetooth speaker. Example: amazon.in/dp/B0GTZ5DD6P (2 inch, 4 ohm 3W, bracket + wires, Rs 169 each, 2026-10-15); cut its connector off if it does not fit the amp. Put it in a small box with holes in front
-2 | ABS project box, white/translucent (~115x90x55mm) | 300-500 | local - one per satellite: ESP32 + INMP441 + MAX98357A + 40-50mm speaker + 8 LEDs. Drill a speaker grille, a mic hole at the end away from the speaker, and a USB cable notch; translucent so the LED ring shows
-```
-
-#### Speaker plan (2026-10-15)
-The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satellites have no way to play it, so today a command only shows on the LED. Adding a MAX98357A + small speaker per board gives spoken replies and confirmation tones. It goes on its own I2S bus (the ESP32 has two), not shared with the mic: LRC GPIO26, BCLK GPIO27, DIN GPIO22 - all free and none of them strapping pins - with VIN to 5V, GND, and SD left unconnected (amp on). Firmware: a second `i2s_audio` bus, an `i2s_audio` speaker, and `speaker:` on `voice_assistant`; ESPHome mutes the mic while the reply plays, so the board does not hear itself. Not wired or flashed yet.
-
-#### Log
-- 2026-10-30: entry created, split out of "Local voice control (HA Assist)".
-- 2026-11-15: **parallel vs fallback measured** (user: run both models at once for "play" if the CPU can take it, else keep the fallback). `bench_stt_parallel.sh`, 5 runs per clip, p50 seconds per request:
-
-  | Clip | Speech-to-Phrase alone | fallback (live) | parallel, 4 cores | parallel, 2 threads |
-  |---|---|---|---|---|
-  | "play faint" | 2.18 | 2.26 | 2.62 | 2.66 |
-  | "turn on the hall fan" | 2.37 | 2.34 | 3.40 | 2.84 |
-  | "set the AC to 24 degrees" | 2.49 | 2.77 | 3.69 | 3.07 |
-  | Marathi aggobai (stp misses) | 3.89 (empty) | 5.16 | 4.73 | 4.31 |
-  | Marathi manu tai aali (stp misses) | 3.65 (empty) | 4.68 | 4.50 | 4.08 |
-
-  - parallel saves 0.6-0.9s on a Marathi miss but costs every English command 0.4-0.6s (2 threads) to 1.2s (4 cores): the CPU can't do it for free, so **the fallback stays** (user's rule). The switch is in the code (`PARALLEL`, `IC_THREADS`), off. CPU peak 70C during the bench
-  - side finding: Speech-to-Phrase itself took 2.2-2.5s per English clip here, not the ~0.5s in the README table (measured with 514 titles on 2026-11-04; 1095 phrases now) - worth a look
-- 2026-11-15: **room-replies plan revised** after the first `architecture-review` agent run (new agent, `.claude/agents/architecture-review.md`). Main changes: resume driven by the reply script and firmware `on_end` (satellites without a speaker stay "responding" for hours, never idle); an MQTT bridge per host driving an always-running VLC instead of HA's VLC telnet integration (10s polling; per-reply start-up is ~1.1s on the Pi 3); volume saved on the host; Spotify state refreshed before pausing; no "Sorry" on false wakes (speech >= 1s); Pi plays straight to ALSA (8 streams) with the PipeWire move as fallback. User decisions: other room's music keeps playing; white noise mutes bedroom replies only; only "stop white noise" must work under white noise; wrong-room wake word accepted for now.
-- 2026-11-14: **software alternative drafted**: play the Piper reply on the speaker already in each room (Pi jack, xero Bluetooth) via VLC + HA's VLC telnet integration and an `on_tts_end` firmware hook; plan in `projects/voice-assistant/plan-room-replies.md`, waiting on the user's changes.
-- 2026-11-07: **living room satellite stuck off HA** from ~14:53 on its GaN USB adapter: it answered ping (right MAC, next to the router), but the API port refused or timed out by turns (some checks caught it in safe mode, OTA up and API down) - repeated resets or stalls. HA reconnected at 20:32, within a minute of moving it to xero's USB, and it stayed up; same firmware, no reflash. **Not proven to be the adapter:** the move was also a full power cycle and a cable change, and serial caught no reset. Left on xero's USB (user) until a spare plain charger is free.
-  - **Moved to its own 5V 1A charger** the same evening: `watch_satellite_power.sh` saw no change in 15 min (20:39-20:54, idle, API up). **Likely cause (not proven):** the GaN charger also powered the user's Mac, sitting at 99%. Near full charge the Mac keeps switching between topping up and running off the adapter, which can make a multi-port charger re-split power across its ports and briefly cut the others. An empty iPhone cable on the same charger, maybe loose, could do the same. Rule: one single-port charger per satellite.
-  - Board-side diagnosis, for next time: `tools/esp32-tools/read-esp32-serial.py --no-reset` inside the `ghcr.io/esphome/esphome:stable` image (xero has no pyserial). With reset, the log came back as garbage - use `--no-reset`.
-
 ### Grafana for all stats
 **Status:** Done
 **Priority:** P3
@@ -3386,7 +3337,7 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - 2026-11-03: wrote `setup_claude_pipeline.py` against HA 2026.10.4's Anthropic integration (config flow + conversation subentry reconfigure over the REST API, pipeline over websocket): model `claude-haiku-5-5` for speed, web search on (2 uses, home location), max 400 tokens, car prompt. The key is entered once and kept only in HA's `.storage`. Not run: no API key on xero yet. README section added. No new port or device, so endpoints.toml and hardware.md are unchanged.
 - 2026-11-04: ran the script: integration, agent and pipeline created. Test questions failed with "credit balance is too low" (account has no credit; the key itself was accepted). Fixed two script bugs: the home-location option is named `user_location` (was silently dropped), and the test retries while HA reloads the integration ("invalid agent ID" for a few seconds).
 
-### Spotify by voice (HA Assist)
+### Voice assistant (HA Assist): Spotify, room replies, wake word
 **Status:** Active
 **Priority:** P3
 
@@ -3396,9 +3347,22 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - [ ] **Together, when Pramod agrees:** turn on HA debug recording for a day (one HA restart) to hear the bedroom tries that came back empty or wrong; turn it off and move the folder out of HOMEASSISTANT_CONFIG after
 - [ ] **Claude:** add `ALIASES` in `spotify_library.py` for the titles that fail
 - [ ] **Pramod:** try Marathi titles by voice in both rooms now that the IndicConformer fallback is live (2026-11-15); `docker logs stt-fallback` shows what it heard
+- [ ] **Claude:** try `andromeda` / `dumbledore` against `hey_jarvis` (`WAKE_WORD_ID` in `projects/voice-assistant/setup_assist.py`, restart speech-to-phrase, temporary `--debug` on openwakeword); train on Colab only if neither works
+- [ ] **Pramod:** check which end (DIN, follow the arrows) of the bedroom strip is wired before connecting it
+- [ ] **Together, when Pramod says go:** build `projects/voice-assistant/plan-room-replies.md` (revised 2026-11-15 after review, on hold): Pi audio test, MQTT reply bridge + VLC, HA scripts, then the reflash
+- [ ] **Claude, when Pramod says go:** "stop white noise" sentences (HA matches them to a lawn mower today) - plan step 1
+- [ ] **Together, a night with white noise on:** 10 x "Hey Jarvis" from the bed to see whether the wake word gets through the hiss (0 of 77 wake-ups in 8 days did)
+- [ ] **Pramod:** decide whether the speaker parts below are still wanted once room replies work
+- [ ] **Pramod:** buy the speaker parts below (local shop first)
+- [ ] **Together:** wire per the plan, add the firmware pieces, OTA both boards
+- [ ] **Claude:** update both boards' `docs/hardware.md` entries (GPIOs, firmware)
+- [ ] **Pramod:** answer the questions in `projects/spotifyd/plan-multiroom.md` (both rooms in sync, proposed 2026-11-16); then `architecture-review` on it
 
-**Why:** raised 2026-11-03: play music by voice the way Siri does ("play X"), from the voice satellites and, later, the car.
-**State:** phase 1 **built and tested 2026-11-04**, in a different shape from the plan below: instead of one phrase per playlist, every liked song and every track of the playlists in `PLAYLISTS` is speakable ("play <title>" or "play <title> by <artist>", 1095 phrases for 546 songs), plus pause/resume/next/previous/volume. Synced nightly. In use by voice since 2026-11-07. Phase 2 ("play anything") is parked on the no-paid rule: Moonshine is fast enough locally (0.3s) but needs a Wyoming wrapper and its own pipeline or wake phrase.
+**Merged 2026-11-16** from "Spotify by voice (HA Assist)" and "Voice satellites: speakers and wake word" (user: one entry for the voice assistant). The first build is "Local voice control (HA Assist)" (Done).
+**Why (Spotify):** raised 2026-11-03: play music by voice the way Siri does ("play X"), from the voice satellites and, later, the car.
+**State (Spotify):** phase 1 **built and tested 2026-11-04**, in a different shape from the plan below: instead of one phrase per playlist, every liked song and every track of the playlists in `PLAYLISTS` is speakable ("play <title>" or "play <title> by <artist>", 1095 phrases for 546 songs), plus pause/resume/next/previous/volume. Synced nightly. In use by voice since 2026-11-07. Phase 2 ("play anything") is parked on the no-paid rule: Moonshine is fast enough locally (0.3s) but needs a Wyoming wrapper and its own pipeline or wake phrase.
+**Why (replies, wake word):** the Assist pipeline already answers in speech (Piper), but neither ESP32 satellite can play it, so a command only shows on the LEDs and the living room entity can sit at "responding". And `hey_jarvis` is a stopgap wake word. Split out of "Local voice control (HA Assist)" (Done 2026-10-30).
+**State (speakers):** nothing bought or wired. Speaker design and parts below; community wake words `andromeda` and `dumbledore` are preloaded by `openwakeword` but untested.
 
 #### Phase 1 - fixed commands (offline, both satellites)
 - One custom sentence per playlist ("play bedtime music") -> a script that calls `spotcast.play_media` on the chosen speaker; plus pause, resume, next and volume for the Spotify players. Sentences go in `projects/voice-assistant/packages/voice_commands.yaml` (lists in `custom_sentences/en/sentences.yaml`), then restart speech-to-phrase so it retrains.
@@ -3409,26 +3373,32 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - Needs (a) free-speech recognition and (b) something that searches Spotify by name. (a): the iPhone's dictation via "Hands-free Claude in the car" (Whisper on xero is slow on the N5105). (b): **Music Assistant** as a Docker container with its HA integration, which adds a search-and-play voice intent and plays to Spotify Connect players. Check then whether spotifyd players show up in Music Assistant, or whether it needs its own players.
 - Do this after the car project's basic loop works.
 
+#### Parts
+```parts
+qty | item | est | note
+2 | MAX98357A I2S amplifier breakout | 300-600 | one per satellite, for spoken replies; I2S digital in, 3W class-D out, runs off the board's 5V VIN
+2 | Speaker driver, 4 ohm, 3W, 40-50mm | 100-350 | one per satellite; a bare driver, not a powered/Bluetooth speaker. Example: amazon.in/dp/B0GTZ5DD6P (2 inch, 4 ohm 3W, bracket + wires, Rs 169 each, 2026-10-15); cut its connector off if it does not fit the amp. Put it in a small box with holes in front
+2 | ABS project box, white/translucent (~115x90x55mm) | 300-500 | local - one per satellite: ESP32 + INMP441 + MAX98357A + 40-50mm speaker + 8 LEDs. Drill a speaker grille, a mic hole at the end away from the speaker, and a USB cable notch; translucent so the LED ring shows
+```
+
+#### Speaker plan (2026-10-15)
+The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satellites have no way to play it, so today a command only shows on the LED. Adding a MAX98357A + small speaker per board gives spoken replies and confirmation tones. It goes on its own I2S bus (the ESP32 has two), not shared with the mic: LRC GPIO26, BCLK GPIO27, DIN GPIO22 - all free and none of them strapping pins - with VIN to 5V, GND, and SD left unconnected (amp on). Firmware: a second `i2s_audio` bus, an `i2s_audio` speaker, and `speaker:` on `voice_assistant`; ESPHome mutes the mic while the reply plays, so the board does not hear itself. Not wired or flashed yet.
+
 #### Log
-- 2026-11-03: recorded after a conversation; phase split agreed.
-- 2026-11-04: **Whisper timed on xero** for phase 2 (`projects/voice-assistant/bench_whisper.sh`, faster-whisper int8 on 4 threads, clean Google TTS audio of 1.4-2.8s, so real satellite audio will do worse). Per request: `tiny.en` ~1.5s but "papercut" -> "people good"; `base.en` ~3s, gets "numb by linkin park" and "bohemian rhapsody by queen" but "papercut" -> "people gut"; `small.en` 10-15s and `distil-small.en` ~9.5s, both get every English title. Marathi ("aggobai dhaggobai") is garbled by every model. CPU went 56 -> 67C. So locally it is fast-and-wrong or right-and-~10s; user wants **no paid options** for now, which rules out cloud STT. pypi.org (Fastly) timed out from xero the same day while Google, GitHub and Hugging Face worked; the script uses the `rhasspy/wyoming-whisper` image's venv to avoid pip.
-- 2026-11-04: **Moonshine timed** the same way (`bench_moonshine.sh`, useful-moonshine-onnx, CPU): `moonshine/tiny` 0.2-0.4s, `moonshine/base` 0.5-0.9s per request - 10-20x faster than Whisper, accuracy about Whisper base ("people got/good" for papercut, "numb by Lincoln Park", Marathi garbled). CPU stayed ~58C.
-- 2026-11-04: **Spotify's search is the weaker half.** Top track result (market IN) for the *correct* text: "papercut" -> Faint (Linkin Park), "aggobai dhaggobai" -> Aga Bai (Shalmali Kholgade), "numb by Lincoln Park" -> an unrelated song; "Please shape of you" and "Bohemian Rhapsody by Queen" were right. So `spotcast.play_from_search` on a raw transcript picks wrong songs even when the words are right: match against the user's own library first, and turn "X by Y" into a track+artist search.
-- 2026-11-04: Marathi rule (user): Latin-script titles stay as Spotify spells them and recognise or fail; only hand-mapped aliases are guaranteed. `spotify_library.py` written: reads HA's Spotify integration token from `core.config_entries` read-only (never refreshes) and writes the gitignored `{song}` list `custom_sentences/en/songs.yaml` from liked songs. The first 50 liked songs are ~40 Marathi/Hindi in Latin script. Not yet wired to a sentence trigger or trained.
-- 2026-11-04: **phase 1 built.** Decided with the user: Speech-to-Phrase trained on the library rather than per-playlist phrases or Moonshine/Whisper. `spotify_library.py` now also writes `packages/spotify_songs.yaml` (gitignored): `play {song}` -> `spotcast.play_media` with that track's URI on xero, no search. 514 titles from the liked songs (3 untitled dropped); training ~31s, 59MB. TTS check: 15/16 random titles recognised incl. Hindi/Marathi/Spanish ("my dsmbr" failed - unpronounceable spelling); a title not in the list comes back empty, never a wrong song. Existing commands unaffected. Controls in `voice_commands.yaml` (`voice_spotify_control`, on `media_player.spotify_pramod`): all worked end to end with the speaker muted; "previous song" restarts the current song first (Spotify's behaviour). Fixed on the way: "music volume {x}" swallowed "music volume up" (HA matches the slot as free text), so only "set the music volume to N" takes a number. Nightly `sync_spotify_songs.sh` cron at 04:30.
-- 2026-11-07: **first real voice use** (living-room satellite), from HA's last 10 pipeline runs (it keeps no more, so the earliest tries had rolled off):
+- 2026-11-16: entries merged (see top); multi-room plan written: `projects/spotifyd/plan-multiroom.md` (Snapcast, a second spotifyd "Both rooms" feeding it; feasible, not built).
+- 2026-11-15: **parallel vs fallback measured** (user: run both models at once for "play" if the CPU can take it, else keep the fallback). `bench_stt_parallel.sh`, 5 runs per clip, p50 seconds per request:
 
-  | Said | Heard / result |
-  |---|---|
-  | "play faint" | first try played another song (run rolled off, so not seen); later "play faint" -> Faint, correct |
-  | "play aggobai dhaggobai" | no text recognised, every time - **not in the list**: it is in the playlist "Sasa To Sasa Ki Kapoos Jasa", not the liked songs |
-  | "play in the end" | heard "play billie jean" -> Billie Jean played. A closed-vocabulary recogniser always returns the nearest phrase |
-  | 6 other runs | "no text recognised" (wake word fired, nothing matched) |
+  | Clip | Speech-to-Phrase alone | fallback (live) | parallel, 4 cores | parallel, 2 threads |
+  |---|---|---|---|---|
+  | "play faint" | 2.18 | 2.26 | 2.62 | 2.66 |
+  | "turn on the hall fan" | 2.37 | 2.34 | 3.40 | 2.84 |
+  | "set the AC to 24 degrees" | 2.49 | 2.77 | 3.69 | 3.07 |
+  | Marathi aggobai (stp misses) | 3.89 (empty) | 5.16 | 4.73 | 4.31 |
+  | Marathi manu tai aali (stp misses) | 3.65 (empty) | 4.68 | 4.50 | 4.08 |
 
-  - **Fixes:** `PLAYLISTS` in `spotify_library.py` (user asked for `63uNCHuVgqNqXOUPoujY5Q`, Sasa To Sasa Ki Kapoos Jasa; +32 songs). Every song also gets a "<title> by <artist>" phrase, so a misheard short title can be said with more words: 1095 phrases, training 72s, 92MB.
-  - **TTS check after:** "aggobai dhaggobai", "in the end", "in the end by linkin park", "billie jean by michael jackson", "faint" all recognised; "aggobai dhaggobai by salil kulkarni" was not - for Marathi, the bare title is the one to say.
-- 2026-11-07: **speaker by room** (user): a "play <song>" heard by the bedroom satellite plays on the Pi (`raspberrypi`), anything else on xero (`SPEAKERS` in `spotify_library.py`, by the satellite's HA area). Checked muted with `conversation/process` and each satellite's `device_id`: bedroom loaded Faint on the Pi, living room played it on xero.
-- 2026-11-07: **"aggobai dhaggobai" still failed by voice after it was in the list** (10:32, "no text recognised"). Speech-to-Phrase had guessed its pronunciation from the spelling as "AG-uh-bye DAG-uh-bye" (in `/train/en_US-rhasspy/missing_words_dictionary.txt`). Added `ALIASES` spelled with English words that sound like the Marathi ("ago bye the go bye", "ago by dhago by", ...); the English TTS clip now lands on an alias.
+  - parallel saves 0.6-0.9s on a Marathi miss but costs every English command 0.4-0.6s (2 threads) to 1.2s (4 cores): the CPU can't do it for free, so **the fallback stays** (user's rule). The switch is in the code (`PARALLEL`, `IC_THREADS`), off. CPU peak 70C during the bench
+  - side finding: Speech-to-Phrase itself took 2.2-2.5s per English clip here, not the ~0.5s in the README table (measured with 514 titles on 2026-11-04; 1095 phrases now) - worth a look
+- 2026-11-15: **room-replies plan revised** after the first `architecture-review` agent run (new agent, `.claude/agents/architecture-review.md`). Main changes: resume driven by the reply script and firmware `on_end` (satellites without a speaker stay "responding" for hours, never idle); an MQTT bridge per host driving an always-running VLC instead of HA's VLC telnet integration (10s polling; per-reply start-up is ~1.1s on the Pi 3); volume saved on the host; Spotify state refreshed before pausing; no "Sorry" on false wakes (speech >= 1s); Pi plays straight to ALSA (8 streams) with the PipeWire move as fallback. User decisions: other room's music keeps playing; white noise mutes bedroom replies only; only "stop white noise" must work under white noise; wrong-room wake word accepted for now.
 - 2026-11-15: **Marathi fallback live** (user: "go ahead and build the fallback proxy"). New container `stt-fallback` (`stt_fallback.py`) took over `127.0.0.1:10300`, so HA's `stt.speech_to_phrase` config is unchanged; speech-to-phrase moved to `127.0.0.1:10301`.
   - passes every request through; only on an empty transcript runs IndicConformer + `devanagari_match.py` and answers "play <spoken title>"
   - tested: through the proxy directly (`wyoming_transcribe.py`) and through HA (`test_stt.sh`, `check_stt.sh` ok). Marathi-voice "प्ले अग्गोबाई ढग्गोबाई": speech-to-phrase empty -> "play aggobai dhaggobai" (+1.1s). English commands unchanged
@@ -3447,10 +3417,13 @@ Everything is off-the-shelf: setup only, no code to maintain.
   - misses: Boom Boom Ba, Sang Na Aai, Pakhra Pakhra Yeun Ja, Swapnat Pahili Ranichi Baug, one of two Beduk spellings - the top hit was another Marathi song
   - rule "play the best of the top 3 results only if it is in our library, else say nothing": 21 right, 5 nothing, 1 wrong (सांग ना आई -> Jiya Lage Na)
 - 2026-11-15: **extra aggobai aliases reverted.** Living room, 4 tries of "aggobai dhaggobai" (09:41-09:43 UTC): wake word heard, 3-6s of speech, all `stt-no-text-recognized`. The TTS round trip then failed for exact aliases too ("play uh go by duh go by"): ten near-identical spellings compete in the decoder. Back to the two proven ones, "ago by the go by" and "ago by dhago by"; TTS: "ago by/bye dhago by/bye", "agobai dhagobai", "aggobai dhaggobai", faint, numb all match again. Lesson in the `ALIASES` comment: keep it short, re-test the old aliases before keeping a new one.
+- 2026-11-14: **software alternative drafted**: play the Piper reply on the speaker already in each room (Pi jack, xero Bluetooth) via VLC + HA's VLC telnet integration and an `on_tts_end` firmware hook; plan in `projects/voice-assistant/plan-room-replies.md`, waiting on the user's changes.
 - 2026-11-14: **more "aggobai dhaggobai" aliases** (user: people say it several ways; बाई is "baa-ee"):
   - added "agg-bai dha-g-bai", "ah-go-bai dha-ga-bai" and "ug-go-baa-ee dhug-go-baa-ee" forms, spelled from words in the model's lexicon (`bah ee`, `dug go`, `uh go`, `ag by`)
   - every alias now uses "by", never "bye": mixing the two homophones made Speech-to-Phrase's fuzzy match fail, so the title returned nothing even for clips that matched before
   - English TTS: the "by" forms match; the "bah ee" forms and the Marathi-voice clip return nothing, so only real voice can tell
+- 2026-11-14: bedroom test of three songs. "play the song immigrant song" was heard right but matched `play {song}` with song="the song immigrant song" -> "not in your liked songs"; the key now drops a leading "[the] song " (text-tested: Immigrant Song, Chop Suey play). Aggobai and Chop Suey got `stt-no-text-recognized` on the bedroom satellite: audio, not the song list (Aggobai was heard fine by the living room one the same morning). `projects/voice-assistant/recent_runs.py` added to read recent pipeline runs; `tools/ha-diag/script_traces.py` now reads automations too.
+- 2026-11-14 16:16-16:26: the user moved the bedroom satellite's mic outside its box; Kashmir, Aggobai Dhaggobai and Chop Suey were then all heard first try. The box was muffling it.
 - 2026-11-13: **bedroom test session (05:22-05:35 UTC), live-watched with `watch_assist.sh`:**
   - switch and fan commands: all heard right
   - "play faint" and "play numb": heard right, played on the Pi (routing by area checked in the automation trace)
@@ -3458,9 +3431,29 @@ Everything is off-the-shelf: setup only, no code to maintain.
   - about 8 tries "No text recognized"; for at least 2 of them Speech-to-Phrase logged "decoded no frames", so no audio reached it. Most were made while a song was already playing on the Pi beside the satellite
   - TTS clips of the same phrases all match, so the model is fine; the open question is the bedroom audio (music, distance)
   - `test_stt.sh` takes `TTS_LANG=mr` (phrases in Devanagari) to test with Google's Marathi voice. **Every Marathi-voice clip came back empty**, including titles the English voice gets ("tula pahile mi"): the English acoustic model does not hold up to fully Marathi-accented speech. Real voice sits in between - several songs do work - so the aliases are worth a try before anything bigger.
-- 2026-11-14: bedroom test of three songs. "play the song immigrant song" was heard right but matched `play {song}` with song="the song immigrant song" -> "not in your liked songs"; the key now drops a leading "[the] song " (text-tested: Immigrant Song, Chop Suey play). Aggobai and Chop Suey got `stt-no-text-recognized` on the bedroom satellite: audio, not the song list (Aggobai was heard fine by the living room one the same morning). `projects/voice-assistant/recent_runs.py` added to read recent pipeline runs; `tools/ha-diag/script_traces.py` now reads automations too.
-- 2026-11-14 16:16-16:26: the user moved the bedroom satellite's mic outside its box; Kashmir, Aggobai Dhaggobai and Chop Suey were then all heard first try. The box was muffling it.
+- 2026-11-07: **living room satellite stuck off HA** from ~14:53 on its GaN USB adapter: it answered ping (right MAC, next to the router), but the API port refused or timed out by turns (some checks caught it in safe mode, OTA up and API down) - repeated resets or stalls. HA reconnected at 20:32, within a minute of moving it to xero's USB, and it stayed up; same firmware, no reflash. **Not proven to be the adapter:** the move was also a full power cycle and a cable change, and serial caught no reset. Left on xero's USB (user) until a spare plain charger is free.
+  - **Moved to its own 5V 1A charger** the same evening: `watch_satellite_power.sh` saw no change in 15 min (20:39-20:54, idle, API up). **Likely cause (not proven):** the GaN charger also powered the user's Mac, sitting at 99%. Near full charge the Mac keeps switching between topping up and running off the adapter, which can make a multi-port charger re-split power across its ports and briefly cut the others. An empty iPhone cable on the same charger, maybe loose, could do the same. Rule: one single-port charger per satellite.
+  - Board-side diagnosis, for next time: `tools/esp32-tools/read-esp32-serial.py --no-reset` inside the `ghcr.io/esphome/esphome:stable` image (xero has no pyserial). With reset, the log came back as garbage - use `--no-reset`.
+- 2026-11-07: **first real voice use** (living-room satellite), from HA's last 10 pipeline runs (it keeps no more, so the earliest tries had rolled off):
 
+  | Said | Heard / result |
+  |---|---|
+  | "play faint" | first try played another song (run rolled off, so not seen); later "play faint" -> Faint, correct |
+  | "play aggobai dhaggobai" | no text recognised, every time - **not in the list**: it is in the playlist "Sasa To Sasa Ki Kapoos Jasa", not the liked songs |
+  | "play in the end" | heard "play billie jean" -> Billie Jean played. A closed-vocabulary recogniser always returns the nearest phrase |
+  | 6 other runs | "no text recognised" (wake word fired, nothing matched) |
+
+  - **Fixes:** `PLAYLISTS` in `spotify_library.py` (user asked for `63uNCHuVgqNqXOUPoujY5Q`, Sasa To Sasa Ki Kapoos Jasa; +32 songs). Every song also gets a "<title> by <artist>" phrase, so a misheard short title can be said with more words: 1095 phrases, training 72s, 92MB.
+  - **TTS check after:** "aggobai dhaggobai", "in the end", "in the end by linkin park", "billie jean by michael jackson", "faint" all recognised; "aggobai dhaggobai by salil kulkarni" was not - for Marathi, the bare title is the one to say.
+- 2026-11-07: **speaker by room** (user): a "play <song>" heard by the bedroom satellite plays on the Pi (`raspberrypi`), anything else on xero (`SPEAKERS` in `spotify_library.py`, by the satellite's HA area). Checked muted with `conversation/process` and each satellite's `device_id`: bedroom loaded Faint on the Pi, living room played it on xero.
+- 2026-11-07: **"aggobai dhaggobai" still failed by voice after it was in the list** (10:32, "no text recognised"). Speech-to-Phrase had guessed its pronunciation from the spelling as "AG-uh-bye DAG-uh-bye" (in `/train/en_US-rhasspy/missing_words_dictionary.txt`). Added `ALIASES` spelled with English words that sound like the Marathi ("ago bye the go bye", "ago by dhago by", ...); the English TTS clip now lands on an alias.
+- 2026-11-04: **Whisper timed on xero** for phase 2 (`projects/voice-assistant/bench_whisper.sh`, faster-whisper int8 on 4 threads, clean Google TTS audio of 1.4-2.8s, so real satellite audio will do worse). Per request: `tiny.en` ~1.5s but "papercut" -> "people good"; `base.en` ~3s, gets "numb by linkin park" and "bohemian rhapsody by queen" but "papercut" -> "people gut"; `small.en` 10-15s and `distil-small.en` ~9.5s, both get every English title. Marathi ("aggobai dhaggobai") is garbled by every model. CPU went 56 -> 67C. So locally it is fast-and-wrong or right-and-~10s; user wants **no paid options** for now, which rules out cloud STT. pypi.org (Fastly) timed out from xero the same day while Google, GitHub and Hugging Face worked; the script uses the `rhasspy/wyoming-whisper` image's venv to avoid pip.
+- 2026-11-04: **Moonshine timed** the same way (`bench_moonshine.sh`, useful-moonshine-onnx, CPU): `moonshine/tiny` 0.2-0.4s, `moonshine/base` 0.5-0.9s per request - 10-20x faster than Whisper, accuracy about Whisper base ("people got/good" for papercut, "numb by Lincoln Park", Marathi garbled). CPU stayed ~58C.
+- 2026-11-04: **Spotify's search is the weaker half.** Top track result (market IN) for the *correct* text: "papercut" -> Faint (Linkin Park), "aggobai dhaggobai" -> Aga Bai (Shalmali Kholgade), "numb by Lincoln Park" -> an unrelated song; "Please shape of you" and "Bohemian Rhapsody by Queen" were right. So `spotcast.play_from_search` on a raw transcript picks wrong songs even when the words are right: match against the user's own library first, and turn "X by Y" into a track+artist search.
+- 2026-11-04: Marathi rule (user): Latin-script titles stay as Spotify spells them and recognise or fail; only hand-mapped aliases are guaranteed. `spotify_library.py` written: reads HA's Spotify integration token from `core.config_entries` read-only (never refreshes) and writes the gitignored `{song}` list `custom_sentences/en/songs.yaml` from liked songs. The first 50 liked songs are ~40 Marathi/Hindi in Latin script. Not yet wired to a sentence trigger or trained.
+- 2026-11-04: **phase 1 built.** Decided with the user: Speech-to-Phrase trained on the library rather than per-playlist phrases or Moonshine/Whisper. `spotify_library.py` now also writes `packages/spotify_songs.yaml` (gitignored): `play {song}` -> `spotcast.play_media` with that track's URI on xero, no search. 514 titles from the liked songs (3 untitled dropped); training ~31s, 59MB. TTS check: 15/16 random titles recognised incl. Hindi/Marathi/Spanish ("my dsmbr" failed - unpronounceable spelling); a title not in the list comes back empty, never a wrong song. Existing commands unaffected. Controls in `voice_commands.yaml` (`voice_spotify_control`, on `media_player.spotify_pramod`): all worked end to end with the speaker muted; "previous song" restarts the current song first (Spotify's behaviour). Fixed on the way: "music volume {x}" swallowed "music volume up" (HA matches the slot as free text), so only "set the music volume to N" takes a number. Nightly `sync_spotify_songs.sh` cron at 04:30.
+- 2026-11-03: recorded after a conversation; phase split agreed.
+- 2026-10-30: entry created, split out of "Local voice control (HA Assist)".
 
 ### Wishlist page (expensive purchases)
 **Status:** Active

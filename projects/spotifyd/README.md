@@ -106,3 +106,9 @@ systemctl --user enable --now spotifyd
 - **Stuck "active" but throwing 429/websocket errors** - just restart it: `systemctl --user restart spotifyd`.
 - **"xero" doesn't show up as a Connect device in the Spotify app** - check for a zeroconf/mDNS failure: `journalctl --user -u spotifyd -b | grep libmdns`. An `Setting up dns-sd failed: No such device (os error 19)` line means spotifyd's mDNS advertisement is silently failing on every startup (it logs this and keeps running normally otherwise, so nothing else looks wrong). Root cause found 2026-09-02: an orphaned Docker network interface (`docker network ls`, look for a bridge with 0 containers) broke libmdns's interface enumeration entirely. Remove the orphaned network (`docker network rm <name>`) and `systemctl --user restart spotifyd` - see `docs/incidents/2026-09-02-spotifyd-zeroconf-broken-by-orphaned-docker-network.md`.
 
+
+## Plans
+
+| File | What | Status |
+|---|---|---|
+| `plan-multiroom.md` | the same music in the bedroom and living room in sync (Snapcast + a second spotifyd "Both rooms") | proposed 2026-11-16, not built |

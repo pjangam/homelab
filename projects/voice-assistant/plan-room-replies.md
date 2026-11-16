@@ -162,7 +162,7 @@ Daytime only (restarts spotifyd and white noise). Rollback: put the old lines ba
 | `projects/endpoints/endpoints.toml` | MQTT topics `voice_reply/<host>/play` and `/done`; re-render |
 | `docs/hardware.md` | `voice-reply-vlc.service` and `voice-reply.service` on the Pi and xero; satellite firmware date |
 | `projects/ha-dashboard/dashboards/home.yaml` | the reply-volume tile in each room (`shot_dashboard.sh`) |
-| `PROJECTS.md` | Log, open items; Status of "Voice satellites: speakers and wake word" |
+| `PROJECTS.md` | Log, open items; Status of "Voice assistant (HA Assist): Spotify, room replies, wake word" |
 
 ## Traps known in advance
 
@@ -177,7 +177,7 @@ Daytime only (restarts spotifyd and white noise). Rollback: put the old lines ba
 
 ## Alternative already planned: a speaker on each satellite
 
-`PROJECTS.md` "Voice satellites: speakers and wake word" (2026-10-15) plans a MAX98357A amp + 40-50mm speaker per board, on the ESP32's second I2S bus. Nothing bought yet.
+`PROJECTS.md` "Voice assistant (HA Assist)", Speaker plan (2026-10-15), plans a MAX98357A amp + 40-50mm speaker per board, on the ESP32's second I2S bus. Nothing bought yet.
 
 | | Room speakers (this plan) | Speaker on the satellite |
 |---|---|---|
