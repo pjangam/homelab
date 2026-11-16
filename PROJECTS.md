@@ -3846,7 +3846,8 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** say which devices besides the speaker it will charge (phones only at plain 5V)
+- [ ] **Pramod:** pick the board: ESP32-C3 SuperMini (Robu R183884 is out of stock; hubtronics/makerbazar/local) or the free Diwali ESP32
+- [ ] **Pramod:** confirm it is for the speaker only (phones' 80% stop is the one thing that needs Wi-Fi + HA)
 - [ ] **Pramod:** buy the parts at a local shop (table below)
 - [ ] **Claude:** wiring diagram (circuit-diagram agent), ESPHome config, and the HA charge automations
 
@@ -3859,7 +3860,9 @@ USB charger 5V -> [INA219 current sensor] -> [switch] -> USB cable -> device
                           +------ ESP32 --------+   (ESPHome, Wi-Fi to HA)
 ```
 - **Switch:** 5V relay module (simplest, clicks) or P-channel MOSFET (silent).
-- **Speaker logic (HA):** turn charging on every N days or after X hours played; off when the current stays under ~50 mA for 5 min (full).
+- **Speaker logic (on the board, decided 2026-11-16):** charge on power-up; off when the current stays under a threshold for 5 min (full); restart after a fixed interval (~48h) or a button press. Works with Wi-Fi and HA down.
+- **Wi-Fi is for debugging only** (user, 2026-11-16): current graph, tuning the threshold/interval, a charge-done notification. Not needed for the box to do its job.
+- **Threshold trap:** the speaker is always on (xero's speaker), so "full" is its running draw, not ~0 mA. Measure it before fixing the number (~50 mA is a guess).
 - **Phone logic (HA):** off at 80% from the Companion app's battery sensor; current is no use there, a phone in use keeps drawing when full.
 - **Placement:** wall-mounted near the speaker.
 
@@ -3891,3 +3894,4 @@ qty | item | est | note
 #### Log
 - 2026-11-14: idea from the speaker-to-Bluetooth session; confirmed the speaker reports no battery level. Recorded as backlog.
 - 2026-11-14: build decided: USB-A in and out, 5V only (user).
+- 2026-11-16: board options compared: ATtiny85 (no Wi-Fi, needs a programmer, reflash to tune) vs ESP32-C3 SuperMini vs Wemos D1 mini. Decided the charge logic runs standalone on the board, Wi-Fi only for debugging (user). Recommended the C3 anyway: same price class, USB-C flashing with the existing ESPHome setup, tuning without reflashing.
