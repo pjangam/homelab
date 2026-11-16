@@ -1256,6 +1256,9 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 | **Behind a decoration** | Bevels sit between or behind the discs; a fatter stack | All gears behind the backboard; only the hub shows | Needs a centre cap/medallion that does not turn (could be an Om or a modak) |
 | **Speed locked?** | Yes, exactly equal | Yes, exactly equal | No: two cheap motors differ by ~10%, so the pattern drifts. Harmless to the look |
 
+option D: single motor pully with 90 degree opposite drive 
+reference https://youtu.be/C2TBQVUtv18
+
 - **Recommended: B.** It is the only option where every special part comes off one laser-cut sheet, with the rest from a hardware shop. Equal tooth counts on A and B give equal and opposite speeds. Making A and B larger than the pinion slows the discs and multiplies torque: a 15T pinion on 45T gears turns a 10 RPM motor into 3.3 RPM.
 - **A only if** - there is no 3D printer (user, 2026-11-07), so printed bevels are out - the flat2form reel shows hand-made gears that hold up. The Printables model is exactly this, and the reel's "three gears, two shafts" caption most likely is too. If watching it confirms paper or card bevel/crown gears driven by one motor, A becomes the recommendation and the sourcing objection goes away.
 - **The reel also points to a cheaper build: cardstock instead of MDF.** A paper chakra is light enough for a small motor, needs no laser shop and is immune to the MDF warp trap, but not to humidity (paper softens in monsoon). It is a smaller, more fragile piece than a 50cm MDF backdrop.
