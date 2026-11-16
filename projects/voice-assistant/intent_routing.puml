@@ -9,7 +9,7 @@ skinparam ActivityDiamondBackgroundColor #FFF3E0
 
 start
 :Satellite streams mic audio to HA (always);
-if (openwakeword hears "Hey Jarvis"?) then (no)
+if (openwakeword hears "Hey Jarvis"\nor "Dumbledore"? (wake-proxy)) then (no)
   stop
 endif
 if (the other satellite already took this wake word?) then (yes)

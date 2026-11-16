@@ -408,8 +408,9 @@ services:
     image: rhasspy/wyoming-openwakeword:latest
     container_name: openwakeword
     restart: unless-stopped
+    # 10401 = openwakeword directly (tests); HA talks to wake-proxy on 10400
     ports:
-      - "127.0.0.1:10400:10400"
+      - "127.0.0.1:10401:10400"
     volumes:
       - ./projects/voice-assistant/wakewords:/custom:ro
     command:
@@ -417,6 +418,28 @@ services:
       - --preload-model=andromeda
       - --preload-model=dumbledore
       - --custom-model-dir=/custom
+
+  # Several wake words live at once ("Hey Jarvis" and "Dumbledore", 2026-11-16).
+  # HA asks openwakeword for one wake word only; this proxy adds the others and
+  # reports them back under the name HA asked for. projects/voice-assistant/wake_proxy.py
+  wake-proxy:
+    image: python:3.12-alpine
+    container_name: wake-proxy
+    restart: unless-stopped
+    depends_on:
+      - openwakeword
+    ports:
+      - "127.0.0.1:10400:10400"
+    environment:
+      - UPSTREAM=openwakeword:10400
+      - EXTRA_WAKE_WORDS=dumbledore
+    volumes:
+      - ./projects/voice-assistant:/app/projects/voice-assistant:ro
+    command: ["python", "-u", "/app/projects/voice-assistant/wake_proxy.py"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 10400), 3)"]
+      interval: 60s
+      timeout: 5s
 
   mosquitto:
     image: eclipse-mosquitto:latest

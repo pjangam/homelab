@@ -45,7 +45,7 @@ node "xero (N5105 server)" as xero #F3E5F5 {
       component "Spotcast\nplay_media on a device" as spotcast
       component "Built-in intents\nturn on/off <name>" as builtin
     }
-    component "openwakeword\n:10400\nHey Jarvis" as oww
+    component "wake-proxy :10400 ->\nopenwakeword :10401\nHey Jarvis | Dumbledore" as oww
     component "stt-fallback\n:10300\nWyoming proxy" as fb
     component "speech-to-phrase\n:10301\nKaldi, closed vocabulary" as stp
     component "IndicConformer\n(Marathi, in stt-fallback)\nonly when stp hears nothing" as indic

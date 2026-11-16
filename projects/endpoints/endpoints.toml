@@ -354,12 +354,21 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "Loopback only; HA (host network) is its only client. projects/voice-assistant/README.md"
 
   [[group.endpoint]]
-  name = "openWakeWord (Wyoming wake word)"
+  name = "wake-proxy (Wyoming wake word, two wake words)"
   proto = "tcp"
   host = "127.0.0.1"
   port = 10400
+  desc = "Wyoming proxy in front of openWakeWord, since 2026-11-16: HA asks for one wake word; this adds Dumbledore next to Hey Jarvis and reports it back under the name HA asked for."
+  who = "Home Assistant's Assist pipeline, for both voice satellites (HA's openWakeWord integration points here)."
+  note = "Loopback only. projects/voice-assistant/wake_proxy.py, README 'Two wake words'"
+
+  [[group.endpoint]]
+  name = "openWakeWord (Wyoming wake word, direct)"
+  proto = "tcp"
+  host = "127.0.0.1"
+  port = 10401
   desc = "Wake-word detection for the ESP32 voice satellite, over the Wyoming protocol. The board is an original ESP32 with no on-device micro_wake_word, so it streams audio to HA continuously and this listens for the wake word."
-  who = "Home Assistant's Assist pipeline, for the voice satellite. The pipeline's WAKE_WORD_ID in setup_assist.py picks the live model."
+  who = "wake-proxy (HA reaches it through that, 10400 -> 10400 inside); 10401 on the host for direct tests (wyoming_wake.py)."
   note = "Loopback only; HA (host network) is its only client. Custom models go in projects/voice-assistant/wakewords/. projects/voice-assistant/README.md"
 
   [[group.endpoint]]

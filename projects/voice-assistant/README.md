@@ -33,7 +33,7 @@ Edit the `.puml`, then run `render_architecture.sh` (PlantUML in Docker) and com
 | Command matching | HA's own conversation agent (`prefer_local_intents` on), plus `packages/voice_commands.yaml` for what its built-in sentences do not cover |
 | Text-to-speech | `piper` container, `127.0.0.1:10200`, voice `en_US-lessac-medium`. **Required, not optional** - see Gotchas. |
 | Pipeline | The preferred "Home Assistant" Assist pipeline: `stt.speech_to_phrase` + `tts.piper` |
-| Mic | Two ESP32 + INMP441 satellites on ESPHome (Voice Satellite in the bedroom, Voice Living Room), streaming audio to HA all the time; wake word "Hey Jarvis" in the `openwakeword` container on xero (the boards are original ESP32s, no on-device wake word). Also the HA phone app's Assist button. Wiring: `wiring.html` |
+| Mic | Two ESP32 + INMP441 satellites on ESPHome (Voice Satellite in the bedroom, Voice Living Room), streaming audio to HA all the time; wake words **"Hey Jarvis" and "Dumbledore"** (both live since 2026-11-16, see "Two wake words") in the `openwakeword` container on xero, reached through `wake-proxy` (the boards are original ESP32s, no on-device wake word). Also the HA phone app's Assist button. Wiring: `wiring.html` |
 
 ## Choosing the speech-to-text
 
@@ -57,6 +57,22 @@ Why Speech-to-Phrase:
 - **Speed:** it is the only accurate option fast enough on the N5105.
 - **No made-up commands:** it can only return a phrase it was trained on (or nothing), so noise never becomes a wrong command. The cost is that it can't hear anything it wasn't trained on: every song title must be in the trained list, and Marathi needs aliases.
 - **The English model fails on Marathi pronunciation.** Speech-to-Phrase uses Rhasspy's English Kaldi model (2021). Google's Marathi voice failed on every clip; real voice sits in between.
+
+## Two wake words (`wake-proxy`, since 2026-11-16)
+
+Either "Hey Jarvis" or "Dumbledore" wakes both satellites. No flashing: the boards only stream audio; wake words are detected on xero.
+
+| Piece | What |
+|---|---|
+| `wake-proxy` container, `127.0.0.1:10400` (what HA's openWakeWord integration points at) | `wake_proxy.py`: HA asks for one wake word (the pipeline's `hey_jarvis`); the proxy adds `EXTRA_WAKE_WORDS` (`dumbledore`) to the request and reports a Dumbledore detection back as `hey_jarvis`, which HA would otherwise drop ("Expected wake word ... skipping") |
+| `openwakeword` container, `127.0.0.1:10401` | the detector; an extra word must be in its `--preload-model` list |
+| Logs | `docker logs wake-proxy`: one line per detection with the word really heard - use it to count false wakes per word |
+| Test | `wyoming_wake.py 127.0.0.1:10400 hey_jarvis clip.wav` (through the proxy) or `:10401` (direct) |
+
+- **Tested 2026-11-16 with TTS clips:** "hey jarvis" detected; "dumbledore" detected for 2 of 6 synthetic voices (Google en-GB, Piper), none for the others - real voice is the test. "turn on the fan" not detected. Both satellites reconnected through the proxy; openwakeword CPU unchanged (~39% of one core), proxy ~6%.
+- **Add or drop a word:** `EXTRA_WAKE_WORDS` in `docker-compose.yml` (and `--preload-model`), `docker compose up -d wake-proxy`.
+- **Rollback:** point openwakeword back at `127.0.0.1:10400:10400` and remove `wake-proxy`.
+- More wake words = more false wakes (each adds its own).
 
 ## Marathi fallback (`stt-fallback`, since 2026-11-15)
 
@@ -190,12 +206,14 @@ white noise, AC.
   clone (venv, no Docker) flashes over USB on the Mac, OTA, or copies the
   `.bin` to xero for `esphome.sh flash-bin`.
 - `wakewords/` - custom openWakeWord models, mounted into the `openwakeword`
-  container (`127.0.0.1:10400`, preloads `hey_jarvis`, the wake word since 2026-10-08; `okay_nabu` before).
+  container (`127.0.0.1:10401` direct, `10400` through `wake-proxy`; preloads `hey_jarvis`, the wake word since 2026-10-08, `okay_nabu` before).
   `andromeda.tflite` and `dumbledore.tflite` (from the community collection,
   https://github.com/fwartner/home-assistant-wakewords-collection, 2026-10-11)
-  are preloaded too, waiting to be tried instead of training "Alejandro". To
-  try one: `WAKE_WORD_ID` in `setup_assist.py`, run it, restart
-  speech-to-phrase; add `--debug` to openwakeword to see detections.
+  are preloaded too; **dumbledore is live** next to hey_jarvis since 2026-11-16
+  (see "Two wake words"). The pipeline's `WAKE_WORD_ID` in `setup_assist.py`
+  stays `hey_jarvis`; add `--debug` to openwakeword to see detections.
+- `wake_proxy.py` - the `wake-proxy` container: several wake words live at once.
+- `wyoming_wake.py` - streams a WAV to a Wyoming wake-word server, prints what it detects.
 - `check_stt.sh` + `stt_probe.wav` - sends a saved "turn off the AC" clip
   (Piper's voice) through speech-to-text. Run every 15 min by
   `projects/healthcheck/healthcheck.sh`, which restarts speech-to-phrase
