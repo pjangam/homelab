@@ -111,4 +111,4 @@ systemctl --user enable --now spotifyd
 
 | File | What | Status |
 |---|---|---|
-| `plan-multiroom.md` | the same music in the bedroom and living room in sync (Snapcast + a second spotifyd "Both rooms") | proposed 2026-11-16, not built |
+| `plan-multiroom.md` | the same music in the bedroom and living room in sync (Snapcast + a second spotifyd "Everywhere") | proposed 2026-11-16, not built |

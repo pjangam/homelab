@@ -3356,7 +3356,8 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - [ ] **Pramod:** buy the speaker parts below (local shop first)
 - [ ] **Together:** wire per the plan, add the firmware pieces, OTA both boards
 - [ ] **Claude:** update both boards' `docs/hardware.md` entries (GPIOs, firmware)
-- [ ] **Pramod:** answer the questions in `projects/spotifyd/plan-multiroom.md` (both rooms in sync, proposed 2026-11-16); then `architecture-review` on it
+- [ ] **Pramod:** pick the dashboard view for the "Everywhere" tiles (`projects/spotifyd/plan-multiroom.md`; name, phrases and timing decided 2026-11-16)
+- [ ] **Together, later:** build `projects/spotifyd/plan-multiroom.md` (no ESP32 flashing needed)
 
 **Merged 2026-11-16** from "Spotify by voice (HA Assist)" and "Voice satellites: speakers and wake word" (user: one entry for the voice assistant). The first build is "Local voice control (HA Assist)" (Done).
 **Why (Spotify):** raised 2026-11-03: play music by voice the way Siri does ("play X"), from the voice satellites and, later, the car.
