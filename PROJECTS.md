@@ -3841,7 +3841,7 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 - 2026-11-14: a tone on the AUX line was not heard: the speaker was in Bluetooth mode, and signal does not switch it. Found it advertising over Bluetooth from xero, paired it; tone and Spotify (via spotcast) played on it. Volume 18%.
 - 2026-11-14: tested by disconnecting on purpose: the script reconnects in ~4s and restores the default sink; a typed "play sasa to sasa ki kapoos jasa" reconnected and played in ~5s (20s before replacing `bluetoothctl --timeout` with polling). HA slider reads the Bluetooth volume (18).
 
-### USB charge switch: ESP32 + current sensor to stop charging when full
+### USB charge switch (relay): ATtiny85 + current sensor to stop charging when full
 **Status:** Backlog
 **Priority:** P3
 
@@ -3854,11 +3854,11 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 
 #### Design
 ```
-USB charger 5V -> [INA219 current sensor] -> [switch] -> USB cable -> device
+USB charger 5V -> [INA219 current sensor] -> [relay] -> USB cable -> device
                           |                     |
-                          +------ ESP32 --------+   (ESPHome, Wi-Fi to HA)
+                          +---- ATtiny85 -------+   (standalone; ESP32-C3 + Wi-Fi is the fallback)
 ```
-- **Switch:** 5V relay module (simplest, clicks) or P-channel MOSFET (silent).
+- **Switch: 5V relay module** (user, 2026-11-16): no soldering, clicks only twice per charge. The silent P-channel MOSFET (AO3401) version is its own entry, "USB charge switch (MOSFET)", to try later.
 - **Board: ATtiny85 (Digispark)**, being tried (user, 2026-11-16); ESP32-C3 kept as the fallback option.
 - **Speaker logic (on the board, decided 2026-11-16):** charge on power-up; off when the current stays under a threshold for 5 min (full); restart after a fixed interval (~48h) or a button press. Works with Wi-Fi and HA down.
 - **Wi-Fi is for debugging only** (user, 2026-11-16): current graph, tuning the threshold/interval, a charge-done notification. Not needed for the box to do its job.
@@ -3875,14 +3875,11 @@ qty | item | est | note
 1 | Small ABS project box (~85x55x30mm) | 120-200 | local - wall-mounted near the speaker
 1 | 6x6mm tactile push button | 5-10 | local - "charge now"
 1 | USB-A power meter / tester (voltage + current display) | 200-350 | local - to measure the speaker's "full" current before fixing the threshold; useful for any USB build after
+1 | 5V relay module (1 channel, high-trigger like the KY-019) | 60 | local - check the stash first; a low-trigger opto module would switch on at boot
 # Board: ATtiny85 (Digispark)
 1 | Digispark ATtiny85 USB dev board (micronucleus bootloader) | 120-200 | local - chosen to try (user, 2026-11-16); flashes over its own USB, no programmer. PB3/PB4 are the USB lines (button OK on PB3), PB1 has the onboard LED
 # Board: ESP32-C3 SuperMini
 1 | ESP32-C3 SuperMini (headers soldered) | 250 | local or hubtronics/makerbazar - Robu R183884 out of stock (2026-11-16); or the free Diwali ESP32. Wi-Fi for debugging/tuning
-# Switch: 5V relay module
-1 | 5V relay module (1 channel) | 60 | local - simplest, clicks; check the workbench first
-# Switch: P-channel MOSFET
-1 | P-channel MOSFET AO3401 (or a module with one) | 30-60 | local - silent; plus a 10k pull-up resistor
 ```
 
 #### Phones and fast charging
@@ -3901,3 +3898,4 @@ qty | item | est | note
 - 2026-11-14: build decided: USB-A in and out, 5V only (user).
 - 2026-11-16: board options compared: ATtiny85 (no Wi-Fi, needs a programmer, reflash to tune) vs ESP32-C3 SuperMini vs Wemos D1 mini. Decided the charge logic runs standalone on the board, Wi-Fi only for debugging (user). Recommended the C3 anyway: same price class, USB-C flashing with the existing ESPHome setup, tuning without reflashing.
 - 2026-11-16: **trying the ATtiny85 this time** (user): Digispark board, no Wi-Fi; restarts charging on its own timer (~48h, internal clock ±10% is fine) or the button. Added to the parts block as a board option; user sources parts before any code.
+- 2026-11-16: split in two (user): this entry is the **relay** build, done first; the P-channel MOSFET (AO3401) build is a separate entry for later. Renamed from "USB charge switch: ESP32 + current sensor to stop charging when full"; MOSFET option moved out of the parts block.
