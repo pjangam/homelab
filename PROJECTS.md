@@ -3998,7 +3998,7 @@ qty | item | est | note
 #### Goal (user, 2026-11-16)
 "for now we can do manual on off. or automate it with timers or some other triggers in future".
 - **Phase 1 - manual on/off.** A button on the box and/or a toggle from HA or the phone drives the servo. Nothing automatic.
-- **Phase 2 - timers or other triggers, undecided.** Candidates, none chosen: a schedule, off when idle, off with the charge cycle (tie-in with the USB charge switch's "full"), on before a voice "play".
+- **Phase 2 - timers or other triggers, undecided.** Candidates, none chosen: a schedule, off when idle, off with the charge cycle (tie-in with the USB charge switch's "full"), on before a voice/Spotify "play" while the speaker is off (the `bt_speaker_xero/connect` hook that `bt-speaker-mqtt.service` already answers is the natural place).
 - **Controller follows from phase 1:** a button only - the ATtiny85 is enough and can share the charge-switch box; an HA/phone toggle (and any phase 2) - an ESP32 with ESPHome. Picking the ESP32 now avoids a rebuild for phase 2.
 
 #### Feasibility
@@ -4029,7 +4029,7 @@ qty | item | est | note
   - **The charge box's INA219** - if shared, the speaker's draw differs on/off; measure it at the bench.
   - **A limit switch** at one end - one more part, true mechanical position.
   - In HA, report "unknown" when the signals disagree; an ESPHome node gives an availability topic for free.
-- **Clash with the reconnect cron:** `bt_speaker_reconnect.sh` runs every minute; with the speaker deliberately off it will fail every minute. Whatever switches it off must also tell that script (or it must check the switch state first).
+- **Reconnect needs no change while the speaker is off** (decided 2026-11-16, checked against the repo). With the speaker off, `projects/spotifyd/bt_speaker_reconnect.sh` (cron every minute) fails fast and exits quietly, no log spam; PipeWire falls back to the USB adapter. The same script is what reconnects it within a minute after the servo turns it back on. Pausing it only matters if the speaker should play from the phone instead of xero (it takes one source at a time).
 - **After switching on, check it reconnects to xero.** xero has auto-reconnect since 2026-11-14 (`bt_speaker_reconnect.sh` every minute, `bt-speaker-mqtt` on a voice "play"), but the speaker boots into Bluetooth mode and must actually pair back, or playback after a power-on is silent. Test it at the bench: servo on, time until xero's sink is back; worst case is ~1 min (the cron interval) unless the on command also kicks `bt_speaker_xero/connect`.
 - **Power cuts:** the speaker has its own battery, xero is on the UPS. With the servo variant a box reboot changes nothing; with a relay wire-across a box power loss turns the speaker off.
 
@@ -4067,3 +4067,4 @@ qty | item | est | note
 #### Log
 - 2026-11-16: idea recorded (user), right after the USB charge switch entries. The slider is the Apollo One's power switch (user). Options compared: wire-across, servo, actuator/solenoid, button pushers.
 - 2026-11-16: goal set (user): phase 1 manual on/off, phase 2 timers or other triggers later. Controller still open.
+- 2026-11-16: reconnect cron and `bt-speaker-mqtt` need no pausing while the speaker is off (user asked; checked against the repo).
