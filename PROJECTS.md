@@ -3846,10 +3846,9 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 **Priority:** P3
 
 #### Open items
-- [ ] **Pramod:** pick the board: ESP32-C3 SuperMini (Robu R183884 is out of stock; hubtronics/makerbazar/local) or the free Diwali ESP32
-- [ ] **Pramod:** confirm it is for the speaker only (phones' 80% stop is the one thing that needs Wi-Fi + HA)
-- [ ] **Pramod:** buy the parts at a local shop (table below)
-- [ ] **Claude:** wiring diagram (circuit-diagram agent), ESPHome config, and the HA charge automations
+- [ ] **Pramod:** source the ATtiny85 parts (option "Board: ATtiny85 (Digispark)" in the parts block) plus the shared parts and the relay
+- [ ] **Claude, after the parts are in hand:** ATtiny85 firmware (Arduino: INA219 cutoff, 48h restart, button), wiring diagram (circuit-diagram agent). No code before then (user, 2026-11-16)
+- [ ] **Together, at the bench:** measure the speaker's "full" current with the USB tester, then fix the threshold in the firmware
 
 **Why:** the Portronics Apollo One (xero's Bluetooth speaker since 2026-11-14) stays on its charger, and a Li-ion battery held at 100% ages faster. Neither the speaker nor its Bluetooth link reports a battery level (checked from xero, the phone and the MacBook on 2026-11-14), so a plain timer or a smart plug can only guess when it is full. Building it on the 5V USB side, not as a mains plug, keeps it away from 230V.
 
@@ -3860,6 +3859,7 @@ USB charger 5V -> [INA219 current sensor] -> [switch] -> USB cable -> device
                           +------ ESP32 --------+   (ESPHome, Wi-Fi to HA)
 ```
 - **Switch:** 5V relay module (simplest, clicks) or P-channel MOSFET (silent).
+- **Board: ATtiny85 (Digispark)**, being tried (user, 2026-11-16); ESP32-C3 kept as the fallback option.
 - **Speaker logic (on the board, decided 2026-11-16):** charge on power-up; off when the current stays under a threshold for 5 min (full); restart after a fixed interval (~48h) or a button press. Works with Wi-Fi and HA down.
 - **Wi-Fi is for debugging only** (user, 2026-11-16): current graph, tuning the threshold/interval, a charge-done notification. Not needed for the box to do its job.
 - **Threshold trap:** the speaker is always on (xero's speaker), so "full" is its running draw, not ~0 mA. Measure it before fixing the number (~50 mA is a guess).
@@ -3869,11 +3869,16 @@ USB charger 5V -> [INA219 current sensor] -> [switch] -> USB cable -> device
 #### Parts
 ```parts
 qty | item | est | note
-1 | ESP32-C3 SuperMini | 250 | local - or a spare ESP32 if one is free (they may all be claimed)
 1 | INA219 current sensor module | 150-250 | local - measures the device's charging current (up to 26V, ~3.2A)
 1 | USB-A male breakout board | 25 | local - input from the charger; must pass D+/D- through
 1 | USB-A female breakout board | 25 | local - output to the device's cable; must pass D+/D- through
 1 | Small ABS project box (~85x55x30mm) | 120-200 | local - wall-mounted near the speaker
+1 | 6x6mm tactile push button | 5-10 | local - "charge now"
+1 | USB-A power meter / tester (voltage + current display) | 200-350 | local - to measure the speaker's "full" current before fixing the threshold; useful for any USB build after
+# Board: ATtiny85 (Digispark)
+1 | Digispark ATtiny85 USB dev board (micronucleus bootloader) | 120-200 | local - chosen to try (user, 2026-11-16); flashes over its own USB, no programmer. PB3/PB4 are the USB lines (button OK on PB3), PB1 has the onboard LED
+# Board: ESP32-C3 SuperMini
+1 | ESP32-C3 SuperMini (headers soldered) | 250 | local or hubtronics/makerbazar - Robu R183884 out of stock (2026-11-16); or the free Diwali ESP32. Wi-Fi for debugging/tuning
 # Switch: 5V relay module
 1 | 5V relay module (1 channel) | 60 | local - simplest, clicks; check the workbench first
 # Switch: P-channel MOSFET
@@ -3895,3 +3900,4 @@ qty | item | est | note
 - 2026-11-14: idea from the speaker-to-Bluetooth session; confirmed the speaker reports no battery level. Recorded as backlog.
 - 2026-11-14: build decided: USB-A in and out, 5V only (user).
 - 2026-11-16: board options compared: ATtiny85 (no Wi-Fi, needs a programmer, reflash to tune) vs ESP32-C3 SuperMini vs Wemos D1 mini. Decided the charge logic runs standalone on the board, Wi-Fi only for debugging (user). Recommended the C3 anyway: same price class, USB-C flashing with the existing ESPHome setup, tuning without reflashing.
+- 2026-11-16: **trying the ATtiny85 this time** (user): Digispark board, no Wi-Fi; restarts charging on its own timer (~48h, internal clock ±10% is fine) or the button. Added to the parts block as a board option; user sources parts before any code.
