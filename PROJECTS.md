@@ -3356,7 +3356,7 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - [ ] **Pramod:** buy the speaker parts below (local shop first)
 - [ ] **Together:** wire per the plan, add the firmware pieces, OTA both boards
 - [ ] **Claude:** update both boards' `docs/hardware.md` entries (GPIOs, firmware)
-- [ ] **Pramod:** pick the dashboard view for the "Everywhere" tiles (`projects/spotifyd/plan-multiroom.md`; name, phrases and timing decided 2026-11-16)
+- [ ] **Claude:** re-review of both plans running (2026-11-16); go through new findings with Pramod
 - [ ] **Together, later:** build `projects/spotifyd/plan-multiroom.md` (no ESP32 flashing needed)
 
 **Merged 2026-11-16** from "Spotify by voice (HA Assist)" and "Voice satellites: speakers and wake word" (user: one entry for the voice assistant). The first build is "Local voice control (HA Assist)" (Done).
@@ -3386,6 +3386,7 @@ qty | item | est | note
 The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satellites have no way to play it, so today a command only shows on the LED. Adding a MAX98357A + small speaker per board gives spoken replies and confirmation tones. It goes on its own I2S bus (the ESP32 has two), not shared with the mic: LRC GPIO26, BCLK GPIO27, DIN GPIO22 - all free and none of them strapping pins - with VIN to 5V, GND, and SD left unconnected (amp on). Firmware: a second `i2s_audio` bus, an `i2s_audio` speaker, and `speaker:` on `voice_assistant`; ESPHome mutes the mic while the reply plays, so the board does not hear itself. Not wired or flashed yet.
 
 #### Log
+- 2026-11-16: **multi-room plan revised** after `architecture-review` (13 findings, all applied: snapserver as a user unit with the FIFO in /run/user, ports off the tailnet, watchdog required, Bluetooth sink pinned, voice templates in `spotify_library.py`). Decisions: "Everywhere", both phrases, bedroom muted while white noise is on, tiles per room, web page off. `plan-room-replies.md` gets the "Everywhere" case (mute this room's client during a reply).
 - 2026-11-16: entries merged (see top); multi-room plan written: `projects/spotifyd/plan-multiroom.md` (Snapcast, a second spotifyd "Both rooms" feeding it; feasible, not built).
 - 2026-11-15: **parallel vs fallback measured** (user: run both models at once for "play" if the CPU can take it, else keep the fallback). `bench_stt_parallel.sh`, 5 runs per clip, p50 seconds per request:
 

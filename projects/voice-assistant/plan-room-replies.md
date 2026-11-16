@@ -40,10 +40,10 @@ HA script voice_resume(room): resume Spotify if this room's flag is on    v
 | 2 | **voice-reply bridge** | Pi and xero, `systemd --user` unit `voice-reply.service`, `voice_reply_mqtt.py` (pattern of `volume-mqtt` / `bt_speaker_mqtt.py`) | on MQTT `voice_reply/<host>/play` `{id, url or sound, volume}`: (1) save the speaker volume **to a file**; (2) set the preset (`amixer` PCM on the Pi, `wpctl` on xero); (3) xero: make sure the Bluetooth speaker is connected first; (4) tell VLC to play; (5) ask VLC "still playing?" every 0.1s, max 20s; (6) restore the volume; (7) publish `voice_reply/<host>/done` `{id}`. A second play while one runs is queued and does **not** re-save the volume. On start: if a saved-volume file is left over (crash, reboot mid-reply), restore it |
 | 3 | Satellite firmware | `esphome/voice-satellite-common.yaml`, `room` substitution per board | `on_tts_end`: `homeassistant.action: script.voice_reply` with `room`, `url`. `on_error`: the "Sorry" rule below -> `script.voice_reply` with `sound: sorry`. `on_end`: `script.voice_resume` with `room` (covers runs with no reply) |
 | 4 | Permission | ESPHome integration options in HA, per satellite | turn on "Allow the device to perform Home Assistant actions" (off on both today - checked 2026-11-15) |
-| 5 | Pause on wake word | HA automation `voice_music_pause`, on each `assist_satellite.*` going **listening** | (1) `homeassistant.update_entity` on the Spotify player (its state can be 30s old); (2) bedroom: remember whether white noise is on **now** (`input_boolean.voice_quiet_bedroom`); (3) if Spotify is playing **on this room's device** (Spotcast `is_active`): pause it, and only if it is then paused, turn on `input_boolean.voice_paused_<room>` |
+| 5 | Pause on wake word | HA automation `voice_music_pause`, on each `assist_satellite.*` going **listening** | (1) `homeassistant.update_entity` on the Spotify player (its state can be 30s old); (2) bedroom: remember whether white noise is on **now** (`input_boolean.voice_quiet_bedroom`); (3) if Spotify is playing **on this room's device** (Spotcast `is_active`): pause it, and only if it is then paused, turn on `input_boolean.voice_paused_<room>`; (4) if it is playing on **"Everywhere"** (`projects/spotifyd/plan-multiroom.md`): don't pause (that would stop both rooms) - **mute this room's Snapcast client** and turn on `input_boolean.voice_muted_<room>` |
 | 6 | Reply script | HA script `voice_reply(room, url or sound)`, `mode: queued` | skip if `room` is bedroom and `voice_quiet_bedroom` is on; else publish `play` with the room's preset, wait for `done` with that id (max 25s), then `voice_resume(room)` |
-| 7 | Resume script | HA script `voice_resume(room)` | refresh the Spotify state; if this room's flag is on **and** Spotify is still paused on this room's device: resume. Clear the flag. Safe to call twice |
-| 8 | Safety net | HA automation, a room's flag on for 60s | call `voice_resume(room)`: covers HA restarts, a satellite dropping mid-command, a lost `done` |
+| 7 | Resume script | HA script `voice_resume(room)` | refresh the Spotify state; if this room's flag is on **and** Spotify is still paused on this room's device: resume. If `voice_muted_<room>` is on: unmute this room's Snapcast client (but leave the bedroom muted while white noise is on). Clear both flags. Safe to call twice |
+| 8 | Safety net | HA automation, a room's `voice_paused_` or `voice_muted_` flag on for 60s | call `voice_resume(room)`: covers HA restarts, a satellite dropping mid-command, a lost `done` |
 | 9 | Flag clearing | in `voice_commands.yaml` and `voice_play_song` | "pause/stop the music", "play \<song\>", "next/previous song" clear the room's flag, so resume does not undo them |
 | 10 | Presets | `input_number.voice_reply_volume_bedroom` (93), `..._living_room` (35) | the volume replies play at |
 | 11 | "Sorry" sound | `sorry.mp3` on each host, made once at install from HA's Piper ("Sorry, I didn't catch that") | the bridge plays it for `sound: sorry`; no TTS call at error time |
@@ -52,7 +52,7 @@ Why the satellite state is **not** used to resume: HA sets a satellite back to i
 
 Why a reflash is needed: HA sends the reply's audio URL only to the satellite that heard the command; automations never see it (no event). Only the firmware can forward it. The no-reflash alternative - polling HA's pipeline debug runs - adds 1-3s per reply and relies on a 10-run debug buffer, so it was rejected (2026-11-14). Pause, resume, the bridge and the presets need no reflash and can be tested before it.
 
-Why the volume dance is safe: the music is paused while the reply plays, so changing the speaker volume is not heard on it; the volume is back before the music resumes. The voice "music volume up/down" commands change **Spotify's own volume** (spotifyd `softvol`, `voice_commands.yaml`), not the speaker volume, so they do not conflict with the save/restore. While the reply plays, the "Pi Speaker Volume" / "xero Speaker Volume" sliders jump to the preset and back - expected.
+Why the volume dance is safe: the music is paused while the reply plays (on "Everywhere": muted in this room, still playing in the other), so changing the speaker volume is not heard on it; the volume is back before the music resumes. The voice "music volume up/down" commands change **Spotify's own volume** (spotifyd `softvol`, `voice_commands.yaml`), not the speaker volume, so they do not conflict with the save/restore. While the reply plays, the "Pi Speaker Volume" / "xero Speaker Volume" sliders jump to the preset and back - expected.
 
 ### Why VLC, and why always running
 
@@ -128,7 +128,7 @@ Also found: `white-noise.service` runs `playerctl -p spotifyd pause` before it s
 | 0 | **Pi audio test** (daytime): VLC to `default:CARD=Headphones` with spotifyd playing, then with white noise playing - both heard? | Claude | 5 minutes. If it fails: the fallback below (spotifyd and white noise through PipeWire) |
 | 1 | "Stop white noise" sentences + text test; bench test of the wake word under white noise | Claude (sentences), Together (bench test, at night) | independent of the rest; can be done now |
 | 2 | `voice_reply_mqtt.py`, `voice-reply-vlc.service`, `voice-reply.service`, install script for the Pi and xero; `sorry.mp3` | Claude | user units, no sudo, linger on. Test with `mosquitto_pub`: timing, volume restored, kill mid-reply -> restored on restart, two plays queued, xero after 10 min idle (Bluetooth clipping; add ~300ms of silence if needed) |
-| 3 | `packages/voice_replies.yaml`: helpers, `voice_reply`, `voice_resume`, `voice_music_pause`, the safety net; flag clearing in `voice_commands.yaml` / `voice_play_song` | Claude | test without the reflash: wake word -> pause -> call `voice_reply` by hand -> resume. Check: is "next song" while paused starting playback? |
+| 3 | `packages/voice_replies.yaml`: helpers (incl. `voice_muted_<room>` if "Everywhere" is built), `voice_reply`, `voice_resume`, `voice_music_pause`, the safety net; flag clearing in `voice_commands.yaml` / `voice_play_song` | Claude | test without the reflash: wake word -> pause -> call `voice_reply` by hand -> resume. Check: is "next song" while paused starting playback? |
 | 4 | Calibrate the "Sorry" threshold from a week of `stt-fallback` logs | Claude | before the firmware |
 | 5 | Firmware: `on_tts_end`, `on_error` rule, `on_end`, `room` per board | Claude | |
 | 6 | Build and OTA-flash both satellites from the Mac (`build_on_mac.sh`, `build_on_mac.sh living`) | Pramod (Mac) or Claude via the Mac session | not on xero: heavy builds. Also brings the bedroom board's `on_client_connected` fix |
@@ -172,6 +172,7 @@ Daytime only (restarts spotifyd and white noise). Rollback: put the old lines ba
 - **Pause latency:** Spotify takes ~0.5-1s to pause after "Hey Jarvis"; the first words of a fast command may still be under the music.
 - **The mic hears the reply:** the speaker is next to the mic. No reply sounds like "Hey Jarvis", so this should be harmless; worth watching.
 - **xero's Bluetooth speaker sleeps:** the bridge reconnects it first (`bt_speaker_xero/connect`); if disconnected, PipeWire falls back to the USB adapter and the reply plays to nothing. The start of a reply may be clipped after idle - test.
+- **"Everywhere" (multi-room plan):** the bridge's volume change (`amixer` PCM / `wpctl`) also hits that room's Snapcast stream - harmless because the client is muted during the reply. The mute is saved by snapserver, so a crash mid-reply could leave the room muted: the safety net and every "play everywhere" unmute. Only once `plan-multiroom.md` is built; until then the extra branch does nothing.
 - **White noise shares the Pi's volume control** (PCM): no conflict, because the bedroom gets no replies while white noise is on.
 - **Satellite firmware is old on the bedroom board** (2026-10-06); the reflash also brings the `on_client_connected` fix (README).
 
@@ -207,6 +208,7 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 | Player | VLC always running, driven by an MQTT bridge on each host (user, 2026-11-15) |
 | Dashboard | a "Reply volume" slider tile in each room's view (user, 2026-11-14) |
 | Phone app | unchanged (it plays replies itself) |
+| Music on "Everywhere" | mute only this room's Snapcast client during the reply; the other room keeps playing (user, 2026-11-16, multi-room review) |
 | **Open:** "Hey Jarvis" under white noise | after the bench test: quieter white noise, move the board, or the physical button |
 
 ## Review findings and what was done with them (2026-11-15)
@@ -224,3 +226,4 @@ The two can coexist: room speakers now, a satellite speaker later if the depende
 | Bluetooth clipping / fallback sink | reconnect first, test after idle |
 | Wrong room wins | accepted, observe |
 | `playerctl` pause in white noise does nothing | noted; separate fix |
+| "Everywhere" not handled (multi-room review, 2026-11-16) | mute this room's Snapcast client instead of pausing; unmute in `voice_resume`, the safety net and every "play everywhere" |
