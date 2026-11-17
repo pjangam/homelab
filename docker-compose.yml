@@ -75,10 +75,10 @@ services:
     restart: unless-stopped
 
   cadvisor:
-    image: ghcr.io/google/cadvisor:0.60
+    image: ghcr.io/google/cadvisor:0.61
     # Diun: alert when a release this tag will not reach appears; the regex
     # must also match the running tag, or a later release counts as Diun's
-    # silent first check (next minor; 0.60 follows patches only).
+    # silent first check (next minor; 0.61 follows patches only).
     # services/container-updates/README.md
     labels:
       diun.enable: "true"
@@ -86,7 +86,7 @@ services:
       diun.notify_on: new
       diun.sort_tags: semver
       diun.max_tags: "5"
-      diun.include_tags: '^0\.60$$;^v0\.(6[1-9]|[7-9][0-9])\.[0-9]+$$;^v[1-9][0-9]*\.[0-9]+\.[0-9]+$$'
+      diun.include_tags: '^0\.61$$;^v0\.(6[2-9]|[7-9][0-9])\.[0-9]+$$;^v[1-9][0-9]*\.[0-9]+\.[0-9]+$$'
     container_name: cadvisor
     command:
       - --docker_only=true

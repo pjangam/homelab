@@ -10,7 +10,7 @@ Each image's tag decides the mechanism:
 |---|---|---|
 | Floating (`latest`, `stable`) | `homeassistant:stable`, `pihole:latest`, `grafana:latest` | Watchtower, Sundays 04:00 |
 | Major tag (follows minors and patches) | `prom/prometheus:v3`, `prom/node-exporter:v1`, `syncthing:2`, `valkey:9` | Watchtower; Diun notifies when the **next major** ships |
-| Minor tag (follows patches) | `cadvisor:0.60` (no `latest` on ghcr) | Watchtower; Diun notifies on the **next minor** |
+| Minor tag (follows patches) | `cadvisor:0.61` (no `latest` on ghcr) | Watchtower; Diun notifies on the **next minor** |
 | Exact pin | Immich `IMMICH_VERSION` in `.env` | Diun notifies on **every release**, then `services/immich/upgrade.sh` |
 | Pinned by digest | Immich's valkey, Immich's postgres | Follow Immich upstream's compose (`upgrade.sh` shows the diff) |
 | Built locally | `projects-ui` | Neither (label `com.centurylinklabs.watchtower.enable=false`) |
