@@ -1204,7 +1204,8 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 #### Open items
 - [ ] **Pramod:** measure a golden-snitch spinner bearing (bore / OD, likely 608 = 8mm / 22mm) and pick the axle to match
 - [ ] **Pramod:** try the motor already owned on a cardboard disc; note its RPM (target 3-10 RPM at the disc)
-- [ ] **Pramod:** buy an assorted plastic gear kit (~₹200-300, Amazon) for the sun, idler and worm; a ring gear that size is unlikely in a kit, so cut the ring into the disc
+- [ ] **Pramod:** card test of the belt drive: two cardboard discs, spinner bearing, rubber bands as belts, one crossed; judge speed and look
+- [ ] **Pramod:** only if going the gear way: buy an assorted plastic gear kit (~₹200-300, Amazon) for the sun, idler and worm
 - [ ] **Claude:** when asked, draw a printable sun / idler / ring-gear template (card test) with matching tooth size
 - [ ] **Pramod:** watch the flat2form reel (Part 1, mechanism) and note how its three gears sit (bevel pinion between two facing gears, or flat gears)
 - [ ] **Pramod:** find a local MDF laser-cutting shop for the discs, or settle on cardboard/cardstock discs
@@ -1232,6 +1233,11 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
   - **The rear spiral disc has an internal (ring) gear** cut around its hub, ~40 teeth.
   - **A sun gear** (~20T) sits at the centre on the axle; **one small idler** (~10T) on a fixed pin meshes between them.
   - **Three flat gears, all in one plane**: sun and ring turn in opposite directions. This is very likely the reel's "two shafts, three gears" too.
+- **Fifth reference: wall-mounted belt-driven piece** (user's photo, 2026-11-17, source not given; the user calls it the simplest found so far):
+  - **No gears.** A motor on an aluminium rail at the bottom drives, through a shaft coupling, a short shaft with two small pulleys.
+  - **Two clear round belts** (polyurethane) run up to the disc hubs, one to a pulley in front of the front disc, one to the rear disc's hub. Each belt takes a quarter twist, since the drive shaft lies parallel to the wall.
+  - **Opposite directions come from routing**: one belt wraps its hub the mirror way (crossed) to the other. The photo does not show which side each strand enters, so that detail is inferred.
+  - **Speed reduction** comes from small drive pulleys and large hub pulleys.
 - **What it is:** the counter-rotating spiral illusion. Two open spirals of opposite hand, one in front of the other, turning in opposite directions. The crossings appear to flow inwards or outwards, which reads as far faster motion than either disc has.
 
 #### Feasibility
@@ -1270,7 +1276,15 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 option D: single motor pully with 90 degree opposite drive 
 reference https://youtu.be/C2TBQVUtv18
 
-- **Recommended now (2026-11-17): the internal ring gear from the 4th reference.** Three flat gears in one plane, one fixed pin, nothing between the discs, no layshaft:
+- **Simplest found (2026-11-17, user): two round belts, the 5th reference.** No gears at all:
+  - **Parts:** one drive shaft with two small pulleys, two round belts (polyurethane round belt, or O-rings / rubber bands for the card test), a pulley groove on each disc hub. Pulleys can be spools, bottle caps or turned MDF.
+  - **Reversal:** cross one belt (figure-8) or wrap it the mirror way, so its disc turns opposite. Equal pulley sizes give equal speeds.
+  - **Fits the build plan:** front disc fixed on the axle, rear disc on a spinner bearing around it, each with its own pulley.
+  - **Belts slip if something jams**, which is safer near kids and flowers than a gear train.
+  - **Trap: reduction is limited.** A hub pulley 5-10x the drive pulley still leaves a 100-200 RPM toy-car motor at 10-40 RPM, too fast. Use a slow motor, or a worm stage before the belts.
+  - **Trap: belts are in view.** The reference uses clear belts; or take the front disc's axle through to a pulley behind the rear disc, so both belts run behind.
+  - **Trap: belt tension.** Too tight loads the spinner bearing sideways and tilts the disc; mount the motor rail so it can slide to set tension.
+- **Gear alternative: the internal ring gear from the 4th reference.** Three flat gears in one plane, one fixed pin, nothing between the discs, no layshaft:
   - **Motor on the idler pin is an option:** driving the idler turns sun and ring opposite at once, so the motor sits off-axis and the axle only carries discs.
   - **Speeds are unequal** (ring = sun x sun teeth / ring teeth). The pattern still flows; pick the ratio by eye in the bench test.
   - **Disc 2 must stay centred:** a hub plate behind the ring riding on a spinner bearing around the axle, or the ring held by two or three rollers.
@@ -1348,6 +1362,7 @@ About 11-18h, cheapest and most decisive first:
 - 2026-11-17: user sent a fourth reference (Pinterest, "even simpler"); only the title was readable (an ENGI 210 student mechanism model), so the mechanism is not recorded yet.
 - 2026-11-17: user's screenshot of the 4th reference shows an internal ring gear in the rear disc, a sun on the axle and one idler: three flat gears in one plane. Made it the recommendation over B.
 - 2026-11-17: user: this entry is only the counter-spinning wheels; the solar-system idea is separate and not researched. Dropped the "discs as orbit rings" combination.
+- 2026-11-17: user's photo of a belt-driven wall piece (two round belts from one motor shaft, one routed the mirror way). User: simplest mechanism found so far. Made it the lead option; ring gear kept as the gear alternative.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Status:** Backlog
