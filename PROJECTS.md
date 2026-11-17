@@ -2185,7 +2185,7 @@ Moved to its own entry, "Move xero's datapool SSD out of the case" (2026-11-08).
 #### SSD fan (deferred 2026-11-17)
 **Decision (user, 2026-11-17):** stay with `ssd-temp-guard` for now. Reconsider a fan if the drive causes an incident (guard alerts, SMART errors, a summer scrub it cannot hold) or once higher-priority work is done.
 - **Why a fan might be wanted:** in open air a full scrub still reaches 70°C after ~7 min; the guard holds it at 69-72°C for ~20 min and slows the scrub (28 vs 18 min). SMART lifetime max is 90°C (before the move). Summer room temperatures are unmeasured.
-- **Not an always-on fan** (user): it runs only when hot.
+- **Not an always-on fan** (user, 2026-11-17): it runs only when hot. Why: an always-on fan draws power all day and makes constant noise, both for nothing - the SSD is only hot during long bulk jobs (a monthly scrub, big imports).
 - **A relay alone is not enough:** something has to read the temperature and decide.
 - **xero cannot switch USB power:** both root hubs report "No power switching" (`sudo lsusb -v -s 1:1` and `2:1`, 2026-11-17), so `uhubctl` is out.
 
