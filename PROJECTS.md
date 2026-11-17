@@ -3894,7 +3894,7 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 
 #### Open items
 - [ ] **Pramod:** source the ATtiny85 parts (option "Board: ATtiny85 (Digispark)" in the parts block) plus the shared parts and the relay
-- [ ] **Pramod, next local shop visit:** USB-A female breakout (out of stock on Robu, 2026-11-17; the 2 male ones are already on hand)
+- [ ] **Pramod, next local shop visit:** USB-A female breakout (out of stock on Robu, 2026-11-17; the 2 male ones are already on hand). Fallback: Amazon ASIN B0F3FK753T (QBM), in stock but pricey
 - [ ] **Claude, after the parts are in hand:** ATtiny85 firmware (Arduino: INA219 cutoff, 48h restart, button), wiring diagram (circuit-diagram agent). No code before then (user, 2026-11-16)
 - [ ] **Together, at the bench:** measure the speaker's "full" current with the USB tester, then fix the threshold in the firmware
 
