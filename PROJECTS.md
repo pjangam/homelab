@@ -3215,11 +3215,19 @@ qty | item | est | note
 100 | Dupont crimp pins, male, 2.54mm | 80-150 | local - loose pins for the crimp tool; usually sold per 100
 2 | Small ABS project box (~85x55x30mm), spare | 120-200 | local - for the next ESP32 or sensor build; the voice satellite and Diwali boxes are on their own entries
 1 | DS3231 RTC module (ZS-042) + CR2032 cell | 150-250 | local - keeps time through power cuts for an ESP32 or Pi (I2C, 4 wires). With a CR2032, remove the board's charging resistor/diode first (it is built for a rechargeable LIR2032)
+3 | USB-A female breakout board | 9-25 | local - with the 2 male ones on hand, makes 3 USB-A pairs for inline builds (charger in, device's own cable out, nothing cut). Pick boards that bring out D+/D-, not power-only
+1 | USB-A male breakout board | 9-25 | local - the third male for the 3 pairs
+3 | USB-C male breakout (plug) board | 50-100 | local - USB-C pairs, with the female boards below
+2 | USB-C female breakout, 6-pin with 5.1k CC resistors | 20-40 | local - with the 24-pin one on hand, makes 3 USB-C pairs. The 5.1k resistors make a USB-C charger give 5V; a board without them gets no power
+# Optional: micro-USB pairs
+3 | Micro-USB female breakout board | 10-20 | local - for older devices with micro-USB cables
+3 | Micro-USB male breakout (plug) board | 20-40 | local
 ```
 
 #### Log
 - 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here. Jumpers doubled and a 10cm set added: current stock is running out. Berg strip (dupont) housings added for multi-pin plugs, then a dupont crimp tool and 100 each male/female crimp pins.
 - 2026-11-14: DS3231 RTC module + CR2032 added (user), general stock - not needed by the USB charge switch.
+- 2026-11-17: USB breakout pairs added (user): 3 USB-A, 3 USB-C, micro-USB optional. Counts allow for the 2 USB-A male and 1 USB-C female (24-pin) already on hand (`docs/hardware.md`).
 ### xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet
 **Status:** Parked
 **Priority:** P3
