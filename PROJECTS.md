@@ -2158,7 +2158,7 @@ On xero, `sudo smartctl -a /dev/nvme0` (or `/dev/sda`, whichever `findmnt /` say
 **Priority:** P2
 
 #### Open items
-- [ ] **Pramod, by December:** buy standoffs and a USB fan locally (the SSD move is its own entry: "Move xero's datapool SSD out of the case"). The fan may also be needed over the SSD: a full scrub still reached 70°C in open air (2026-11-11)
+- [ ] **Pramod, by December:** buy standoffs and a USB fan locally (the SSD move is its own entry: "Move xero's datapool SSD out of the case"). The fan may also be needed over the SSD: a full scrub still reached 70°C in open air (2026-11-11). **Not an always-on fan** (user, 2026-11-17): it should run only when hot - e.g. `ssd-temp-guard` switching it, or a fan with its own thermostat. Pick the switching before buying
 - [ ] **Together:** CPU - standoffs + USB fan, or stand xero on its edge
 - [ ] **Claude:** use the cool months for heavy jobs (Bhakti's Takeout import, transcodes to `copies=1`)
 
@@ -3837,11 +3837,11 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 - 2026-11-17: 00024 is in S3 but not in the local manifest, so the next run bundles those 3 files again under a new name. That is 44MB of duplicate data in Deep Archive, so it is left as is.
 - 2026-11-17: **why nothing alerted:** healthcheck flags the archive only after 33 days without a completed run (last 2026-10-23), so the first alert would have come ~2026-11-25. `archive_to_glacier.sh` now has an EXIT trap that sends ntfy + email on any non-zero exit (not in test runs); tested with a forced failure and the ntfy alert arrived. `test_archive.sh` passes.
 ### datapool SSD temperature guard
-**Status:** Active
+**Status:** Done
 **Priority:** P2
 
 #### Open items
-- [ ] **Together:** decide whether 69-72°C held for 20 min per monthly scrub is acceptable, or add airflow over the SSD (the USB fan already on "xero cooling") or a harder clamp (`CLAMP=1`, or pausing the scrub with `zpool scrub -p` while hot)
+- Nothing open. Airflow for summer is on "xero cooling on the Skadis pegboard".
 
 **Why:** the Kingston SA400 (`sda`, `datapool`) is rated to 70°C and goes past it on any sustained bulk read or write - **85°C on 2026-11-08** (the monthly ZFS scrub), 84-87°C for 20-50 min on 2026-10-22 (SHA-1 over 43G plus ffmpeg). `healthcheck.sh` alerts at 75/85°C but nothing acts, and `immich-load-guard` watches CPU temperature only and can only stop Immich. This is the "Software limit" option from "xero cooling on the Skadis pegboard", built more generally: it throttles **every** source, not just Immich.
 **State:** **live on xero since 2026-11-08 11:30** - enabled, active, watching `/sys/block/sda/device/hwmon/hwmon1/temp1_input`, idling at 45°C with the tunable at 1000. All six test cases pass on xero. `CLAMP=4` is still a starting value, not a measured one.
@@ -3864,6 +3864,7 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 - 2026-11-08 11:30: installed and enabled by the user (needed a real terminal for sudo). Recorded in `docs/hardware.md` under a new "systemd system units" line. Waiting on the Wed 2026-11-11 04:00 scrub for the first real measurement.
 - 2026-11-17 (read late; due after 2026-11-11): **First real scrub after the move (Wed 2026-11-11 04:00, 305G):** 34°C -> 69°C in ~7 min, guard clamped at 04:08:29 (`zfs_vdev_max_active` 1000 -> 4), then held **69-72°C for 20 min** until the scrub ended at 04:28 and the guard released. Scrub took 28m08s (17m53s unclamped on 2026-11-08), 0 errors. Open air alone is not enough for a full scrub: the 60°C test was a 20GB / ~75s read, too short to heat-soak. `CLAMP=4` stops the climb but does not cool the drive below 70°C.
 - 2026-11-17: SMART read (user): **lifetime max 90°C** - so the drive went past the 85°C we saw at least once, before the move. Otherwise healthy: 0 reallocated, 0 uncorrectable, 0 program/erase fails, 99% life left, 1279 GiB host writes. 125 unsafe shutdowns (power cuts). Full numbers in `docs/hardware.md`.
+- 2026-11-17: **Done** (user). The guard holds a full scrub at 69-72°C, which is acceptable; it stays running as the limiter. A fan for summer is wanted but **not a dumb always-on one** (user): moved to "xero cooling on the Skadis pegboard".
 
 ### xero's speaker over Bluetooth instead of AUX
 **Status:** Done
