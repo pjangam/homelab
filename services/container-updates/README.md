@@ -43,6 +43,10 @@ Diun only watches containers that carry the label `diun.enable=true`. Each watch
 | `diun.sort_tags` | `semver` | |
 | `diun.include_tags` | regex | only the tags the running tag won't reach |
 
+- **Not watch-by-default, on purpose** (user, 2026-11-17: no unnecessary noise). Floating tags would only repeat what Watchtower installs on Sunday. Left unlabelled too:
+  - `python:3.1x-alpine`: patch-only pins; 3.12 gets security fixes until 2028.
+  - `dperson/samba`: unmaintained upstream, so Diun has nothing to report.
+  - Local builds: no registry to check.
 - **When a major or minor version is upgraded, bump the regex too.** For example, after moving prometheus to `v4`, its regex must start matching at `v5`. If you forget, Diun keeps notifying about the version you're already on.
 - **`$$` in the compose regexes:** compose would otherwise treat `$'` as interpolation.
 - **First run is silent** (`DIUN_WATCH_FIRSTCHECKNOTIF=false`): Diun records the tags that already exist without notifying. That's why Immich 3.4.1 didn't alert on 2026-11-14.
