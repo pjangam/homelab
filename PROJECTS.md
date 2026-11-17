@@ -4102,13 +4102,10 @@ qty | item | est | note
 - 2026-11-16: servo only (user): wire-across dropped as risky (would mean opening the speaker), actuator/solenoid dropped too; parts block reduced to the servo build.
 
 ### Immich: lost original IMG-20191013-WA0002.jpg
-**Status:** Backlog
-**Priority:** P3
+**Status:** Done
 
 #### Open items
-- [ ] **Pramod:** look for it in Google Photos (WhatsApp image, 2019-10-13) and download the original if it is there
-- [ ] **Claude, if found:** put it at the exact `originalPath` (root:root, 644), check its SHA-1 against the DB checksum, regenerate the thumbnail; the next monthly Glacier run then archives it
-- [ ] **Claude, if not found:** delete the broken asset from Immich, so archive runs stop logging it
+- Nothing open.
 
 **Why:** one Immich photo has a DB row but no file on disk (user, 2026-11-17: "record it as seperate p3 entry"). Split out of "Immich Glacier archive: 2026-11-01 upload failed", where it showed up as `missing on disk:`.
 **State:** researched on xero 2026-11-17; the only candidate source left is Google Photos itself.
@@ -4134,3 +4131,4 @@ qty | item | est | note
 
 #### Log
 - 2026-11-17: entry created (user, P3) from the facts gathered while fixing the Glacier archive.
+- 2026-11-17: **resolved (user).** Found in Google Photos: an MNGL gas meter reading, not worth restoring. Asset deleted through the Immich API (`DELETE /api/assets`, `force: true`, 204); the row is gone, and the archive dry run no longer logs `missing on disk:`.
