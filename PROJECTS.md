@@ -3807,11 +3807,10 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 - 2026-11-17: **First real scrub after the move (Wed 2026-11-11 04:00, 305G):** 34°C -> 69°C in ~7 min, guard clamped at 04:08:29 (`zfs_vdev_max_active` 1000 -> 4), then held **69-72°C for 20 min** until the scrub ended at 04:28 and the guard released. Scrub took 28m08s (17m53s unclamped on 2026-11-08), 0 errors. Open air alone is not enough for a full scrub: the 60°C test was a 20GB / ~75s read, too short to heat-soak. `CLAMP=4` stops the climb but does not cool the drive below 70°C. Follow-up is on "datapool SSD temperature guard".
 
 ### Immich Glacier archive: 2026-11-01 upload failed (S3 403 Forbidden)
-**Status:** Active
-**Priority:** P3
+**Status:** Done
 
 #### Open items
-- [ ] **Claude, later:** the `missing on disk` asset (`library/admin/2019/2019-10-13/IMG-20191013-WA0002.jpg`): in Immich's DB with no file
+(none - the missing 2019 photo continues as "Immich: lost original IMG-20191013-WA0002.jpg")
 
 **Why:** the monthly offsite copy of Immich originals ("Offsite backup for Immich photo data") failed on its 2026-11-01 run, so this month's 75 new originals (4456 MB) are not offsite. It was only noticed by reading `backup.log` on 2026-11-08; no alert fired.
 
@@ -3836,6 +3835,7 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 - 2026-11-17: **why nothing alerted:** healthcheck flags the archive only after 33 days without a completed run (last 2026-10-23), so the first alert would have come ~2026-11-25. `archive_to_glacier.sh` now has an EXIT trap that sends ntfy + email on any non-zero exit (not in test runs); tested with a forced failure and the ntfy alert arrived. `test_archive.sh` passes.
 - 2026-11-17 12:40: user added `s3:GetObjectVersion` in the console; probe `test/probe5.bin` then got HEAD 200, exit 0.
 - 2026-11-17 12:40-13:12: **catch-up run, exit 0.** 290 originals (6712 MB): `2026-11-17-00024` (318MB, 6 files), `-00025` (4.0G, 1 file, `GOPR0178+1.mp4`), `-00026` (2.4G, 283 files), plus the 2026-11-17 DB dump and manifest; every size matched in S3. The 3 files of the orphan `2026-11-01-00024` went up again in `-00024` (45MB). Dry run afterwards: 3 new originals, which go up on 2026-12-01. Fixed, so lowered to P3 for the missing-file item that is left.
+- 2026-11-17: **Done** (user). The `missing on disk` photo is not a backup fault: it went missing from disk before 2026-10-09 (already in the Immich entry's 2026-10-11 log), so it moved to its own P3 entry.
 ### datapool SSD temperature guard
 **Status:** Done
 **Priority:** P2
