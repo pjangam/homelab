@@ -1194,7 +1194,7 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 
 #### Log
 - 2026-09-18: noted, roughly a year ahead.
-- 2026-11-06: a second 2027 makhar idea competes for the same backdrop: "Ganapati 2027: counter-rotating spiral discs (kinetic backdrop)". Pick one or combine (discs as orbit rings).
+- 2026-11-06: a second 2027 makhar idea competes for the same backdrop: "Ganapati 2027: counter-rotating spiral discs (kinetic backdrop)". A separate idea, not combined with this one.
 - 2026-11-07: both stay candidates for 2027; user may add more options. Final pick deferred to mid-2027, close to the festival.
 
 ### Ganapati 2027: counter-rotating spiral discs (kinetic backdrop)
@@ -1305,7 +1305,7 @@ reference https://youtu.be/C2TBQVUtv18
 - **No readymade counter-rotating spiral piece was found for sale in India.** Kinetic spirals sold abroad are import-only. Buying one is not a real option, and DIY is.
 
 #### Overlap with other entries
-- **"Ganapati 2027: solar system / general relativity decoration"** wants the same makhar backdrop in the same year. Pick one, or combine them: counter-rotating discs as orbit rings with planets mounted on them.
+- **"Ganapati 2027: solar system / general relativity decoration"** is a separate, not-yet-researched idea for the same festival. Not combined with this one; which one gets built is decided mid-2027.
 - **"Sound-reactive aarti lights (Ganapati decoration)"** is the precedent for schedule, HA scripts and lighting behind the makhar.
 
 #### Parts
@@ -1347,6 +1347,7 @@ About 11-18h, cheapest and most decisive first:
 - 2026-11-17: user sent a third reference (Instructables spring-driven kinetic sculpture, optional RGB ring). Steps not readable; recorded as a backlight idea, spring drive not adopted.
 - 2026-11-17: user sent a fourth reference (Pinterest, "even simpler"); only the title was readable (an ENGI 210 student mechanism model), so the mechanism is not recorded yet.
 - 2026-11-17: user's screenshot of the 4th reference shows an internal ring gear in the rear disc, a sun on the axle and one idler: three flat gears in one plane. Made it the recommendation over B.
+- 2026-11-17: user: this entry is only the counter-spinning wheels; the solar-system idea is separate and not researched. Dropped the "discs as orbit rings" combination.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Status:** Backlog
