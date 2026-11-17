@@ -1222,6 +1222,11 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
   - **It is a Ganesh decoration, in paper.** The cover shows a cardstock mandala ("two chakras"), red and gold, with spiral arms inside a fixed ring and a petal border. It stands on legs made of rolled paper tubes. Hashtags: GaneshDecoration, PaperMechanism.
   - **The caption gives the drive:** "Two independent shafts, three gears, and a single motor". Part 1 covers the mechanism and motor; Part 2 makes the chakras.
   - **The gear layout is not confirmed.** Three gears and two shafts is exactly the bevel layout (A below: a pinion between two facing gears), whereas the spur layout (B) needs four. But the video was not seen, so that is an inference.
+- **Third reference: [Instructables, "Spinning Kinetic Sculpture Without Motor Only Spring"](https://www.instructables.com/Spinning-Kinetic-Sculpture-RGB)** (user, 2026-11-17). Only the title and search snippets could be read, not the steps:
+  - **No motor: a wound spring drives it**, and an off-centre weight makes each wheel swing like a pendulum. Runs 30+ minutes at irregular, varying speeds; wall-mounted.
+  - **Not a counter-rotation mechanism** as far as the snippets say: the wheels spin at different speeds, not locked equal and opposite.
+  - **RGB is optional and separate:** a ~70mm addressable LED ring on an ATtiny, a switch and a battery or adapter. Only the LEDs need power.
+  - **What it adds here:** a centre LED ring behind the hub is a cheap backlight that needs none of the claimed WS2812 strip. Spring drive suits a short show, not a decoration running all day for ten days.
 - **What it is:** the counter-rotating spiral illusion. Two open spirals of opposite hand, one in front of the other, turning in opposite directions. The crossings appear to flow inwards or outwards, which reads as far faster motion than either disc has.
 
 #### Feasibility
@@ -1328,6 +1333,7 @@ About 11-18h, cheapest and most decisive first:
 - 2026-11-07: user sent the flat2form reel as the mechanism reference. Only the cover and caption could be fetched: a paper Ganesh chakra, one motor, two shafts, three gears. That count fits the bevel layout (A); kept B as the recommendation until someone watches the video.
 - 2026-11-07: no 3D printer (user). Both 2027 ideas stay candidates and more may be added; final pick deferred to mid-2027, close to the festival.
 - 2026-11-11: user's build plan: golden-snitch spinner bearings, an assorted plastic gear kit (~₹200-300) for the reversal, motor direct on the first wheel; try an owned motor first, else buy one to reuse in a toy car for Ojaswi. Noted the slow-motor vs car-speed conflict (worm gear fixes it) and the gear-bore mismatch.
+- 2026-11-17: user sent a third reference (Instructables spring-driven kinetic sculpture, optional RGB ring). Steps not readable; recorded as a backlight idea, spring drive not adopted.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Status:** Backlog
