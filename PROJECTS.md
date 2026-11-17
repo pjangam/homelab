@@ -1204,7 +1204,8 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 #### Open items
 - [ ] **Pramod:** measure a golden-snitch spinner bearing (bore / OD, likely 608 = 8mm / 22mm) and pick the axle to match
 - [ ] **Pramod:** try the motor already owned on a cardboard disc; note its RPM (target 3-10 RPM at the disc)
-- [ ] **Pramod:** buy an assorted plastic gear kit (~₹200-300, Amazon); prefer one with crown/bevel gears and a worm
+- [ ] **Pramod:** buy an assorted plastic gear kit (~₹200-300, Amazon) for the sun, idler and worm; a ring gear that size is unlikely in a kit, so cut the ring into the disc
+- [ ] **Claude:** when asked, draw a printable sun / idler / ring-gear template (card test) with matching tooth size
 - [ ] **Pramod:** watch the flat2form reel (Part 1, mechanism) and note how its three gears sit (bevel pinion between two facing gears, or flat gears)
 - [ ] **Pramod:** find a local MDF laser-cutting shop for the discs, or settle on cardboard/cardstock discs
 - [ ] **Together, mid-2027 (close to the festival):** pick one of the Ganapati 2027 ideas (this, solar system, or any added later); if this one, fix the disc diameter
@@ -1227,7 +1228,10 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
   - **Not a counter-rotation mechanism** as far as the snippets say: the wheels spin at different speeds, not locked equal and opposite.
   - **RGB is optional and separate:** a ~70mm addressable LED ring on an ATtiny, a switch and a battery or adapter. Only the LEDs need power.
   - **What it adds here:** a centre LED ring behind the hub is a cheap backlight that needs none of the claimed WS2812 strip. Spring drive suits a short show, not a decoration running all day for ten days.
-- **Fourth reference: [Pinterest pin, "even simpler"](https://pin.it/6jDzqwmMv)** (user, 2026-11-17). Only the title could be fetched: "Midterm Project: Making a Working Mechanical Model | ENGI 210: Prototyping and Fabrication", tagged gear assembly / hyperboloidal gear. Image, video and mechanism not seen; ask the user what makes it simpler.
+- **Fourth reference: [Pinterest pin, "even simpler"](https://pin.it/6jDzqwmMv)** (user, 2026-11-17; the user sent a screenshot since Pinterest only gave the title, an ENGI 210 student mechanism model). Laser-cut plywood:
+  - **The rear spiral disc has an internal (ring) gear** cut around its hub, ~40 teeth.
+  - **A sun gear** (~20T) sits at the centre on the axle; **one small idler** (~10T) on a fixed pin meshes between them.
+  - **Three flat gears, all in one plane**: sun and ring turn in opposite directions. This is very likely the reel's "two shafts, three gears" too.
 - **What it is:** the counter-rotating spiral illusion. Two open spirals of opposite hand, one in front of the other, turning in opposite directions. The crossings appear to flow inwards or outwards, which reads as far faster motion than either disc has.
 
 #### Feasibility
@@ -1246,6 +1250,7 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 |---|---|---|---|
 | **Bevel/crown** (option A, matches the reel's "three gears") | 3: one on the axle (disc 1), one on disc 2's bearing hub, a pinion between them | 1, radial, between the discs | Needs a matching crown/bevel pair in the kit; equal speeds automatically; the pinion's support arm sits in the disc gap |
 | **Spur only:** axle gear → idler → layshaft gear; second layshaft gear → hub gear on disc 2 | 4 + idler | 2 (idler pin, layshaft) | Works with any flat gears; all of it behind the rear disc; equal speeds if both layshaft ratios match |
+| **Internal ring gear** (4th reference, simplest): sun on the axle (disc 1), ring gear cut into disc 2's hub, one idler on a fixed pin between them | 3, all flat, one plane | 1 | Kit kits rarely have a ring gear this size, so cut the ring into the disc (laser shop, or card for a test). Ring turns slower than the sun (ratio = sun teeth / ring teeth, e.g. 20/40 = half): fine for the illusion |
 
 - **Trap: speed vs the toy car.** Direct drive needs a 3-10 RPM motor, which is far too slow for a car. A typical toy-car motor (yellow TT gearmotor, ~100-200 RPM) suits the car but needs ~20-40x reduction here. A **kit worm + worm wheel** gives that in one stage (single-start worm: ratio = wheel's tooth count), so one TT motor can serve both - but then the motor is not on the axle directly.
 - **Trap: bore mismatch.** Kit gears have 2-3mm bores; the spinner bearing likely wants an 8mm axle. Glue gears to the disc face / a hub disc, or drill them out; don't count on press fits.
@@ -1265,7 +1270,12 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
 option D: single motor pully with 90 degree opposite drive 
 reference https://youtu.be/C2TBQVUtv18
 
-- **Recommended: B.** It is the only option where every special part comes off one laser-cut sheet, with the rest from a hardware shop. Equal tooth counts on A and B give equal and opposite speeds. Making A and B larger than the pinion slows the discs and multiplies torque: a 15T pinion on 45T gears turns a 10 RPM motor into 3.3 RPM.
+- **Recommended now (2026-11-17): the internal ring gear from the 4th reference.** Three flat gears in one plane, one fixed pin, nothing between the discs, no layshaft:
+  - **Motor on the idler pin is an option:** driving the idler turns sun and ring opposite at once, so the motor sits off-axis and the axle only carries discs.
+  - **Speeds are unequal** (ring = sun x sun teeth / ring teeth). The pattern still flows; pick the ratio by eye in the bench test.
+  - **Disc 2 must stay centred:** a hub plate behind the ring riding on a spinner bearing around the axle, or the ring held by two or three rollers.
+  - **Card test first:** sun, idler and ring are easy to print on paper and cut from thick card before paying for any cutting.
+- **Previously recommended: B.** It is the only option where every special part comes off one laser-cut sheet, with the rest from a hardware shop. Equal tooth counts on A and B give equal and opposite speeds. Making A and B larger than the pinion slows the discs and multiplies torque: a 15T pinion on 45T gears turns a 10 RPM motor into 3.3 RPM.
 - **A only if** - there is no 3D printer (user, 2026-11-07), so printed bevels are out - the flat2form reel shows hand-made gears that hold up. The Printables model is exactly this, and the reel's "three gears, two shafts" caption most likely is too. If watching it confirms paper or card bevel/crown gears driven by one motor, A becomes the recommendation and the sourcing objection goes away.
 - **The reel also points to a cheaper build: cardstock instead of MDF.** A paper chakra is light enough for a small motor, needs no laser shop and is immune to the MDF warp trap, but not to humidity (paper softens in monsoon). It is a smaller, more fragile piece than a 50cm MDF backdrop.
 - **C is the fallback** if the gear train will not run smoothly.
@@ -1336,6 +1346,7 @@ About 11-18h, cheapest and most decisive first:
 - 2026-11-11: user's build plan: golden-snitch spinner bearings, an assorted plastic gear kit (~₹200-300) for the reversal, motor direct on the first wheel; try an owned motor first, else buy one to reuse in a toy car for Ojaswi. Noted the slow-motor vs car-speed conflict (worm gear fixes it) and the gear-bore mismatch.
 - 2026-11-17: user sent a third reference (Instructables spring-driven kinetic sculpture, optional RGB ring). Steps not readable; recorded as a backlight idea, spring drive not adopted.
 - 2026-11-17: user sent a fourth reference (Pinterest, "even simpler"); only the title was readable (an ENGI 210 student mechanism model), so the mechanism is not recorded yet.
+- 2026-11-17: user's screenshot of the 4th reference shows an internal ring gear in the rear disc, a sun on the axle and one idler: three flat gears in one plane. Made it the recommendation over B.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Status:** Backlog
