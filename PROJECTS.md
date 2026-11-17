@@ -1227,6 +1227,7 @@ The fabric-and-marbles half is a few hundred rupees. The lit half depends entire
   - **Not a counter-rotation mechanism** as far as the snippets say: the wheels spin at different speeds, not locked equal and opposite.
   - **RGB is optional and separate:** a ~70mm addressable LED ring on an ATtiny, a switch and a battery or adapter. Only the LEDs need power.
   - **What it adds here:** a centre LED ring behind the hub is a cheap backlight that needs none of the claimed WS2812 strip. Spring drive suits a short show, not a decoration running all day for ten days.
+- **Fourth reference: [Pinterest pin, "even simpler"](https://pin.it/6jDzqwmMv)** (user, 2026-11-17). Only the title could be fetched: "Midterm Project: Making a Working Mechanical Model | ENGI 210: Prototyping and Fabrication", tagged gear assembly / hyperboloidal gear. Image, video and mechanism not seen; ask the user what makes it simpler.
 - **What it is:** the counter-rotating spiral illusion. Two open spirals of opposite hand, one in front of the other, turning in opposite directions. The crossings appear to flow inwards or outwards, which reads as far faster motion than either disc has.
 
 #### Feasibility
@@ -1334,6 +1335,7 @@ About 11-18h, cheapest and most decisive first:
 - 2026-11-07: no 3D printer (user). Both 2027 ideas stay candidates and more may be added; final pick deferred to mid-2027, close to the festival.
 - 2026-11-11: user's build plan: golden-snitch spinner bearings, an assorted plastic gear kit (~₹200-300) for the reversal, motor direct on the first wheel; try an owned motor first, else buy one to reuse in a toy car for Ojaswi. Noted the slow-motor vs car-speed conflict (worm gear fixes it) and the gear-bore mismatch.
 - 2026-11-17: user sent a third reference (Instructables spring-driven kinetic sculpture, optional RGB ring). Steps not readable; recorded as a backlight idea, spring drive not adopted.
+- 2026-11-17: user sent a fourth reference (Pinterest, "even simpler"); only the title was readable (an ENGI 210 student mechanism model), so the mechanism is not recorded yet.
 
 ### WiFi-synced analog clock (ESP32 retrofit of a quartz movement)
 **Status:** Backlog
