@@ -25,7 +25,7 @@
 # looked like a colour-order bug.
 set -euo pipefail
 
-HOST="${WLED_HOST:-192.168.1.125}"
+HOST="${WLED_HOST:-192.168.1.127}"
 BASE="http://$HOST"
 
 api() { curl -fsS -m 10 -X POST "$BASE/json/$1" -H 'Content-Type: application/json' -d "$2" >/dev/null; }

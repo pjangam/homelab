@@ -116,6 +116,6 @@ systemctl --user stop diwali-cracker-fx
 ./projects/diwali-lights/diwali_cracker_fx.py --threshold 240 --hold 2
 # then put the chosen values as defaults in the script and start the service
 
-# after the season (25 Nov)
+# after the season (25 Nov) - xero's crontab does this at 09:00 since 2026-11-17
 systemctl --user disable --now diwali-cracker-fx
 ```

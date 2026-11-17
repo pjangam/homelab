@@ -57,7 +57,7 @@ import time
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from aarti_audio import Classifier, open_socket, parse  # noqa: E402
 
-WLED_IP = "192.168.1.125"
+WLED_IP = "192.168.1.127"
 WLED_UDP_PORT = 21324
 N_LEDS = 180
 

@@ -13,10 +13,10 @@ Type=simple
 # until WLED appears - harmless but it muddies the logs and delays the first
 # real frame. 60 x 2s covers a slow DHCP or a board still booting.
 ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do \
-    curl -fsS -m 2 http://192.168.1.125/json/info >/dev/null 2>&1 && exit 0; \
+    curl -fsS -m 2 http://192.168.1.127/json/info >/dev/null 2>&1 && exit 0; \
     sleep 2; \
   done; \
-  echo "WLED at 192.168.1.125 did not answer in 120s" >&2; exit 1'
+  echo "WLED at 192.168.1.127 did not answer in 120s" >&2; exit 1'
 
 ExecStart=/usr/bin/python3 /home/pramod/code/homelab/projects/aarti-lights/aarti-render.py --mode layers --quiet
 

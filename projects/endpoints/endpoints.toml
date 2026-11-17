@@ -402,6 +402,26 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   note = "Flashed 2026-11-05. Static IP in firmware; prefers the bedroom AP. OTA on port 3232. projects/smart-switch/README.md"
 
   [[group.endpoint]]
+  name = "Diwali door lights (WLED)"
+  proto = "http"
+  host = "192.168.1.127"
+  port = 80
+  url = "http://192.168.1.127/"
+  desc = "WLED 0.14.4 audioreactive on the Diwali door-outline ESP32 (284 px). Web UI and JSON API; close the web UI before scripting it, an open page overwrites API changes."
+  who = "Home Assistant's WLED integration (\"Diwali Lights\", light.diwali_lights, area Living Room), diwali-cracker-fx on xero, and projects/diwali-lights/diwali_wled.sh."
+  note = "Static IP set in WLED, inside the router's DHCP range. Seasonal: off the door after Diwali. projects/diwali-lights/README.md"
+
+  [[group.endpoint]]
+  name = "Diwali lights audio sync (UDP multicast)"
+  proto = "udp"
+  host = "239.0.0.1"
+  port = 11988
+  connect = "journalctl --user -u diwali-cracker-fx -f   (on xero)"
+  desc = "WLED AudioReactive's FFT results from the Diwali board, ~42 packets/s, sent as multicast on the LAN. The board does not react to sound itself."
+  who = "diwali-cracker-fx.service on xero (systemd --user), which flips the board to a burst preset on firecrackers. Only while that service runs; a crontab line disables it on 25 Nov."
+  note = "Added 2026-11-17. projects/diwali-lights/README.md"
+
+  [[group.endpoint]]
   name = "NTP (chrony)"
   proto = "udp"
   host = "192.168.1.123"

@@ -226,7 +226,7 @@ pins, no Pi or LED needed.
 
 ## Mirroring onto the WLED strip
 
-`wled-mirror.py` sets the aarti-lights WLED strip (192.168.1.125) to a solid
+`wled-mirror.py` sets the aarti-lights WLED strip (192.168.1.127 since the Diwali 2026 board; .125 is now the bedroom voice satellite) to a solid
 colour matching the clawlight state (same colours as the web page), polling
 `/api/status` every 2s. It runs as `clawlight-wled-mirror.service`:
 

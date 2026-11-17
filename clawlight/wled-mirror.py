@@ -18,7 +18,7 @@ import time
 import urllib.request
 
 CLAWLIGHT_URL = os.environ.get("CLAWLIGHT_URL", "http://127.0.0.1:8126/clawlight/api/status")
-WLED_HOST = os.environ.get("WLED_HOST", "192.168.1.125")
+WLED_HOST = os.environ.get("WLED_HOST", "192.168.1.127")
 BRI = int(os.environ.get("WLED_BRI", "150"))
 
 # Same colours as clawlight/web/index.html.

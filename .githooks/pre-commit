@@ -54,6 +54,9 @@ while IFS= read -r ip; do
     172.1[6-9].*|172.2[0-9].*|172.3[0-1].*) continue ;;
     # Tailscale's CGNAT range (RFC 6598 shared address space), not publicly routable
     100.6[4-9].*|100.[7-9][0-9].*|100.1[01][0-9].*|100.12[0-7].*) continue ;;
+    # Multicast (224.0.0.0/4, RFC 5771): a group on the LAN, not a host on the
+    # internet - e.g. WLED's audio sync 239.0.0.1 (projects/diwali-lights)
+    22[4-9].*|23[0-9].*) continue ;;
   esac
   contains "$ip" "${ALLOWED_IPS[@]}" && continue
   problems+=("public-looking IP address: $ip")
