@@ -2158,10 +2158,9 @@ On xero, `sudo smartctl -a /dev/nvme0` (or `/dev/sda`, whichever `findmnt /` say
 **Priority:** P2
 
 #### Open items
-- [ ] **Pramod, by December:** buy standoffs and a USB fan locally (the SSD move is its own entry: "Move xero's datapool SSD out of the case")
+- [ ] **Pramod, by December:** buy standoffs and a USB fan locally (the SSD move is its own entry: "Move xero's datapool SSD out of the case"). The fan may also be needed over the SSD: a full scrub still reached 70°C in open air (2026-11-11)
 - [ ] **Together:** CPU - standoffs + USB fan, or stand xero on its edge
 - [ ] **Claude:** use the cool months for heavy jobs (Bhakti's Takeout import, transcodes to `copies=1`)
-- [ ] **Claude:** measure the new `ssd-temp-guard` clamp against a real scrub (see "datapool SSD temperature guard")
 
 **Why:** xero runs hot where it is mounted. memtest86+ hit 103°C there on 2026-10-08 (a RAM bit flipped), against 86°C on the desk with the fan side in open air. Mounted with the fan side facing the board, the only gap was its rubber feet. Idle on the pegboard is 55-68°C, high for an N5105. **The SSD runs hot too:** the Kingston SA400 (datapool) reaches 81-87°C, against a 70°C rating, under long disk jobs (2026-10-22, 2026-10-26), and **85°C on 2026-11-08** under the monthly ZFS scrub. It is screwed into the plastic bottom cover, away from the CPU blower, so nothing moves air over it.
 **State:** nothing built. Since the fan side was turned to face the room, the CPU has open air but the bottom cover, where the SSD is, faces the board with only the rubber feet for a gap. **The two sides compete for the open air:** whichever faces the board runs hot. Two stopgaps tried on 2026-10-08 (a makeshift stopper wedged between xero and the board for a gap - fragile; the room AC turned down - not bearable as a permanent setting); neither stays. **Deadline: before February 2027** (noted 2026-11-02): winter room temperatures hide the problem now, and it comes back with the Feb-March warm-up. The parts are cheap commodity items untouched by the chip-price spike, no reason to wait for prices.
@@ -2193,6 +2192,7 @@ A full-load run (memtester 2 x 10G or a build) on the pegboard, at normal room t
 - 2026-10-26 (later): main SSD option is now moving it out of the case onto the Skadis on a 22-pin SATA extension (see "SSD outside the case"). Baseline recorded: 6.0 Gbps link, no ATA errors this boot.
 - 2026-11-08: the SSD move split out as its own entry at P1 (user), after the monthly scrub took the Kingston to 85°C.
 - 2026-11-08: the software limit sketched above was built as `projects/ssd-temp-guard/` (own entry), throttling ZFS rather than pausing Immich so it catches every bulk job. The drive-choice note was corrected: the thermal argument for an 870 EVO/MX500 is the metal case and real throttling, not the DRAM cache.
+- 2026-11-17: guard measured on the 2026-11-11 scrub: SSD in open air still reached 70°C after ~7 min; `CLAMP=4` held it at 69-72°C for 20 min. Details on "datapool SSD temperature guard".
 
 ### xero's UPS (CRU12V3A) dead - xero off until it is replaced
 **Status:** Active
@@ -3762,9 +3762,8 @@ qty | item | est | note
 #### Open items
 - [ ] **Pramod:** wall hooks for the SSD - it is out in open air but resting loose, not mounted
 - [ ] **Pramod:** add a dust clean to the routine now that the case stays open (the blower pulls dust straight onto the board; last clean 2026-08-21)
-- [ ] **Claude, after Wed 2026-11-11 04:00:** read the Kingston's peak during the first scrub in the new position and add it to Incidents (expect ~60°C; the 20GB test at the same MB/s peaked there)
 
-**Outcome so far (2026-11-08):** the SSD is **out of the case in open air** and the heat problem is solved - a 20.7GB read at 282 MB/s peaked at **60°C**, against **85°C** at 284 MB/s with the drive in the cover. 25°C lower at the same load, and 10°C under the 70°C rating. Not closed: the SSD is resting loose rather than mounted (wall hooks pending).
+**Outcome so far (2026-11-08):** the SSD is **out of the case in open air** and the heat problem is **mostly** solved (a full scrub still reaches 70°C, 2026-11-11 below) - a 20.7GB read at 282 MB/s peaked at **60°C**, against **85°C** at 284 MB/s with the drive in the cover. 25°C lower at the same load, and 10°C under the 70°C rating. Not closed: the SSD is resting loose rather than mounted (wall hooks pending).
 **The case stays open permanently** (user, 2026-11-08): the ribbon's 22-pin connector is far too bulky for the cover's vent slots, and notching the cover enough to pass it was not worth it. Accepted, not a pending task - do not 'fix' this later. It also helps the CPU (58°C -> 54°C idle, both faces now in open air). The cost is dust on an exposed board and blower.
 
 **Why:** the Kingston SA400 (`sda`, the whole of `datapool`) is rated to 70°C and keeps passing 80°C under long reads: 81-87°C on 2026-10-22 and 2026-10-26, 85°C on 2026-11-08. It is screwed into xero's plastic bottom cover, which faces the Skadis board with only the rubber feet for a gap, and nothing moves air over it. Split out of "xero cooling on the Skadis pegboard" on 2026-11-08 and raised to P1 (user), because it is the cheap, independent fix and the incidents keep coming even in winter. The CPU side (standoffs, USB fan, thermal paste) stays in that entry.
@@ -3805,6 +3804,7 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 - 2026-11-08 12:32: **measured, and it works.** `tools/host-stats/disk_thermal_test.sh` read 20.7GB at **282 MB/s** (the 2026-11-08 scrub managed ~284 MB/s, so like for like) and peaked at **60°C**, against 85°C in the cover. Idle fell 49°C -> 33°C, now equal to the boot SSD, so the dead-air penalty is gone. `ssd-temp-guard` never fired - the drive never reached 70°C.
 - 2026-11-08: post-move health all clean: SATA link still **6.0 Gbps** both links, **0** ATA errors since boot, pool ONLINE with **READ=0 WRITE=0 CKSUM=0** after the 20.7GB read. The pre-move `UDMA_CRC_Error_Count` baseline was missed, but it is moot: ZFS checksums every block, so 20.7GB read with zero CKSUM errors is a stronger proof of the SATA path than a CRC delta would have been.
 - 2026-11-08: the first test run was **invalid and nearly recorded as a success** - it reported 51°C at 19 MB/s. `dd` counts blocks not bytes and a pipe short-reads, so `count=N bs=1M` stopped after ~285MB; and `tar` over a photo library managed 19 MB/s. Fixed with `iflag=fullblock` and whole-file reads. A thermal result is only meaningful next to the MB/s it was taken at.
+- 2026-11-17: **First real scrub after the move (Wed 2026-11-11 04:00, 305G):** 34°C -> 69°C in ~7 min, guard clamped at 04:08:29 (`zfs_vdev_max_active` 1000 -> 4), then held **69-72°C for 20 min** until the scrub ended at 04:28 and the guard released. Scrub took 28m08s (17m53s unclamped on 2026-11-08), 0 errors. Open air alone is not enough for a full scrub: the 60°C test was a 20GB / ~75s read, too short to heat-soak. `CLAMP=4` stops the climb but does not cool the drive below 70°C. Follow-up is on "datapool SSD temperature guard".
 
 ### Immich Glacier archive: 2026-11-01 upload failed (S3 403 Forbidden)
 **Status:** Active
@@ -3841,14 +3841,12 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 **Priority:** P2
 
 #### Open items
+- [ ] **Together:** decide whether 69-72°C held for 20 min per monthly scrub is acceptable, or add airflow over the SSD (the USB fan already on "xero cooling") or a harder clamp (`CLAMP=1`, or pausing the scrub with `zpool scrub -p` while hot)
 - [ ] **Pramod:** read `sudo smartctl -A /dev/sda` and record the lifetime max temperature and any reallocated/pending sectors in `docs/hardware.md` (needs a real terminal)
-- [ ] **Claude, after Wed 2026-11-11 04:00:** read the Kingston's peak during the first scrub in the new position (expect ~60°C, so the guard should stay idle)
-- [ ] **Claude:** `CLAMP=4` stays unmeasured - the drive no longer gets hot enough to trigger it. Measure it only if something makes the drive hot again (the SSD back in a case, a hotter room, a bigger pool)
-- [ ] **Claude:** add the measured numbers to this entry and to "xero cooling on the Skadis pegboard"
 
 **Why:** the Kingston SA400 (`sda`, `datapool`) is rated to 70°C and goes past it on any sustained bulk read or write - **85°C on 2026-11-08** (the monthly ZFS scrub), 84-87°C for 20-50 min on 2026-10-22 (SHA-1 over 43G plus ffmpeg). `healthcheck.sh` alerts at 75/85°C but nothing acts, and `immich-load-guard` watches CPU temperature only and can only stop Immich. This is the "Software limit" option from "xero cooling on the Skadis pegboard", built more generally: it throttles **every** source, not just Immich.
 **State:** **live on xero since 2026-11-08 11:30** - enabled, active, watching `/sys/block/sda/device/hwmon/hwmon1/temp1_input`, idling at 45°C with the tunable at 1000. All six test cases pass on xero. `CLAMP=4` is still a starting value, not a measured one.
-**Superseded as the fix, kept as the safety net (2026-11-08):** the SSD moved into open air the same day and now peaks at 60°C under the load that used to make 85°C, so the guard has nothing to do in normal operation. It stays because it covers what the move does not: a hotter room, a fuller pool, the drive going back in a case, or any future bulk job on a drive that is still rated 70°C and still has no mirror.
+**Superseded as the fix, kept as the safety net (2026-11-08):** the SSD moved into open air the same day and now peaks at 60°C under the load that used to make 85°C, so the guard has nothing to do in normal operation. **Wrong for scrubs (2026-11-11):** a full scrub still reached 70°C and the guard held it there for 20 min. It stays because it covers what the move does not: a hotter room, a fuller pool, the drive going back in a case, or any future bulk job on a drive that is still rated 70°C and still has no mirror.
 **Next scrub: Wed 2026-11-11 04:00** (moved there by `tools/zfs/scrub_time.sh`, see "Move xero's datapool SSD out of the case"). Installing the guard before then turns that scrub into the measurement for free. The two fix different halves: moving the SSD into open air is the cure, this guard is the limiter for every bulk job that is not a scrub.
 
 #### Why it throttles the vdev, not the job
@@ -3865,6 +3863,7 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 #### Log
 - 2026-11-08: the monthly scrub (`/etc/cron.d/zfsutils-linux`, second Sunday 00:24) read all 305G in 17m53s, ~284 MB/s flat out, and took the Kingston to **85°C** at 00:45 - healthcheck's URGENT threshold. Guard written, unit-tested, not installed.
 - 2026-11-08 11:30: installed and enabled by the user (needed a real terminal for sudo). Recorded in `docs/hardware.md` under a new "systemd system units" line. Waiting on the Wed 2026-11-11 04:00 scrub for the first real measurement.
+- 2026-11-17 (read late; due after 2026-11-11): **First real scrub after the move (Wed 2026-11-11 04:00, 305G):** 34°C -> 69°C in ~7 min, guard clamped at 04:08:29 (`zfs_vdev_max_active` 1000 -> 4), then held **69-72°C for 20 min** until the scrub ended at 04:28 and the guard released. Scrub took 28m08s (17m53s unclamped on 2026-11-08), 0 errors. Open air alone is not enough for a full scrub: the 60°C test was a 20GB / ~75s read, too short to heat-soak. `CLAMP=4` stops the climb but does not cool the drive below 70°C.
 
 ### xero's speaker over Bluetooth instead of AUX
 **Status:** Done
