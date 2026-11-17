@@ -3820,9 +3820,9 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 **Priority:** P1
 
 #### Open items
-- [ ] **Pramod, 2026-11-09:** check the AWS side: the IAM user's key (active? rotated?), its policy against `projects/immich-backup/iam-policy.json`, and the bucket policy on `pramod-immich-backup`
-- [ ] **Claude, after the fix:** re-run the archive by hand (`archive_to_glacier.sh`, under the same `flock`) and confirm the bundle lands in S3
-- [ ] **Claude:** find why nothing alerted on a failed monthly run (overlaps "Monitor for silent backup failures")
+- [ ] **Pramod:** AWS console -> IAM -> policy `immich-archive-upload` -> add `s3:GetObjectVersion` to the `AddObjects` statement (copy from `projects/immich-backup/iam-policy.json`)
+- [ ] **Claude, after the policy change:** re-run the archive by hand under the cron's `flock` (290 originals, ~6.7G as of 2026-11-17) and confirm the bundles and manifest land in S3
+- [ ] **Claude, later:** the `missing on disk` asset (`library/admin/2019/2019-10-13/IMG-20191013-WA0002.jpg`): in Immich's DB with no file
 
 **Why:** the monthly offsite copy of Immich originals ("Offsite backup for Immich photo data") failed on its 2026-11-01 run, so this month's 75 new originals (4456 MB) are not offsite. It was only noticed by reading `backup.log` on 2026-11-08; no alert fired.
 
@@ -3841,6 +3841,10 @@ The stock lead is the short blue flex ribbon at the case edge (`docs/images/xero
 
 #### Log
 - 2026-11-08: found while reading the night jobs' logs for the scrub schedule. Logged as P1, Active (user); the user checks the AWS side on 2026-11-09.
+- 2026-11-17: **cause found.** The upload itself succeeded: `bundles/2026-11-01-00024.tar.gpg` is in S3 at 44,809,597 bytes. Reproduced with a 200KB probe (`immich/test/probe3.bin`, `probe4.bin`) and `--dump headers`: CreateMultipartUpload, UploadPart and CompleteMultipartUpload all 200, then rclone 1.60 checks the object with `HEAD ...?versionId=` (bucket versioning is on). A HEAD that names a version needs `s3:GetObjectVersion`; the policy grants only `s3:GetObject`. `--s3-no-head` does not stop this check. rclone exits non-zero and `set -e` stops the run before the manifest line, so the rest of the month never went up.
+- 2026-11-17: `iam-policy.json` now has `s3:GetObjectVersion`; needs applying in the console. Whether October's run avoided this because versioning was turned on after it is unknown; it does not change the fix.
+- 2026-11-17: 00024 is in S3 but not in the local manifest, so the next run bundles those 3 files again under a new name. That is 44MB of duplicate data in Deep Archive, so it is left as is.
+- 2026-11-17: **why nothing alerted:** healthcheck flags the archive only after 33 days without a completed run (last 2026-10-23), so the first alert would have come ~2026-11-25. `archive_to_glacier.sh` now has an EXIT trap that sends ntfy + email on any non-zero exit (not in test runs); tested with a forced failure and the ntfy alert arrived. `test_archive.sh` passes.
 ### datapool SSD temperature guard
 **Status:** Active
 **Priority:** P2

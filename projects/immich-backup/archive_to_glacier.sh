@@ -50,6 +50,20 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO"
+# Any failure alerts at once (ntfy + email). Healthcheck's freshness check
+# alone allows 33 days, so the 2026-11-01 403 went unseen for a week. Test
+# runs (IMMICH_ARCHIVE_REMOTE set) never alert.
+. tools/notify/push_ntfy.sh
+. tools/notify/send_email.sh
+on_exit() {
+  local rc=$?
+  rm -rf "${work:-}"
+  [[ $rc -eq 0 || -n ${IMMICH_ARCHIVE_REMOTE:-} ]] && return
+  local msg="archive_to_glacier.sh exited $rc on $(date '+%Y-%m-%d %H:%M'). Last lines of backup.log will say why; re-run by hand after the fix (projects/immich-backup/README.md)."
+  ( [[ -f .env.ntfy ]] && . ./.env.ntfy; push_ntfy "Immich Glacier archive failed" "$msg" 4 floppy_disk ) || true
+  ( set -a; . ./.env.healthcheck; send_email "[homelab] Immich Glacier archive failed" "$msg" ) || true
+}
+trap on_exit EXIT
 dry=${1:-}
 env_val() { sed -n "s/^$1=//p" .env | tail -1; }
 export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-$(env_val AWS_ACCESS_KEY_ID)}
@@ -78,7 +92,6 @@ MANIFEST="$STATE/manifest.tsv"
 U=$(env_val DB_USERNAME); D=$(env_val DB_DATABASE_NAME)
 mkdir -p "$STATE"; touch "$MANIFEST"
 work=$(mktemp -d "$STATE/.run.XXXXXX")
-trap 'rm -rf "$work"' EXIT
 log() { echo "[$(date)] $*"; }
 
 # Container path -> host path, from immich_server's own bind mounts.
