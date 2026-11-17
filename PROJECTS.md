@@ -2158,7 +2158,7 @@ On xero, `sudo smartctl -a /dev/nvme0` (or `/dev/sda`, whichever `findmnt /` say
 **Priority:** P2
 
 #### Open items
-- [ ] **Pramod, by December:** buy standoffs and a USB fan locally (the SSD move is its own entry: "Move xero's datapool SSD out of the case"). The fan may also be needed over the SSD: a full scrub still reached 70°C in open air (2026-11-11). **Not an always-on fan** (user, 2026-11-17): it should run only when hot - e.g. `ssd-temp-guard` switching it, or a fan with its own thermostat. Pick the switching before buying
+- [ ] **Pramod, by December:** buy standoffs and a USB fan locally (the SSD move is its own entry: "Move xero's datapool SSD out of the case"). The fan may also be needed over the SSD: a full scrub still reached 70°C in open air (2026-11-11). **Not an always-on fan** (user, 2026-11-17): it should run only when hot - a fan switched by its own thermostat (probe on the SSD, ~60°C on). **xero cannot switch a USB port itself:** both root hubs report "No power switching" (`lsusb -v`, 2026-11-17), so `uhubctl` is out. Options: a USB inline thermostat controller + ~₹200 5V USB fan, or a W1209 module (needs 12V: add a 5V-12V boost) + the same fan
 - [ ] **Together:** CPU - standoffs + USB fan, or stand xero on its edge
 - [ ] **Claude:** use the cool months for heavy jobs (Bhakti's Takeout import, transcodes to `copies=1`)
 
