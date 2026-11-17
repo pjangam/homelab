@@ -3215,7 +3215,7 @@ qty | item | est | note
 100 | Dupont crimp pins, male, 2.54mm | 80-150 | local - loose pins for the crimp tool; usually sold per 100
 2 | Small ABS project box (~85x55x30mm), spare | 120-200 | local - for the next ESP32 or sensor build; the voice satellite and Diwali boxes are on their own entries
 1 | DS3231 RTC module (ZS-042) + CR2032 cell | 150-250 | local - keeps time through power cuts for an ESP32 or Pi (I2C, 4 wires). With a CR2032, remove the board's charging resistor/diode first (it is built for a rechargeable LIR2032)
-3 | USB-A female breakout board | 9-25 | local - with the 2 male ones on hand, makes 3 USB-A pairs for inline builds (charger in, device's own cable out, nothing cut). Pick boards that bring out D+/D-, not power-only
+3 | USB-A female breakout board | 9-25 | local - out of stock on Robu (2026-11-17), check the local shop. With the 2 male ones on hand, makes 3 USB-A pairs for inline builds (charger in, device's own cable out, nothing cut). Pick boards that bring out D+/D-, not power-only
 1 | USB-A male breakout board | 9-25 | local - the third male for the 3 pairs
 3 | USB-C male breakout (plug) board | 50-100 | local - USB-C pairs, with the female boards below
 2 | USB-C female breakout, 6-pin with 5.1k CC resistors | 20-40 | local - with the 24-pin one on hand, makes 3 USB-C pairs. The 5.1k resistors make a USB-C charger give 5V; a board without them gets no power
@@ -3894,6 +3894,7 @@ So it clamps `zfs_vdev_max_active` 1000 -> 4 at >=70°C and restores at <62°C. 
 
 #### Open items
 - [ ] **Pramod:** source the ATtiny85 parts (option "Board: ATtiny85 (Digispark)" in the parts block) plus the shared parts and the relay
+- [ ] **Pramod, next local shop visit:** USB-A female breakout (out of stock on Robu, 2026-11-17; the 2 male ones are already on hand)
 - [ ] **Claude, after the parts are in hand:** ATtiny85 firmware (Arduino: INA219 cutoff, 48h restart, button), wiring diagram (circuit-diagram agent). No code before then (user, 2026-11-16)
 - [ ] **Together, at the bench:** measure the speaker's "full" current with the USB tester, then fix the threshold in the firmware
 
