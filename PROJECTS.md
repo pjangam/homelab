@@ -3584,7 +3584,7 @@ Each `#` line is one option, so the dashboard can add just that one to the shopp
 qty | item | est | note
 # Next: ESPHome reflash test on a Tinxy 4N
 1 | Tinxy 4 Node with Fan Regulator (Amazon ASIN B08KZMB7HD) | 1200 | online, Tinxy store - test unit; skip if testing on an installed one
-1 | CH340G USB-TTL adapter | 48-89 | local - for flashing (robu 48, makerbazar 89); plus a soldering iron if none
+1 | USB-TTL adapter | 0 | have one (6-pin with CTS/RTS, recorded 2026-11-17) - skip; set it to 3.3V. Plus a soldering iron if none
 # DIY one switch (option B)
 1 | ESP32 devkit, WROOM-32 38-pin | 384 | have spares - skip
 1 | 1-channel 5V relay module | 59 | have one (on the kandil) - skip unless it is still in use there
@@ -3909,7 +3909,7 @@ USB charger 5V -> [INA219 current sensor] -> [relay] -> USB cable -> device
 ```parts
 qty | item | est | note
 1 | INA219 current sensor module | 150-250 | local - measures the device's charging current (up to 26V, ~3.2A)
-1 | USB-A male breakout board | 25 | local - input from the charger; must pass D+/D- through
+1 | USB-A male breakout board | 0 | have 2 (recorded 2026-11-17) - skip; input from the charger, check it passes D+/D- through
 1 | USB-A female breakout board | 25 | local - output to the device's cable; must pass D+/D- through
 1 | Small ABS project box (~85x55x30mm) | 120-200 | local - wall-mounted near the speaker
 1 | 6x6mm tactile push button | 5-10 | local - "charge now"
