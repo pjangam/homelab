@@ -4160,3 +4160,44 @@ qty | item | est | note
 #### Log
 - 2026-11-17: entry created (user, P3) from the facts gathered while fixing the Glacier archive.
 - 2026-11-17: **resolved (user).** Found in Google Photos: an MNGL gas meter reading, not worth restoring. Asset deleted through the Immich API (`DELETE /api/assets`, `force: true`, 204); the row is gone, and the archive dry run no longer logs `missing on disk:`.
+
+### Jobs dashboard in Grafana
+**Status:** Active
+**Priority:** P2
+
+#### Open items
+- [ ] **Claude:** run `architecture-review` on this plan, then go through its findings with Pramod before building
+- [ ] **Claude:** build phase 1 (xero cron + timers), then 2-4 in order
+- [ ] **Pramod:** deploy the Pi half from a real terminal when phase 3 is ready (sudo over ssh)
+
+**Why:** nothing shows in one place what runs on xero and the Pi, when it ran, whether it worked and what it cost. The 2026-11-01 Glacier failure went unseen for a week, and the 2026-11-08 scrub slot was chosen by reading crontabs by hand (user, 2026-11-18: "is there a central dashboard of all jobs/crons running on xero").
+
+#### Decisions (user, 2026-11-18)
+- **Where:** a new "Jobs" dashboard in Grafana, built by `services/grafana/build_dashboards.py` like the others. Prometheus already scrapes xero and the Pi every 5s and keeps 90 days.
+- **Scope:** all four kinds, in this order: xero cron + timers; xero long-running `systemd --user` units; the wol Pi; jobs inside containers.
+- **Alerting:** unchanged for now. The dashboard shows failures; no new central alert.
+
+#### What each job shows
+| Column | Source |
+|---|---|
+| Schedule in words, next run | collector reads crontab, `/etc/cron.d`, systemd timers (system + user), every minute |
+| Last start, duration, exit code, failures in a row, last success | `jobrun` wrapper on each cron line |
+| Duration p95 and max over 90 days | Prometheus history (percentiles, never averages) |
+| CPU seconds, peak memory, disk read/write | wrapper (`wait4` rusage of the job's process tree) |
+| Peak CPU and SSD temperature during the run | wrapper asks Prometheus for `max_over_time` over the run window at the end |
+| Log file, last error line | wrapper |
+
+For long-running units: active or not, restarts, uptime, CPU and memory (`systemctl --user show`). For container jobs: last success and failures as far as each app exposes them (Immich job API and DB dump files, Pi-hole gravity update, Watchtower).
+
+#### Planned pieces (`projects/jobs-dashboard/`)
+| Piece | Does |
+|---|---|
+| `jobrun` (Python, stdlib) | `jobrun <name> -- <cmd>`: runs the command unchanged (same exit code, output, environment), writes `homelab_job_*` metrics to node-exporter's textfile dir atomically; if the wrapper itself fails, the job still runs |
+| `jobs_collector.py` | every minute: schedules and next run times, `systemd --user` unit state, container job state, as textfile metrics |
+| Grafana "Jobs" dashboard | table of all jobs (failures highlighted), night timeline of runs (overlaps), host CPU and SSD temperature graphs with job-start markers |
+| Pi deploy | the same two scripts on the Pi, into its node-exporter's textfile dir |
+
+**Crontab change:** each line becomes `jobrun <name> -- <script> >> <log>` (one edit); root's `/etc/cron.d` lines (scrub, TRIM) the same or read from `zpool status`.
+
+#### Log
+- 2026-11-18: designed with the user; plan written for an architecture review before building.
