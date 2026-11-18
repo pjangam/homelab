@@ -11,7 +11,7 @@ last-will, so the entities go unavailable within a keepalive if the Pi drops
 off the network or this daemon dies - which is how xero's healthcheck.sh
 tells "Pi healthy" from "Pi silent".
 
-Started 2026-10-06 for the Pi's under-voltage (PROJECTS.md "wol Pi health
+Started 2026-10-06 for the Pi's under-voltage (`tracker/pi-health.md` "wol Pi health
 monitoring"); CPU, memory, temperature and disk added the same day. To add a
 metric: set its field in collect() and add one line to ENTITIES. Nothing
 else changes.

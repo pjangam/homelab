@@ -223,7 +223,7 @@ Daytime only (restarts spotifyd and white noise). Rollback: put the old lines ba
 
 ## Alternative already planned: a speaker on each satellite
 
-`PROJECTS.md` "Voice assistant (HA Assist)", Speaker plan (2026-10-15), plans a MAX98357A amp + 40-50mm speaker per board, on the ESP32's second I2S bus. Nothing bought yet.
+`tracker/voice-assistant.md` "Voice assistant (HA Assist)", Speaker plan (2026-10-15), plans a MAX98357A amp + 40-50mm speaker per board, on the ESP32's second I2S bus. Nothing bought yet.
 
 | | Room speakers (this plan) | Speaker on the satellite |
 |---|---|---|

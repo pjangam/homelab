@@ -162,7 +162,7 @@ archive **04:00 on the 1st**.
 ## Related
 
 - `projects/lan-gateway/README.md` - the gateway and per-device counters
-- `PROJECTS.md` "Per-device network usage monitoring" - the rollout and rollback
-- `PROJECTS.md` "Move xero's datapool SSD out of the case" - the move this was first written for
+- `tracker/lan-gateway.md` "Per-device network usage monitoring" - the rollout and rollback
+- `tracker/datapool-ssd-external.md` "Move xero's datapool SSD out of the case" - the move this was first written for
 - `docs/hardware.md` (gitignored) - what runs on xero, device by device
 - `Readme.md` - bringing xero up, OS and hardware quirks

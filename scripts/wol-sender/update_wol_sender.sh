@@ -12,7 +12,7 @@ set -euo pipefail
 sudo tee /usr/local/bin/wol-xero-sender.sh > /dev/null <<'EOF'
 #!/bin/bash
 # After a power cut, wake xero once the LAN path to it is back. See
-# wol-xero.service and PROJECTS.md "Power-outage watchdog" for context.
+# wol-xero.service and `tracker/power-watchdog.md` "Power-outage watchdog" for context.
 #
 # Waits for the router (192.168.1.1) to answer, not just for a route: the Pi
 # is on WiFi through the TP-Link extender, which is up well before the Airtel

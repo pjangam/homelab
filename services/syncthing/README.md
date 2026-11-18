@@ -5,7 +5,7 @@ paired device keeps a **full local copy** that works offline, and catches up
 whenever it comes online. xero is the always-on peer, so two devices that are
 never online at the same time still converge through it. No cloud is involved
 and there is no storage cap. Why it was picked over the alternatives:
-`PROJECTS.md`, "Peer-to-peer sensitive document sync (Syncthing)".
+`tracker/syncthing-doc-sync.md`, "Peer-to-peer sensitive document sync (Syncthing)".
 
 ## Basics
 

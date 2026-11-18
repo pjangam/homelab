@@ -2,7 +2,7 @@
 # Run on xero directly (needs sudo). Pins the NIC's Wake-on-LAN mode to
 # "magic packet only" on every boot, so a future driver/kernel update can't
 # silently reset it and defeat the WoL-based power recovery path (see
-# PROJECTS.md "Power-outage watchdog"). `Wake-on: g` is currently just the
+# `tracker/power-watchdog.md` "Power-outage watchdog"). `Wake-on: g` is currently just the
 # driver's out-of-the-box default for this NIC - nothing persists it, so a
 # reset would go unnoticed until the next real outage, when the Pi's magic
 # packet would silently fail to bring xero back.

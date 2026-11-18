@@ -17,7 +17,7 @@ Tier 3 (see PROJECTS.md). Two ways to draw the same classification:
 In both modes the toddler gets the whole strip: a red flash on each detection
 that falls away in about a third of a second, so babbling reads as a pulse.
 Red because it is the one hue none of amber/white/blue is near, and she is
-the point of it (PROJECTS.md, "A flashy colour for the toddler").
+the point of it (`tracker/toddler-noise-colour.md`, "A flashy colour for the toddler").
 
 This is different from Tier 2, which splits by pitch. A clap and a ghanta have
 the same spectral centroid (8.72 vs 8.75 measured), so a frequency split lights

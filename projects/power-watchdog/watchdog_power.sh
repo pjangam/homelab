@@ -8,7 +8,7 @@
 # Carrier loss still means an outage only while the router has no UPS (true
 # from 2026-10-22: the only working UPS backs xero; worked in that day's
 # outage). Once the router is on a UPS again this goes blind and needs the
-# ping signal (PROJECTS.md "Pi audio move follow-ups", step 3). The context
+# ping signal (`tracker/pi-audio-move-followups.md` "Pi audio move follow-ups", step 3). The context
 # below describes the extender setup this was written for.
 #
 # Context: enp1s0 connects through a WiFi extender with no battery backup

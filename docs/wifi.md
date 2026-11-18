@@ -16,7 +16,7 @@ gitignored `docs/hardware.md`, not here.
   side goes down too.
 - **Every ESP32 device is 2.4GHz-only** (satellites, WLED, switches, Tinxy), so
   they feel every 2.4GHz problem; phones on 5GHz often don't.
-- **Retiring the extender:** `PROJECTS.md` "Move the Airtel router to a central spot".
+- **Retiring the extender:** `tracker/router-central-spot.md` "Move the Airtel router to a central spot".
 
 ## What channel and band mode mean
 

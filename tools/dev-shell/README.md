@@ -3,7 +3,7 @@
 The Mac shell setup: every new iTerm tab offers a tmux session, Claude Code
 asks before running outside tmux, and inside tmux the wheel scrolls while a
 drag is still a normal iTerm selection. Background and history are in the
-`PROJECTS.md` entry "Claude Code and new iTerm tabs always land inside tmux".
+`tracker/iterm-tabs-in-tmux.md` entry "Claude Code and new iTerm tabs always land inside tmux".
 
 ## Who owns what
 

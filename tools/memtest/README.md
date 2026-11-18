@@ -1,7 +1,7 @@
 # memtest
 
 RAM testing on xero, after a bit flipped during a hot memtest run on the
-pegboard (2026-10-06, `PROJECTS.md` "Check if server RAM is expandable" and
+pegboard (2026-10-06, `tracker/xero-ram-expandable.md` "Check if server RAM is expandable" and
 "xero cooling on the Skadis pegboard").
 
 `boot_memtest_once.sh` - boot memtest86+ **once**, straight from the EFI system

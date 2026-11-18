@@ -1,0 +1,10 @@
+# Immich ML backlog
+**Status:** Done
+
+**Why:** face detection and smart search had never run on most of the library: Immich processes new uploads by itself, but the "Missing" jobs for what was already there were never queued after it came back on 2026-10-09. Without them there is no face grouping and no smart search for ~13k photos.
+**Outcome:** done 2026-10-30 19:17. Face detection and smart search have run on the whole library: 31,255 faces in 941 people (4,385 faces ungrouped, normal for people in fewer than 3 photos; the nightly job tidies the rest). Left over, accepted: 8 assets without face detection and 9 without smart search - the known animated GIFs, the lost `IMG-20191013-WA0002.jpg` and two 2017 JPGs. How: `services/immich/ml_backlog.sh` on xero (2 cores, ~21 assets/min) until 18:03, then remote ML on the 2019 MacBook (`remote_ml_mac.sh` / `remote_ml.sh`): ~270 faces/min and ~620 smart-search/min, with the Kingston's 70°C pause the only limit. xero is back on its own ML (concurrency 2). Still to do (user, sudo): delete the `@pre-v3.3.5` snapshots around mid-November 2026.
+
+#### Log
+- 2026-10-30: split out of "Immich re-enablement". Script written and started; it survived the 3.3.5 upgrade restart mid-run.
+- 2026-10-30: ML back to 2 cores and concurrency 2 (user: temperatures had headroom). An earlier ~140/min estimate came from the queue count and was wrong: the queue had lost jobs.
+- 2026-10-30: remote ML on the MacBook. ghcr pulls on the Mac truncated twice ("unexpected EOF"), so the image went over from xero (`docker save`, 268MB with the containerd store, served on the LAN for the hour). The Mac's Wi-Fi via the TP-Link extender gave ~250KB/s even on the LAN; on the router directly (2.4GHz; its 5GHz SSID gives xero no LAN access to the Mac) ~7.3MB/s. Switched at 18:03; face detection done 18:54, smart search 19:17; switched back and the Mac container stopped. Use the Mac's tailnet address for remote ML: its LAN IP is DHCP with a randomised MAC (.105 became .13 on reassociation).

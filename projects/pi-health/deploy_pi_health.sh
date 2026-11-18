@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run this ON XERO. Installs pi-health-mqtt (PROJECTS.md "wol Pi health
+# Run this ON XERO. Installs pi-health-mqtt (`tracker/pi-health.md` "wol Pi health
 # monitoring") on the wol Pi as an enabled systemd --user unit and restarts
 # it. Re-run after changing pi-health-mqtt.py or the unit.
 #

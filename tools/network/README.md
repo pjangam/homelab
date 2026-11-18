@@ -27,7 +27,7 @@ MacBook**, not on xero - that is noted in every header and matters.
 It has broken the same way at least three times (2026-08-28, 2026-09-10,
 2026-09-16): `en0` resolving against `192.168.0.2` + `192.169.0.2`, two servers
 not on this LAN, so queries hang rather than fail. Root-caused to OpenVPN
-Connect's agent writing them at connect time - see `PROJECTS.md`, "MacBook DNS
+Connect's agent writing them at connect time - see `tracker/macbook-dns.md`, "MacBook DNS
 keeps breaking", and `docs/incidents/2026-09-23-mac-dns-openvpn-connect-left-stale-servers.md`.
 
 | | |

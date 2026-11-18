@@ -2,7 +2,7 @@
 
 The wol-sender Pi reporting its own health to Home Assistant, so xero's
 healthcheck can tell "Pi healthy" from "Pi silent". Started 2026-10-06 for the
-Pi's under-voltage problem (`PROJECTS.md`, "wol Pi health monitoring").
+Pi's under-voltage problem (`tracker/pi-health.md`, "wol Pi health monitoring").
 
 `pi-health-mqtt.py` runs **on the Pi** as `pi-health-mqtt.service`
 (`systemd --user`, linger on). Every interval it publishes one retained JSON

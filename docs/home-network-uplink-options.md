@@ -57,7 +57,7 @@ free, though:
   flaky supply. The extender needs a pinned IP first.
 - **The speaker moves with xero.** White noise and Spotify Connect play through
   xero's USB speaker. That is why they are being moved to the wol Pi: the
-  active `PROJECTS.md` entry "Move white noise and spotifyd from xero to the
+  active `tracker/pi-audio-move.md` entry "Move white noise and spotifyd from xero to the
   wol Pi".
 - **Local access:** the monitor, and ESP32 flashing over xero's USB. Minor.
 - **Unaffected:** Pi-hole, HA, MQTT and Tailscale (same IP), WoL from the Pi

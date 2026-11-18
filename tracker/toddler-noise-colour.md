@@ -1,0 +1,43 @@
+# A flashy colour for the toddler when she makes a noise
+**Status:** Done
+
+**Why:** the Tier 3 renderer already tells a ghanta from a clap from a voice (see "Sound-reactive aarti lights" in ✅ Done). The question was whether it can tell *whose* voice and give each person a colour - but the value is not evenly spread. Scoped down by the user, and the scoping is the most useful thing in this entry: **the 1-year-old getting her own flashy colour is the whole point, and everything else is good-to-have.** That is a happy accident, because she is by a distance the easiest of the four to detect and the only one whose case survives a room full of people singing. Build her band first and stop there if the rest never happens.
+**Outcome:** **shipped 2026-09-19 - her band, and only hers: a red flash across the whole strip each time she is detected.** It runs on the hardware already on the wall. Tier A's male colour stays a good-to-have and was not built; Tier B (a colour each for all four, needing a second mic) was closed 2026-09-18 on the user's "no new hardware". Left open: her voice *inside* a sung aarti has not been tested - if it misfires there, record a real aarti with `aarti-sound-lab.py record` and retune against that.
+
+#### Feasibility (measured, not assumed)
+
+The short version: her colour is free and runs on the hardware already on the wall. A colour each for all four is the only part that ever needed a second mic, and it is closed - the user does not want to buy hardware, and it was the good-to-have anyway.
+
+**The hard limit is what the board transmits, not the mic.** Probed live: WLED's sound-sync packet is 44 bytes at 44/s, carrying **16 bins of 8-bit spectral envelope** plus `FFT_MajorPeak` and `FFT_Magnitude`. It is analysis, never audio. Real speaker identification (ECAPA/x-vector embeddings) wants ~16kHz audio with 40-80 mel bands at 100 frames/s, so it cannot run on this stream at all - and the 8-bit bins arrive after gain and squelch have already discarded absolute level. `aarti-sound-lab.py`'s header has the other half of it: the only mic in the right room is the one on the ESP32, because *xero is in the wrong room*.
+
+**What the household composition does to the answer** - four voices: an adult male (35), two adult women (33 and 72), and a toddler (1). Pitch alone carries three of the four:
+- **The toddler is trivially separable** - F0 around 350-500Hz, nowhere near anyone else.
+- **The man is cleanly below the women** - roughly 85-155Hz against 165-255Hz.
+- **The two women are the hard pair, and this is the whole problem.** Female F0 falls after menopause, so a 72-year-old converges toward the range of a 33-year-old (~150-195Hz against ~165-255Hz). What still separates them - breathiness, jitter, shimmer - needs resolution these bins do not have. WLED's FFT is 512-point at 22050Hz, so bins are **~43Hz wide**: ample for 110 vs 190Hz, useless for 175 vs 200.
+
+So **Tier A** is a pitch-band split into toddler / male / adult-female - three colours, the two women sharing one - on the existing board, the existing mic and the existing stream. **No purchase, no rewiring, no flashing: it is a change to `aarti_audio.py` and the renderer and nothing else.** That covers the toddler's colour completely, which is the whole of what is actually wanted.
+
+#### Tier B: closed
+
+**Tier B (a colour each for all four) is closed, 2026-09-18, on the user's "no new hardware".** Recorded so it is not re-derived: separating the two women needs raw audio, and raw audio needs a mic that streams it - a second ESP32 + INMP441 as a WiFi mic over UDP (~₹550-900 local), or a spare Pi with a USB mic - then VAD -> speaker embedding -> cosine match against four enrolled prints on xero, which has the CPU for it. Two further reasons it is the right call beyond the money: "the aarti board freed after the festival" is **already spoken for twice**, by the WoL-on-an-ESP32 entry and the WiFi-synced analog clock, so this would be a third claim on one board. And the one genuinely purchase-free route to it - reflashing *this* board with custom firmware that streams its I2S mic instead of running WLED - costs WLED itself: the effects, the presets, the HA integration and the boot-preset fallback that keeps the decoration working when xero is down. Trading all of that for the ability to tell two family members apart is a bad deal in any currency.
+
+#### Visitors: closest match, no visitor detection
+
+Decided 2026-09-18. It sounds like the fallback and is actually the *easier* feature. A blanket "guest" colour needs open-set recognition: a calibrated rejection threshold saying "far enough from all four to be nobody", which is the fiddly part of speaker ID, needs impostor recordings to tune, and fails both ways - too strict and a family member with a cold is flagged as a visitor, too loose and no visitor ever is. Closest match is argmax over the enrolled set, i.e. the classifier's default behaviour and no extra code. On the Tier A route a blanket rule is not merely harder but **impossible**, since pitch bands hold no identities at all: a visitor lands in whatever band their voice falls in, a male visitor lighting the male colour, for free. If Tier B is ever built, prefer letting match confidence drive **saturation** over a binary guest/not-guest call - a weak match reads as a washed-out version of whoever they sound most like, which degrades gracefully instead of forcing a decision the system cannot make reliably.
+
+#### The caveat: during an aarti everyone sings at once
+
+This outweighs all of the above. Both tiers assume one voice at a time. A mixture hands the pitch method whoever is loudest, and overlapping speech is exactly where speaker ID degrades worst - compounded by speaker models being trained on speech rather than singing, at 3m far-field, with a ghanta ringing over the top. If the goal is "each person's colour while the family sings together", that is the single worst case for this technology and it should be expected to look broken. **The toddler is the exception that makes the scoped-down version work:** she is the only one whose fundamental sits in a band no adult's does, so hers is the one voice with a chance of being picked out of a mixture. Not a free pass - adult singing puts *harmonics* right through her range - so the test has to be high-band energy together with a quiet low band, never high-band energy alone. If the goal is "the light reacts to whoever is talking in a calm room", it is genuinely buildable. A room with visitors is a crowded room, so visitor handling matters least exactly where it is hardest.
+
+#### What shipped
+
+- **The hypothesis held, worse than guessed.** Her first recording (`aarti-sound/kid.jsonl`) fired **12 claps and 4 ghantas** through the old classifier. Her centroid spans 2.9-7.7 - it straddles every threshold rather than sitting in the 4.5-5.5 gap, so no centroid carve-out could have worked.
+- **What does separate her is spectral shape, not centroid:** energy in bins 6-8 with bins 10-15 quiet. Voice never reaches bin 6, a clap lights all the way to 15, a bell piles into 14-15. Rule: bins 6-8 >= 350 and 10-15 <= 250 on 3 of the last 5 frames (`KID_*` in `aarti_audio.py`).
+- **Validated on a second take recorded after the thresholds were picked** (`kid2.jsonl`, her babbling with an older adult talking to her): 44 detections, and **zero** across the voice/clap/ghanta recordings. The adult's stretches of speech went to the amber voice layer with no red in them. Live on the service: 19 flashes in 20s, no false claps.
+- **Her squeals are broadband and still look like strikes,** so for 1.5s after she is detected a bright burst is taken as her, not a clap (`KID_HOLD_S`). Cut her false claps from 14 to 1-2 per take. A real clap in that same second goes unshown - the right way round.
+- **Renderer:** red ducks the other layers by 80% rather than adding to them, or red over the amber glow reads orange. Decays in ~0.33s against detections every 0.3s, so babbling pulses. Both modes. `aarti-classify.py` keeps its own older copy of the rules and does not know about her.
+- **Not yet seen:** her voice *inside* a sung aarti. The caveat above stands - adult harmonics in a mixture may mask or mimic her - and it has not been tested. If it misfires there, record a real aarti with `aarti-sound-lab.py record` and retune against that.
+
+#### Log
+- 2026-09-18: scoped down by the user to her colour; feasibility answered by measurement (Tier A viable on the existing board); Tier B closed on "no new hardware"; visitors decided as closest match, no visitor detection.
+- 2026-09-19: shipped her red flash, tuned on `kid.jsonl` and validated on `kid2.jsonl`.

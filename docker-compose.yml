@@ -465,7 +465,7 @@ services:
     volumes:
       - ./services/caddy/Caddyfile:/etc/caddy/Caddyfile
       - ./certs:/certs:ro
-      # The endpoint index (PROJECTS.md "One page listing every endpoint we
+      # The endpoint index (`tracker/endpoints.md` "One page listing every endpoint we
       # serve"), served straight off disk by the /endpoints handle in the
       # Caddyfile - no container of its own, which is the whole point of
       # picking a static page over Homer or gethomepage.
@@ -620,7 +620,7 @@ services:
       - .:/repo:ro
       - ./projects/wishlist/data:/data
 
-  # Self-hosted push notifications (PROJECTS.md "iOS push notifications").
+  # Self-hosted push notifications (`tracker/ntfy-push.md` "iOS push notifications").
   # Bound to loopback only: the tailnet path in is the sidecar below, and
   # 127.0.0.1:8127 is for publishers running on xero itself (clawlight), which
   # keeps basic-auth credentials off the LAN in plaintext.

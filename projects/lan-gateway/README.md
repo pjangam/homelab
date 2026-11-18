@@ -9,7 +9,7 @@ The counts go to Prometheus via node-exporter's textfile collector as
 nothing on its own: a device only goes through xero once it is pointed at it.
 But on **2026-10-22 the router's DHCP was changed to hand out `192.168.1.123`
 as the gateway**, so in practice every device on the LAN now routes through
-xero. `PROJECTS.md` "Per-device network usage monitoring" has the rollout and
+xero. `tracker/lan-gateway.md` "Per-device network usage monitoring" has the rollout and
 the rollback.
 
 > **This makes xero a single point of failure for the house's internet.**

@@ -17,7 +17,7 @@ xero, so an outage here is usually one of those three links rather than the AC.
 | **Refresh flow** | `nodered_refresh_flow.json` + `deploy_nodered_refresh_flow.sh` |
 
 
-Mosquitto runs on `xero`; Node-RED itself runs on the Pi (`wol-sender`, `192.168.1.124`) - moved there 2026-08-22, see `PROJECTS.md` "Move some load to the Raspberry Pi". The `node-red-contrib-ha-miraie-ac` node is set up automatically. Manual steps after first run:
+Mosquitto runs on `xero`; Node-RED itself runs on the Pi (`wol-sender`, `192.168.1.124`) - moved there 2026-08-22, see `tracker/pi-load-migration.md` "Move some load to the Raspberry Pi". The `node-red-contrib-ha-miraie-ac` node is set up automatically. Manual steps after first run:
 
 1. Open Node-RED at `http://192.168.1.124:1880` - the editor now requires login (`adminAuth` in `settings.js`, enabled 2026-08-22 since it's reachable over Wi-Fi rather than only from xero itself; previously had no auth at all). Username `pramod`; the password should be saved in Vaultwarden as "Node-RED admin" (check there first - if missing, it was generated during the 2026-08-22 migration and needs resetting via `node-red admin hash-pw` + editing `settings.js`'s `adminAuth` block on the Pi).
 2. Find the `ha-miraie-ac` node in the palette (left sidebar), drag it into a flow

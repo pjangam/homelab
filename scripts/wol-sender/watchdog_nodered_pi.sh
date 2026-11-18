@@ -3,7 +3,7 @@
 # checked via the container's own TCP state, not by waiting for AC traffic.
 # Runs on wol-sender (the Pi) via cron every 10 minutes - moved here from
 # cron/watchdog_nodered.sh on xero when Node-RED itself moved (see
-# PROJECTS.md "Move some load to the Raspberry Pi").
+# `tracker/pi-load-migration.md` "Move some load to the Raspberry Pi").
 #
 # Originally waited up to 15s for a message on a specific AC state MQTT
 # topic. That topic name was wrong from the start (never matched what the
