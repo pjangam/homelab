@@ -61,10 +61,11 @@ tools/dev-shell/setup-tmux-shell.sh --picker-only
 | `~/.zsh/functions/tmux-session-picker.zsh` + its `~/.zshrc` block | `claude-tmux.zsh` (xero's `claude()` is clawlight's `claude-tmux-name.zsh`; two `claude()`s fight) |
 | | `~/.tmux.conf`, the legacy-migration pass, an existing claude block |
 
-- **How it fires over ssh:** `TERM_PROGRAM` does not cross ssh, but iTerm's `LC_TERMINAL=iTerm2` does (macOS ssh sends `LC_*`, Ubuntu's sshd accepts it). The picker checks either.
+- **Fires on every interactive ssh login** (Mac iTerm, iPhone Termius, anything): the installer puts `TMUX_PICKER_ON_SSH=1` in the picker's `~/.zshrc` block. A full (Mac) install leaves it out, so ssh into the Mac - clawlight's phone jump - is untouched.
+- **Not on non-interactive ssh:** `ssh xero cmd`, scp and rsync never see the menu.
 - **No `s) ssh` there:** a shell with `$SSH_CONNECTION` set hides it, and `s` is refused.
-- **Other clients opt in with `LC_TMUX_PICKER=1`.** Plain ssh from a non-iTerm terminal sends no `LC_TERMINAL`, so it gets no picker unless it sends this. `NO_TMUX=1` skips it as usual.
-- **Termius (iPhone): use `tpick`, not the variable.** iOS Termius sent no `LC_TMUX_PICKER` when set on the host (checked 2026-11-18: the login shell's environment had only the locale `LC_*`). Instead set the host's **Startup snippet** to `tpick`, which runs the picker from any shell outside tmux. Do it on a **separate** xero host from the clawlight one: that host's startup snippet is `clawlight/phone-attach.sh`, and a host has only one.
+- **Why not a client-side setting:** iOS Termius sent no `LC_*` variable set under Host > Environment Variables (checked 2026-11-18: two fresh logins, only the locale `LC_*` arrived, though sshd's `AcceptEnv LC_*` passes iTerm's `LC_TERMINAL`), and its startup snippets are a paid feature.
+- **`tpick`** opens the picker again from any shell outside tmux, e.g. after Enter.
 
 ## What it does
 

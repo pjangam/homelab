@@ -46,6 +46,7 @@ check "tmux.conf unchanged" $([ "$beforet" = "$(cat "$A/tmux.conf")" ]; echo $?)
 check "reports 'unchanged'" $(grep -q 'unchanged:' "$A/out"; echo $?)
 check "made no backup files" $([ -z "$(ls "$A"/zshrc.bak.* 2>/dev/null)" ]; echo $?)
 
+check_count "full install: picker not on every ssh" "$A/zshrc" 'TMUX_PICKER_ON_SSH' 0
 echo "== migrates the hand-edited original out of zshrc =="
 B="$SANDBOX/legacy"; mkdir -p "$B"
 cat > "$B/zshrc" <<'LEOF'
@@ -169,6 +170,7 @@ check "picker block is first line" $([ "$(head -1 "$P/zshrc")" = '# >>> homelab 
 check_count "wrappers not sourced"  "$P/zshrc" 'claude-tmux.zsh' 0
 check_count "clawlight claude() kept" "$P/zshrc" 'claude-tmux-name.zsh' 1
 check_count "unrelated line kept"   "$P/zshrc" '^export KEEP_ME=1$' 1
+check_count "picker on ssh switched on" "$P/zshrc" '^TMUX_PICKER_ON_SSH=1' 1
 check_count "mouse export kept"     "$P/zshrc" 'CLAUDE_CODE_DISABLE_MOUSE_CLICKS' 1
 check "tmux.conf untouched"     $([ "$(cat "$P/tmux.conf")" = 'set -g mouse on' ]; echo $?)
 again=$(cat "$P/zshrc"); run "$P" --picker-only

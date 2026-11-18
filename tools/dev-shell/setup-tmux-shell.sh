@@ -51,8 +51,9 @@ TMUX_END='# <<< homelab tmux-shell <<<'
 
 dry_run=0
 bundle_to=
-# --picker-only: the session picker and its ~/.zshrc block, nothing else. For
-# xero, where sessions arrive over ssh from the Mac: the claude wrapper would
+# --picker-only: the session picker and its ~/.zshrc block, nothing else, and
+# it fires on every interactive ssh login, not just iTerm. For xero, where
+# sessions arrive over ssh (Mac iTerm, iPhone Termius): the claude wrapper would
 # fight clawlight/claude-tmux-name.zsh's claude() there, and ~/.tmux.conf is
 # left as it is. An existing claude block in ~/.zshrc is kept, not removed.
 picker_only=0
@@ -254,11 +255,15 @@ else
   warn "delete it by hand, or the managed block below will just redefine it."
 fi
 
+# --picker-only is the server install: any interactive ssh login gets the menu.
+picker_on_ssh=
+[ "$picker_only" = 1 ] && picker_on_ssh="TMUX_PICKER_ON_SSH=1   # any interactive ssh login, not just iTerm (--picker-only)
+"
 zshrc_new="$PICKER_BEGIN
-# Offer a tmux session menu when an interactive iTerm shell starts outside tmux.
+# Offer a tmux session menu when an interactive shell starts outside tmux (see the file for when).
 # Must stay ABOVE the p10k instant-prompt block -- it reads from the console.
 # Managed by tools/dev-shell/setup-tmux-shell.sh in the homelab repo; edits here are lost.
-[[ -r ~/.zsh/functions/tmux-session-picker.zsh ]] && source ~/.zsh/functions/tmux-session-picker.zsh
+${picker_on_ssh}[[ -r ~/.zsh/functions/tmux-session-picker.zsh ]] && source ~/.zsh/functions/tmux-session-picker.zsh
 $PICKER_END
 
 $body

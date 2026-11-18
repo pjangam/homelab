@@ -18,7 +18,7 @@ command -v zsh >/dev/null || { echo "zsh not installed"; exit 2; }
 # unset so sourcing the file does not start the picker itself, and
 # SSH_CONNECTION so the ssh option is offered (a prelude can set it again).
 run() {
-  printf '%b' "$1" | env -u TERM_PROGRAM -u LC_TERMINAL -u LC_TMUX_PICKER -u SSH_CONNECTION zsh -f -c '
+  printf '%b' "$1" | env -u TERM_PROGRAM -u LC_TERMINAL -u SSH_CONNECTION zsh -f -c '
     eval "$1"
     tmux() { case $1 in ls) print "work:2:detached:Thu Sep 10 13:03:01 2026" ;;
                         has-session) return 1 ;;
@@ -52,19 +52,35 @@ check "over ssh, s is refused, not run"      's\n\n'               'END|' \
 check "over ssh, a number still attaches"    '1\n'                 'TMUX attach -t =work|' \
       'SSH_CONNECTION="192.168.1.10 50000 192.168.1.20 22"'
 
-got=$(printf '1\n' | env -u TERM_PROGRAM -u LC_TERMINAL -u LC_TMUX_PICKER -u TMUX zsh -f -c '
+got=$(printf '1\n' | env -u TERM_PROGRAM -u LC_TERMINAL -u TMUX zsh -f -c '
   tmux() { case $1 in ls) print "work:2:detached:Thu Sep 10 13:03:01 2026" ;; *) print "TMUX $*" ;; esac }
   source "$0"; tpick' "$PICKER" 2>&1 | grep -E '^TMUX' || true)
 [ "$got" = "TMUX attach -t =work" ] && ok "tpick runs the picker on demand" || bad "tpick runs the picker on demand (got '$got')"
 got=$(printf '1\n' | TMUX=/x zsh -f -c 'tmux() { print "TMUX $*"; }; source "$0"; tpick; print "rc=$?"' "$PICKER" 2>&1 | grep -E '^(TMUX|rc=)' | tr '\n' '|')
 [ "$got" = "rc=1|" ] && ok "tpick refuses inside tmux" || bad "tpick refuses inside tmux (got '$got')"
 
+# When sourcing starts the picker by itself (the guard at the bottom). A real
+# pty is needed for -t 0, so this runs under script(1).
+fires() {  # env assignments...; prints yes/no
+  local out
+  out=$(printf '\n' | env -u TERM_PROGRAM -u LC_TERMINAL -u TMUX -u SSH_TTY "$@" \
+        script -qc "zsh -f -i -c 'tmux() { :; }; source $PICKER'" /dev/null 2>&1)
+  case $out in *'new session'*) echo yes ;; *) echo no ;; esac
+}
+if command -v script >/dev/null; then
+  [ "$(fires LC_TERMINAL=iTerm2)" = yes ] && ok "fires for iTerm over ssh" || bad "fires for iTerm over ssh"
+  [ "$(fires SSH_TTY=/dev/pts/9)" = no ] && ok "plain ssh login: no picker by default" || bad "plain ssh login: no picker by default"
+  [ "$(fires SSH_TTY=/dev/pts/9 TMUX_PICKER_ON_SSH=1)" = yes ] && ok "TMUX_PICKER_ON_SSH=1: any ssh login" || bad "TMUX_PICKER_ON_SSH=1: any ssh login"
+  [ "$(fires TMUX_PICKER_ON_SSH=1)" = no ] && ok "TMUX_PICKER_ON_SSH=1, local shell: no picker" || bad "TMUX_PICKER_ON_SSH=1, local shell: no picker"
+  [ "$(fires SSH_TTY=/dev/pts/9 TMUX_PICKER_ON_SSH=1 NO_TMUX=1)" = no ] && ok "NO_TMUX still wins" || bad "NO_TMUX still wins"
+fi
+
 # The listing itself: a real tmux, so the -F output format is the one this
 # machine's tmux actually prints (3.4 turns a tab separator into '_').
 if command -v tmux >/dev/null; then
   sock="pickertest-$$"
   tmux -L "$sock" -f /dev/null new-session -d -s alpha
-  got=$(printf '\n' | env -u TERM_PROGRAM -u LC_TERMINAL -u LC_TMUX_PICKER PICKER_SOCK="$sock" zsh -f -c '
+  got=$(printf '\n' | env -u TERM_PROGRAM -u LC_TERMINAL PICKER_SOCK="$sock" zsh -f -c '
     tmux() { command tmux -L "$PICKER_SOCK" "$@"; }
     source "$0"; _tmux_session_picker' "$PICKER" 2>&1 \
     | sed "s/\x1b\[[0-9;]*m//g" | grep ' 1) ' || true)

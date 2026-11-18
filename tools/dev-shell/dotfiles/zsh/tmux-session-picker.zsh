@@ -213,9 +213,7 @@ _tmux_session_picker() {
   done
 }
 
-# The picker on demand, from any shell outside tmux. For clients that cannot
-# opt in by environment: Termius on the iPhone sends no LC_* variable
-# (checked 2026-11-18), so its xero host runs `tpick` as its startup snippet.
+# The picker on demand, from any shell outside tmux (after Enter, say).
 tpick() {
   if [[ -n $TMUX ]]; then
     print -P "  %F{242}already inside tmux%f"
@@ -224,11 +222,17 @@ tpick() {
   _tmux_session_picker
 }
 
-# TERM_PROGRAM is iTerm's own and does not cross ssh; LC_TERMINAL does.
-# LC_TMUX_PICKER=1 opts any other client in - Termius sets it per host
-# (Host > Environment Variables), and sshd's stock AcceptEnv LC_* lets it in.
+# When it fires:
+#   - iTerm, local or over ssh: TERM_PROGRAM is iTerm's own and does not cross
+#     ssh, but LC_TERMINAL=iTerm2 does (macOS ssh sends LC_*).
+#   - any interactive ssh login, when TMUX_PICKER_ON_SSH=1 is set before this is
+#     sourced. setup-tmux-shell.sh --picker-only (xero) sets it, so Termius on
+#     the iPhone gets the menu with nothing configured in the app: iOS Termius
+#     sends no LC_* variable, and startup snippets are a paid feature.
+#     ssh with a command (scp, rsync, `ssh xero cmd`) is not interactive.
 if [[ -o interactive && -t 0 && -z $TMUX && -z $NO_TMUX \
-      && ( $TERM_PROGRAM == "iTerm.app" || $LC_TERMINAL == "iTerm2" || $LC_TMUX_PICKER == 1 ) ]] \
+      && ( $TERM_PROGRAM == "iTerm.app" || $LC_TERMINAL == "iTerm2" \
+           || ( $TMUX_PICKER_ON_SSH == 1 && -n $SSH_TTY ) ) ]] \
    && (( $+commands[tmux] )); then
   _tmux_session_picker
 fi
