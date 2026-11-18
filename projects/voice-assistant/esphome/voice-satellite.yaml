@@ -19,3 +19,23 @@ packages:
 api:
   encryption:
     key: !secret api_key
+
+# SHT40 temperature/humidity sensor (tracker/humidity-dry-mode.md), bedroom
+# board only. On a ~30cm lead outside the box: the ESP32 warms its enclosure
+# and would read high temperature and low humidity. VIN -> 3V3, GND -> GND,
+# SDA -> GPIO21, SCL -> GPIO19 (not the default SCL 22, kept for the
+# speaker amp's DIN). The breakout's own pull-ups are enough at 100kHz.
+# Safe to flash before it is wired: the sensor just reads unavailable.
+# The heater stays off (the default): it would skew the readings.
+i2c:
+  sda: GPIO21
+  scl: GPIO19
+  frequency: 100kHz
+
+sensor:
+  - platform: sht4x
+    temperature:
+      name: Bedroom temperature
+    humidity:
+      name: Bedroom humidity
+    update_interval: 60s

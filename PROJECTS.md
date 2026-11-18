@@ -2,7 +2,7 @@
 
 **Generated from `tracker/` by `tools/repo-tools/tracker.py index` - do not edit by hand.** One file per project lives in [`tracker/`](tracker/); how they work is in [`tracker/README.md`](tracker/README.md). The dashboard: `https://xero.<tailnet>/projects`.
 
-## 🟢 Active (12) · ₹40-₹1,500 + 11 unbudgeted
+## 🟢 Active (13) · ₹340-₹2,000 + 11 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -15,6 +15,7 @@
 | [Clawlight jump-to-console from the iPhone (Termius -> ssh -> tmux attach)](tracker/clawlight-iphone-console.md) | P3 | ? | ? |
 | [datapool storage headroom](tracker/datapool-headroom.md) | P3 | ? | ? |
 | [Home power audit - smart/network devices + major appliances](tracker/home-power-audit.md) | P3 | ? | ? |
+| [Humidity-triggered AC dry mode and mister (temperature/humidity sensor on an ESP32)](tracker/humidity-dry-mode.md) | P3 | ₹300-500 | ~2 evenings (4-6h) |
 | [Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement](tracker/syncthing-doc-sync.md) | P3 | ? | ? |
 | [Use xero's spare RAM](tracker/xero-spare-ram.md) | P3 | ? | ? |
 | [Voice assistant (HA Assist): Spotify, room replies, wake word](tracker/voice-assistant.md) | P3 | ₹40-1,500 (bedroom button; the optional satellite speakers are most of it) | ~1 evening |
@@ -27,7 +28,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (37) · 30 unbudgeted
+## 💡 Backlog ideas (36) · 30 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -45,7 +46,6 @@
 | [Ganapati 2027: counter-rotating spiral discs (kinetic backdrop)](tracker/ganapati-2027-spiral-discs.md) | P3 | ? | ? |
 | [Ganapati 2027: solar system / general relativity decoration](tracker/ganapati-2027-solar-system.md) | P3 | ? | ? |
 | [Homelab health LED (Pi GPIO) - the whole healthcheck as one light](tracker/health-led.md) | P3 | ? | ? |
-| [Humidity-triggered AC dry mode and mister (temperature/humidity sensor on an ESP32)](tracker/humidity-dry-mode.md) | P3 | ₹300-500 | ~2 evenings (4-6h) |
 | [In-wall smart switch (Tinxy replacement, phase 2)](tracker/smart-switch-in-wall.md) | P3 | ? | ? |
 | [Local Qwen (Ollama) delegation experiment](tracker/local-qwen-delegation.md) | P3 | ? | ? |
 | [Machine upgrades (whole-house UPS/inverter, second SSD, better machine)](tracker/machine-upgrades.md) | P3 | ? | ? |

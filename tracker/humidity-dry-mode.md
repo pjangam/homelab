@@ -1,12 +1,14 @@
 # Humidity-triggered AC dry mode and mister (temperature/humidity sensor on an ESP32)
-**Status:** Backlog
+**Status:** Active
 **Priority:** P3
 **Cost:** ₹300-500
 **Effort:** ~2 evenings (4-6h)
 
 #### Open items
-- [ ] **Pramod:** buy one SHT41 or SHT31 breakout and a ~30cm 4-core lead locally
-- [ ] **Together:** bench the sensor beside a known hygrometer for a day, before writing any automation
+- [ ] **Pramod:** wire the SHT40 to the bedroom satellite on a ~30cm lead: VIN->3V3, GND->GND, SDA->GPIO21, SCL->GPIO19, sensor outside the box
+- [ ] **Pramod:** flash the bedroom satellite (OTA to .125, built on the Mac with `build_on_mac.sh`); this flash also carries the pending play-button/voice-reply firmware
+- [ ] **Claude:** once it reads, check `sensor.voice_satellite_bedroom_temperature`/`_humidity` in HA and add both to the Bedroom dashboard view
+- [ ] **Together:** bench the sensor beside a known hygrometer for a day, then record a few weeks of data before writing any automation
 
 **Why:** raised 2026-10-17: turn the AC (dehumidify) on above a humidity level, or a mister/humidifier on below one, automatically. Amazon lists DHT sensors at Rs 85-300, and the question was which sensor is actually worth buying.
 **State:** researched in conversation 2026-10-17, nothing bought. Sensor and architecture decided (below). **Room: Bedroom.** **Board: the bedroom voice satellite** (.125, GPIO21/19 free; decided 2026-10-17, reversing the earlier "new ESP32" call). **AC:** has dry mode (user, 2026-10-17); still confirm `dry` is in the MirAIe entity's `hvac_modes` in HA. **Mister:** the user owns a non-smart one (brand not remembered yet) with a **touch button** that most likely has to be pressed after power-up, so a smart plug alone cannot automate it. **Plan: build in two phases** - phase 1 is sensor + AC dry mode only; phase 2 (mister) is optional and decided later between hacking the touch button and skipping it. Phase 1 only for now.
@@ -58,3 +60,4 @@ qty | item | est | note
 - 2026-10-17: room is the Bedroom; a new dedicated ESP32 instead of the voice satellite; user owns a non-smart mister (brand TBD), to be switched by a bought or home-built smart switch.
 - 2026-10-17: AC has dry mode. Mister has a touch button and likely will not start on power-up - split into phase 1 (sensor + AC) and optional phase 2 (hack the touch button, swap mister, or skip).
 - 2026-10-17: host board back to the bedroom voice satellite (SDA GPIO21 / SCL GPIO19, sensor on a lead outside its box); no new ESP32.
+- 2026-11-18: SHT40 arrived (user). Started as record-only: `sht4x` block (60s, heater off) added to `voice-satellite.yaml` (bedroom board only) on I2C SDA21/SCL19, config validated; not wired or flashed yet. Automations deferred until there is data.
