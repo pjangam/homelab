@@ -4173,7 +4173,7 @@ qty | item | est | note
 **Priority:** P2
 
 #### Open items
-- [ ] **Claude:** phase 1 pilot: `jobs.toml` + generator + collector, move one `*/5` watchdog from cron to a `systemd --user` timer, run it a day
+- [ ] **Claude, 2026-11-19:** check the pilot after a day: `tinxy-watchdog` runs every 5 min, history and metrics right, nothing ran twice
 - [ ] **Claude:** phase 1: move the other crontab jobs one at a time (crontab saved to the repo first), scrub/TRIM read from `zpool status`, Grafana "Jobs" dashboard
 - [ ] **Claude:** phase 2: repo-owned long-running `systemd --user` units (allowlist)
 - [ ] **Claude:** phase 3: the Pi: `--collector.textfile.directory` in `deploy_pi.sh` (no sudo), its crontab to timers, `watchdog_nodered.sh` into the repo
@@ -4212,3 +4212,4 @@ qty | item | est | note
 #### Log
 - 2026-11-18: designed with the user; plan written for an architecture review before building.
 - 2026-11-18: architecture review: build after fixes (Pi cannot reach Prometheus, Pi node-exporter has no textfile collector, a broken cron wrapper would stop every job, schedules that differ from their cron line). User chose `systemd --user` timers over the wrapper, kept 8GB retention, all HA job kinds, and moving `watchdog_nodered.sh` into the repo.
+- 2026-11-18 12:29: **pilot live.** `projects/jobs-dashboard/` (`jobs.toml`, `install_jobs.py`, `record_run.sh`, `jobs_collector.py`); `tinxy-watchdog` moved from cron to `job-tinxy-watchdog.timer` (crontab saved first as `crontab.xero.before`), collector every minute into `services/node-exporter/textfile/jobs.prom`. First runs: exit 0, 0.2s CPU, 14MB peak, temps from Prometheus. systemd 255 drops `MemoryPeak` at stop (read in `ExecStopPost` instead) and user units have no io controller (no disk numbers).

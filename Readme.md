@@ -36,6 +36,7 @@ wol-sender Pi or the Mac; they move into the layout above in a later session.
 | [`ha-dashboard`](projects/ha-dashboard/README.md) | the Home dashboard, tracked and synced over HA's websocket API |
 | [`healthcheck`](projects/healthcheck/README.md) | the synthetic healthcheck - silent when healthy, alerts when not |
 | [`immich-backup`](projects/immich-backup/README.md) | offsite copy of Immich originals (S3 Glacier Deep Archive) |
+| [`jobs-dashboard`](projects/jobs-dashboard/README.md) | every scheduled job as a `systemd --user` timer, runs exported for the Grafana "Jobs" dashboard |
 | [`lan-gateway`](projects/lan-gateway/README.md) | xero as the LAN gateway, counting bytes per device |
 | [`miraie-ac`](projects/miraie-ac/README.md) | the Panasonic AC in HA, via Node-RED on the Pi |
 | [`pi-health`](projects/pi-health/README.md) | the wol Pi reporting its own health over MQTT |

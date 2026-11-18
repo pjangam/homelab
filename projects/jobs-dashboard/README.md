@@ -1,0 +1,53 @@
+# Jobs dashboard
+
+Every scheduled job on xero (and later the wol Pi) as a `systemd --user`
+timer, with each run's start, duration, result, CPU, peak memory and peak
+temperatures exported to Prometheus for a Grafana "Jobs" dashboard.
+`PROJECTS.md` entry: **"Jobs dashboard in Grafana"** (plan, review, decisions).
+
+**Status:** pilot since 2026-11-18. Only `tinxy-watchdog` has moved off
+cron so far; the rest of the crontab still runs from cron.
+
+## What runs it
+
+| Piece | Host | Started by |
+|---|---|---|
+| `jobs.toml` | - | the list of jobs, the only file to edit |
+| `install_jobs.py` | each host | you, after editing `jobs.toml` |
+| `job-<name>.timer` / `.service` | each host | generated into `~/.config/systemd/user/`, enabled by `install_jobs.py` |
+| `record_run.sh` | each host | every job unit's `ExecStopPost`: saves the run's peak memory |
+| `jobs_collector.py` | each host | the `job-jobs-collector` timer, every minute |
+| `crontab.xero.before` | - | xero's crontab before any job moved: the rollback copy |
+
+State and output:
+- **Metrics:** `services/node-exporter/textfile/jobs.prom` (`homelab_job_*`), read by node-exporter.
+- **Run history:** `~/.local/state/jobs-dashboard/runs/<job>.jsonl`, the last 60 days, one line per run. The p95 and max durations come from here, per run, never from averaging.
+- **Job output:** appended to the same log file as under cron (`log` in `jobs.toml`), plus `journalctl --user -u job-<name>`.
+
+## Add or move a job
+
+1. Add a `[[job]]` to `jobs.toml` (field list at the top of the file). `systemd-analyze calendar '<on_calendar>'` shows when it will run; cron's `*/5` is `*:0/5`.
+2. `projects/jobs-dashboard/install_jobs.py --dry-run`, then without `--dry-run`.
+3. **Moving from cron:** delete the crontab line in the same step, or the job runs twice:
+   `crontab -l | grep -v '<script path>' | crontab -`
+4. Check: `systemctl --user list-timers 'job-*'`; after the first run, `projects/jobs-dashboard/jobs_collector.py --print | grep <name>`.
+
+Removing a job from `jobs.toml` and re-running `install_jobs.py` stops and deletes its units. Units without the `GENERATED` header are never touched.
+
+## Roll back
+
+```
+crontab projects/jobs-dashboard/crontab.xero.before   # cron as it was
+# then remove the moved jobs from jobs.toml (keep jobs-collector) and:
+projects/jobs-dashboard/install_jobs.py
+```
+
+## Traps
+
+- **No network ordering in user units.** `After=network-online.target` does nothing there; set `network = true` and the unit waits for a default route in `ExecStartPre`.
+- **systemd 255 forgets `MemoryPeak` when a oneshot unit stops** (kept from 256). That is why `record_run.sh` reads `memory.peak` in `ExecStopPost`.
+- **No disk I/O numbers:** the `io` cgroup controller is not delegated to user units (`cpu memory pids` only).
+- **Whole-second timestamps:** `ExecMainStartTimestamp` is rounded to the second, so durations use the `...Monotonic` (microsecond) properties.
+- **Work done via `docker exec` is charged to the container**, not the job, so CPU and memory undercount jobs that mostly drive containers.
+- **Temperatures** are looked up in Prometheus over the run window (at least 10s, since the scrape is every 5s). drivetemp's `target0` is the Kingston (`datapool`), `target1` the BIWIN boot SSD (checked 2026-11-18); a disk swap can change that.
+- **The collector does not record its own runs:** it always finds itself running.

@@ -1,6 +1,6 @@
 # Tinxy watchdog (ISP-outage auto-restart)
 
-One script, `watchdog_tinxy.sh`, run from xero's crontab. A bandage for a
+One script, `watchdog_tinxy.sh`, run every 5 minutes by a `systemd --user` timer. A bandage for a
 flaky ISP, meant to be removed once the line is stable - not permanent
 infrastructure.
 
@@ -19,8 +19,5 @@ touch ~/.tinxy-watchdog-disabled   # disable
 rm ~/.tinxy-watchdog-disabled      # re-enable
 ```
 
-**Cron entry** (`crontab -e`):
-```
-*/5 * * * * /home/pramod/code/homelab/projects/tinxy-watchdog/watchdog_tinxy.sh >> /home/pramod/code/homelab/tinxy-watchdog.log 2>&1
-```
+**Schedule:** every 5 minutes as the `systemd --user` timer `job-tinxy-watchdog` (since 2026-11-18, was cron), defined in `projects/jobs-dashboard/jobs.toml`. `systemctl --user list-timers job-tinxy-watchdog` shows the next run.
 

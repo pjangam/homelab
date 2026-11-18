@@ -1,0 +1,32 @@
+# Every scheduled job on xero and the wol Pi. install_jobs.py turns each
+# entry for this host into a `systemd --user` timer + service (job-<name>),
+# and jobs_collector.py exports their runs to Prometheus for the Grafana
+# "Jobs" dashboard. Edit here, then run install_jobs.py on that host; never
+# edit the generated units in ~/.config/systemd/user/.
+#
+# Fields:
+#   host        xero | wol-sender (the Pi)
+#   desc        one line, shown on the dashboard
+#   on_calendar systemd OnCalendar= (local time). `systemd-analyze calendar
+#               '<expr>'` shows the next runs. Cron's */5 is *:0/5.
+#   command     repo-relative script plus arguments (no shell syntax)
+#   log         repo-relative file stdout+stderr are appended to, as cron did
+#   ok_codes    exit codes that count as success besides 0 (default none)
+#   network     true: wait up to 2 min for a default route before starting
+#               (After=network-online.target is a no-op in user units)
+
+[[job]]
+name = "jobs-collector"
+host = "xero"
+desc = "Exports every job's last run, next run and cost to Prometheus (this dashboard)"
+on_calendar = "*:*:00"
+command = "projects/jobs-dashboard/jobs_collector.py"
+log = "jobs-collector.log"
+
+[[job]]
+name = "tinxy-watchdog"
+host = "xero"
+desc = "Reloads HA's Tinxy integration, then restarts HA, after 20 min disconnected"
+on_calendar = "*:0/5"
+command = "projects/tinxy-watchdog/watchdog_tinxy.sh"
+log = "tinxy-watchdog.log"

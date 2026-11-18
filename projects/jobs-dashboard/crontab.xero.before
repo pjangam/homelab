@@ -1,0 +1,23 @@
+0 2 * * * /home/pramod/code/homelab/projects/certs-backup/backup_vaultwarden.sh >> /home/pramod/code/homelab/backup.log 2>&1
+0 3 * * * /home/pramod/code/homelab/projects/certs-backup/backup_homeassistant.sh >> /home/pramod/code/homelab/backup.log 2>&1
+# Replaced 2026-09-04: the old inline entry failed silently for 3 months.
+# It used sudo (no NOPASSWD -> fails in cron) and omitted --min-validity
+# (so tailscale cert returned the cached cert instead of renewing).
+# Weekly, not monthly: a monthly job that fails has no retry before expiry.
+# 5am not 4am to avoid racing watchtower, which restarts containers Sundays at 4.
+0 5 * * 0 /home/pramod/code/homelab/projects/certs-backup/renew_certs.sh
+*/5 * * * * /home/pramod/code/homelab/projects/tinxy-watchdog/watchdog_tinxy.sh >> /home/pramod/code/homelab/tinxy-watchdog.log 2>&1
+*/15 * * * * /home/pramod/code/homelab/projects/healthcheck/healthcheck.sh >> /home/pramod/code/homelab/healthcheck.log 2>&1
+*/5 * * * * /home/pramod/code/homelab/projects/power-watchdog/watchdog_power.sh >> /home/pramod/code/homelab/power-watchdog.log 2>&1
+*/5 * * * * /home/pramod/code/homelab/projects/spotifyd/watchdog_spotifyd.sh >> /home/pramod/code/homelab/spotifyd-watchdog.log 2>&1
+5 11 * * * /home/pramod/code/homelab/projects/miraie-ac/renew_miraie_login.sh >> /home/pramod/code/homelab/miraie-login-renew.log 2>&1
+30 3 * * * /home/pramod/code/homelab/projects/certs-backup/backup_hardware_md.sh >> /home/pramod/code/homelab/backup.log 2>&1
+45 3 * * * /home/pramod/code/homelab/projects/certs-backup/backup_documents.sh >> /home/pramod/code/homelab/backup.log 2>&1
+* * * * * /home/pramod/code/homelab/services/node-exporter/zpool_textfile.sh >> /home/pramod/code/homelab/zpool-textfile.log 2>&1
+# Immich originals -> S3 Deep Archive, monthly (projects/immich-backup)
+0 4 1 * * flock -n /home/pramod/code/homelab/backups/immich-archive/.lock /home/pramod/code/homelab/projects/immich-backup/archive_to_glacier.sh >> /home/pramod/code/homelab/backup.log 2>&1
+30 4 * * * /home/pramod/code/homelab/projects/voice-assistant/sync_spotify_songs.sh >> /home/pramod/code/homelab/spotify-songs.log 2>&1
+*/5 * * * * /home/pramod/code/homelab/projects/spotifyd/watchdog_spotify_listed.sh >> /home/pramod/code/homelab/spotify-listed-watchdog.log 2>&1
+* * * * * /home/pramod/code/homelab/projects/spotifyd/bt_speaker_reconnect.sh >> /home/pramod/code/homelab/bt-speaker-reconnect.log 2>&1
+# Diwali season over: stop the firecracker listener (projects/diwali-lights/README.md)
+0 9 25 11 * XDG_RUNTIME_DIR=/run/user/1000 systemctl --user disable --now diwali-cracker-fx
