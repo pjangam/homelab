@@ -333,4 +333,6 @@ Apply these first when the plan is picked up again.
 | 8 | `check_spotifyd_advertising.sh`'s 3rd argument is `--remote` | unit as 4th argument or `UNIT=` env |
 | 9 | stale Bluetooth reconnect text in room replies | fix there |
 | 10 | `everywhere_bedroom_quiet` has no mode; 22:00 and `wanted_until` fire together | `mode: queued` |
+| 11 | (room-replies ninth review) new Snapcast and Everywhere players get exposed to Assist automatically; a bedroom "unmute" would unmute the bedroom client | unexpose them in step 3; re-apply trigger on the bedroom client's `is_volume_muted` |
+| 12 | (room-replies ninth review) piece 6 doesn't mention `voice_start_music` | "if room replies is built, the Spotcast call goes through `voice_start_music` and its ok/audible/flag steps" |
 | - | covered by tests | `wanted_until` compare as timestamps; two spotifyd advertising; 0.31 client vs 0.27 server; Apollo suspend; snapclient retry log noise; `try-restart` in auto-restart |
