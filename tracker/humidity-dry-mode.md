@@ -6,7 +6,7 @@
 
 #### Open items
 - [ ] **Pramod:** wire the SHT40 to the bedroom satellite on a ~30cm lead: VIN->3V3, GND->GND, SDA->GPIO21, SCL->GPIO19, sensor outside the box
-- [ ] **Pramod:** flash the bedroom satellite (OTA to .125, built on the Mac with `build_on_mac.sh`); this flash also carries the pending play-button/voice-reply firmware
+- [ ] **Pramod:** flash the bedroom satellite (OTA to .125, built on the Mac with `build_on_mac.sh`); this flash also carries the pending play-button/voice-reply firmware and the extender-first WiFi
 - [ ] **Claude:** once it reads, check `sensor.voice_satellite_bedroom_temperature`/`_humidity` in HA and add both to the Bedroom dashboard view
 - [ ] **Together:** bench the sensor beside a known hygrometer for a day, then record a few weeks of data before writing any automation
 
@@ -61,3 +61,4 @@ qty | item | est | note
 - 2026-10-17: AC has dry mode. Mister has a touch button and likely will not start on power-up - split into phase 1 (sensor + AC) and optional phase 2 (hack the touch button, swap mister, or skip).
 - 2026-10-17: host board back to the bedroom voice satellite (SDA GPIO21 / SCL GPIO19, sensor on a lead outside its box); no new ESP32.
 - 2026-11-18: SHT40 arrived (user). Started as record-only: `sht4x` block (60s, heater off) added to `voice-satellite.yaml` (bedroom board only) on I2C SDA21/SCL19, config validated; not wired or flashed yet. Automations deferred until there is data.
+- 2026-11-18: same pending flash: bedroom satellite now prefers the extender `dlink_pramod_bed_room`, router as fallback (it only knew the router before), plus `WiFi network` / `WiFi access point` / `WiFi signal` diagnostics. `wifi_ssid_bedroom` copied into the voice-assistant `secrets.yaml` on xero (the Mac build pulls it from there).
