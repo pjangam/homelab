@@ -50,3 +50,4 @@ qty | item | est | note
 - 2026-08-01: `esp32/wol_on_boot/wol_on_boot.ino` written for this, before the Pi stood in.
 - 2026-09-16: idea noted, for after Ganapati.
 - 2026-11-18: candidate board: the bedroom voice satellite (on mains, moving next to the bed; ESPHome `wake_on_lan`, wait for WiFi with no timeout). Either replacing the Pi's WoL or as a second sender. Raised in the `scene-remote.md` brainstorm; nothing decided.
+- 2026-11-18: bedroom satellite **ruled out** as the WoL board (user): with battery power in the plans it would never lose power in an outage, so it would never reboot and send the packet. WoL stays on the Pi.
