@@ -1,6 +1,6 @@
 # Plan: spoken replies on the room speakers
 
-**Status:** **building since 2026-11-18** (user: build unless a blocker). Done: steps 1-3, 5 (firmware written, not flashed), 7, docs; step 4 replaced by an HA-side tone range (no week of calibration); "Everywhere" branches left out (multi-room paused). Waiting: step 6 (flash both boards from the Mac), then gate on and the live test (step 8); step 0 by ear when the bedroom is free. Agreed 2026-11-14, nine reviews (tables at the end).
+**Status:** **live since 2026-11-18** - both boards flashed, replies on, living room tested by the user (replies, "Done" for same-room commands, play button). Left: step 0 and the bedroom night level by ear (together, an evening), the bedroom button (part to buy). Found while testing: HA's same-room acknowledge chime (swapped for "Done." in the bridge), xero's Bluetooth drops and clipped starts (WirePlumber fix + lead-in). "Everywhere" branches left out (multi-room paused). Agreed 2026-11-14, nine reviews (tables at the end).
 
 ## Why
 
