@@ -1,0 +1,18 @@
+# The always-running VLC the voice-reply bridge plays replies through
+# (plan-room-replies.md, Design row 1): started once, so a reply does not pay
+# VLC's ~1.1s start-up on the Pi. Driven only over the local unix socket.
+# Installed by install_voice_reply.sh with the host's ~/.config/voice-reply.env
+# (VLC_OUTPUT: Pi `--aout=alsa --alsa-audio-device=default:CARD=Headphones`,
+# xero `--aout=pulse`, i.e. PipeWire's default sink, the Bluetooth speaker).
+[Unit]
+Description=VLC for spoken voice replies
+
+[Service]
+EnvironmentFile=%h/.config/voice-reply.env
+ExecStartPre=/bin/rm -f %t/voice-reply.sock
+ExecStart=/bin/sh -c 'exec /usr/bin/cvlc -I oldrc --rc-unix %t/voice-reply.sock --rc-fake-tty --file-caching=50 --no-video $VLC_OUTPUT'
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

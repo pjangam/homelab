@@ -1,0 +1,19 @@
+# The voice-reply MQTT bridge (voice_reply_mqtt.py): HA publishes
+# voice_reply/<host>/play, this plays it through voice-reply-vlc on the room
+# speaker. Installed by install_voice_reply.sh, which rewrites REPO_DIR for
+# the Pi (no git clone there: ~/homelab).
+[Unit]
+Description=Spoken voice replies on the room speaker (MQTT bridge)
+Wants=voice-reply-vlc.service
+After=voice-reply-vlc.service
+
+[Service]
+EnvironmentFile=REPO_DIR/.env.mqtt
+EnvironmentFile=%h/.config/voice-reply.env
+ExecStart=%h/.local/bin/uv run --script REPO_DIR/projects/voice-assistant/voice_reply_mqtt.py
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
