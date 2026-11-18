@@ -33,6 +33,7 @@ import json
 import math
 import os
 import queue
+import random
 import re
 import socket
 import struct
@@ -52,6 +53,7 @@ SOCK = RUN / "voice-reply.sock"
 STATE = Path.home() / ".local/state/voice-reply"
 SAVED = STATE / "saved-volume.json"
 TONE = STATE / "tone.wav"
+LEAD = STATE / "lead-in.wav"  # xero: played before each sound, see make_lead
 # Which mixer the preset goes to: the same control as the room's volume slider
 # (volume-mqtt). Pi: -c Headphones PCM (its default card is HDMI). xero:
 # -D pipewire Master = PipeWire's default sink, the Bluetooth speaker.
@@ -218,6 +220,22 @@ def make_tone():
         w.writeframes(bytes(frames))
 
 
+def make_lead():
+    """xero only: 0.8s of very faint noise (about -60 dB) played before every
+    reply and tone. The Bluetooth speaker drops the first part of a sound
+    after a quiet spell, which turned a 1.6s "Turned off the switch" into a
+    blip (2026-11-18); this wakes it first. Noise, not digital silence, so a
+    speaker that mutes on silence wakes too."""
+    if LEAD.exists():
+        return
+    rate = 22050
+    with wave.open(str(LEAD), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"".join(struct.pack("<h", random.randint(-30, 30)) for _ in range(int(rate * 0.8))))
+
+
 # --- one play ---------------------------------------------------------------
 def handle(job, client):
     req, arrived = job
@@ -264,15 +282,28 @@ def play(url, volume):
         mixer_set(volume, True)
     with vlc_lock:
         vlc.cmd("clear")
-        vlc.cmd(f"add {path}")
+        if HOST == "xero":
+            vlc.cmd(f"add {LEAD}")
+            vlc.cmd(f"enqueue {path}")
+        else:
+            vlc.cmd(f"add {path}")
         t = time.monotonic()
         while not vlc.playing() and time.monotonic() - t < 3:
             time.sleep(0.02)
         started = time.monotonic() - t
         t = time.monotonic()
-        while vlc.playing() and time.monotonic() - t < 20:
+        # stopped = not playing for 0.4s in a row: VLC reports "not playing"
+        # for a moment between the lead-in and the sound
+        quiet_since = None
+        while time.monotonic() - t < 20:
+            if vlc.playing():
+                quiet_since = None
+            elif quiet_since is None:
+                quiet_since = time.monotonic()
+            elif time.monotonic() - quiet_since >= 0.4:
+                break
             time.sleep(0.05)
-        heard = time.monotonic() - t
+        heard = (quiet_since or time.monotonic()) - t
         vlc.cmd("stop")
     if HOST == "xero":
         time.sleep(0.3)  # Bluetooth plays ~0.2s behind
@@ -326,6 +357,8 @@ def on_message(client, userdata, msg):
 def main():
     STATE.mkdir(parents=True, exist_ok=True)
     make_tone()
+    if HOST == "xero":
+        make_lead()
     restore_saved()  # a crash or reboot mid-reply
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f"voice-reply-{HOST}",
                          clean_session=True)
