@@ -10,6 +10,7 @@
 - [ ] **Together, at the bench:** SG90 test sketch against the real switch: does it move it both ways, and at what angles
 - [ ] **Together, at the bench:** after a servo power-on, check the speaker reconnects to xero over Bluetooth and plays
 - [ ] **Pramod:** buy the servo parts (parts block below; the ESP32 group only if HA/phone control)
+- [ ] **Claude, after the servo works:** on-demand Bluetooth with it - power on + connect on a "play" or reply, disconnect + power off after ~10 min idle; until then xero keeps the speaker connected (user, 2026-11-18)
 
 **Why:** user, 2026-11-16: "can we automate a slider switch using maybe servo motor or something", then "add that as a seperate project". The slider is the **Portronics Apollo One's power switch** (xero's Bluetooth speaker since 2026-11-14), confirmed by the user the same day.
 **State:** idea only. Nothing bought, nothing measured. Goal decided by the user, 2026-11-16 - see "Goal" below.
@@ -76,6 +77,7 @@ qty | item | est | note
 - If it ends up as its own device (ESP32), it needs a `docs/hardware.md` entry, and an HA name, area and Home dashboard tile.
 
 #### Log
+- 2026-11-18: user: build on-demand Bluetooth connection only after this servo works (a disconnected but powered speaker saves nothing; xero keeps it connected until then). Since today the living-room "play" waits for the speaker and plays nothing if it doesn't connect, and xero's WirePlumber no longer drops Bluetooth at ssh logout.
 - 2026-11-16: idea recorded (user), right after the USB charge switch entries. The slider is the Apollo One's power switch (user). Options compared: wire-across, servo, actuator/solenoid, button pushers.
 - 2026-11-16: goal set (user): phase 1 manual on/off, phase 2 timers or other triggers later. Controller still open.
 - 2026-11-16: reconnect cron and `bt-speaker-mqtt` need no pausing while the speaker is off (user asked; checked against the repo).
