@@ -319,6 +319,29 @@ views:
       features:
       - type: numeric-input
         style: slider
+    - type: tile
+      entity: input_number.voice_reply_volume_living_room
+      name: Reply volume
+      vertical: false
+      features_position: bottom
+      features:
+      - type: numeric-input
+        style: slider
+    - type: tile
+      entity: script.play_room_playlist
+      name: Play playlist
+      icon: mdi:playlist-play
+      vertical: false
+      tap_action:
+        action: perform-action
+        perform_action: script.play_room_playlist
+        data:
+          room: living_room
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.play_room_playlist
+        data:
+          room: living_room
     column_span: 4
   badges: []
 - title: Bedroom
@@ -471,6 +494,21 @@ views:
       entity: number.server_volume
       features:
       - type: numeric-input
+    - type: tile
+      entity: input_number.voice_reply_volume_bedroom
+      name: Reply volume
+      features:
+      - type: numeric-input
+        style: slider
+    - type: tile
+      entity: input_number.voice_reply_volume_bedroom_night
+      name: Reply volume at night
+      features:
+      - type: numeric-input
+        style: slider
+    - type: tile
+      entity: input_boolean.voice_replies_enabled
+      name: Voice replies
     column_span: 4
   - type: grid
     cards:
