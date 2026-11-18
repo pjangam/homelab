@@ -213,6 +213,17 @@ _tmux_session_picker() {
   done
 }
 
+# The picker on demand, from any shell outside tmux. For clients that cannot
+# opt in by environment: Termius on the iPhone sends no LC_* variable
+# (checked 2026-11-18), so its xero host runs `tpick` as its startup snippet.
+tpick() {
+  if [[ -n $TMUX ]]; then
+    print -P "  %F{242}already inside tmux%f"
+    return 1
+  fi
+  _tmux_session_picker
+}
+
 # TERM_PROGRAM is iTerm's own and does not cross ssh; LC_TERMINAL does.
 # LC_TMUX_PICKER=1 opts any other client in - Termius sets it per host
 # (Host > Environment Variables), and sshd's stock AcceptEnv LC_* lets it in.

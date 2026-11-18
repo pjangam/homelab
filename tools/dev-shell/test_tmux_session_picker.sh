@@ -52,6 +52,13 @@ check "over ssh, s is refused, not run"      's\n\n'               'END|' \
 check "over ssh, a number still attaches"    '1\n'                 'TMUX attach -t =work|' \
       'SSH_CONNECTION="192.168.1.10 50000 192.168.1.20 22"'
 
+got=$(printf '1\n' | env -u TERM_PROGRAM -u LC_TERMINAL -u LC_TMUX_PICKER -u TMUX zsh -f -c '
+  tmux() { case $1 in ls) print "work:2:detached:Thu Sep 10 13:03:01 2026" ;; *) print "TMUX $*" ;; esac }
+  source "$0"; tpick' "$PICKER" 2>&1 | grep -E '^TMUX' || true)
+[ "$got" = "TMUX attach -t =work" ] && ok "tpick runs the picker on demand" || bad "tpick runs the picker on demand (got '$got')"
+got=$(printf '1\n' | TMUX=/x zsh -f -c 'tmux() { print "TMUX $*"; }; source "$0"; tpick; print "rc=$?"' "$PICKER" 2>&1 | grep -E '^(TMUX|rc=)' | tr '\n' '|')
+[ "$got" = "rc=1|" ] && ok "tpick refuses inside tmux" || bad "tpick refuses inside tmux (got '$got')"
+
 # The listing itself: a real tmux, so the -F output format is the one this
 # machine's tmux actually prints (3.4 turns a tab separator into '_').
 if command -v tmux >/dev/null; then
