@@ -15,3 +15,4 @@
 #### Log
 - 2026-11-14: a tone on the AUX line was not heard: the speaker was in Bluetooth mode, and signal does not switch it. Found it advertising over Bluetooth from xero, paired it; tone and Spotify (via spotcast) played on it. Volume 18%.
 - 2026-11-14: tested by disconnecting on purpose: the script reconnects in ~4s and restores the default sink; a typed "play sasa to sasa ki kapoos jasa" reconnected and played in ~5s (20s before replacing `bluetoothctl --timeout` with polling). HA slider reads the Bluetooth volume (18).
+- 2026-11-18: the speaker "kept disconnecting": WirePlumber 0.4's `with-logind` dropped Bluetooth audio at every ssh logout and brought it back at the next login (the 19:00 voice "play" started music before the speaker was back). Turned it off: `projects/spotifyd/install_wireplumber_bt.sh`. The user plans to replace the Apollo One with a wired speaker soon.
