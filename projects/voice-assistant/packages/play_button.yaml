@@ -28,7 +28,8 @@ script:
           - stop: "no such room"
             error: true
       # xero's speaker is Bluetooth: ask for a reconnect first, as the voice
-      # "play" does; no check of the answer.
+      # "play" does, and play nothing if it does not connect (user,
+      # 2026-11-18: music started with no speaker, which came back midway).
       - if: "{{ room == 'living_room' }}"
         then:
           - action: mqtt.publish
@@ -38,6 +39,9 @@ script:
                 topic: bt_speaker_xero/state
             timeout: 25
             continue_on_timeout: true
+          - if: "{{ wait.trigger is none or wait.trigger.payload != 'connected' }}"
+            then:
+              - stop: "speaker not connected"
       - action: script.voice_start_music
         data:
           action: play

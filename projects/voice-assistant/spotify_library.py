@@ -176,6 +176,12 @@ def main():
                       "data": {"topic": "bt_speaker_xero/connect", "payload": "play"}},
                      {"wait_for_trigger": [{"trigger": "mqtt", "topic": "bt_speaker_xero/state"}],
                       "timeout": 25, "continue_on_timeout": True},
+                     # No speaker, no music (user, 2026-11-18): it used to play
+                     # anyway, and the song was half over when the speaker
+                     # came back.
+                     {"if": "{{ wait.trigger is none or wait.trigger.payload != 'connected' }}",
+                      "then": [{"set_conversation_response": "The living room speaker isn't connected"},
+                               {"stop": "speaker not connected"}]},
                  ]},
                 # Through voice_start_music (voice_replies.yaml), so a failed
                 # play says so instead of HA's "Done", and a working one sets
