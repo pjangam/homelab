@@ -2,26 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
+import { mockTracker } from './test/mockTracker'
 
-const MARKDOWN = `## 🟢 Active
-
-### Robot vacuum firmware
-Investigating a flaky sensor.
-
-### Second active thing
-Nothing interesting here.
-
-## 💡 Backlog ideas
-
-### UI to visualize PROJECTS.md
-Would be nice to have a dashboard.
-`
+const FILES = {
+  'robot-vacuum.md': '# Robot vacuum firmware\n**Status:** Active\n**Cost:** ₹500-800\n**Effort:** ~2 evenings\n\nInvestigating a flaky sensor.\n',
+  'second.md': '# Second active thing\n**Status:** Active\n\nNothing interesting here.\n',
+  'projects-ui.md': '# UI to visualize PROJECTS.md\n**Status:** Backlog\n\nWould be nice to have a dashboard.\n',
+}
 
 async function renderApp() {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true,
-    text: () => Promise.resolve(MARKDOWN),
-  }))
+  mockTracker(FILES)
   render(<App />)
   await waitFor(() => screen.getByText('Robot vacuum firmware'))
 }
@@ -115,6 +105,14 @@ describe('App', () => {
     expect(screen.getByText(/pick a project/i)).toBeInTheDocument()
   })
 
+  it('shows the rough budget under a selected project\'s title', async () => {
+    await renderApp()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Robot vacuum firmware' }))
+    expect(screen.getByText('₹500-800')).toBeInTheDocument()
+    expect(screen.getByText('~2 evenings')).toBeInTheDocument()
+  })
+
   it('shows an error message when the fetch fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500, text: () => Promise.resolve('') }))
     render(<App />)
@@ -124,29 +122,14 @@ describe('App', () => {
 })
 
 describe('App priorities', () => {
-  const PRIORITISED = `## 💡 Backlog ideas
-
-### Later thing
-**Priority:** P3
-
-Eventually.
-
-### Urgent thing
-**Priority:** P1
-
-Now.
-
-## ✅ Done
-
-### Finished thing
-All done.
-`
+  const PRIORITISED = {
+    'later.md': '# Later thing\n**Status:** Backlog\n**Priority:** P3\n\nEventually.\n',
+    'urgent.md': '# Urgent thing\n**Status:** Backlog\n**Priority:** P1\n\nNow.\n',
+    'finished.md': '# Finished thing\n**Status:** Done\n\nAll done.\n',
+  }
 
   beforeEach(async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      text: () => Promise.resolve(PRIORITISED),
-    }))
+    mockTracker(PRIORITISED)
     render(<App />)
     await waitFor(() => screen.getByText('Urgent thing'))
   })

@@ -6,7 +6,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   // Served both directly on :8125 and reverse-proxied under /projects via
   // Caddy (see services/caddy/Caddyfile) - base must match the proxied path so built
-  // asset URLs (and useProjects.js's default fetch of PROJECTS.md) resolve
+  // asset URLs (and useProjects.js's default fetch of tracker/) resolve
   // correctly through the proxy, not just when hit directly on :8125.
   base: '/projects/',
   plugins: [react()],

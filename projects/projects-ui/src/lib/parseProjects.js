@@ -16,10 +16,14 @@ function slugify(text) {
 //   ### Some project
 //   **Status:** Backlog
 //   **Priority:** P1
+//   **Cost:** ₹1,500-2,500
+//   **Effort:** ~2 weekends
 //
+// Cost and Effort are the rough budget every open project carries (a `?` until
+// someone estimates it); Done projects may have an Actual cost instead.
 // A project without a Status line falls back to the "## ..." heading it sits
 // under, which is how the file was organised before these lines existed.
-const META_LINE = /^\*\*(Status|Priority):\*\*\s*(.*?)\s*$/i
+const META_LINE = /^\*\*(Status|Priority|Cost|Effort|Actual cost):\*\*\s*(.*?)\s*$/i
 const PRIORITY_VALUE = /^P[1-3]$/i
 export const PRIORITIES = ['P1', 'P2', 'P3']
 
@@ -59,6 +63,12 @@ function takeMeta(project, paragraph) {
       project.priority = value.toUpperCase()
     } else if (field.toLowerCase() === 'status') {
       project.status = value
+    } else if (field.toLowerCase() === 'cost') {
+      project.cost = value
+    } else if (field.toLowerCase() === 'effort') {
+      project.effort = value
+    } else if (field.toLowerCase() === 'actual cost') {
+      project.actualCost = value
     }
     taken++
   }
@@ -96,7 +106,8 @@ function slugifyGroup(label) {
   return slugify(label) || 'no-status'
 }
 
-// PROJECTS.md structure: "### Project name" entries, each followed by
+// Input shape (tracker/ files joined by trackerFiles.js, or the old single
+// PROJECTS.md): "### Project name" entries, each followed by
 // free-form markdown until the next heading, grouped by their Status line.
 // Content before the first "##" (the file's own title/intro) is
 // intentionally dropped - it's not a project.
@@ -117,6 +128,9 @@ export function parseProjects(markdown) {
         heading,
         status: null,
         priority: null,
+        cost: null,
+        effort: null,
+        actualCost: null,
         tokens: [],
         parts: [],
         openItems: [],

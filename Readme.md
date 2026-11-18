@@ -1,4 +1,4 @@
-> See `PROJECTS.md` for the working list of active/parked/backlog projects and their current state.
+> See `PROJECTS.md` for the one-line list of every project (generated), and [`tracker/`](tracker/README.md) for each project's own file.
 
 This file is about **the machine**: bringing xero up, keeping its OS healthy,
 and the quirks of this particular hardware. Everything that belongs to one
@@ -9,7 +9,7 @@ below is the way in.
 
 ## Where things live
 
-Four homes, by purpose rather than file type (the rules are in `CLAUDE.md`):
+Five homes, by purpose rather than file type (the rules are in `CLAUDE.md`):
 
 | | |
 |---|---|
@@ -17,6 +17,7 @@ Four homes, by purpose rather than file type (the rules are in `CLAUDE.md`):
 | [`services/`](services/) | config for off-the-shelf software we only run |
 | [`tools/`](tools/) | helpers used by more than one project |
 | [`docs/`](docs/) | reference and incident write-ups not owned by one project |
+| [`tracker/`](tracker/README.md) | one file per project - plan, budget, open items, Log; `PROJECTS.md` is generated from it |
 
 Docker's live data directories (`vw-data/`, `HOMEASSISTANT_CONFIG/`,
 `etc-pihole/`, `postgres/`, `library/`, `certs/`, `backups/`) stay at the root
@@ -41,7 +42,7 @@ wol-sender Pi or the Mac; they move into the layout above in a later session.
 | [`miraie-ac`](projects/miraie-ac/README.md) | the Panasonic AC in HA, via Node-RED on the Pi |
 | [`pi-health`](projects/pi-health/README.md) | the wol Pi reporting its own health over MQTT |
 | [`power-watchdog`](projects/power-watchdog/README.md) | clean shutdown on an extended power cut (armed) |
-| [`projects-ui`](projects/projects-ui/README.md) | the dashboard that renders `PROJECTS.md` at `/projects` |
+| [`projects-ui`](projects/projects-ui/README.md) | the dashboard that renders `tracker/` at `/projects` |
 | [`smart-switch`](projects/smart-switch/README.md) | in-house ESP32 + relay switch, LAN-only (replacing Tinxy); runs the akash kandil |
 | [`spotifyd`](projects/spotifyd/README.md) | headless Spotify Connect on the Pi |
 | [`ssd-temp-guard`](projects/ssd-temp-guard/README.md) | throttles ZFS while the datapool SSD is over its 70°C rating |

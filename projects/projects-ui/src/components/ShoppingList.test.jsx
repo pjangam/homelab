@@ -2,10 +2,12 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, waitFor, within, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from '../App'
+import { mockTracker } from '../test/mockTracker'
 
-const MARKDOWN = `## 🟢 Active
+const FILES = {
+  'a-aarti-lights.md': `# Aarti lights
+**Status:** Active
 
-### Aarti lights
 Sound-reactive backdrop.
 
 \`\`\`parts
@@ -13,24 +15,26 @@ qty | item | est | note
 1 | INMP441 I2S mic | 150-300 | digital, NOT analog
 1 | Dupont jumpers | 150 |
 \`\`\`
+`,
+  'b-clawlight-led.md': `# Clawlight LED
+**Status:** Active
 
-### Clawlight LED
 A physical status light.
 
 \`\`\`parts
 3 | 220R resistor | 5 | one per leg
 1 | Dupont jumpers | 150 |
 \`\`\`
+`,
+  'c-no-parts.md': `# Project with no parts
+**Status:** Active
 
-### Project with no parts
 Nothing to buy here.
-`
+`,
+}
 
 async function renderApp() {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true,
-    text: () => Promise.resolve(MARKDOWN),
-  }))
+  mockTracker(FILES)
   render(<App />)
   await waitFor(() => screen.getAllByText('Aarti lights'))
 }

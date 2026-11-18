@@ -1,27 +1,28 @@
 ---
 name: idea-dump
-description: Captures a raw homelab idea into PROJECTS.md as a properly researched entry - feasibility checked, parts priced, effort estimated, written so a later session can pick it up cold - then commits and pushes it. Use whenever the user dumps an idea ("what about X", "next year I want Y", "can we do Z") and wants it recorded rather than built. Give it the idea in their own words plus anything decided in conversation that the repo does not know yet.
+description: Captures a raw homelab idea as a new tracker/<slug>.md file - feasibility checked, parts priced, rough cost and effort budgeted, written so a later session can pick it up cold - then commits and pushes it. Use whenever the user dumps an idea ("what about X", "next year I want Y", "can we do Z") and wants it recorded rather than built. Give it the idea in their own words plus anything decided in conversation that the repo does not know yet.
 ---
 
-You turn a one-line idea into an entry in `PROJECTS.md` that a session six
+You turn a one-line idea into a project file, `tracker/<slug>.md`, that a session six
 months from now can act on without re-deriving anything. The user dumps ideas
-faster than they build them, so the entry is the deliverable: it has to carry
+faster than they build them, so the file is the deliverable: it has to carry
 the feasibility answer, what to buy, what it costs, how long it takes, and the
 one decision that unblocks it.
 
 **You do not build the project.** No firmware, no containers, no config, no
-wiring. The only file you change is `PROJECTS.md`, unless the user explicitly
-asks for another (a reference doc in `docs/`, or `docs/hardware.md`).
+wiring. The only files you change are the new `tracker/<slug>.md` and the
+generated `PROJECTS.md` index, unless the user explicitly asks for another (a reference doc in `docs/`, or `docs/hardware.md`).
 
 ## 1. Ground it in what already exists
 
-Before writing a word, find out what the repo already knows. Never write an
-entry that contradicts or silently duplicates one that is already there.
+Before writing a word, find out what the repo already knows. Never write a
+file that contradicts or silently duplicates one that is already there.
 
-- **`PROJECTS.md` first.** Is this idea already an entry? Does it overlap one?
+- **`tracker/` first** (`PROJECTS.md` lists every file in one line each). Is
+  this idea already a project? Does it overlap one?
   Overlaps are the most valuable thing you can surface - a wall display, a
   shopping-list screen and a status dashboard are three entries wanting one
-  screen. Say so in the entry and cross-reference by name.
+  screen. Say so in the file and link the other `tracker/<slug>.md`.
 - **`docs/hardware.md`** (gitignored, local only) for what actually runs where,
   what is free after a festival, which machine is employer-owned, which Pi has
   a power problem.
@@ -65,7 +66,7 @@ These recur, and an entry that ignores them gets rebuilt later:
   order: the **Parts on hand** and **Idle hardware** sections of
   `docs/hardware.md` (spare laptops sit there - one of them is also a free
   screen, which is worth remembering before pricing a display); the ` ```parts `
-  blocks and **What shipped / Spend** lines of Done entries, which record what
+  blocks, **Actual cost** lines and **What shipped / Spend** lines of Done files, which record what
   was bought, what was found at home and what turned out never to be needed;
   and devices that free up on a date (the aarti ESP32 and its 5V 4A supply
   after the festival). Budget consumables in real units - the leftover WS2812B
@@ -74,21 +75,26 @@ These recur, and an entry that ignores them gets rebuilt later:
   either way: a wrong "you already have this" wastes a shop trip, and a wrong
   "buy this" wastes money.
 - **Hardware work is not done until `docs/hardware.md` says so** - if the idea
-  adds a device, say so in the entry.
+  adds a device, say so in the file.
 
-## 4. Write the entry in the house format
+## 4. Write the file in the house format
 
-Append it to the `## Projects` list. Status is a line, not a section, so
-there is no section to find.
-Match the surrounding entries: bold lead-ins, full sentences, specifics over
-adjectives. Structure:
+Create `tracker/<slug>.md` - format and rules in `tracker/README.md`. The slug
+is short, lowercase-with-dashes, and names the thing, not its state (titles
+change; the file name never does). Match the existing files: bold lead-ins,
+tables and bullets, specifics over adjectives. Structure:
 
-- `### Title` - what it is, not a slogan.
-- `**Status:** Backlog` and `**Priority:** P3` on their own lines straight
-  under the title (Status first), then a blank line. Use `Active` or `Parked`
-  if the idea plainly is one. New ideas start at P3; the user raises them to
-  P2 or P1 themselves.
-- `#### Open items` straight under Status/Priority: a checklist, one short line
+- `# Title` on the first line - what it is, not a slogan.
+- Header lines straight under it, one per line, no blank line between them:
+  - `**Status:** Backlog` (or `Active` / `Parked` if the idea plainly is one).
+  - `**Priority:** P3` - new ideas start at P3; the user raises them.
+  - `**Cost:** ₹low-high` - the total rough budget in rupees, e.g.
+    `₹1,500-2,500`, or `₹0`. **Required**: the user will not have an idea
+    recorded without a rough money budget, and the commit hook rejects an open
+    file without one.
+  - `**Effort:** ~N evenings` or `~N weekends`, with hours in brackets, e.g.
+    `~3 weekends (20-25h)`. **Required**, same reason.
+- `#### Open items` straight under the header lines: a checklist, one short line
   per item, each led by its owner - `- [ ] **Pramod:** ...`, `- [ ] **Claude:** ...`,
   `- [ ] **Together, <when>:** ...`. The first item is the one concrete action
   that decides the whole thing (usually a measurement or a bench test); add
@@ -107,8 +113,9 @@ adjectives. Structure:
   shopping list" button reads only these blocks. For either/or parts, a
   `# Option name` line starts each alternative's rows; rows above the first
   such line are shared.
-- **Cost:** a single total line, and the cheaper variant if there is one.
-- **Effort:** hours split into phases, cheapest and most decisive first, naming
+- **Cost detail:** what the header total covers, and the cheaper variant if
+  there is one.
+- **Effort detail:** hours split into phases, cheapest and most decisive first, naming
   the phase that will overrun (on this repo's history, that is always the
   mechanical or alignment work, never the code).
 
@@ -124,8 +131,14 @@ A future session must not read "parked" as "blocked".
 
 - Work on `main`, never branch. Check the branch first - other sessions share
   this working tree, and they stage files.
-- Commit **only `PROJECTS.md`** by pathspec (`git commit -- PROJECTS.md`), so
-  another session's staged work is not swept in.
+- Regenerate the index: `tools/repo-tools/tracker.py index`.
+- Commit **only your file and the index** by pathspec
+  (`git commit -m "..." -- tracker/<slug>.md PROJECTS.md`), so another
+  session's staged work is not swept in. If the hook says the index does not
+  match because another session has unstaged tracker edits, run
+  `git add tracker/<slug>.md && tools/repo-tools/tracker.py index --staged`
+  and commit again. If its Open items fixer says it fixed the working tree,
+  run the same commit command again.
 - Message: imperative subject saying what changed and why it matters, a body
   with the substance, and the attribution line the session's system reminder
   specifies. Then push; the pre-push gitleaks hook must pass.

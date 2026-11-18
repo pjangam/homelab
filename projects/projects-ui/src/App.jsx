@@ -129,12 +129,12 @@ export default function App() {
     <div className="app" data-view={view ? 'detail' : 'list'}>
       <header>
         <h1>Homelab Projects</h1>
-        <p className="subtitle">Live view of PROJECTS.md</p>
+        <p className="subtitle">Live view of tracker/</p>
       </header>
 
       {status === 'loading' && <p className="status-message">Loading…</p>}
       {status === 'error' && (
-        <p className="status-message error">Couldn&rsquo;t load PROJECTS.md: {error.message}</p>
+        <p className="status-message error">Couldn&rsquo;t load the tracker: {error.message}</p>
       )}
 
       {status === 'ready' && (

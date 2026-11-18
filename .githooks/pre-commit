@@ -27,10 +27,16 @@ added_lines() {
     | grep -E '^\+' | grep -Ev '^\+\+\+' || true
 }
 
-# PROJECTS.md format: every entry the commit changes must lead with its
-# "#### Open items" checklist (rule in CLAUDE.md and the PROJECTS.md intro).
+# tracker/ format: every project file the commit changes must lead with its
+# "#### Open items" checklist (rule in CLAUDE.md and tracker/README.md).
 # Fixed and re-staged automatically where possible; stops only if it can't.
 "$(git rev-parse --show-toplevel)/tools/repo-tools/fix_open_items.sh" || exit 1
+
+# tracker/: an open project the commit changes carries a Cost and an Effort,
+# and the generated PROJECTS.md index matches the staged tracker files. Checks
+# only - it never writes or stages PROJECTS.md, because a hook that stages a
+# file outside a `git commit -- <paths>` list leaves the real index behind.
+python3 "$(git rev-parse --show-toplevel)/tools/repo-tools/tracker.py" check-staged || exit 1
 
 # A new project/service/tool folder must arrive with its README.md (rule in
 # CLAUDE.md). --staged so this can only fail on folders THIS commit creates,

@@ -220,6 +220,19 @@ input[type='search'] {
   font-size: 1.4rem;
 }
 
+/* The rough budget (Cost / Effort header lines) under the title. */
+.detail-budget {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: -0.6rem 0 1rem;
+  font-size: 0.9rem;
+}
+
+.detail-budget .label {
+  color: var(--muted);
+}
+
 /* A phone has no room for two panes, so they take turns: the list, then the
    project you tapped with a way back. */
 @media (max-width: 759px) {

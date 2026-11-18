@@ -1,38 +1,41 @@
 #!/usr/bin/env bash
-# List PROJECTS.md entries that break the "Open items come first" rule (see
-# the file's intro and CLAUDE.md):
+# List tracker/ projects that break the "Open items come first" rule (see
+# tracker/README.md and CLAUDE.md):
 #
-#   - an Active entry with no `#### Open items` checklist
-#   - an entry whose checklist is not the first thing after Status/Priority
-#   - an entry that still carries an old `**Next step:**` paragraph
+#   - an Active project with no `#### Open items` checklist
+#   - a project whose checklist is not the first thing after its header lines
+#     (Status / Priority / Cost / Effort / Actual cost)
+#   - a project that still carries an old `**Next step:**` paragraph
 #   - an item with no owner (`**Pramod:**` / `**Together:**` / `**Claude:**`)
-#   - a Done or Closed entry that still has open items
+#   - a Done or Closed project that still has open items
 #
-# The dashboard (projects-ui) gathers every open entry's checklist into one
-# panel, so an entry that breaks the rule is quietly missing from it.
+# The dashboard (projects-ui) gathers every open project's checklist into one
+# panel, so a project that breaks the rule is quietly missing from it.
 #
 # Usage: tools/repo-tools/check_open_items.sh [--staged]
-#   Default: the whole file. Old Next-step entries are listed as "to convert" -
-#   the backlog of entries to migrate the next time each is touched.
-#   --staged: only the entries the staged PROJECTS.md changes (new or edited
-#   against HEAD), and there an old Next step is an error too - touching an
-#   entry means converting it. This is what .githooks/pre-commit runs, so the
-#   format holds for every commit, by any session or by hand, without the
-#   untouched backlog blocking anything.
+#   Default: every tracker/ file in the working tree.
+#   --staged: only the projects the commit changes (staged against HEAD), and
+#   there an old Next step is an error too. This is what .githooks/pre-commit
+#   runs (via fix_open_items.sh), so the format holds for every commit without
+#   the untouched rest blocking anything.
+# Both read tracker/ through `tracker.py combined`, which joins the files back
+# into the old one-file shape ("### Title" entries) this check was written for.
 # Exit:  0 nothing to report, 1 something to report.
 
 set -uo pipefail
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$REPO"
+TRACKER_PY="$REPO/tools/repo-tools/tracker.py"
 
+NEW=$(mktemp); OLD=$(mktemp); trap 'rm -f "$NEW" "$OLD"' EXIT
 if [ "${1:-}" = "--staged" ]; then
-  git diff --cached --quiet -- PROJECTS.md && exit 0   # PROJECTS.md not in this commit
-  NEW=$(mktemp); OLD=$(mktemp); trap 'rm -f "$NEW" "$OLD"' EXIT
-  git show :PROJECTS.md > "$NEW"
-  git show HEAD:PROJECTS.md > "$OLD" 2>/dev/null || : > "$OLD"
+  git diff --cached --quiet -- tracker/ && exit 0   # no tracker file in this commit
+  python3 "$TRACKER_PY" combined --staged > "$NEW"
+  python3 "$TRACKER_PY" combined --head > "$OLD"
   set -- "$NEW" "$OLD"
 else
-  set -- "$REPO/PROJECTS.md"
+  python3 "$TRACKER_PY" combined > "$NEW"
+  set -- "$NEW"
 fi
 
 python3 - "$@" <<'EOF'
@@ -61,7 +64,7 @@ for entry in entries:
     status = status.group(1) if status else '?'
     lines = [l for l in body.split('\n')]
     # First non-blank line after the Status/Priority lines.
-    rest = [l for l in lines if not re.match(r'^\*\*(Status|Priority):\*\*', l)]
+    rest = [l for l in lines if not re.match(r'^\*\*(Status|Priority|Cost|Effort|Actual cost):\*\*', l)]
     first = next((l for l in rest if l.strip()), '')
     has_items = re.search(r'^#### Open items\s*$', body, re.M)
     items = []
@@ -99,8 +102,8 @@ if staged:
     problems += [f'{p}: still has a **Next step:** - convert it to #### Open items' for p in to_convert]
     to_convert = []
     if problems:
-        print('PROJECTS.md: an entry this commit changes breaks the Open items rule')
-        print('(see the PROJECTS.md intro / CLAUDE.md; bypass once with git commit --no-verify):')
+        print('tracker: a project this commit changes breaks the Open items rule')
+        print('(see tracker/README.md / CLAUDE.md; bypass once with git commit --no-verify):')
 if problems:
     if not staged: print('Breaks the Open items rule:')
     print('\n'.join('  ' + p for p in problems))

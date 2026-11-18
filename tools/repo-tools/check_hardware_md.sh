@@ -82,7 +82,7 @@ fi
 # long gone, which would report as missing for ever.
 while read -r ip; do
     check "address" "$ip"
-done < <(cd "$REPO" && git ls-files -z -- PROJECTS.md Readme.md '*_setup.md' \
+done < <(cd "$REPO" && git ls-files -z -- 'tracker/*.md' Readme.md '*_setup.md' \
         'projects/*/README.md' 'services/*/README.md' 'tools/*/README.md' \
         'scripts/*/README.md' 'esp32/*/README.md' 'clawlight/README.md' \
     | xargs -0 grep -ohE '\b192\.168\.[0-9]+\.[0-9]+\b' 2>/dev/null \

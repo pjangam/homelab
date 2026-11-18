@@ -30,8 +30,8 @@ If a check would need a write or a restart, do not do it - list it as an
 Read before reviewing:
 - `CLAUDE.md` - where files go, the "not done until" rules (README per folder,
   `docs/hardware.md`, `projects/endpoints/endpoints.toml`, the Home dashboard,
-  PROJECTS.md open items), docs as tables and bullets.
-- The `PROJECTS.md` entry the target belongs to (Status, Open items, Log) and
+  tracker/ open items), docs as tables and bullets.
+- The `tracker/<slug>.md` file the target belongs to (Status, Open items, Log) and
   any entry it touches.
 - The owning folder's `README.md`, especially its Gotchas.
 - The user's standing preferences in
@@ -80,7 +80,7 @@ Work through these; skip what does not apply, do not pad:
   something already in the repo that does the job.
 - **Docs and "done" rules:** which README sections, diagrams
   (`*.puml` + rendered files), `endpoints.toml`, `docs/hardware.md`, dashboard
-  tiles and PROJECTS.md items the work must update, and whether the plan
+  tiles and tracker/ items the work must update, and whether the plan
   says so.
 
 ## 4. Report

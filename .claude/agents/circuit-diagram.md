@@ -38,7 +38,7 @@ from somewhere you can point to. Look in this order:
   (`COMMON_ANODE`, `active_high`), WLED/ESPHome configs.
 - `docs/gpio_pinout.md` for the wol-sender Pi header, `docs/hardware.md`
   (gitignored, local only) for devices, addresses and what runs where.
-- The project's `PROJECTS.md` entry (including its `parts` block) and its setup
+- The project's `tracker/<slug>.md` file (including its `parts` block) and its setup
   doc (`projects/<name>/*_setup.md`, `clawlight/README.md`, root
   `*_buttons_setup.md` etc.).
 
@@ -155,7 +155,7 @@ The Markdown guide (`wiring.md`) carries everything that is not a drawing:
 
 ## 4. Report
 
-- Do not commit; the caller decides that. Do not edit `PROJECTS.md` or other
+- Do not commit; the caller decides that. Do not edit `tracker/` files, `PROJECTS.md` or other
   docs either (except linking `wiring.md` from the project's own `README.md`) -
   report what should change instead.
 - No Artifact by default. Publish one only if the caller asks for it.

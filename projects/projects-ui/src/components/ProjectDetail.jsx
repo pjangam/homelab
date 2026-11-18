@@ -2,7 +2,7 @@ import { formatRange, listKey, parseCost, partGroups } from '../lib/parts'
 import { ProjectOpenItems } from './OpenItems'
 
 // bodyHtml comes from parseProjects(), which only ever runs on this repo's
-// own PROJECTS.md - trusted content, not user input, so rendering it
+// own tracker/ files - trusted content, not user input, so rendering it
 // directly is fine.
 function PartRow({ row }) {
   const cost = parseCost(row.est)
@@ -15,6 +15,24 @@ function PartRow({ row }) {
       </td>
       <td className="cost">{cost ? formatRange(cost.low, cost.high) : '—'}</td>
     </tr>
+  )
+}
+
+// The rough budget from the project's header lines; `?` means not estimated.
+function Budget({ project }) {
+  const parts = []
+  if (project.actualCost) parts.push(['Actual cost', project.actualCost])
+  else if (project.cost) parts.push(['Cost', project.cost])
+  if (project.effort && !project.actualCost) parts.push(['Effort', project.effort])
+  if (parts.length === 0) return null
+  return (
+    <p className="detail-budget">
+      {parts.map(([label, value]) => (
+        <span key={label}>
+          <span className="label">{label}</span> {value}
+        </span>
+      ))}
+    </p>
   )
 }
 
@@ -38,6 +56,7 @@ export function ProjectDetail({ project, section, listIds = new Set(), onToggleI
         )}
       </p>
       <h2>{project.title}</h2>
+      <Budget project={project} />
       <ProjectOpenItems items={project.openItems} />
       <div
         className="project-body"
