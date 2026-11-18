@@ -333,15 +333,106 @@ for bars in usage[3:5]:
     bars["fieldConfig"]["defaults"]["custom"].update({"drawStyle": "bars", "fillOpacity": 80})
     bars["options"]["legend"]["calcs"] = ["sum", "max"]
 
+# ---- Jobs: every scheduled job (projects/jobs-dashboard) ----------------------
+# jobs_collector.py writes one homelab_job_* series per job (label `name`; `job`
+# is Prometheus's own scrape label). Durations' p95/max are computed per run by
+# the collector from its run history, not from these gauges.
+J = 'max by (host, name) (homelab_job_{}{{name=~"$jobname"}})'
+JOB_VAR = {"type": "query", "name": "jobname", "label": "Job", "datasource": DS,
+           "query": {"query": "label_values(homelab_job_info, name)", "refId": "J"},
+           "definition": "label_values(homelab_job_info, name)",
+           "includeAll": True, "multi": True, "allValue": ".+", "refresh": 2,
+           "current": {"text": "All", "value": "$__all"}}
+
+
+def jobs_table(y):
+    cols = [  # (refId, expr, column, unit)
+        ("A", J.format("last_ok"), "OK", "none"),
+        ("B", J.format("last_start_timestamp_seconds") + " * 1000", "Last start", "dateTimeFromNow"),
+        ("C", J.format("last_duration_seconds"), "Duration", "s"),
+        ("D", J.format("duration_p95_seconds"), "p95 (60d)", "s"),
+        ("E", J.format("duration_max_seconds"), "Max (60d)", "s"),
+        ("F", J.format("next_run_timestamp_seconds") + " * 1000", "Next run", "dateTimeFromNow"),
+        ("G", J.format("consecutive_failures"), "Fails in a row", "none"),
+        ("H", J.format("last_cpu_seconds"), "CPU", "s"),
+        ("I", J.format("last_memory_peak_bytes"), "Peak memory", "bytes"),
+        ("K", 'max by (host, name) (homelab_job_last_peak_temp_celsius{name=~"$jobname",sensor="cpu"})', "CPU °C", "celsius"),
+        ("L", 'max by (host, name) (homelab_job_last_peak_temp_celsius{name=~"$jobname",sensor="ssd_data"})', "Kingston °C", "celsius"),
+        ("M", J.format("runs"), "Runs (60d)", "none"),
+    ]
+    rename = {f"Value #{r}": c for r, _, c, _ in cols}
+    overrides = [{"matcher": {"id": "byName", "options": c},
+                  "properties": [{"id": "unit", "value": u}]} for _, _, c, u in cols]
+    overrides += [
+        {"matcher": {"id": "byName", "options": "OK"},
+         "properties": [{"id": "mappings", "value": [{"type": "value", "options": {
+             "1": {"text": "ok", "color": "green"}, "0": {"text": "FAILED", "color": "red"}}}]},
+             {"id": "custom.cellOptions", "value": {"type": "color-background"}}]},
+        {"matcher": {"id": "byName", "options": "Fails in a row"},
+         "properties": [{"id": "thresholds", "value": {"mode": "absolute", "steps": [
+             {"color": "transparent", "value": None}, {"color": "red", "value": 1}]}},
+             {"id": "custom.cellOptions", "value": {"type": "color-background"}}]},
+    ]
+    targets = [{"datasource": DS, "refId": "Z", "instant": True, "range": False, "format": "table",
+                "expr": 'max by (host, name, desc, schedule, log) (homelab_job_info{name=~"$jobname"})'}]
+    targets += [{"datasource": DS, "refId": r, "instant": True, "range": False, "format": "table",
+                 "expr": e} for r, e, _, _ in cols]
+    return {
+        "id": next(_ids), "type": "table", "title": "Jobs", "datasource": DS,
+        "description": "One row per job, latest finished run. Schedules and commands: "
+                       "projects/jobs-dashboard/jobs.toml. Output: the log file, or journalctl --user -u job-<name>.",
+        "gridPos": {"x": 0, "y": y, "w": 24, "h": 10},
+        "fieldConfig": {"defaults": {"custom": {"align": "auto"}}, "overrides": overrides},
+        "options": {"showHeader": True, "sortBy": [{"displayName": "OK", "desc": False}]},
+        "targets": targets,
+        "transformations": [
+            {"id": "merge", "options": {}},
+            {"id": "organize", "options": {
+                "excludeByName": {"Time": True, "Value #Z": True},
+                "indexByName": {"host": 0, "name": 1, "desc": 2, "schedule": 3},
+                "renameByName": {**rename, "name": "Job", "host": "Host", "desc": "What it does",
+                                 "schedule": "Schedule", "log": "Log"}}},
+        ],
+    }
+
+
+y = 0
+jobs = [jobs_table(y)]
+y += 10
+jobs.append(panel("Duration of each run", [(J.format("last_duration_seconds"), "{{host}} {{name}}")],
+                  "s", 0, y, w=12, desc="Steps to each run's duration when it finishes. "
+                  "Runs shorter than the gap between points can be missed when zoomed out; the table's p95/max cannot."))
+jobs.append(panel("Failures in a row", [(J.format("consecutive_failures"), "{{host}} {{name}}")],
+                  "none", 12, y, w=12, desc="0 while the job succeeds; climbs by one per failed run."))
+y += 8
+jobs.append(panel("CPU temperature (jobs shaded while running)",
+                  max_p95('max by (host) (node_hwmon_temp_celsius{chip=~"platform_coretemp.*"})', "{{host}}"),
+                  "celsius", 0, y, w=12, desc="Shaded: a job that has been running for more than 10s (shorter runs cannot move a temperature)."))
+jobs.append(panel("SSD temperature (jobs shaded while running)",
+                  [(f"max_over_time(({ssd_temp(0)})[$__interval:5s])", "Kingston (datapool) max"),
+                   (f"max_over_time(({ssd_temp(1)})[$__interval:5s])", "BIWIN (boot) max")],
+                  "celsius", 12, y, w=12, desc="The Kingston is rated to 70°C. Shaded regions: a job was running."))
+JOBS_ANNOTATIONS = [{"datasource": DS, "enable": True, "name": "Jobs running", "iconColor": "rgba(255, 152, 48, 0.4)",
+                     "expr": 'max by (name) (homelab_job_running{name=~"$jobname"} == 1 and '
+                             '(time() - homelab_job_last_start_timestamp_seconds) > 10)',
+                     "step": "5s", "titleFormat": "{{name}}", "textFormat": "running",
+                     "useValueForTime": False}]
+
 OUT.mkdir(exist_ok=True)
 for uid, title, panels, desc in [
     ("hosts", "Hosts", hosts, "xero and the wol Pi: max and p95 of 5s samples, never averages."),
     ("containers", "Containers (xero)", containers, "Per-container CPU, memory and network from cAdvisor."),
+    ("jobs", "Jobs", jobs, "Every scheduled job on xero (and later the Pi): last run, next run, result, cost and "
+     "temperatures. Source: projects/jobs-dashboard."),
     ("network-usage", "Network usage (per device)", usage,
      "Internet bytes per LAN device through xero as the gateway (projects/lan-gateway). "
      "Counted per device (MAC, Tailscale name, or IP behind the extender) since 2026-10-31 08:31; before that per IP, named by whichever device held the IP at the time. "
      "Devices are named from projects/lan-gateway/device-names, else the router's hostname, else their IP; only DHCP devices go through xero, fixed-IP ones (xero, the Pi, ESP32s) do not."),
 ]:
     path = OUT / f"{uid}.json"
-    path.write_text(json.dumps(dashboard(uid, title, panels, desc), indent=2) + "\n")
+    d = dashboard(uid, title, panels, desc)
+    if uid == "jobs":
+        d["templating"]["list"].append(JOB_VAR)
+        d["annotations"] = {"list": JOBS_ANNOTATIONS}
+    path.write_text(json.dumps(d, indent=2) + "\n")
     print(f"wrote {path.relative_to(OUT.parent.parent.parent)} ({len(panels)} panels)")

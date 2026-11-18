@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run every query in the generated dashboards against Prometheus and report
 which return no data or an error. $__interval becomes 1m over the last 10 min,
-$__range (bar gauges over a fixed window) 1h, ${__to:date:seconds} end().
+$__range (bar gauges over a fixed window) 1h, $jobname .*, ${__to:date:seconds} end().
 Usage: services/grafana/check_queries.py [prometheus_url]"""
 import json, sys, time, urllib.parse, urllib.request
 from pathlib import Path
@@ -11,7 +11,7 @@ bad = 0
 for f in sorted((Path(__file__).resolve().parent / "dashboards").glob("*.json")):
     for p in json.loads(f.read_text())["panels"]:
         for t in p["targets"]:
-            q = t["expr"].replace("$__interval", "1m").replace("$__range", "1h").replace("${__to:date:seconds}", "end()")
+            q = t["expr"].replace("$jobname", ".+").replace("$__interval", "1m").replace("$__range", "1h").replace("${__to:date:seconds}", "end()")
             now = int(time.time())
             url = f"{prom}/api/v1/query_range?" + urllib.parse.urlencode(
                 {"query": q, "start": now - 600, "end": now, "step": 60})
@@ -23,5 +23,5 @@ for f in sorted((Path(__file__).resolve().parent / "dashboards").glob("*.json"))
                 status = "ERROR " + json.load(e).get("error", "")[:120]
             if not status.endswith("series"):
                 bad += 1
-            print(f"{f.stem:10} {p['title'][:38]:38} {t['legendFormat'][:22]:22} {status}")
+            print(f"{f.stem:10} {p['title'][:38]:38} {t.get('legendFormat', t['refId'])[:22]:22} {status}")
 sys.exit(1 if bad else 0)

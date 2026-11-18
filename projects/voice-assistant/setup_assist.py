@@ -40,7 +40,6 @@ EXPOSE = {
     "climate.panasonic_ac_panasonic_ac": ["AC", "air conditioner"],
     "scene.ojaswi_sleeping": [],
     "scene.ojaswi_awake": [],
-    "media_player.spotify_pramod": [],
     "todo.shopping_list": [],
 }
 
@@ -60,6 +59,12 @@ UNEXPOSE = [
     "media_player.xero_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast",
     "media_player.realme_x_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast",
     "media_player.pramods_macbook_pro_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast",
+    # Spotify hidden from HA's built-in media commands (user, 2026-11-18): a
+    # bare "resume" picked the bedroom's player whatever the room or the white
+    # noise. Our own sentences (voice_commands.yaml) cover pause/resume/next/
+    # previous/volume with a room guard.
+    "media_player.spotify_pramod",
+    "media_player.raspberrypi_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast",
 ]
 
 # Live Tinxy boards (by one of their entities) -> area.

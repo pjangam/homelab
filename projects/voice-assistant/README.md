@@ -94,6 +94,38 @@ A Wyoming proxy (`stt_fallback.py`) in front of Speech-to-Phrase. Built 2026-11-
 - **Fallback, not parallel** (measured 2026-11-15, `bench_stt_parallel.sh`): starting IndicConformer alongside Speech-to-Phrase on every request saves ~0.6-0.9s on a Marathi miss, but slows **every** English command by ~0.4-0.6s (2 threads) or up to ~1.2s (all 4 cores) on xero's CPU. English commands are far more common, so it stays a fallback. `PARALLEL=1` / `IC_THREADS=2` in the container's environment switch it on if that changes.
 - **Test without HA:** `wyoming_transcribe.py 127.0.0.1:10300 clip.wav` (proxy) vs `127.0.0.1:10301` (Speech-to-Phrase alone).
 
+## Spoken replies and play button (since 2026-11-18)
+
+The satellites have no speaker, so HA's spoken reply goes to the speaker already in each room. Plan, decisions and reviews: `plan-room-replies.md`.
+
+| Piece | Where |
+|---|---|
+| Reply bridge | `voice_reply_mqtt.py` as `voice-reply.service` + an always-running VLC `voice-reply-vlc.service` (systemd --user) on the **Pi** (bedroom, jack) and **xero** (living room, Bluetooth). Install / update: `install_voice_reply.sh pi` / `xero` (run on xero) |
+| HA | `packages/voice_replies.yaml` (helpers, `voice_reply`, `voice_resume`, `voice_start_music`, wake-word pause, event handlers, safety net), `packages/night_quiet.yaml` (night window, shared), `packages/play_button.yaml` |
+| Firmware | `esphome/voice-satellite-common.yaml`: events `esphome.voice_reply {url}`, `voice_tone {gap_ms}`, `voice_end`; play button GPIO23 -> `esphome.play_button` |
+| Gate | `input_boolean.voice_replies_enabled` ("Voice replies" tile, Bedroom view). **Off until both boards are reflashed** - before that nothing resumes music paused at the wake word |
+| Presets | Reply volume tiles: bedroom 93, bedroom at night (22:00-07:00) by ear, living room 35. The Pi's `%` is linear in dB: 40 there is ~-60 dB, inaudible |
+| Health | `binary_sensor.bedroom_voice_replies` / `living_room_voice_replies` (online while VLC answers); `healthcheck.sh` alerts after 15 min off |
+
+How a command goes:
+1. Wake word -> this room's music pauses (`voice_paused_<room>`).
+2. HA runs the command; the board fires `voice_reply` with Piper's URL; the bridge sets the preset, plays it, restores the volume, answers `done`.
+3. `voice_resume` restarts the music (it waits while a reply plays or a new command is under way).
+
+Rules:
+- **Bedroom:** no replies while white noise is on (also "play X" is refused then); at night no tone and the night preset.
+- **No reply when music starts** ("play X", "next song", "resume the music" that worked): the music is the answer. A failure says "Couldn't ...".
+- **Failure tone** (spoke, nothing recognised): only if the speech lasted `voice_tone_min_s`-`voice_tone_max_s` (2-12s); tune on those sliders, no reflash.
+- **Bluetooth not connected** (living room): the reply is dropped, nothing waits.
+- **Play button:** plays the house playlist from its first track in that board's room, every press; 3s per press. Same script as the "Play Bedroom Track" / "Play playlist" tiles.
+
+Test without a satellite (the commands really run):
+- `docker exec mosquitto mosquitto_pub -u ... -t voice_reply/xero/play -m '{"id":"t","sound":"tone","volume":35}'`
+- `say.py living_room "next song"` (HA_TOKEN from `.env.healthcheck`)
+- fire `esphome.play_button` with a board's `device_id` from Developer Tools.
+
+Logs: `journalctl --user -u voice-reply` (xero); `ssh pramod@192.168.1.124 'journalctl _SYSTEMD_USER_UNIT=voice-reply.service'` (Pi).
+
 ## Commands
 
 Built in (HA + Speech-to-Phrase): `turn on/off <name>` for any exposed light,
@@ -110,7 +142,7 @@ Added in `packages/voice_commands.yaml` (sentence-trigger automations):
 Commands to try on either satellite:
 - "Play \<song title\>", "play \<title\> by \<artist\>" or "play the song \<title\>": works for any of your liked songs and the playlists in `PLAYLISTS` (546 songs on 2026-11-07) and plays that exact track - on the Pi's speaker when the bedroom satellite heard it, on xero's otherwise (`SPEAKERS` in `spotify_library.py`). It never searches Spotify, so it can't pick the wrong song.
   - **xero's speaker is Bluetooth (2026-11-14):** before playing there, the automation asks xero over MQTT (`bt_speaker_xero/connect`) to reconnect the speaker and waits up to 25s for the answer; ~5s when it was disconnected. See `projects/spotifyd/README.md`.
-- "Pause the music" or "stop the music"; "resume the music".
+- "Pause the music" or "stop the music"; "resume the music". **Room guard (2026-11-18):** said on a satellite, these and next/previous/volume act only on the music in that room, else "The music is in the bedroom". Only multi-word forms - bare "pause"/"next" wait for a day of debug recordings; Spotify is meant to be hidden from HA's built-ins (open item).
 - "Next song" or "skip this song"; "previous song" (the first time restarts the song, which is Spotify's normal behaviour, so say it twice to go back a song).
 - "Music volume up/down", "turn the music up/down", "set the music volume to 40".
 
@@ -141,6 +173,8 @@ white noise, AC.
 
 ## Files
 
+- `voice_reply_mqtt.py`, `voice-reply.service`, `voice-reply-vlc.service`, `install_voice_reply.sh` - the spoken-reply bridge on the Pi and xero (above).
+- `say.py` - run sentences through HA as a satellite (they really run).
 - `setup_assist.py` - idempotent: which entities are exposed (and the stale
   Tinxy duplicates that are not), aliases, device areas, the Wyoming entry and
   the pipeline's STT. Edit the lists at its top, re-run, then restart

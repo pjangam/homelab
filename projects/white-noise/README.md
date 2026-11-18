@@ -5,6 +5,13 @@ A `sox`-generated brown-noise track for the bedroom, exposed to HA as
 bridge are `systemd --user` units; the physical buttons that also drive it are
 in [`scripts/pi-buttons/`](../../scripts/pi-buttons/README.md).
 
+> **Spoken voice replies share the Pi's volume control (since 2026-11-18):** the
+> reply bridge (`projects/voice-assistant/voice_reply_mqtt.py`) sets `PCM` to a
+> preset for each bedroom reply and restores it. It never plays while
+> `white-noise` is active, activating or deactivating, and if white noise
+> started during a reply it puts PCM at `WHITE_NOISE_LEVEL` instead of the
+> saved level. "Play X" said in the bedroom is refused while white noise is on.
+
 > **Host note:** the service moved from xero to the wol-sender Pi on
 > 2026-09-24 (`deploy_audio_pi.sh`). The walk-through below still describes
 > xero's paths and card numbers - rewriting it for the Pi is step 2 of

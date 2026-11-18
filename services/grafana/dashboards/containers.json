@@ -257,7 +257,7 @@
       "id": 19,
       "type": "timeseries",
       "title": "Container network received (max)",
-      "description": "Host-networked containers (caddy, grafana, homeassistant, node-exporter, prometheus) are left out: cAdvisor reports all of xero's traffic for each of them. Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
+      "description": "Host-networked containers (caddy, grafana, homeassistant, node-exporter, prometheus, syncthing) are left out: cAdvisor reports all of xero's traffic for each of them. Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -328,7 +328,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "(max_over_time(((sum by (name) (irate(container_network_receive_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus\"}[30s])) or sum by (name) (irate(container_network_receive_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_receive_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__interval:5s])) and on (name) topk(8, max_over_time(((sum by (name) (irate(container_network_receive_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus\"}[30s])) or sum by (name) (irate(container_network_receive_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_receive_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__range:1m] @ ${__to:date:seconds}))",
+          "expr": "(max_over_time(((sum by (name) (irate(container_network_receive_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus|syncthing\"}[30s])) or sum by (name) (irate(container_network_receive_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_receive_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__interval:5s])) and on (name) topk(8, max_over_time(((sum by (name) (irate(container_network_receive_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus|syncthing\"}[30s])) or sum by (name) (irate(container_network_receive_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_receive_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__range:1m] @ ${__to:date:seconds}))",
           "legendFormat": "{{name}}"
         }
       ]
@@ -337,7 +337,7 @@
       "id": 20,
       "type": "timeseries",
       "title": "Container network sent (max)",
-      "description": "Host-networked containers (caddy, grafana, homeassistant, node-exporter, prometheus) are left out: cAdvisor reports all of xero's traffic for each of them. Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
+      "description": "Host-networked containers (caddy, grafana, homeassistant, node-exporter, prometheus, syncthing) are left out: cAdvisor reports all of xero's traffic for each of them. Top 8 containers by peak over the selected range; `docker run` one-offs are one line.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -408,7 +408,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "(max_over_time(((sum by (name) (irate(container_network_transmit_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus\"}[30s])) or sum by (name) (irate(container_network_transmit_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_transmit_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__interval:5s])) and on (name) topk(8, max_over_time(((sum by (name) (irate(container_network_transmit_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus\"}[30s])) or sum by (name) (irate(container_network_transmit_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_transmit_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__range:1m] @ ${__to:date:seconds}))",
+          "expr": "(max_over_time(((sum by (name) (irate(container_network_transmit_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus|syncthing\"}[30s])) or sum by (name) (irate(container_network_transmit_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_transmit_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__interval:5s])) and on (name) topk(8, max_over_time(((sum by (name) (irate(container_network_transmit_bytes_total{name!=\"\",name!~\"[a-z]+_[a-z]+|caddy|grafana|homeassistant|node-exporter|prometheus|syncthing\"}[30s])) or sum by (name) (irate(container_network_transmit_bytes_total{name=~\"immich_.+\"}[30s])) or label_replace(sum (irate(container_network_transmit_bytes_total{name=~\"[a-z]+_[a-z]+\",name!~\"immich_.+\"}[30s])), \"name\", \"one-off (docker run)\", \"\", \"\")))[$__range:1m] @ ${__to:date:seconds}))",
           "legendFormat": "{{name}}"
         }
       ]

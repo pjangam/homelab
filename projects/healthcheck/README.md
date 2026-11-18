@@ -9,6 +9,7 @@ What it checks: containers, systemd units, `systemd --user` linger (the gotcha
 that broke white noise), ZFS pool health, disk space, backup freshness, CPU and
 SSD temperature, TLS cert expiry
 ([`projects/certs-backup/check_certs.sh`](../certs-backup/README.md)) and
+whether each room's spoken voice-reply bridge is online (more than 15 min off alerts, [`projects/voice-assistant/`](../voice-assistant/README.md#spoken-replies-and-play-button-since-2026-11-18)), and
 whether the MirAIe AC is actually usable
 ([`projects/miraie-ac/`](../miraie-ac/README.md)) - which it also auto-fixes
 once per outage.

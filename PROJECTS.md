@@ -3404,17 +3404,16 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - [ ] **Together, when Pramod agrees:** turn on HA debug recording for a day (one HA restart) on **both** boards (also unlocks the bare "pause/next/resume" short forms) to hear the tries that came back empty or wrong; turn it off and move the folder out of HOMEASSISTANT_CONFIG after
 - [ ] **Claude:** make `replay_recordings.sh` take the device id (the bedroom's is hard-coded)
 - [ ] **Together, later (idea, 2026-11-18):** next / previous / play-pause buttons on each satellite (GPIO 13, 14, 16 free, no extra parts; one more flash)
-- [ ] **Together, at build time (an evening):** pick the bedroom night reply level by ear on the Pi slider (~75-82; 40 is inaudible)
-- [ ] **Claude, a week after the tone poller starts:** remove its cron line on xero
 - [ ] **Claude:** add `ALIASES` in `spotify_library.py` for the titles that fail
 - [ ] **Pramod:** try Marathi titles by voice in both rooms now that the IndicConformer fallback is live (2026-11-15); `docker logs stt-fallback` shows what it heard
 - [ ] **Pramod:** try "Dumbledore" by voice in both rooms (live next to "Hey Jarvis" since 2026-11-16); `docker logs wake-proxy` shows which word woke it
 - [ ] **Claude, after a week:** count false wakes per word from `docker logs wake-proxy`; drop Dumbledore if it adds many
 - [ ] **Pramod:** check which end (DIN, follow the arrows) of the bedroom strip is wired before connecting it
-- [ ] **Together, when Pramod says go:** build `projects/voice-assistant/plan-room-replies.md` (nine reviews applied, 2026-11-18; ready to build, on hold until Pramod says go): Pi audio test, MQTT reply bridge + VLC, HA scripts, a week of tone calibration, then the reflash - which also brings the play buttons
+- [ ] **Pramod:** on the Mac, build and flash both satellites: `projects/voice-assistant/esphome/build_on_mac.sh` and `build_on_mac.sh living` (spoken-reply events + play button; safe before the button is wired)
+- [ ] **Claude, after the flash:** turn `input_boolean.voice_replies_enabled` on and run the live test in each room (plan step 8)
+- [ ] **Together, an evening:** bedroom night reply level by ear on its tile (78 for now; ~75-82), and hear a bedroom reply next to music and white noise (plan step 0)
 - [ ] **Pramod:** buy two 12mm push buttons for the satellites' play buttons (parts below, "Play button")
 - [ ] **Claude, before the reflash:** wiring guide for the play button (`circuit-diagram`), GPIO23 to GND on both boards
-- [ ] **Claude, when Pramod says go:** "stop white noise" sentences (HA matches them to a lawn mower today) - plan step 1
 - [ ] **Together, a night with white noise on:** 10 x "Hey Jarvis" from the bed to see whether the wake word gets through the hiss (0 of 77 wake-ups in 8 days did)
 - [ ] **Pramod:** decide whether the speaker parts below are still wanted once room replies work
 - [ ] **Pramod:** buy the speaker parts below (local shop first)
@@ -3453,6 +3452,7 @@ qty | item | est | note
 The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satellites have no way to play it, so today a command only shows on the LED. Adding a MAX98357A + small speaker per board gives spoken replies and confirmation tones. It goes on its own I2S bus (the ESP32 has two), not shared with the mic: LRC GPIO26, BCLK GPIO27, DIN GPIO22 - all free and none of them strapping pins - with VIN to 5V, GND, and SD left unconnected (amp on). Firmware: a second `i2s_audio` bus, an `i2s_audio` speaker, and `speaker:` on `voice_assistant`; ESPHome mutes the mic while the reply plays, so the board does not hear itself. Not wired or flashed yet.
 
 #### Log
+- 2026-11-18: **spoken replies built** (all but the flash). Reply bridge + always-running VLC on the Pi and xero (`voice_reply_mqtt.py`, tested: reply, tone, volume restore, bad URL, VLC down, Bluetooth off, white noise on); HA package `voice_replies.yaml` with the gate **off** until the reflash; room guard on the Spotify commands ("The music is in the living room"); no reply when music starts; failed plays say "Couldn't play"; "play X" refused in the bedroom under white noise; Spotify hidden from HA's built-in media commands; "stop white noise" sentences; play button scripts (living-room button tested from track 1); firmware events + GPIO23 button (validated, not flashed); healthcheck; dashboard tiles. Tone range moved to HA sliders (2-12s), so no week of calibration before the flash.
 - 2026-11-18: **room replies: ninth review applied** (3 major: a local record of the started device because HA skips quick Spotify refreshes; night preset 40 is inaudible on the Pi, set by ear instead; new media players are auto-exposed to Assist). Room guard extended to "pause the music" and volume (user). Ready to build.
 - 2026-11-18: **multi-room (Snapcast) plan paused** by the user after its ninth review; findings recorded unapplied at the end of the plan. Room replies' ninth review reported, not yet applied.
 - 2026-11-18: **eighth reviews applied** (15 room replies, 14 multi-room). User decisions: Bluetooth errors are ignored (speaker not connected -> its reply is dropped; no reconnect waits, no phone push), Spotify hidden from HA's built-in voice commands, "play X" refused in the bedroom under white noise, a new action unmutes a hand-muted bedroom, the 60% join volume on every join. Also: one shared `everywhere_bedroom_allowed` test, white-noise off must last 45s, phone-pick guards fixed, rollback keeps the button (`play_button.yaml`). Next: one last review, then build.
@@ -4175,7 +4175,7 @@ qty | item | est | note
 
 #### Open items
 - [ ] **Claude, 2026-11-19:** check the pilot after a day: `tinxy-watchdog` runs every 5 min, history and metrics right, nothing ran twice
-- [ ] **Claude:** phase 1: move the other crontab jobs one at a time (crontab saved to the repo first), scrub/TRIM read from `zpool status`, Grafana "Jobs" dashboard
+- [ ] **Claude:** phase 1: move the other crontab jobs one at a time, scrub/TRIM read from `zpool status`
 - [ ] **Claude:** phase 2: repo-owned long-running `systemd --user` units (allowlist)
 - [ ] **Claude:** phase 3: the Pi: `--collector.textfile.directory` in `deploy_pi.sh` (no sudo), its crontab to timers, `watchdog_nodered.sh` into the repo
 - [ ] **Claude:** phase 4: container jobs: HA backups, automations, recorder purge/DB size; Immich jobs and DB dumps; Pi-hole gravity; Watchtower
@@ -4214,3 +4214,4 @@ qty | item | est | note
 - 2026-11-18: designed with the user; plan written for an architecture review before building.
 - 2026-11-18: architecture review: build after fixes (Pi cannot reach Prometheus, Pi node-exporter has no textfile collector, a broken cron wrapper would stop every job, schedules that differ from their cron line). User chose `systemd --user` timers over the wrapper, kept 8GB retention, all HA job kinds, and moving `watchdog_nodered.sh` into the repo.
 - 2026-11-18 12:29: **pilot live.** `projects/jobs-dashboard/` (`jobs.toml`, `install_jobs.py`, `record_run.sh`, `jobs_collector.py`); `tinxy-watchdog` moved from cron to `job-tinxy-watchdog.timer` (crontab saved first as `crontab.xero.before`), collector every minute into `services/node-exporter/textfile/jobs.prom`. First runs: exit 0, 0.2s CPU, 14MB peak, temps from Prometheus. systemd 255 drops `MemoryPeak` at stop (read in `ExecStopPost` instead) and user units have no io controller (no disk numbers).
+- 2026-11-18 13:50: **Grafana "Jobs" dashboard live** (`https://xero.<tailnet>/grafana/`, uid `jobs`): jobs table (result, last start, duration, p95/max over 60 days, next run, failures in a row, CPU, peak memory, peak CPU and Kingston temperature), duration and failure graphs, CPU and SSD temperature with jobs shaded while they run (only runs over 10s). The collector's `job` label clashed with Prometheus's scrape label, renamed to `name`.

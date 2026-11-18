@@ -263,6 +263,10 @@ blurb = "One broker, and the thing most of the house actually runs on. Not click
     desc = "Not retained. HA's voice play publishes /connect before playing on xero; bt-speaker-mqtt.service (systemd --user on xero) reconnects the Bluetooth speaker and answers connected or unavailable on /state (since 2026-11-14)."
 
     [[group.endpoint.topic]]
+    name = "voice_reply/pi/play, /done, /available; voice_reply/xero/..."
+    desc = "Spoken voice replies on the room speakers (since 2026-11-18). HA's voice_reply script publishes /play {id, url or sound: tone, volume}; voice-reply.service (systemd --user on the Pi = bedroom, on xero = living room, voice_reply_mqtt.py) plays it through an always-running VLC and answers /done {id} for every play, dropped or not. /available is retained (online only while VLC answers, last will offline) and shows in HA as binary_sensor.bedroom_voice_replies / living_room_voice_replies. QoS 0, not retained."
+
+    [[group.endpoint.topic]]
     name = "homelab/wol_pi/state, /available"
     desc = "Retained. The wol Pi's health as one JSON object (under-voltage and throttling flags, kernel under-voltage events, CPU, memory, temperature, disk) every 60s, from pi-health-mqtt.service on the Pi; /available is its last-will. HA shows it as the wol Pi device. CPU, memory and temperature are the p95 and max of per-second samples over the minute (since 2026-10-09)."
 

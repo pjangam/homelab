@@ -1,6 +1,6 @@
 # Plan: spoken replies on the room speakers
 
-**Status:** agreed 2026-11-14; revised 2026-11-15 after an independent review (`architecture-review` agent) and the user's decisions; revised again 2026-11-16 after a second review (15 findings) and a third (14 findings), and 2026-11-17 after a fourth (14 findings), all applied, see the end. 2026-11-17: a physical play button on each satellite added (same reflash). On hold until the user says go. Nothing built yet.
+**Status:** **building since 2026-11-18** (user: build unless a blocker). Done: steps 1-3, 5 (firmware written, not flashed), 7, docs; step 4 replaced by an HA-side tone range (no week of calibration); "Everywhere" branches left out (multi-room paused). Waiting: step 6 (flash both boards from the Mac), then gate on and the live test (step 8); step 0 by ear when the bedroom is free. Agreed 2026-11-14, nine reviews (tables at the end).
 
 ## Why
 

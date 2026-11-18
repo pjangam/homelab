@@ -138,8 +138,10 @@ def collect(host, jobs, now, temps_fn=peak_temps):
         svc = show(f"{unit}.service", SVC_PROPS)
         tmr = show(f"{unit}.timer", ["NextElapseUSecRealtime", "ActiveState"])
         start, end = ts(svc.get("ExecMainStartTimestamp")), ts(svc.get("ExecMainExitTimestamp"))
-        running = svc.get("ActiveState") in ("activating", "deactivating")
-        L = {"job": name}
+        # the collector always finds itself mid-run; counting that would shade every minute
+        running = (svc.get("ActiveState") in ("activating", "deactivating")
+                   and name != "jobs-collector")
+        L = {"name": name}  # not "job": Prometheus uses that for the scrape job
         m("homelab_job_info", "Static facts about a job from jobs.toml (value 1)",
           {**L, "unit": unit, "schedule": j["on_calendar"], "desc": j["desc"], "log": j["log"],
            "timer": tmr.get("ActiveState", "")}, 1)
