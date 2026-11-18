@@ -1,6 +1,6 @@
 # Plan: the same music in the bedroom and the living room, in sync
 
-**Status:** proposed 2026-11-16, feasible; revised the same day after three independent reviews (`architecture-review`, 13 + 9 + 13 findings) and 2026-11-17 after a fourth (12), all applied. To be built later (user, 2026-11-16). Needs **no ESP32 flashing** (the satellites are untouched), so it does not wait for the room-replies reflash. Where it touches `projects/voice-assistant/plan-room-replies.md`, both plans say so.
+**Status:** **paused 2026-11-18 (user)** - eight reviews applied, the ninth's findings recorded at the end but not applied; pick up from there. Proposed 2026-11-16, feasible; revised the same day after three independent reviews (`architecture-review`, 13 + 9 + 13 findings) and 2026-11-17 after a fourth (12), all applied. To be built later (user, 2026-11-16). Needs **no ESP32 flashing** (the satellites are untouched), so it does not wait for the room-replies reflash. Where it touches `projects/voice-assistant/plan-room-replies.md`, both plans say so.
 
 ## Why
 
@@ -316,3 +316,21 @@ WantedBy=default.target
 | 12 | `everywhere_bedroom_quiet` never defined | it is the automation holding the triggers |
 | 13 | "play X everywhere" with Bluetooth down | ignored (user) |
 | 14 | `packages/` path; white-noise README | real path; README row |
+
+## Ninth review (2026-11-18) - NOT applied: plan paused by the user
+
+Apply these first when the plan is picked up again.
+
+| # | Finding | Proposed fix |
+|---|---|---|
+| 1 | PipeWire reuses node ids, so a speaker drop and return between two cron runs looks like no change; snapclient stays on the USB adapter, living room silent | store the sink's `object.serial` (never reused) in `bt-speaker-sink-id` |
+| 2 | no night protection during the build: snapserver gives a new client 100% unmuted; the mute rule only arrives in step 3 | `[streaming_client] initial_volume = 0`; end each build session with the bedroom muted or its snapclient stopped |
+| 3 | `_join_pending` can fire later (after a reply) and reset a raised volume to 60%; a hand unmute never gets 60% | set it only on a real join (`allowed` was off); apply whenever the bedroom ends up unmuted with it on |
+| 4 | "play X everywhere" still waits ~25s for Bluetooth, delaying the bedroom | publish the connect and don't wait |
+| 5 | the "Bedroom joins Everywhere" tile does nothing when switched on by hand | make it read-only (proposed) |
+| 6 | white noise off at 06:59:30 joins the bedroom at 07:00:15 (by the clock) | judge daytime at the switch-off time; proposed: no join until the next daytime action |
+| 7 | built first, its helpers start empty (join volume silent) | set values once after the first load, or hard-code 60 |
+| 8 | `check_spotifyd_advertising.sh`'s 3rd argument is `--remote` | unit as 4th argument or `UNIT=` env |
+| 9 | stale Bluetooth reconnect text in room replies | fix there |
+| 10 | `everywhere_bedroom_quiet` has no mode; 22:00 and `wanted_until` fire together | `mode: queued` |
+| - | covered by tests | `wanted_until` compare as timestamps; two spotifyd advertising; 0.31 client vs 0.27 server; Apollo suspend; snapclient retry log noise; `try-restart` in auto-restart |
