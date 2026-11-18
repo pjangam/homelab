@@ -53,6 +53,22 @@ input_number:
     max: 100
     step: 1
     icon: mdi:account-voice
+  # The failure tone plays only if the speech (the firmware's VAD start ->
+  # end, gap_ms) lasted this long: under ~2s is mostly noise, ~15s is the
+  # detector's timeout (TV, talking). Set once to 2 / 12; tune from the
+  # logbook's voice_tone events without a reflash.
+  voice_tone_min_s:
+    name: Failure tone min speech
+    min: 0
+    max: 15
+    step: 0.5
+    unit_of_measurement: s
+  voice_tone_max_s:
+    name: Failure tone max speech
+    min: 0
+    max: 20
+    step: 0.5
+    unit_of_measurement: s
 
 # Which Spotify device our own commands / the play button last started, and
 # when. HA skips a second Spotify refresh within 10s and Spotcast never
@@ -295,8 +311,14 @@ automation:
         id: end
     variables:
       room: "{{ area_id(trigger.event.data.device_id) }}"
+      gap_s: "{{ (trigger.event.data.gap_ms | default(0) | int(0)) / 1000 }}"
+      tone_ok: >-
+        {{ states('input_number.voice_tone_min_s') | float(2) <= gap_s
+           <= states('input_number.voice_tone_max_s') | float(12) }}
     actions:
-      - if: "{{ trigger.id == 'end' }}"
+      # A tone outside the speech-length range is treated like a false wake:
+      # no sound, just resume.
+      - if: "{{ trigger.id == 'end' or (trigger.id == 'tone' and not tone_ok) }}"
         then:
           - action: script.voice_resume
             data: {room: "{{ room }}"}

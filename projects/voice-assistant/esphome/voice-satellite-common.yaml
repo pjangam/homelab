@@ -53,6 +53,27 @@ microphone:
     bits_per_sample: 32bit
     sample_rate: 16000
 
+# Spoken replies (plan-room-replies.md): the board has no speaker, so it
+# hands the reply to HA as events - not HA actions, so "allow the device to
+# perform Home Assistant actions" stays off; HA adds device_id, which gives
+# the room. esphome.voice_reply {url}: the reply's audio; esphome.voice_tone
+# {gap_ms}: spoke but nothing recognised (HA decides on the soft tone from
+# gap_ms, the speech length, so the range is tuned without a reflash);
+# esphome.voice_end: a run that sent neither (false wake, other errors), so HA
+# resumes the music. on_end follows on_tts_end/on_error at once, hence
+# reply_sent - an unconditional voice_end would resume the music over the
+# reply.
+globals:
+  - id: reply_sent
+    type: bool
+    initial_value: "false"
+  - id: vad_start_ms
+    type: uint32_t
+    initial_value: "0"
+  - id: vad_gap_ms
+    type: uint32_t
+    initial_value: "0"
+
 voice_assistant:
   id: va
   microphone: mic
@@ -61,15 +82,45 @@ voice_assistant:
   auto_gain: 31dBFS
   volume_multiplier: 2.0
   on_wake_word_detected:
+    - lambda: |-
+        id(reply_sent) = false;
+        id(vad_start_ms) = 0;
+        id(vad_gap_ms) = 0;
     - script.execute: show_listening
+  on_stt_vad_start:
+    - lambda: id(vad_start_ms) = millis();
   on_stt_vad_end:
+    - lambda: |-
+        if (id(vad_start_ms) > 0) id(vad_gap_ms) = millis() - id(vad_start_ms);
     - script.execute: show_thinking
+  on_tts_end:
+    - lambda: id(reply_sent) = true;
+    - homeassistant.event:
+        event: esphome.voice_reply
+        data:
+          url: !lambda return x;
   on_intent_end:
     - script.execute: show_done
   on_error:
+    - if:
+        condition:
+          lambda: return code == "stt-no-text-recognized" && id(vad_gap_ms) > 0;
+        then:
+          - lambda: id(reply_sent) = true;
+          - homeassistant.event:
+              event: esphome.voice_tone
+              data:
+                gap_ms: !lambda return to_string(id(vad_gap_ms));
     - script.execute: show_error
   # on_end follows on_error/on_intent_end at once; let their colour finish.
   on_end:
+    - if:
+        condition:
+          lambda: return !id(reply_sent);
+        then:
+          - homeassistant.event:
+              event: esphome.voice_end
+    - lambda: id(reply_sent) = false;
     - if:
         condition:
           not:
@@ -171,3 +222,22 @@ light:
           name: Fast pulse
           transition_length: 300ms
           update_interval: 300ms
+
+# Physical play button (plan-room-replies.md): a 12mm momentary button from
+# GPIO23 to GND, internal pull-up, no resistor. GPIO27 stays free for the
+# satellite-speaker plan's amplifier. A press fires esphome.play_button; HA
+# (packages/play_button.yaml) plays the playlist in this board's room. Safe
+# to flash before the button is wired: the pull-up holds the pin high.
+binary_sensor:
+  - platform: gpio
+    id: play_button
+    name: Play button
+    pin:
+      number: GPIO23
+      mode: INPUT_PULLUP
+      inverted: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      - homeassistant.event:
+          event: esphome.play_button
