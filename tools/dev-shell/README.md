@@ -63,7 +63,8 @@ tools/dev-shell/setup-tmux-shell.sh --picker-only
 
 - **How it fires over ssh:** `TERM_PROGRAM` does not cross ssh, but iTerm's `LC_TERMINAL=iTerm2` does (macOS ssh sends `LC_*`, Ubuntu's sshd accepts it). The picker checks either.
 - **No `s) ssh` there:** a shell with `$SSH_CONNECTION` set hides it, and `s` is refused.
-- **Plain ssh from a non-iTerm terminal** gets no picker (no `LC_TERMINAL`). `NO_TMUX=1` skips it as usual.
+- **Other clients opt in with `LC_TMUX_PICKER=1`.** Plain ssh from a non-iTerm terminal sends no `LC_TERMINAL`, so it gets no picker unless it sends this. `NO_TMUX=1` skips it as usual.
+- **Termius (iPhone):** Host > Edit > Environment Variables > `LC_TMUX_PICKER` = `1` (free since Termius 9.34.8, [docs](https://docs.termius.com/terminal/environment-variables)). Set it on a **separate** host entry from the clawlight one: that host's startup command (`clawlight/phone-attach.sh`) is typed into the shell after login, and the picker would read it as a menu answer.
 
 ## What it does
 

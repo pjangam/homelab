@@ -18,7 +18,7 @@ command -v zsh >/dev/null || { echo "zsh not installed"; exit 2; }
 # unset so sourcing the file does not start the picker itself, and
 # SSH_CONNECTION so the ssh option is offered (a prelude can set it again).
 run() {
-  printf '%b' "$1" | env -u TERM_PROGRAM -u LC_TERMINAL -u SSH_CONNECTION zsh -f -c '
+  printf '%b' "$1" | env -u TERM_PROGRAM -u LC_TERMINAL -u LC_TMUX_PICKER -u SSH_CONNECTION zsh -f -c '
     eval "$1"
     tmux() { case $1 in ls) print "work:2:detached:Thu Sep 10 13:03:01 2026" ;;
                         has-session) return 1 ;;
@@ -57,7 +57,7 @@ check "over ssh, a number still attaches"    '1\n'                 'TMUX attach 
 if command -v tmux >/dev/null; then
   sock="pickertest-$$"
   tmux -L "$sock" -f /dev/null new-session -d -s alpha
-  got=$(printf '\n' | env -u TERM_PROGRAM -u LC_TERMINAL PICKER_SOCK="$sock" zsh -f -c '
+  got=$(printf '\n' | env -u TERM_PROGRAM -u LC_TERMINAL -u LC_TMUX_PICKER PICKER_SOCK="$sock" zsh -f -c '
     tmux() { command tmux -L "$PICKER_SOCK" "$@"; }
     source "$0"; _tmux_session_picker' "$PICKER" 2>&1 \
     | sed "s/\x1b\[[0-9;]*m//g" | grep ' 1) ' || true)

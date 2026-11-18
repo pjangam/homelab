@@ -214,8 +214,10 @@ _tmux_session_picker() {
 }
 
 # TERM_PROGRAM is iTerm's own and does not cross ssh; LC_TERMINAL does.
+# LC_TMUX_PICKER=1 opts any other client in - Termius sets it per host
+# (Host > Environment Variables), and sshd's stock AcceptEnv LC_* lets it in.
 if [[ -o interactive && -t 0 && -z $TMUX && -z $NO_TMUX \
-      && ( $TERM_PROGRAM == "iTerm.app" || $LC_TERMINAL == "iTerm2" ) ]] \
+      && ( $TERM_PROGRAM == "iTerm.app" || $LC_TERMINAL == "iTerm2" || $LC_TMUX_PICKER == 1 ) ]] \
    && (( $+commands[tmux] )); then
   _tmux_session_picker
 fi

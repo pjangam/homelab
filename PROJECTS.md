@@ -1938,6 +1938,7 @@ Plug it in, `systemctl --user enable --now aarti-lights`, turn the four automati
 - 2026-09-12: packaged into this repo so a second machine (or a reinstalled one) gets the same shell without reconstructing it from memory; shipped and verified.
 - 2026-11-04: picker gained `s) ssh` (pramod@xero.local, wol by IP since `wol` does not resolve from the Mac, or `n) new host`), since ssh is the only time a tab skips tmux. `s` used to be an unlisted alias for plain shell. `tools/dev-shell/test_tmux_session_picker.sh` covers the menu.
 - 2026-11-18: picker installed on xero too (`setup-tmux-shell.sh --picker-only`: picker only, no claude wrapper, `~/.tmux.conf` untouched). Fires on an ssh login from iTerm via `LC_TERMINAL=iTerm2` (TERM_PROGRAM does not cross ssh). No `s) ssh` option in a shell that arrived over ssh. Fixed the listing on tmux 3.4, which prints a tab in `-F` output as `_`: fields now split on `:`.
+- 2026-11-18: `LC_TMUX_PICKER=1` opts any other ssh client in (Termius sets it per host; sshd's `AcceptEnv LC_*` passes it). Keep it off the Termius host whose startup command is clawlight's `phone-attach.sh`.
 
 ### spotifyd stopped advertising as a Connect device - boot race, not the old Docker-network bug
 **Status:** Done
