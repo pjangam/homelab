@@ -4167,38 +4167,42 @@ qty | item | est | note
 **Priority:** P2
 
 #### Open items
-- [ ] **Claude:** run `architecture-review` on this plan, then go through its findings with Pramod before building
-- [ ] **Claude:** build phase 1 (xero cron + timers), then 2-4 in order
-- [ ] **Pramod:** deploy the Pi half from a real terminal when phase 3 is ready (sudo over ssh)
+- [ ] **Claude:** phase 1 pilot: `jobs.toml` + generator + collector, move one `*/5` watchdog from cron to a `systemd --user` timer, run it a day
+- [ ] **Claude:** phase 1: move the other crontab jobs one at a time (crontab saved to the repo first), scrub/TRIM read from `zpool status`, Grafana "Jobs" dashboard
+- [ ] **Claude:** phase 2: repo-owned long-running `systemd --user` units (allowlist)
+- [ ] **Claude:** phase 3: the Pi: `--collector.textfile.directory` in `deploy_pi.sh` (no sudo), its crontab to timers, `watchdog_nodered.sh` into the repo
+- [ ] **Claude:** phase 4: container jobs: HA backups, automations, recorder purge/DB size; Immich jobs and DB dumps; Pi-hole gravity; Watchtower
+- [ ] **Claude, when closing:** project README + `Readme.md` index line, `docs/hardware.md` (xero and Pi schedules), `services/grafana/README.md` (retention is ~60 days, not 90), `services/node-exporter/README.md`; fix the crontab comment that puts Watchtower at 04:00 (it runs 09:30 IST)
 
 **Why:** nothing shows in one place what runs on xero and the Pi, when it ran, whether it worked and what it cost. The 2026-11-01 Glacier failure went unseen for a week, and the 2026-11-08 scrub slot was chosen by reading crontabs by hand (user, 2026-11-18: "is there a central dashboard of all jobs/crons running on xero").
 
 #### Decisions (user, 2026-11-18)
-- **Where:** a new "Jobs" dashboard in Grafana, built by `services/grafana/build_dashboards.py` like the others. Prometheus already scrapes xero and the Pi every 5s and keeps 90 days.
-- **Scope:** all four kinds, in this order: xero cron + timers; xero long-running `systemd --user` units; the wol Pi; jobs inside containers.
-- **Alerting:** unchanged for now. The dashboard shows failures; no new central alert.
+- **Where:** a new "Jobs" dashboard in Grafana, built by `services/grafana/build_dashboards.py`.
+- **Scope:** xero cron + timers; xero's repo-owned `systemd --user` units; the wol Pi; jobs inside containers (HA: backups, automations, recorder purge/DB size).
+- **Mechanism: cron jobs move to `systemd --user` timers** (architecture review, 2026-11-18), generated from one `jobs.toml` by an install script. systemd records last/next run, result, CPU and peak memory of the whole process tree; each job gets its own journal; `Persistent=true` catches up runs missed while xero was off (no UPS). Replaces the planned `jobrun` cron wrapper and cron parser.
+- **Alerting:** unchanged for now.
+- **Retention:** Prometheus stays at 8GB, which is about 60 days (not 90).
+- **`watchdog_nodered.sh`** moves from the Pi's home folder into the repo.
 
 #### What each job shows
 | Column | Source |
 |---|---|
-| Schedule in words, next run | collector reads crontab, `/etc/cron.d`, systemd timers (system + user), every minute |
-| Last start, duration, exit code, failures in a row, last success | `jobrun` wrapper on each cron line |
-| Duration p95 and max over 90 days | Prometheus history (percentiles, never averages) |
-| CPU seconds, peak memory, disk read/write | wrapper (`wait4` rusage of the job's process tree) |
-| Peak CPU and SSD temperature during the run | wrapper asks Prometheus for `max_over_time` over the run window at the end |
-| Log file, last error line | wrapper |
+| Schedule, next run | `systemctl --user show` (`NextElapseUSecRealtime`) |
+| Last start, duration, result | `ExecMainStartTimestamp`, `ExecMainExitTimestamp`, `ExecMainStatus`/`Result`; per-job `ok_codes` in `jobs.toml` (MirAIe's exit 2 = skipped) |
+| Duration p95 and max | Prometheus history; p95 only with >= 20 runs in range, else max and last |
+| CPU seconds, peak memory | `CPUUsageNSec`, `MemoryPeak` (work done by `docker exec` is charged to the container) |
+| Peak CPU and SSD temperature during the run | collector on xero asks Prometheus for `max_over_time` over the run window (Prometheus scrapes both hosts, so this covers the Pi too) |
+| Log | the journal unit name, never log text in Prometheus (Grafana is viewable without login) |
 
-For long-running units: active or not, restarts, uptime, CPU and memory (`systemctl --user show`). For container jobs: last success and failures as far as each app exposes them (Immich job API and DB dump files, Pi-hole gravity update, Watchtower).
-
-#### Planned pieces (`projects/jobs-dashboard/`)
-| Piece | Does |
-|---|---|
-| `jobrun` (Python, stdlib) | `jobrun <name> -- <cmd>`: runs the command unchanged (same exit code, output, environment), writes `homelab_job_*` metrics to node-exporter's textfile dir atomically; if the wrapper itself fails, the job still runs |
-| `jobs_collector.py` | every minute: schedules and next run times, `systemd --user` unit state, container job state, as textfile metrics |
-| Grafana "Jobs" dashboard | table of all jobs (failures highlighted), night timeline of runs (overlaps), host CPU and SSD temperature graphs with job-start markers |
-| Pi deploy | the same two scripts on the Pi, into its node-exporter's textfile dir |
-
-**Crontab change:** each line becomes `jobrun <name> -- <script> >> <log>` (one edit); root's `/etc/cron.d` lines (scrub, TRIM) the same or read from `zpool status`.
+#### Traps found by the review (2026-11-18)
+- **Network ordering:** `After=network-online.target` is a no-op in user units; jobs that need the network wait in `ExecStartPre`.
+- **Logs healthcheck reads:** backup-freshness reads `backup.log` lines, so those jobs keep appending there (`StandardOutput=append:`).
+- **flock:** the Glacier job's `flock -n` is unneeded under systemd (a running unit is not started twice).
+- **Scrub/TRIM:** root's `/etc/cron.d` lines start the scrub and return at once; read start/end/errors from `zpool status` instead (no sudo).
+- **Container timezones:** Watchtower and Immich run on UTC (Watchtower's "04:00" is 09:30 IST); Pi-hole's cron is IST.
+- **Pi memory:** 905MB with swap in use, so container jobs are polled every 15 min from file mtimes, not `docker exec` every minute.
+- **Ghost rows:** the collector exports only units in `jobs.toml`; removed jobs disappear.
 
 #### Log
 - 2026-11-18: designed with the user; plan written for an architecture review before building.
+- 2026-11-18: architecture review: build after fixes (Pi cannot reach Prometheus, Pi node-exporter has no textfile collector, a broken cron wrapper would stop every job, schedules that differ from their cron line). User chose `systemd --user` timers over the wrapper, kept 8GB retention, all HA job kinds, and moving `watchdog_nodered.sh` into the repo.
