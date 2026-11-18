@@ -1912,7 +1912,7 @@ Plug it in, `systemctl --user enable --now aarti-lights`, turn the four automati
 
 **Why:** A long Claude Code run in a bare terminal tab dies with the tab (and with any ssh carrying it), and there was no way back to a session you'd lost track of.
 **Outcome:** shipped 2026-09-12 - `tools/dev-shell/setup-tmux-shell.sh`, installing a session picker, tab-completing start directories, `claude` / `claude-local` wrappers and tmux binds from `tools/dev-shell/dotfiles/`. Applied to the MacBook and verified. Run it on any new machine after `new_machine_setup.sh`. Who owns what, the later mouse/copy work and the iTerm settings the script can't set: `tools/dev-shell/README.md`.
-- Left open: the untracked `~/code/personal/scripts/install-tmux-claude.sh` is superseded; delete it.
+- Left for the user (Pramod, optional cleanup): delete the superseded untracked `~/code/personal/scripts/install-tmux-claude.sh` on the MacBook (see "Two installers briefly existed" below).
 
 #### What shipped
 `tools/dev-shell/setup-tmux-shell.sh`, installing three things from `tools/dev-shell/dotfiles/`:
@@ -1937,6 +1937,7 @@ Plug it in, `systemctl --user enable --now aarti-lights`, turn the four automati
 - 2026-09-10/11: built by hand in a `~/code/personal/scripts` session.
 - 2026-09-12: packaged into this repo so a second machine (or a reinstalled one) gets the same shell without reconstructing it from memory; shipped and verified.
 - 2026-11-04: picker gained `s) ssh` (pramod@xero.local, wol by IP since `wol` does not resolve from the Mac, or `n) new host`), since ssh is the only time a tab skips tmux. `s` used to be an unlisted alias for plain shell. `tools/dev-shell/test_tmux_session_picker.sh` covers the menu.
+- 2026-11-18: picker installed on xero too (`setup-tmux-shell.sh --picker-only`: picker only, no claude wrapper, `~/.tmux.conf` untouched). Fires on an ssh login from iTerm via `LC_TERMINAL=iTerm2` (TERM_PROGRAM does not cross ssh). No `s) ssh` option in a shell that arrived over ssh. Fixed the listing on tmux 3.4, which prints a tab in `-F` output as `_`: fields now split on `:`.
 
 ### spotifyd stopped advertising as a Connect device - boot race, not the old Docker-network bug
 **Status:** Done

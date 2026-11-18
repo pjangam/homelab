@@ -49,6 +49,22 @@ With iTerm running, set it in the UI instead - it applies immediately:
 **Settings > Profiles > Terminal > Mouse reporting > [x] Don't report clicks and
 drags**, once per profile you actually use.
 
+### On xero (picker only)
+
+```sh
+tools/dev-shell/setup-tmux-shell.sh --picker-only --dry-run
+tools/dev-shell/setup-tmux-shell.sh --picker-only
+```
+
+| Installs | Leaves alone |
+|---|---|
+| `~/.zsh/functions/tmux-session-picker.zsh` + its `~/.zshrc` block | `claude-tmux.zsh` (xero's `claude()` is clawlight's `claude-tmux-name.zsh`; two `claude()`s fight) |
+| | `~/.tmux.conf`, the legacy-migration pass, an existing claude block |
+
+- **How it fires over ssh:** `TERM_PROGRAM` does not cross ssh, but iTerm's `LC_TERMINAL=iTerm2` does (macOS ssh sends `LC_*`, Ubuntu's sshd accepts it). The picker checks either.
+- **No `s) ssh` there:** a shell with `$SSH_CONNECTION` set hides it, and `s` is refused.
+- **Plain ssh from a non-iTerm terminal** gets no picker (no `LC_TERMINAL`). `NO_TMUX=1` skips it as usual.
+
 ## What it does
 
 - **Session picker.** Runs only for an interactive iTerm shell outside tmux.
@@ -77,6 +93,7 @@ drags**, once per profile you actually use.
   double- or triple-click copies and keeps the scroll position instead of
   jumping to the bottom.
 - **Tab title** is the tmux session (group) name.
+- **The listing splits on `:`, not a tab.** tmux 3.4 (xero) prints a tab in `tmux ls -F` output as `_`, which ran every column into one. Session names cannot hold `:`.
 
 Escape hatches: `NO_TMUX=1` skips the picker; `n` at the claude prompt runs it
 outside tmux.
@@ -128,7 +145,7 @@ offering to save what was typed at `n) new host`.
 | Script | What it checks |
 |---|---|
 | `test_setup_tmux_shell.sh` | the installer, against throwaway `$HOME` files |
-| `test_tmux_session_picker.sh` | what each picker answer does, with `tmux` and `ssh` stubbed |
+| `test_tmux_session_picker.sh` | what each picker answer does, with `tmux` and `ssh` stubbed; plus the listing against a real throwaway tmux server |
 | `test_tmux_copy_mode.sh` | the copy-mode binds in a running tmux server |
 | `test_tmux_altscreen.py` | whether dropping smcup/rmcup keeps tmux off the alternate screen |
 | `probe_tmux_scrollback.py` | why iTerm's own scrollback cannot replace tmux's (DECSTBM scroll region) |

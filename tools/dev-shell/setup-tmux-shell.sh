@@ -4,6 +4,7 @@
 #
 #   tools/dev-shell/setup-tmux-shell.sh --dry-run
 #   tools/dev-shell/setup-tmux-shell.sh
+#   tools/dev-shell/setup-tmux-shell.sh --picker-only   # xero: item 1 and its source line only
 #
 # On a Mac that has no clone of this repo, make a standalone copy with the
 # dotfiles baked into it and carry that one file over instead:
@@ -50,13 +51,22 @@ TMUX_END='# <<< homelab tmux-shell <<<'
 
 dry_run=0
 bundle_to=
-case "${1:-}" in
-  --dry-run) dry_run=1 ;;
-  --bundle)  bundle_to="${2:-./install-tmux-shell.sh}" ;;
-  -h|--help) sed -n '2,36p' "$SELF" | sed 's/^# \{0,1\}//'; exit 0 ;;
-  '') ;;
-  *) printf 'error: unknown argument: %s (try --help)\n' "$1" >&2; exit 2 ;;
-esac
+# --picker-only: the session picker and its ~/.zshrc block, nothing else. For
+# xero, where sessions arrive over ssh from the Mac: the claude wrapper would
+# fight clawlight/claude-tmux-name.zsh's claude() there, and ~/.tmux.conf is
+# left as it is. An existing claude block in ~/.zshrc is kept, not removed.
+picker_only=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run)     dry_run=1 ;;
+    --picker-only) picker_only=1 ;;
+    '') ;;
+    --bundle)      bundle_to="${2:-./install-tmux-shell.sh}"; shift ;;
+    -h|--help) sed -n '2,37p' "$SELF" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) printf 'error: unknown argument: %s (try --help)\n' "$1" >&2; exit 2 ;;
+  esac
+  shift
+done
 
 # The three files this installs normally live in tools/dev-shell/dotfiles/ next to the script.
 # A bundle (--bundle) has them appended to itself instead, one payload section
@@ -208,7 +218,7 @@ say
 
 say "1. shell functions"
 write_file "$FUNC_DIR/tmux-session-picker.zsh" "$(dotfile zsh/tmux-session-picker.zsh)" zsh
-write_file "$FUNC_DIR/claude-tmux.zsh"         "$(dotfile zsh/claude-tmux.zsh)" zsh
+[ "$picker_only" = 1 ] || write_file "$FUNC_DIR/claude-tmux.zsh" "$(dotfile zsh/claude-tmux.zsh)" zsh
 
 # Its guard file is now dead weight - claude-tmux.zsh replaces it, and its
 # source line was just stripped above.
@@ -229,11 +239,15 @@ say "2. $ZSHRC"
 # sed drops leading blank lines: the block template supplies its own blank
 # separator, and without this a re-run would grow one more every time.
 body="$(strip_block "$PICKER_BEGIN" "$PICKER_END" < "$ZSHRC" \
-        | strip_block "$CLAUDE_BEGIN" "$CLAUDE_END" \
+        | { if [ "$picker_only" = 1 ]; then cat; else strip_block "$CLAUDE_BEGIN" "$CLAUDE_END"; fi; } \
         | strip_foreign \
         | sed '/./,$!d')"
 
-if legacy_is_removable "$ZSHRC"; then
+# --picker-only leaves the legacy pass out: what it strips (claude wrappers, the
+# mouse-clicks export) is only replaced by claude-tmux.zsh, which it skips.
+if [ "$picker_only" = 1 ]; then
+  :
+elif legacy_is_removable "$ZSHRC"; then
   body="$(printf '%s\n' "$body" | strip_legacy)"
 else
   warn "found _tmux_or_ask() in $ZSHRC but not the end of claude-local() - leaving it alone."
@@ -248,7 +262,8 @@ zshrc_new="$PICKER_BEGIN
 $PICKER_END
 
 $body
-
+"
+[ "$picker_only" = 1 ] || zshrc_new="$zshrc_new
 $CLAUDE_BEGIN
 # \`claude\` / \`claude-local\` wrappers that ask before running outside tmux.
 # Managed by tools/dev-shell/setup-tmux-shell.sh in the homelab repo; edits here are lost.
@@ -257,6 +272,10 @@ $CLAUDE_END
 "
 write_file "$ZSHRC" "$zshrc_new" zsh
 
+if [ "$picker_only" = 1 ]; then
+  say
+  say "3. $TMUX_CONF: left alone (--picker-only)"
+else
 say
 say "3. $TMUX_CONF"
 tmux_body=""
@@ -275,6 +294,7 @@ $(dotfile tmux/tmux.conf)
 $TMUX_END
 "
 write_file "$TMUX_CONF" "$tmux_new"
+fi
 
 say
 if [ "$dry_run" = 1 ]; then
@@ -288,7 +308,9 @@ if command -v zsh >/dev/null 2>&1; then
   zsh -n "$ZSHRC" && say "zsh -n $ZSHRC: OK"
 fi
 
-command -v tmux >/dev/null 2>&1 && tmux source-file "$TMUX_CONF" 2>/dev/null && say "reloaded $TMUX_CONF into the running tmux server"
+if [ "$picker_only" = 0 ] && command -v tmux >/dev/null 2>&1 && tmux source-file "$TMUX_CONF" 2>/dev/null; then
+  say "reloaded $TMUX_CONF into the running tmux server"
+fi
 
 say
 say "done. Open a new iTerm tab to get the session picker."

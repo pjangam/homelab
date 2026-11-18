@@ -157,6 +157,23 @@ check "no functions installed" $([ ! -d "$D/functions" ]; echo $?)
 check "no tmux.conf created"   $([ ! -f "$D/tmux.conf" ]; echo $?)
 check "says what it would do"  $(grep -q 'would write' "$D/out"; echo $?)
 
+echo "== --picker-only installs the picker and nothing else (xero) =="
+P="$SANDBOX/picker-only"; mkdir -p "$P"
+printf 'export KEEP_ME=1\nexport CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1\nsource ~/code/homelab/clawlight/claude-tmux-name.zsh\n' > "$P/zshrc"
+printf 'set -g mouse on\n' > "$P/tmux.conf"
+run "$P" --picker-only; check "exits 0" $?
+check "picker installed"        $([ -f "$P/functions/tmux-session-picker.zsh" ]; echo $?)
+check "no wrappers installed"   $([ ! -f "$P/functions/claude-tmux.zsh" ]; echo $?)
+check_count "picker sourced once"   "$P/zshrc" 'tmux-session-picker.zsh' 1
+check "picker block is first line" $([ "$(head -1 "$P/zshrc")" = '# >>> homelab tmux-shell: session picker >>>' ]; echo $?)
+check_count "wrappers not sourced"  "$P/zshrc" 'claude-tmux.zsh' 0
+check_count "clawlight claude() kept" "$P/zshrc" 'claude-tmux-name.zsh' 1
+check_count "unrelated line kept"   "$P/zshrc" '^export KEEP_ME=1$' 1
+check_count "mouse export kept"     "$P/zshrc" 'CLAUDE_CODE_DISABLE_MOUSE_CLICKS' 1
+check "tmux.conf untouched"     $([ "$(cat "$P/tmux.conf")" = 'set -g mouse on' ]; echo $?)
+again=$(cat "$P/zshrc"); run "$P" --picker-only
+check "re-run is a no-op" $([ "$again" = "$(cat "$P/zshrc")" ]; echo $?)
+
 echo "== refuses to write a zshrc that would not parse =="
 F="$SANDBOX/broken-zsh"; mkdir -p "$F"
 printf 'if [ -z "$FOO" ]; then\n  echo unterminated\n' > "$F/zshrc"
