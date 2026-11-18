@@ -457,6 +457,23 @@ case "$wol_pi_uv" in
     problems+=("📡 wol Pi not reporting ($wol_pi_uv)"$'\n'"  off the network or pi-health-mqtt stopped: ssh pramod@192.168.1.124 'systemctl --user status pi-health-mqtt'") ;;
 esac
 
+# Spoken voice replies (projects/voice-assistant/voice_reply_mqtt.py): each
+# room's bridge publishes online only while its VLC answers, with a last
+# will offline. Off for more than 15 min (HA's own last_changed, no state
+# file) means replies in that room are silently dropped.
+for vr in "bedroom|pi|ssh pramod@192.168.1.124 'journalctl _SYSTEMD_USER_UNIT=voice-reply.service | tail'" \
+          "living_room|xero|journalctl --user -u voice-reply -u voice-reply-vlc | tail"; do
+  vr_room=${vr%%|*}; vr_rest=${vr#*|}; vr_host=${vr_rest%%|*}; vr_logs=${vr_rest#*|}
+  vr_json=$(curl -s --max-time 10 -H "Authorization: Bearer $HA_TOKEN" \
+    "http://localhost:8123/api/states/binary_sensor.${vr_room}_voice_replies")
+  vr_state=$(jq -r '.state // empty' <<<"$vr_json" 2>/dev/null)
+  [ -n "$vr_state" ] && [ "$vr_state" != on ] || continue
+  vr_since=$(date -d "$(jq -r '.last_changed' <<<"$vr_json")" +%s 2>/dev/null) || continue
+  if (( $(date +%s) - vr_since > 900 )); then
+    problems+=("🗣️ ${vr_room/_/ } voice replies offline since $(date -d "@$vr_since" '+%H:%M') ($vr_state)"$'\n'"  the reply bridge or its VLC on $vr_host is down, replies there are dropped: $vr_logs")
+  fi
+done
+
 # xero CPU temperature. On 2026-10-08 memtest86+ hit 103°C (TjMax 105) with
 # xero's fan side against the Skadis pegboard, and flipped a RAM bit there;
 # the same run in open air peaked at 86°C and was clean. Heat may also be
