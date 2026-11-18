@@ -1,8 +1,8 @@
 # USB charge switch (relay): ATtiny85 + current sensor to stop charging when full
 **Status:** Backlog
 **Priority:** P3
-**Cost:** ?
-**Effort:** ?
+**Cost:** ₹700-1,100
+**Effort:** ~2-3 evenings (5-8h)
 
 #### Open items
 - [ ] **Pramod:** source the ATtiny85 parts (option "Board: ATtiny85 (Digispark)" in the parts block) plus the shared parts and the relay
@@ -11,6 +11,9 @@
 - [ ] **Together, at the bench:** measure the speaker's "full" current with the USB tester, then fix the threshold in the firmware
 
 **Why:** the Portronics Apollo One (xero's Bluetooth speaker since 2026-11-14) stays on its charger, and a Li-ion battery held at 100% ages faster. Neither the speaker nor its Bluetooth link reports a battery level (checked from xero, the phone and the MacBook on 2026-11-14), so a plain timer or a smart plug can only guess when it is full. Building it on the 5V USB side, not as a mains plug, keeps it away from 230V.
+
+#### Related entries
+- **"On-demand Bluetooth for xero's speaker (after the servo)"** ([`bt-speaker-on-demand.md`](bt-speaker-on-demand.md)) - same speaker; once built, the speaker is powered off when idle, so its draw is not always the "running" draw this entry's threshold assumes. Builds after "Speaker power slider: servo" ([`speaker-power-servo.md`](speaker-power-servo.md)), which this box could drive.
 
 #### Design
 ```
@@ -59,3 +62,4 @@ qty | item | est | note
 - 2026-11-16: board options compared: ATtiny85 (no Wi-Fi, needs a programmer, reflash to tune) vs ESP32-C3 SuperMini vs Wemos D1 mini. Decided the charge logic runs standalone on the board, Wi-Fi only for debugging (user). Recommended the C3 anyway: same price class, USB-C flashing with the existing ESPHome setup, tuning without reflashing.
 - 2026-11-16: **trying the ATtiny85 this time** (user): Digispark board, no Wi-Fi; restarts charging on its own timer (~48h, internal clock ±10% is fine) or the button. Added to the parts block as a board option; user sources parts before any code.
 - 2026-11-16: split in two (user): this entry is the **relay** build, done first; the P-channel MOSFET (AO3401) build is a separate entry for later. Renamed from "USB charge switch: ESP32 + current sensor to stop charging when full"; MOSFET option moved out of the parts block.
+- 2026-11-18: budget filled in (the commit hook needs one on a touched open file): Cost is the parts block summed with the Digispark option (estimates; ~₹130 more with the C3), Effort a rough guess for firmware, wiring and threshold tuning. Cross-linked "On-demand Bluetooth for xero's speaker (after the servo)".

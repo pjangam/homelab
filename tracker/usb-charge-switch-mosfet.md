@@ -12,6 +12,9 @@
 **Why:** the silent version of "USB charge switch (relay): ATtiny85 + current sensor to stop charging when full". Split out on 2026-11-16 (user): "we will do relay for now, might try P-channel MOSFET (AO3401) later". It waits because the relay build comes first, not because anything blocks it.
 **State:** idea, design decided in conversation 2026-11-16. Nothing bought. Everything except the switch is shared with the relay entry - read that one for the speaker logic, the threshold trap, the board choice and the phone notes.
 
+#### Related entries
+- **"On-demand Bluetooth for xero's speaker (after the servo)"** ([`bt-speaker-on-demand.md`](bt-speaker-on-demand.md)) - same speaker; once built, the speaker is powered off when idle, so its draw is not always the "running" draw this entry's threshold assumes. Builds after "Speaker power slider: servo" ([`speaker-power-servo.md`](speaker-power-servo.md)), which this box could drive.
+
 #### What is the same as the relay build
 - USB-A in and out, 5V only; INA219 high-side; Digispark ATtiny85, standalone logic, no Wi-Fi.
 - Logic: charge on power-up; off when current stays under the threshold for 5 min; restart after ~48h or a button press.
@@ -75,3 +78,4 @@ qty | item | est | note
 
 #### Log
 - 2026-11-16: split from the relay entry (user): relay first, this one to try later. Recorded the high-side AO3401 design and found the Digispark pin trap (zener-clamped USB pins, LED on PB1).
+- 2026-11-18: cross-linked "On-demand Bluetooth for xero's speaker (after the servo)".

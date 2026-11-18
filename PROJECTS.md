@@ -27,7 +27,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (36) · 31 unbudgeted
+## 💡 Backlog ideas (37) · 30 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -55,6 +55,7 @@
 | [Move WoL to an ESP32, put the Pi on the UPS (post-Ganapati)](tracker/wol-to-esp32.md) | P3 | ? | ? |
 | [Network device + access map](tracker/network-map.md) | P3 | ? | ? |
 | [Old duplicity backup in Google Drive - keep or delete](tracker/old-duplicity-backup.md) | P3 | ? | ? |
+| [On-demand Bluetooth for xero's speaker (after the servo)](tracker/bt-speaker-on-demand.md) | P3 | ₹0 | ~1 evening (3-4h), after the servo build |
 | [Pi audio move follow-ups: monitoring, xero cleanup, then xero to the router](tracker/pi-audio-move-followups.md) | P3 | ? | ? |
 | [Pigeon deterrent - motion-triggered sprinkler (balcony railing/parapet)](tracker/pigeon-deterrent.md) | P3 | ? | ? |
 | [Remote control for scenes/scripts (Spotify, white noise, etc.)](tracker/scene-remote.md) | P3 | ? | ? |
@@ -63,7 +64,7 @@
 | [Speaker power slider: servo to switch the Apollo One on and off](tracker/speaker-power-servo.md) | P3 | ₹200-300 | ~2-3 evenings (4-7h) |
 | [Tinxy: remove stale/decommissioned devices from account](tracker/tinxy-stale-devices.md) | P3 | ? | ? |
 | [USB charge switch (MOSFET): ATtiny85 + current sensor, silent P-channel switch](tracker/usb-charge-switch-mosfet.md) | P3 | ₹50-100 | ~1 evening (2-3h), after the relay build |
-| [USB charge switch (relay): ATtiny85 + current sensor to stop charging when full](tracker/usb-charge-switch-relay.md) | P3 | ? | ? |
+| [USB charge switch (relay): ATtiny85 + current sensor to stop charging when full](tracker/usb-charge-switch-relay.md) | P3 | ₹700-1,100 | ~2-3 evenings (5-8h) |
 | [WiFi-synced analog clock (ESP32 retrofit of a quartz movement)](tracker/wifi-analog-clock.md) | P3 | ? | ? |
 | [Wired Ethernet dongle for the MacBooks](tracker/macbook-ethernet-dongle.md) | P3 | ? | ? |
 | [Workbench stock: jumper wires and project boxes](tracker/workbench-stock.md) | P3 | ? | ? |
