@@ -3403,6 +3403,7 @@ Everything is off-the-shelf: setup only, no code to maintain.
 - [ ] **Pramod:** say whether "aggobai dhaggobai" was the try heard as "azad", "chali" or "kaun" on 2026-11-13 (bedroom)
 - [ ] **Together, when Pramod agrees:** turn on HA debug recording for a day (one HA restart) on **both** boards (also unlocks the bare "pause/next/resume" short forms) to hear the tries that came back empty or wrong; turn it off and move the folder out of HOMEASSISTANT_CONFIG after
 - [ ] **Claude:** make `replay_recordings.sh` take the device id (the bedroom's is hard-coded)
+- [ ] **Together, later (idea, 2026-11-18):** next / previous / play-pause buttons on each satellite (GPIO 13, 14, 16 free, no extra parts; one more flash)
 - [ ] **Together, at build time (an evening):** pick the bedroom night reply level by ear on the Pi slider (~75-82; 40 is inaudible)
 - [ ] **Claude, a week after the tone poller starts:** remove its cron line on xero
 - [ ] **Claude:** add `ALIASES` in `spotify_library.py` for the titles that fail
