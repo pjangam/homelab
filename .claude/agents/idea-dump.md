@@ -79,6 +79,13 @@ These recur, and an entry that ignores them gets rebuilt later:
 
 ## 4. Write the file in the house format
 
+**If the caller says the file already exists**, update it in place under its
+existing slug - never a second file - and bring the whole file to this format,
+not only the parts you touch: house format is part of the job, not optional
+polish (user, 2026-11-18). Check it with
+`tools/repo-tools/check_open_items.sh --staged` before committing; the commit
+should pass without the hook having to fix anything.
+
 Create `tracker/<slug>.md` - format and rules in `tracker/README.md`. The slug
 is short, lowercase-with-dashes, and names the thing, not its state (titles
 change; the file name never does). Match the existing files: bold lead-ins,
