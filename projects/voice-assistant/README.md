@@ -117,6 +117,7 @@ Rules:
 - **No reply when music starts** ("play X", "next song", "resume the music" that worked): the music is the answer. A failure says "Couldn't ...".
 - **Failure tone** (spoke, nothing recognised): only if the speech lasted `voice_tone_min_s`-`voice_tone_max_s` (2-12s); tune on those sliders, no reflash.
 - **Bluetooth not connected** (living room): the reply is dropped, nothing waits.
+- **"Done" instead of HA's chime** (since 2026-11-18): when every device a command touched is in the satellite's room, HA sends its acknowledge chime instead of the answer (hard-coded in `assist_pipeline`, no setting). The bridge spots the chime by its hash and plays `done.mp3` ("Done.", Piper lessac) instead. An HA update that changes `acknowledge.mp3` brings the chime back: add its hash to `ACK_SHA256`.
 - **Short replies clipped to a blip** (living room, fixed 2026-11-18): the Bluetooth speaker drops the start of a sound after a quiet spell. On xero the bridge plays `~/.local/state/voice-reply/lead-in.wav` (0.8s of faint noise) before every reply and tone; xero's WirePlumber also never suspends the output (`projects/spotifyd/install_wireplumber_bt.sh`).
 - **Play button:** plays the house playlist from its first track in that board's room, every press; 3s per press. Same script as the "Play Bedroom Track" / "Play playlist" tiles.
 

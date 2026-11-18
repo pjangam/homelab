@@ -33,7 +33,7 @@ VLC_OUTPUT=--aout=alsa --alsa-audio-device=default:CARD=Headphones
 VOICE_REPLY_AMIXER=-c Headphones
 VOICE_REPLY_CONTROL=PCM'
     ssh "$PI" "mkdir -p $PI_ROOT/projects/voice-assistant ~/.config/systemd/user"
-    scp -q "$HERE/voice_reply_mqtt.py" "$PI:$PI_ROOT/projects/voice-assistant/"
+    scp -q "$HERE/voice_reply_mqtt.py" "$HERE/done.mp3" "$PI:$PI_ROOT/projects/voice-assistant/"
     scp -q "$HERE/voice-reply-vlc.service" "$PI:.config/systemd/user/"
     sed "s#REPO_DIR#$PI_ROOT#g" "$HERE/voice-reply.service" | ssh "$PI" "cat > .config/systemd/user/voice-reply.service"
     printf '%s\n' "$ENV" | ssh "$PI" "cat > .config/voice-reply.env"

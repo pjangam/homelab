@@ -29,6 +29,7 @@ Per play:
 Also: retained voice_reply/<host>/available (online only while VLC answers,
 last will offline) + MQTT discovery binary_sensor.voice_reply_<host>.
 """
+import hashlib
 import json
 import math
 import os
@@ -53,6 +54,14 @@ SOCK = RUN / "voice-reply.sock"
 STATE = Path.home() / ".local/state/voice-reply"
 SAVED = STATE / "saved-volume.json"
 TONE = STATE / "tone.wav"
+# HA plays its acknowledge chime instead of the spoken answer when every
+# device a command touched is in the satellite's room (assist_pipeline,
+# acknowledge.mp3; no setting to turn it off). The user wants an answer
+# spoken (2026-11-18): the chime is swapped for done.mp3 ("Done.", Piper
+# lessac like the replies). Matched by HA's file hash - an HA update that
+# changes acknowledge.mp3 brings the chime back; add the new hash here.
+ACK_SHA256 = {"88762f0f72e04bab3b545d4852d0badd017bb4a8799cc4f3ef0cb4fc8e7ecdae"}
+DONE = Path(__file__).resolve().parent / "done.mp3"
 LEAD = STATE / "lead-in.wav"  # xero: played before each sound, see make_lead
 # Which mixer the preset goes to: the same control as the room's volume slider
 # (volume-mqtt). Pi: -c Headphones PCM (its default card is HDMI). xero:
@@ -273,7 +282,10 @@ def play(url, volume):
     if url:
         path = RUN / "voice-reply.mp3"
         with urllib.request.urlopen(url, timeout=5) as r:
-            path.write_bytes(r.read())
+            data = r.read()
+        if hashlib.sha256(data).hexdigest() in ACK_SHA256 and DONE.exists():
+            data = DONE.read_bytes()
+        path.write_bytes(data)
     else:
         path = TONE
     if volume is not None:
