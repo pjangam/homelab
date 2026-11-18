@@ -28,6 +28,7 @@ and there is no storage cap. Why it was picked over the alternatives:
 | file | what |
 |---|---|
 | `configure.sh` | puts xero's Syncthing into the settled config (options, GUI login, the folder, `.stignore`). Idempotent. |
+| `prune_heic_dupes.sh` | moves every HEIC in Documents that has a same-name JPG into `.stversions/` (restorable on xero; the removal syncs everywhere). Dry run by default, `--apply` to act. First run 2026-11-19: 12 files. |
 
 ## Setup / after a change
 
