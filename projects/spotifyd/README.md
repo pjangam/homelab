@@ -37,10 +37,11 @@ Install on xero (already done 2026-11-14):
 1. `bluetoothctl pair 0D:67:1F:80:92:22 && bluetoothctl trust 0D:67:1F:80:92:22` (speaker on, in Bluetooth mode)
 2. `crontab -e`: `* * * * * /home/pramod/code/homelab/projects/spotifyd/bt_speaker_reconnect.sh >> /home/pramod/code/homelab/bt-speaker-reconnect.log 2>&1`
 3. `cp projects/spotifyd/bt-speaker-mqtt.service ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now bt-speaker-mqtt`
-4. `projects/spotifyd/install_wireplumber_bt.sh` (since 2026-11-18): turns off WirePlumber's `with-logind`, so Bluetooth audio stays up with nobody logged in
+4. `projects/spotifyd/install_wireplumber_bt.sh` (since 2026-11-18): turns off WirePlumber's `with-logind`, so Bluetooth audio stays up with nobody logged in, and never suspends the speaker's output
 
 Traps:
 - **WirePlumber dropped Bluetooth at every ssh logout** (until 2026-11-18): with `with-logind` on (the default) it runs the Bluetooth monitor only while a login session is active. The speaker "kept disconnecting" and only came back at the next ssh login; reconnect tries failed with `a2dp-sink profile connect failed ... Protocol not available`, and a voice "play" started music with no speaker. Fixed by step 4.
+- **Short sounds were swallowed** (until 2026-11-18): PipeWire suspends an idle sink after 5s, and waking the Bluetooth stream ate the first ~1-2s, so a spoken reply came out as a blip. Step 4's file also sets `session.suspend-timeout-seconds = 0` on `bluez_output.*`. Check: `pw-dump <sink id> | grep '"state"'` reads `idle` (not `suspended`) after the first sound.
 - **`bluetoothctl --timeout N connect` always takes N seconds**, even after connecting. The script polls `bluetoothctl info` instead; with the timeout a voice "play" took 20s, now ~5s.
 - **cron has no session env**: `wpctl` needs `XDG_RUNTIME_DIR`, which the script sets.
 - **One source at a time**: while xero holds the speaker, the phone cannot pair to it directly. Play to `xero` from the Spotify app instead.
