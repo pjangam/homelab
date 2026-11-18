@@ -1,8 +1,8 @@
 # Move WoL to an ESP32, put the Pi on the UPS (post-Ganapati)
 **Status:** Backlog
 **Priority:** P3
-**Cost:** ?
-**Effort:** ?
+**Cost:** ₹0-500 (₹0 on the bedroom satellite; a dedicated ESP32 otherwise)
+**Effort:** ~1-2 evenings (firmware with the WiFi-wait fix, an outage test)
 
 #### Open items
 - [ ] **Together:** in the next real outage (or by switching off the extender and xero's UPS input), check whether the Pi's spot can still reach xero
@@ -49,3 +49,4 @@ qty | item | est | note
 #### Log
 - 2026-08-01: `esp32/wol_on_boot/wol_on_boot.ino` written for this, before the Pi stood in.
 - 2026-09-16: idea noted, for after Ganapati.
+- 2026-11-18: candidate board: the bedroom voice satellite (on mains, moving next to the bed; ESPHome `wake_on_lan`, wait for WiFi with no timeout). Either replacing the Pi's WoL or as a second sender. Raised in the `scene-remote.md` brainstorm; nothing decided.

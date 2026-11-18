@@ -5,6 +5,7 @@
 **Effort:** ~2 evenings (4-6h)
 
 #### Open items
+- [ ] **Pramod:** decide where the SHT40 lives: the Pi (leaning, 2026-11-18: pins 3/5, I2C on, small MQTT script like pi-health) or the bedroom satellite (firmware already written; it frees GPIO19/21 for `scene-remote.md` if it goes to the Pi)
 - [ ] **Pramod:** wire the SHT40 to the bedroom satellite on a ~30cm lead: VIN->3V3, GND->GND, SDA->GPIO21, SCL->GPIO19, sensor outside the box
 - [ ] **Pramod:** flash the bedroom satellite (OTA to .125, built on the Mac with `build_on_mac.sh`); this flash also carries the pending play-button/voice-reply firmware and the extender-first WiFi
 - [ ] **Claude:** once it reads, check `sensor.voice_satellite_bedroom_temperature`/`_humidity` in HA and add both to the Bedroom dashboard view
@@ -62,3 +63,4 @@ qty | item | est | note
 - 2026-10-17: host board back to the bedroom voice satellite (SDA GPIO21 / SCL GPIO19, sensor on a lead outside its box); no new ESP32.
 - 2026-11-18: SHT40 arrived (user). Started as record-only: `sht4x` block (60s, heater off) added to `voice-satellite.yaml` (bedroom board only) on I2C SDA21/SCL19, config validated; not wired or flashed yet. Automations deferred until there is data.
 - 2026-11-18: same pending flash: bedroom satellite now prefers the extender `dlink_pramod_bed_room`, router as fallback (it only knew the router before), plus `WiFi network` / `WiFi access point` / `WiFi signal` diagnostics. `wifi_ssid_bedroom` copied into the voice-assistant `secrets.yaml` on xero (the Mac build pulls it from there).
+- 2026-11-18: board reopened (user): the Pi is in the bedroom too (on its pegboard, not near xero), and the satellite is filling with buttons (`scene-remote.md`), so the Pi is now the leaning choice. The satellite's `sht4x` block stays until decided; harmless if flashed unwired.

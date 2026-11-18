@@ -28,7 +28,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (36) · 30 unbudgeted
+## 💡 Backlog ideas (36) · 28 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -37,6 +37,7 @@
 | [xero cooling on the Skadis pegboard](tracker/xero-pegboard-cooling.md) | P2 | ? | ? |
 | [Automatic pour-over coffee (dose by weight, timed spiral pour, bell at the end)](tracker/pour-over-coffee.md) | P3 | ₹3,500-6,500 | ~4-6 weekends (30-45h) |
 | [Backup restore drill](tracker/backup-restore-drill.md) | P3 | ? | ? |
+| [Bedroom remote and satellite buttons (media, volume, white noise, oju sleep, talk)](tracker/scene-remote.md) | P3 | ₹200-1,600 (₹200-300 for the wired buttons; the Fire TV remote rebuild is the rest) | ~2 evenings + 1-2 weekends (wired buttons 2 evenings; remote 1-2 weekends) |
 | [Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance](tracker/hub75-wall-display.md) | P3 | ? | ? |
 | [Charge-limit the baby monitor iPhone SE with the smart plug](tracker/baby-monitor-charge-limit.md) | P3 | ? | ? |
 | [Clawlight small low-power display (reuse of the Pi clock screensaver)](tracker/clawlight-small-display.md) | P3 | ? | ? |
@@ -52,13 +53,12 @@
 | [Minecraft server on xero (family world, local and over Tailscale)](tracker/minecraft-server.md) | P3 | ₹0 | ~2 evenings (4-6h) |
 | [Miraie AC self-healing](tracker/miraie-ac-self-healing.md) | P3 | ? | ? |
 | [Move the Airtel router to a central spot (retire the Wi-Fi extender)](tracker/router-central-spot.md) | P3 | ? | ? |
-| [Move WoL to an ESP32, put the Pi on the UPS (post-Ganapati)](tracker/wol-to-esp32.md) | P3 | ? | ? |
+| [Move WoL to an ESP32, put the Pi on the UPS (post-Ganapati)](tracker/wol-to-esp32.md) | P3 | ₹0-500 (₹0 on the bedroom satellite; a dedicated ESP32 otherwise) | ~1-2 evenings (firmware with the WiFi-wait fix, an outage test) |
 | [Network device + access map](tracker/network-map.md) | P3 | ? | ? |
 | [Old duplicity backup in Google Drive - keep or delete](tracker/old-duplicity-backup.md) | P3 | ? | ? |
 | [On-demand Bluetooth for xero's speaker (after the servo)](tracker/bt-speaker-on-demand.md) | P3 | ₹0 | ~1 evening (3-4h), after the servo build |
 | [Pi audio move follow-ups: monitoring, xero cleanup, then xero to the router](tracker/pi-audio-move-followups.md) | P3 | ? | ? |
 | [Pigeon deterrent - motion-triggered sprinkler (balcony railing/parapet)](tracker/pigeon-deterrent.md) | P3 | ? | ? |
-| [Remote control for scenes/scripts (Spotify, white noise, etc.)](tracker/scene-remote.md) | P3 | ? | ? |
 | [Replace Alfred Camera with a free, local baby monitor on the iPhone SE](tracker/baby-monitor-local.md) | P3 | ? | ? |
 | [Shopping list display (touchscreen e-ink)](tracker/shopping-list-display.md) | P3 | ? | ? |
 | [Speaker power slider: servo to switch the Apollo One on and off](tracker/speaker-power-servo.md) | P3 | ₹200-300 | ~2-3 evenings (4-7h) |

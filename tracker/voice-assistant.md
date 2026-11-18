@@ -9,7 +9,7 @@
 - [ ] **Pramod:** say whether "aggobai dhaggobai" was the try heard as "azad", "chali" or "kaun" on 2026-11-13 (bedroom)
 - [ ] **Together, when Pramod agrees:** turn on HA debug recording for a day (one HA restart) on **both** boards (also unlocks the bare "pause/next/resume" short forms) to hear the tries that came back empty or wrong; turn it off and move the folder out of HOMEASSISTANT_CONFIG after
 - [ ] **Claude:** make `replay_recordings.sh` take the device id (the bedroom's is hard-coded)
-- [ ] **Together, later (idea, 2026-11-18):** next / previous / play-pause buttons on each satellite (GPIO 13, 14, 16 free, no extra parts; one more flash)
+- [ ] **Together, later (idea, 2026-11-18):** next / previous / play-pause buttons on each satellite - planned in `scene-remote.md` (play 23, prev 13, next 14; GPIO16 now goes to white noise start)
 - [ ] **Claude:** add `ALIASES` in `spotify_library.py` for the titles that fail
 - [ ] **Pramod:** try Marathi titles by voice in both rooms now that the IndicConformer fallback is live (2026-11-15); `docker logs stt-fallback` shows what it heard
 - [ ] **Pramod:** try "Dumbledore" by voice in both rooms (live next to "Hey Jarvis" since 2026-11-16); `docker logs wake-proxy` shows which word woke it
