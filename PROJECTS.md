@@ -37,7 +37,7 @@
 | [xero cooling on the Skadis pegboard](tracker/xero-pegboard-cooling.md) | P2 | ? | ? |
 | [Automatic pour-over coffee (dose by weight, timed spiral pour, bell at the end)](tracker/pour-over-coffee.md) | P3 | ₹3,500-6,500 | ~4-6 weekends (30-45h) |
 | [Backup restore drill](tracker/backup-restore-drill.md) | P3 | ? | ? |
-| [Bedroom remote and satellite buttons (media, volume, white noise, oju sleep, talk)](tracker/scene-remote.md) | P3 | ₹200-1,600 (₹200-300 for the wired buttons; the Fire TV remote rebuild is the rest) | ~2 evenings + 1-2 weekends (wired buttons 2 evenings; remote 1-2 weekends) |
+| [Bedroom remote and satellite buttons (media, volume, white noise, oju sleep, talk)](tracker/scene-remote.md) | P3 | ₹200-1,500 | ~4 evenings + 2-3 weekends (30-40h) |
 | [Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance](tracker/hub75-wall-display.md) | P3 | ? | ? |
 | [Charge-limit the baby monitor iPhone SE with the smart plug](tracker/baby-monitor-charge-limit.md) | P3 | ? | ? |
 | [Clawlight small low-power display (reuse of the Pi clock screensaver)](tracker/clawlight-small-display.md) | P3 | ? | ? |
