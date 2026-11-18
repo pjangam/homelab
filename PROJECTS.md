@@ -2,7 +2,7 @@
 
 **Generated from `tracker/` by `tools/repo-tools/tracker.py index` - do not edit by hand.** One file per project lives in [`tracker/`](tracker/); how they work is in [`tracker/README.md`](tracker/README.md). The dashboard: `https://xero.<tailnet>/projects`.
 
-## 🟢 Active (12) · 12 unbudgeted
+## 🟢 Active (12) · ₹40-₹1,500 + 11 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -17,7 +17,7 @@
 | [Home power audit - smart/network devices + major appliances](tracker/home-power-audit.md) | P3 | ? | ? |
 | [Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement](tracker/syncthing-doc-sync.md) | P3 | ? | ? |
 | [Use xero's spare RAM](tracker/xero-spare-ram.md) | P3 | ? | ? |
-| [Voice assistant (HA Assist): Spotify, room replies, wake word](tracker/voice-assistant.md) | P3 | ? | ? |
+| [Voice assistant (HA Assist): Spotify, room replies, wake word](tracker/voice-assistant.md) | P3 | ₹40-1,500 (bedroom button; the optional satellite speakers are most of it) | ~1 evening |
 
 ## 🟡 Parked (3) · 3 unbudgeted
 

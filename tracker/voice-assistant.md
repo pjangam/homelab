@@ -1,8 +1,8 @@
 # Voice assistant (HA Assist): Spotify, room replies, wake word
 **Status:** Active
 **Priority:** P3
-**Cost:** ?
-**Effort:** ?
+**Cost:** ₹40-1,500 (bedroom button; the optional satellite speakers are most of it)
+**Effort:** ~1 evening
 
 #### Open items
 - [ ] **Pramod:** keep trying it by voice; say "<title> by <artist>" when a short title is misheard, and report titles that still fail
@@ -15,10 +15,10 @@
 - [ ] **Pramod:** try "Dumbledore" by voice in both rooms (live next to "Hey Jarvis" since 2026-11-16); `docker logs wake-proxy` shows which word woke it
 - [ ] **Claude, after a week:** count false wakes per word from `docker logs wake-proxy`; drop Dumbledore if it adds many
 - [ ] **Pramod:** check which end (DIN, follow the arrows) of the bedroom strip is wired before connecting it
-- [ ] **Pramod:** on the Mac, build and flash both satellites: `projects/voice-assistant/esphome/build_on_mac.sh` and `build_on_mac.sh living` (spoken-reply events + play button; safe before the button is wired)
-- [ ] **Claude, after the flash:** turn `input_boolean.voice_replies_enabled` on and run the live test in each room (plan step 8)
+- [ ] **Pramod:** keep using spoken replies in both rooms and report anything odd (living room tested 2026-11-18; bedroom replies not yet heard)
 - [ ] **Together, an evening:** bedroom night reply level by ear on its tile (78 for now; ~75-82), and hear a bedroom reply next to music and white noise (plan step 0)
-- [ ] **Pramod:** buy two 12mm push buttons for the satellites' play buttons (parts below, "Play button")
+- [ ] **Pramod:** buy a 12mm push button and wire it to the bedroom board (GPIO23 to GND); the living room's works since 2026-11-18
+- [ ] **Claude, 2026-11-19:** count living-room false wakes (3 on the evening of 2026-11-18, no words heard) and tune if they continue
 - [ ] **Claude, before the reflash:** wiring guide for the play button (`circuit-diagram`), GPIO23 to GND on both boards
 - [ ] **Together, a night with white noise on:** 10 x "Hey Jarvis" from the bed to see whether the wake word gets through the hiss (0 of 77 wake-ups in 8 days did)
 - [ ] **Pramod:** decide whether the speaker parts below are still wanted once room replies work
@@ -58,6 +58,7 @@ qty | item | est | note
 The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satellites have no way to play it, so today a command only shows on the LED. Adding a MAX98357A + small speaker per board gives spoken replies and confirmation tones. It goes on its own I2S bus (the ESP32 has two), not shared with the mic: LRC GPIO26, BCLK GPIO27, DIN GPIO22 - all free and none of them strapping pins - with VIN to 5V, GND, and SD left unconnected (amp on). Firmware: a second `i2s_audio` bus, an `i2s_audio` speaker, and `speaker:` on `voice_assistant`; ESPHome mutes the mic while the reply plays, so the board does not hear itself. Not wired or flashed yet.
 
 #### Log
+- 2026-11-18: both satellites flashed (spoken-reply events + play button), replies switched on. Living room tested: the play button plays the playlist from track 1. Found and fixed on the way: xero's WirePlumber dropped Bluetooth at every ssh logout and suspended the idle output (`projects/spotifyd/install_wireplumber_bt.sh`); the bridge plays 0.8s of faint noise before each xero reply; HA's same-room acknowledge chime (hard-coded) is swapped for a spoken "Done." by the bridge - heard by the user.
 - 2026-11-18: **spoken replies built** (all but the flash). Reply bridge + always-running VLC on the Pi and xero (`voice_reply_mqtt.py`, tested: reply, tone, volume restore, bad URL, VLC down, Bluetooth off, white noise on); HA package `voice_replies.yaml` with the gate **off** until the reflash; room guard on the Spotify commands ("The music is in the living room"); no reply when music starts; failed plays say "Couldn't play"; "play X" refused in the bedroom under white noise; Spotify hidden from HA's built-in media commands; "stop white noise" sentences; play button scripts (living-room button tested from track 1); firmware events + GPIO23 button (validated, not flashed); healthcheck; dashboard tiles. Tone range moved to HA sliders (2-12s), so no week of calibration before the flash.
 - 2026-11-18: **room replies: ninth review applied** (3 major: a local record of the started device because HA skips quick Spotify refreshes; night preset 40 is inaudible on the Pi, set by ear instead; new media players are auto-exposed to Assist). Room guard extended to "pause the music" and volume (user). Ready to build.
 - 2026-11-18: **multi-room (Snapcast) plan paused** by the user after its ninth review; findings recorded unapplied at the end of the plan. Room replies' ninth review reported, not yet applied.
