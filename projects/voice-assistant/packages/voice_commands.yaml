@@ -182,29 +182,42 @@ automation:
       - set_conversation_response: "White noise off"
 
   # Spotify playback by voice. media_player.spotify_pramod is the Spotify
-  # integration's account-wide player, so it controls whatever Connect device
-  # is playing (normally xero's spotifyd). "play <song>" is generated from the
+  # integration's account-wide player. "play <song>" is generated from the
   # library into packages/spotify_songs.yaml by spotify_library.py. No bare
-  # "play [the] music" here: it would compete with "play {song}".
-  # Trigger id is the media_player action, or "vol|<delta>" / "volset".
+  # "play [the] music" here: it would compete with "play {song}". Only
+  # multi-word forms ("pause the music", "next song") until a day of debug
+  # recordings shows the bare words don't turn up in false wakes
+  # (plan-room-replies.md Design 9).
+  #
+  # Room guard (user, 2026-11-18): said on a satellite, these act only on the
+  # music in that satellite's room - the playing device is our own record of
+  # what we last started when it is newer than Spotify's (HA skips quick
+  # refreshes), else spotify_pramod's source. Otherwise they say where the
+  # music is. Never resume/skip the bedroom's player while white noise is on.
+  # From the phone app (no satellite) they act on whatever plays, as before.
+  # Music-starting forms go through script.voice_start_music, so a failure
+  # says "Couldn't ..." instead of HA's "Done"; on success they set the
+  # room's voice_music_started_ flag and the spoken reply is skipped (the
+  # music is the answer, user 2026-11-18).
+  # Trigger id is the action, or "vol|<delta>" / "volset".
   - id: voice_spotify_control
     alias: "Voice: Spotify pause/resume/skip/volume"
     triggers:
       - trigger: conversation
-        id: media_pause
+        id: pause
         command:
           - "(pause|stop) [the] (music|song|spotify)"
       - trigger: conversation
-        id: media_play
+        id: resume
         command:
           - "(resume|continue|unpause) [the] (music|song|spotify)"
       - trigger: conversation
-        id: media_next_track
+        id: next
         command:
           - "(next|skip [the]|skip this) (song|track)"
           - "play [the] next (song|track)"
       - trigger: conversation
-        id: media_previous_track
+        id: previous
         command:
           - "(previous|last) (song|track)"
           - "play [the] (previous|last) (song|track)"
@@ -226,8 +239,29 @@ automation:
           - "set [the] (music|spotify) volume to {music_volume} [percent]"
     variables:
       player: media_player.spotify_pramod
-      now: "{{ state_attr('media_player.spotify_pramod', 'volume_level') | float(0.5) }}"
+      now_vol: "{{ state_attr('media_player.spotify_pramod', 'volume_level') | float(0.5) }}"
+      devices: {bedroom: raspberrypi, living_room: xero}
+      names: {raspberrypi: the bedroom, xero: the living room}
+      area: "{{ area_id(trigger.device_id) if trigger.device_id else '' }}"
+      here: "{{ devices.get(area, '') }}"
+      music_on: >-
+        {% set sp = states.media_player.spotify_pramod %}
+        {% set rec = states('input_text.voice_music_device') %}
+        {% set rec_t = as_timestamp(states('input_datetime.voice_music_started_at'), 0) %}
+        {% if rec not in ['', 'unknown', 'unavailable'] and sp and rec_t > as_timestamp(sp.last_updated) %}{{ rec }}
+        {% elif sp and sp.state in ['playing', 'paused'] %}{{ sp.attributes.source | default('') }}
+        {% endif %}
+      refuse: >-
+        {% set m = music_on | trim %}
+        {% if here and m != here %}{{ 'Nothing is playing' if not m else 'The music is in ' ~ names[m] if m in names else 'The music is on ' ~ m }}
+        {% elif m == 'raspberrypi' and trigger.id in ['resume', 'next', 'previous']
+                and not is_state('switch.white_noise', 'off') %}White noise is on
+        {% endif %}
     actions:
+      - if: "{{ refuse | trim != '' }}"
+        then:
+          - set_conversation_response: "{{ refuse | trim }}"
+          - stop: refused
       - choose:
           - conditions: "{{ trigger.id.startswith('vol|') }}"
             sequence:
@@ -235,7 +269,7 @@ automation:
                 target:
                   entity_id: "{{ player }}"
                 data:
-                  volume_level: "{{ [[now + trigger.id.split('|')[1] | float, 0] | max, 1] | min | round(2) }}"
+                  volume_level: "{{ [[now_vol + trigger.id.split('|')[1] | float, 0] | max, 1] | min | round(2) }}"
               - set_conversation_response: "Music volume {{ 'up' if trigger.id.split('|')[1] | float > 0 else 'down' }}"
           - conditions: "{{ trigger.id == 'volset' }}"
             sequence:
@@ -245,11 +279,44 @@ automation:
                 data:
                   volume_level: "{{ ([trigger.slots.music_volume | int(50), 100] | min) / 100 }}"
               - set_conversation_response: "Music volume {{ [trigger.slots.music_volume | int(50), 100] | min }} percent"
+          - conditions: "{{ trigger.id == 'pause' }}"
+            sequence:
+              - if: "{{ area in devices }}"
+                then:
+                  - action: input_boolean.turn_off
+                    target: {entity_id: "input_boolean.voice_paused_{{ area }}"}
+              - action: input_text.set_value
+                target: {entity_id: input_text.voice_music_device}
+                data: {value: ""}
+              # Already paused when the wake word paused it: still "Paused".
+              - if: "{{ not is_state(player, 'paused') }}"
+                then:
+                  - action: media_player.media_pause
+                    target: {entity_id: "{{ player }}"}
+                    continue_on_error: true
+              - set_conversation_response: Paused
         default:
-          - action: "media_player.{{ trigger.id }}"
-            target:
-              entity_id: "{{ player }}"
-          - set_conversation_response: >-
-              {{ {'media_pause': 'Paused', 'media_play': 'Resuming',
-                  'media_next_track': 'Next song',
-                  'media_previous_track': 'Previous song'}[trigger.id] }}
+          - action: script.voice_start_music
+            data:
+              action: "{{ trigger.id }}"
+              device: "{{ music_on | trim }}"
+            response_variable: started
+            continue_on_error: true
+          - if: "{{ (started | default({})).get('ok', false) }}"
+            then:
+              - if: "{{ area in devices }}"
+                then:
+                  # next/previous keep voice_paused_: the wake word's pause
+                  # is still in place and voice_resume brings the music back.
+                  - if: "{{ trigger.id == 'resume' }}"
+                    then:
+                      - action: input_boolean.turn_off
+                        target: {entity_id: "input_boolean.voice_paused_{{ area }}"}
+                  - action: input_boolean.turn_on
+                    target: {entity_id: "input_boolean.voice_music_started_{{ area }}"}
+              - set_conversation_response: >-
+                  {{ {'resume': 'Resuming', 'next': 'Next song', 'previous': 'Previous song'}[trigger.id] }}
+            else:
+              - set_conversation_response: >-
+                  Couldn't {{ {'resume': 'resume the music', 'next': 'skip the song',
+                               'previous': 'go back a song'}[trigger.id] }}

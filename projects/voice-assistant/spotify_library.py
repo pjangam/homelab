@@ -158,9 +158,14 @@ def main():
             "key": "{{ trigger.slots.song | lower | regex_replace('[^a-z0-9\\' ]', '') | trim"
                    " | regex_replace('^(the )?song ', '') }}",
         },
-        "actions": [{
-            "if": "{{ key in songs }}",
-            "then": [
+        "actions": [
+            # White noise wins (user, 2026-11-18): said in the bedroom while
+            # it plays, nothing starts. The answer is text only - the bedroom
+            # gets no spoken replies while white noise is on.
+            {"if": "{{ area == 'bedroom' and not is_state('switch.white_noise', 'off') }}",
+             "then": [{"set_conversation_response": "White noise is on"}, {"stop": "white noise"}]},
+            {"if": "{{ key in songs }}",
+             "then": [
                 # xero's speaker is Bluetooth since 2026-11-14: ask xero
                 # (projects/spotifyd/bt_speaker_mqtt.py) to reconnect it and
                 # wait for the answer, so a speaker switched on a moment ago
@@ -172,13 +177,29 @@ def main():
                      {"wait_for_trigger": [{"trigger": "mqtt", "topic": "bt_speaker_xero/state"}],
                       "timeout": 25, "continue_on_timeout": True},
                  ]},
-                {"action": "spotcast.play_media",
-                 "data": {"spotify_uri": "{{ songs[key][0] }}",
-                          "media_player": {"entity_id": "{{ speaker }}"}}},
-                {"set_conversation_response": "Playing {{ songs[key][1] }}"},
-            ],
-            "else": [{"set_conversation_response": "{{ key }} is not in your liked songs"}],
-        }],
+                # Through voice_start_music (voice_replies.yaml), so a failed
+                # play says so instead of HA's "Done", and a working one sets
+                # the room's flags: no spoken reply - the music is the answer
+                # (plan-room-replies.md Design 9, user 2026-11-18).
+                {"action": "script.voice_start_music",
+                 "data": {"action": "play", "uri": "{{ songs[key][0] }}", "speaker": "{{ speaker }}",
+                          "device": "{{ 'raspberrypi' if area == 'bedroom' else 'xero' }}"},
+                 "response_variable": "started", "continue_on_error": True},
+                {"if": "{{ (started | default({})).get('ok', false) }}",
+                 "then": [
+                     {"if": "{{ area in ['bedroom', 'living_room'] }}",
+                      "then": [
+                          {"action": "input_boolean.turn_off",
+                           "target": {"entity_id": "input_boolean.voice_paused_{{ area }}"}},
+                          {"action": "input_boolean.turn_on",
+                           "target": {"entity_id": "input_boolean.voice_music_started_{{ area }}"}},
+                      ]},
+                     {"set_conversation_response": "Playing {{ songs[key][1] }}"},
+                 ],
+                 "else": [{"set_conversation_response": "Couldn't play {{ songs[key][1] }}"}]},
+             ],
+             "else": [{"set_conversation_response": "{{ key }} is not in your liked songs"}]},
+        ],
     }]}, indent=1, ensure_ascii=False) + "\n")
     print(f"{len(songs)} songs -> {OUT_LIST.relative_to(REPO)}, {OUT_PKG.relative_to(REPO)}; "
           f"dropped {len(dropped)} non-Latin titles: {dropped[:10]}")

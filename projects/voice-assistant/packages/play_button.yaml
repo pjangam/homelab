@@ -1,0 +1,91 @@
+# Physical play button on each voice satellite (GPIO23 to GND, firmware fires
+# esphome.play_button): plays the house playlist in that board's room, from
+# the top, every press (user, 2026-11-17). The bedroom plays at night and
+# under white noise too, like the dashboard tile (user's choice). Bluetooth
+# errors are ignored (user, 2026-11-18). Own package, so rolling back the
+# spoken replies leaves the button working. plan-room-replies.md "Physical
+# play button". The dashboard's "Play Bedroom Track" tile calls
+# script.play_bedroom_track (scripts.yaml), now a wrapper of this.
+script:
+  play_room_playlist:
+    alias: Play the playlist in a room
+    mode: parallel
+    icon: mdi:playlist-play
+    fields:
+      room: {description: "bedroom or living_room", required: true}
+    variables:
+      playlist: https://open.spotify.com/playlist/63uNCHuVgqNqXOUPoujY5Q
+      speakers:
+        bedroom: media_player.raspberrypi_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+        living_room: media_player.xero_t2ri8v1ku89v8s2ci4d6vrfv2_spotcast
+      devices: {bedroom: raspberrypi, living_room: xero}
+      sats:
+        bedroom: assist_satellite.voice_satellite_assist_satellite
+        living_room: assist_satellite.voice_living_room_assist_satellite
+    sequence:
+      - if: "{{ room not in speakers }}"
+        then:
+          - stop: "no such room"
+            error: true
+      # xero's speaker is Bluetooth: ask for a reconnect first, as the voice
+      # "play" does; no check of the answer.
+      - if: "{{ room == 'living_room' }}"
+        then:
+          - action: mqtt.publish
+            data: {topic: bt_speaker_xero/connect, payload: play}
+          - wait_for_trigger:
+              - trigger: mqtt
+                topic: bt_speaker_xero/state
+            timeout: 25
+            continue_on_timeout: true
+      - action: script.voice_start_music
+        data:
+          action: play
+          uri: "{{ playlist }}"
+          speaker: "{{ speakers[room] }}"
+          device: "{{ devices[room] }}"
+        response_variable: started
+        continue_on_error: true
+      # A press during a voice command: its reply must not play over the new
+      # music. Only then - responding sticks for hours on a board without a
+      # speaker, so "went listening in the last 30s".
+      - if: >-
+          {{ (started | default({})).get('ok', false)
+             and states(sats[room]) in ['listening', 'processing', 'responding']
+             and now() - states[sats[room]].last_changed < timedelta(seconds=30) }}
+        then:
+          - action: input_boolean.turn_off
+            target: {entity_id: "input_boolean.voice_paused_{{ room }}"}
+          - action: input_boolean.turn_on
+            target: {entity_id: "input_boolean.voice_music_started_{{ room }}"}
+
+automation:
+  # One per board: a shared mode-single automation would drop a bedroom
+  # press while a living-room press waits for Bluetooth. The 3s delay makes
+  # a bounce or double press one play.
+  - id: play_button_bedroom
+    alias: "Play button: bedroom"
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: event
+        event_type: esphome.play_button
+        event_data: {device_id: f201def98beb10329a75b755eccf06a6}
+    actions:
+      - action: script.turn_on
+        target: {entity_id: script.play_room_playlist}
+        data: {variables: {room: bedroom}}
+      - delay: 3
+  - id: play_button_living_room
+    alias: "Play button: living room"
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: event
+        event_type: esphome.play_button
+        event_data: {device_id: 081d56f0816eaa3a2c13c881fd1d3684}
+    actions:
+      - action: script.turn_on
+        target: {entity_id: script.play_room_playlist}
+        data: {variables: {room: living_room}}
+      - delay: 3

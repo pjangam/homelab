@@ -1,0 +1,20 @@
+# The bedroom's night window, shared by the voice replies
+# (voice_replies.yaml: night preset, no tone) and, once built, the multi-room
+# plan (projects/spotifyd/plan-multiroom.md). Its own package so neither
+# plan's rollback removes it. No `initial:` - the times survive restarts; set
+# once after the first load (22:00 / 07:00). The window crosses midnight:
+#   now >= start or now < end
+# (inline in each user - the template integration is not loaded in this HA,
+# and adding it needs a restart)
+input_datetime:
+  night_quiet_start:
+    name: Night quiet starts
+    has_date: false
+    has_time: true
+    icon: mdi:weather-night
+  night_quiet_end:
+    name: Night quiet ends
+    has_date: false
+    has_time: true
+    icon: mdi:weather-sunny
+

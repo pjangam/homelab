@@ -1,0 +1,349 @@
+# Spoken replies on the room speakers (plan-room-replies.md). The satellites
+# (mic only) fire esphome.voice_reply {url} / esphome.voice_tone /
+# esphome.voice_end; voice_reply sends the reply to that room's bridge
+# (voice_reply_mqtt.py on the Pi / xero) over MQTT. Music in that room is
+# paused at the wake word and resumed after the reply.
+#
+# input_boolean.voice_replies_enabled is the gate: OFF until both boards are
+# reflashed with the events (before that nothing resumes the music). While
+# off, the wake word pauses nothing and no reply plays; resume and the safety
+# net keep running so nothing is left paused.
+#
+# Rooms: bedroom = Pi (Spotify device "raspberrypi"), living_room = xero
+# ("xero"). The "Everywhere" (Snapcast) branches of the plan are not built:
+# that plan is paused (2026-11-18).
+
+input_boolean:
+  voice_replies_enabled:
+    name: Voice replies
+    icon: mdi:account-voice
+  voice_quiet_bedroom:
+    name: Bedroom quiet (white noise at the wake word)
+  voice_paused_bedroom:
+    name: Voice paused bedroom music
+  voice_paused_living_room:
+    name: Voice paused living room music
+  voice_replying_bedroom:
+    name: Voice reply playing in the bedroom
+  voice_replying_living_room:
+    name: Voice reply playing in the living room
+  voice_music_started_bedroom:
+    name: Voice command started bedroom music
+  voice_music_started_living_room:
+    name: Voice command started living room music
+
+# Set once after the first load: 93 / night by ear / 35. The bedroom's % is
+# linear in dB (-102 to +4 dB): 40 would be ~-60 dB, inaudible.
+input_number:
+  voice_reply_volume_bedroom:
+    name: Bedroom reply volume
+    min: 0
+    max: 93
+    step: 1
+    icon: mdi:account-voice
+  voice_reply_volume_bedroom_night:
+    name: Bedroom reply volume at night
+    min: 0
+    max: 93
+    step: 1
+    icon: mdi:account-voice
+  voice_reply_volume_living_room:
+    name: Living room reply volume
+    min: 0
+    max: 100
+    step: 1
+    icon: mdi:account-voice
+
+# Which Spotify device our own commands / the play button last started, and
+# when. HA skips a second Spotify refresh within 10s and Spotcast never
+# refreshes, so right after "play X" spotify_pramod still says idle; this
+# record is newer then and is believed instead.
+input_text:
+  voice_music_device:
+    name: Music started on (voice)
+    max: 64
+input_datetime:
+  voice_music_started_at:
+    name: Music started at (voice)
+    has_date: true
+    has_time: true
+
+script:
+  voice_reply:
+    alias: "Voice reply: play on the room speaker"
+    mode: parallel
+    fields:
+      room: {description: "bedroom or living_room"}
+      url: {description: "HA tts_proxy mp3 URL"}
+      sound: {description: "tone"}
+    variables:
+      rooms:
+        bedroom: {host: pi, health: binary_sensor.bedroom_voice_replies}
+        living_room: {host: xero, health: binary_sensor.living_room_voice_replies}
+      night: >-
+        {% set st = states('input_datetime.night_quiet_start') %}
+        {% set en = states('input_datetime.night_quiet_end') %}
+        {% set n = now().strftime('%H:%M:%S') %}
+        {{ n >= st or n < en }}
+      volume: >-
+        {{ states('input_number.voice_reply_volume_bedroom_night' if room == 'bedroom' and night
+                  else 'input_number.voice_reply_volume_' ~ room) | int(0) }}
+      skip: >-
+        {% if room not in rooms %}no room
+        {% elif not is_state('input_boolean.voice_replies_enabled', 'on') %}replies off
+        {% elif room == 'bedroom' and (is_state('input_boolean.voice_quiet_bedroom', 'on')
+                or not is_state('switch.white_noise', 'off')) %}white noise
+        {% elif is_state('input_boolean.voice_music_started_' ~ room, 'on') %}music started
+        {% elif not is_state(rooms[room].health, 'on') %}bridge offline
+        {% elif sound and room == 'bedroom' and night %}no tone at night
+        {% elif volume < 1 %}preset not set
+        {% endif %}
+      rid: "{{ room }}-{{ now().timestamp() | round(3) }}"
+    sequence:
+      - if: "{{ room in rooms and is_state('input_boolean.voice_music_started_' ~ room, 'on') }}"
+        then:
+          - action: input_boolean.turn_off
+            target: {entity_id: "input_boolean.voice_music_started_{{ room }}"}
+      - if: "{{ skip | trim == '' }}"
+        then:
+          - action: input_boolean.turn_on
+            target: {entity_id: "input_boolean.voice_replying_{{ room }}"}
+          - variables:
+              deadline: "{{ now().timestamp() + 30 }}"
+          - action: mqtt.publish
+            data:
+              topic: "voice_reply/{{ rooms[room].host }}/play"
+              payload: >-
+                {% set p = {'id': rid, 'volume': volume} %}
+                {{ dict(p, url=url) | to_json if url else dict(p, sound='tone') | to_json }}
+          # Any done, until ours (or 30s): the bridge answers every play,
+          # dropped or not, and never sooner than 1s after it arrived.
+          - repeat:
+              sequence:
+                - wait_for_trigger:
+                    - trigger: mqtt
+                      topic: "voice_reply/+/done"
+                  timeout: "{{ [deadline - now().timestamp(), 0.1] | max }}"
+                  continue_on_timeout: true
+              until: "{{ wait.trigger is none or (wait.trigger.payload_json.id | default('')) == rid }}"
+          - action: input_boolean.turn_off
+            target: {entity_id: "input_boolean.voice_replying_{{ room }}"}
+        else:
+          - action: system_log.write
+            data:
+              level: debug
+              logger: voice_reply
+              message: "{{ room }}: no reply ({{ skip | trim }})"
+      - if: "{{ room in rooms }}"
+        then:
+          - action: script.turn_on
+            target: {entity_id: script.voice_resume}
+            data: {variables: {room: "{{ room }}"}}
+
+  voice_resume:
+    alias: "Voice reply: resume the room's music"
+    mode: queued
+    max: 10
+    fields:
+      room: {description: "bedroom or living_room"}
+    variables:
+      sats:
+        bedroom: assist_satellite.voice_satellite_assist_satellite
+        living_room: assist_satellite.voice_living_room_assist_satellite
+      devices: {bedroom: raspberrypi, living_room: xero}
+    sequence:
+      - condition: "{{ room in sats }}"
+      # A reply still playing, or a new command under way: its own reply or
+      # voice_end resumes later.
+      - condition: "{{ is_state('input_boolean.voice_replying_' ~ room, 'off') }}"
+      - condition: "{{ states(sats[room]) not in ['listening', 'processing'] }}"
+      - if: >-
+          {{ is_state('input_boolean.voice_paused_' ~ room, 'on')
+             and is_state('media_player.spotify_pramod', 'paused')
+             and state_attr('media_player.spotify_pramod', 'source') == devices[room] }}
+        then:
+          - action: media_player.media_play
+            target: {entity_id: media_player.spotify_pramod}
+            continue_on_error: true
+      - action: input_boolean.turn_off
+        target:
+          entity_id:
+            - "input_boolean.voice_paused_{{ room }}"
+            - "input_boolean.voice_music_started_{{ room }}"
+
+  # Start music for a voice command (or the play button) and say whether it
+  # worked. HA catches a failing call inside an automation and answers a
+  # plain "Done", so callers use this with continue_on_error and
+  # response_variable: `(started | default({})).get('ok', false)`.
+  # action: play (uri on speaker) | next | previous | resume.
+  voice_start_music:
+    alias: "Voice: start music and report success"
+    mode: parallel
+    fields:
+      action: {description: "play, next, previous or resume"}
+      uri: {description: "spotify URI (play)"}
+      speaker: {description: "spotcast media_player (play)"}
+      device: {description: "Spotify device name it plays on (raspberrypi, xero)"}
+    variables:
+      was_paused: "{{ is_state('media_player.spotify_pramod', 'paused') }}"
+    sequence:
+      - choose:
+          # A playlist always from its first track (the play button, user
+          # 2026-11-17): without an offset a shuffled one starts anywhere.
+          # Inside `data:` - spotcast rejects a top-level offset.
+          - conditions: "{{ action == 'play' and '/playlist/' in uri }}"
+            sequence:
+              - action: spotcast.play_media
+                data:
+                  spotify_uri: "{{ uri }}"
+                  media_player: {entity_id: "{{ speaker }}"}
+                  data: {offset: 0}
+          - conditions: "{{ action == 'play' }}"
+            sequence:
+              - action: spotcast.play_media
+                data:
+                  spotify_uri: "{{ uri }}"
+                  media_player: {entity_id: "{{ speaker }}"}
+          - conditions: "{{ action in ['next', 'previous'] }}"
+            sequence:
+              - action: "media_player.media_{{ action }}_track"
+                target: {entity_id: media_player.spotify_pramod}
+              # librespot loads the next track paused when the player was
+              # paused; the wake word's own pause is resumed by voice_resume,
+              # any other pause (by hand, from the phone) here.
+              - if: "{{ was_paused and not is_state('input_boolean.voice_paused_bedroom', 'on')
+                        and not is_state('input_boolean.voice_paused_living_room', 'on') }}"
+                then:
+                  - action: media_player.media_play
+                    target: {entity_id: media_player.spotify_pramod}
+          - conditions: "{{ action == 'resume' }}"
+            sequence:
+              - action: media_player.media_play
+                target: {entity_id: media_player.spotify_pramod}
+      - action: input_text.set_value
+        target: {entity_id: input_text.voice_music_device}
+        data: {value: "{{ device }}"}
+      - action: input_datetime.set_datetime
+        target: {entity_id: input_datetime.voice_music_started_at}
+        data: {timestamp: "{{ now().timestamp() }}"}
+      - variables:
+          result: {ok: true}
+      - stop: started
+        response_variable: result
+
+automation:
+  # Pause this room's music on the wake word, so the command is heard and the
+  # reply is not over the music. Gate off -> nothing.
+  - id: voice_music_pause
+    alias: "Voice reply: pause the room's music on the wake word"
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: state
+        entity_id:
+          - assist_satellite.voice_satellite_assist_satellite
+          - assist_satellite.voice_living_room_assist_satellite
+        to: listening
+    conditions:
+      - condition: state
+        entity_id: input_boolean.voice_replies_enabled
+        state: "on"
+    variables:
+      room: "{{ area_id(trigger.entity_id) }}"
+      devices: {bedroom: raspberrypi, living_room: xero}
+    actions:
+      - condition: "{{ room in devices }}"
+      - if: "{{ is_state(trigger.entity_id, 'listening') }}"
+        then:
+          - action: input_boolean.turn_off
+            target: {entity_id: "input_boolean.voice_music_started_{{ room }}"}
+      - if: "{{ room == 'bedroom' }}"
+        then:
+          - action: "input_boolean.turn_{{ 'off' if is_state('switch.white_noise', 'off') else 'on' }}"
+            target: {entity_id: input_boolean.voice_quiet_bedroom}
+      - action: homeassistant.update_entity
+        target: {entity_id: media_player.spotify_pramod}
+        continue_on_error: true
+      - variables:
+          playing_on: >-
+            {% set sp = states.media_player.spotify_pramod %}
+            {% set rec = states('input_text.voice_music_device') %}
+            {% set rec_t = as_timestamp(states('input_datetime.voice_music_started_at'), 0) %}
+            {% if rec not in ['', 'unknown', 'unavailable'] and sp and rec_t > as_timestamp(sp.last_updated) %}{{ rec }}
+            {% elif sp and sp.state == 'playing' %}{{ sp.attributes.source | default('') }}
+            {% endif %}
+      - condition: "{{ is_state(trigger.entity_id, 'listening') and playing_on | trim == devices[room] }}"
+      - action: input_boolean.turn_on
+        target: {entity_id: "input_boolean.voice_paused_{{ room }}"}
+      - action: media_player.media_pause
+        target: {entity_id: media_player.spotify_pramod}
+        continue_on_error: true
+
+  # Firmware events (needs the reflash). Room from the board's HA area.
+  - id: voice_reply_events
+    alias: "Voice reply: satellite events"
+    mode: parallel
+    triggers:
+      - trigger: event
+        event_type: esphome.voice_reply
+        id: reply
+      - trigger: event
+        event_type: esphome.voice_tone
+        id: tone
+      - trigger: event
+        event_type: esphome.voice_end
+        id: end
+    variables:
+      room: "{{ area_id(trigger.event.data.device_id) }}"
+    actions:
+      - if: "{{ trigger.id == 'end' }}"
+        then:
+          - action: script.voice_resume
+            data: {room: "{{ room }}"}
+        else:
+          - action: script.voice_reply
+            data:
+              room: "{{ room }}"
+              url: "{{ trigger.event.data.url | default('') if trigger.id == 'reply' else '' }}"
+              sound: "{{ 'tone' if trigger.id == 'tone' else '' }}"
+
+  # Safety net: a time pattern, not `for:` (lost on restart / the 04:30
+  # automation reload). Flags restore their last state across a restart.
+  - id: voice_reply_safety_net
+    alias: "Voice reply: safety net"
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        minutes: /1
+        id: tick
+      - trigger: homeassistant
+        event: start
+        id: start
+    actions:
+      - if: "{{ trigger.id == 'start' }}"
+        then:
+          - delay: 30
+          - action: input_boolean.turn_off
+            target:
+              entity_id:
+                - input_boolean.voice_replying_bedroom
+                - input_boolean.voice_replying_living_room
+                - input_boolean.voice_music_started_bedroom
+                - input_boolean.voice_music_started_living_room
+      - repeat:
+          for_each: [bedroom, living_room]
+          sequence:
+            - if: >-
+                {{ is_state('input_boolean.voice_replying_' ~ repeat.item, 'on') and
+                   now() - states['input_boolean.voice_replying_' ~ repeat.item].last_changed
+                   > timedelta(seconds=60) }}
+              then:
+                - action: input_boolean.turn_off
+                  target: {entity_id: "input_boolean.voice_replying_{{ repeat.item }}"}
+            - if: >-
+                {{ is_state('input_boolean.voice_paused_' ~ repeat.item, 'on') and
+                   now() - states['input_boolean.voice_paused_' ~ repeat.item].last_changed
+                   > timedelta(seconds=60) }}
+              then:
+                - action: script.voice_resume
+                  data: {room: "{{ repeat.item }}"}
