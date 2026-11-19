@@ -35,7 +35,7 @@ Running spotifyd as a Spotify Connect daemon — no GUI needed.
 
 Install on xero (already done 2026-11-14):
 1. `bluetoothctl pair 0D:67:1F:80:92:22 && bluetoothctl trust 0D:67:1F:80:92:22` (speaker on, in Bluetooth mode)
-2. `crontab -e`: `* * * * * /home/pramod/code/homelab/projects/spotifyd/bt_speaker_reconnect.sh >> /home/pramod/code/homelab/bt-speaker-reconnect.log 2>&1`
+2. Every minute: `job-bt-speaker-reconnect` in `projects/jobs-dashboard/jobs.toml` (cron until 2026-11-19), log `bt-speaker-reconnect.log`
 3. `cp projects/spotifyd/bt-speaker-mqtt.service ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now bt-speaker-mqtt`
 4. `projects/spotifyd/install_wireplumber_bt.sh` (since 2026-11-18): turns off WirePlumber's `with-logind`, so Bluetooth audio stays up with nobody logged in, and never suspends the speaker's output
 

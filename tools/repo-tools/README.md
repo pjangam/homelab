@@ -27,7 +27,9 @@ Things that fail quietly rather than loudly:
 - **The crontab and the installed systemd units hold absolute paths.** Update
   the crontab in the same step as the move, ideally just after a `*/5` tick,
   and confirm the next run used the new path (`journalctl _COMM=cron`) and
-  exited cleanly. Installed units are copies, not symlinks: re-copy to
+  exited cleanly. Since 2026-11-19 xero's scheduled jobs are timers generated
+  from `projects/jobs-dashboard/jobs.toml`: edit the path there and re-run
+  `install_jobs.py`. Installed units are copies, not symlinks: re-copy to
   `~/.config/systemd/user/`, `systemctl --user daemon-reload`, and restart. A
   missed copy of spotifyd's unit fails silently, because its `ExecStartPre` is
   `-` prefixed. Diff the installed copy against the repo first - they can

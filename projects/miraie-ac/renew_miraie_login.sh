@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Renews the ha-miraie-ac node's MirAIe login before it expires. Run daily
-# from xero's crontab; it only acts when renewal is due.
+# from xero's timer job-miraie-login-renew (projects/jobs-dashboard/jobs.toml); it only acts when renewal is due.
 #
 # The node logs in once, when node-red starts, and never again. Its 5-minute
 # status refresh (nodered_refresh_flow.json) and every MirAIe broker

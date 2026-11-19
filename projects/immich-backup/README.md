@@ -42,5 +42,5 @@ projects/immich-backup/archive_to_glacier.sh --dry-run   # what would go up
 projects/immich-backup/archive_to_glacier.sh             # first run: ~80G, hours
 ```
 
-Monthly from cron after the first run, logging into `backup.log` like the
+Monthly (1st, 04:00) from the `job-glacier-archive` timer in `projects/jobs-dashboard/jobs.toml`, logging into `backup.log` like the
 other backups.

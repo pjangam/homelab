@@ -192,7 +192,7 @@ white noise, AC.
   trains on) and `packages/spotify_songs.yaml` (the HA automation, title ->
   track URI). Reads the token HA's Spotify integration keeps in
   `.storage/core.config_entries`, read-only; it never refreshes it.
-- `sync_spotify_songs.sh` - cron, daily 04:30: runs the above and, only if the
+- `sync_spotify_songs.sh` - timer `job-spotify-songs-sync`, daily 04:30: runs the above and, only if the
   list changed, reloads automations and restarts speech-to-phrase (~30s of
   training for ~500 titles, when the satellites hear nothing). Log
   `spotify-songs.log`. Run by hand after liking a song you want now.

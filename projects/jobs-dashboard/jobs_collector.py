@@ -96,8 +96,8 @@ def quantile(values, q):
     return v[min(len(v) - 1, max(0, math.ceil(q * len(v)) - 1))]
 
 
-def update_history(name, run, now):
-    """Append run if new; return the runs of the last KEEP_DAYS."""
+def update_history(name, run, now, enrich=None):
+    """Append run if new (after enrich(run) adds to it); return the runs of the last KEEP_DAYS."""
     path = STATE / "runs" / f"{name}.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     runs = []
@@ -107,14 +107,22 @@ def update_history(name, run, now):
                 runs.append(json.loads(line))
             except ValueError:
                 pass
-    fresh = [r for r in runs if r["end"] >= now - KEEP_DAYS * 86400]
-    is_new = run is not None and not any(r["start"] == run["start"] for r in runs)
+    cutoff = now - KEEP_DAYS * 86400
+    fresh = [r for r in runs if r["end"] >= cutoff]
+    is_new = run is not None and not any(r["start"] == run["start"] for r in runs[-50:])
     if is_new:
+        if enrich:
+            enrich(run)
         fresh.append(run)
-    if is_new or len(fresh) != len(runs):
+    # Every-minute jobs keep ~86k runs: append the new one and rewrite the
+    # file only once a day, when the oldest run is a day past the cutoff.
+    if runs and runs[0]["end"] < cutoff - 86400:
         tmp = path.with_suffix(".tmp")
         tmp.write_text("".join(json.dumps(r) + "\n" for r in fresh))
         os.replace(tmp, path)
+    elif is_new:
+        with path.open("a") as f:
+            f.write(json.dumps(run) + "\n")
     return fresh
 
 
@@ -172,11 +180,10 @@ def collect(host, jobs, now, temps_fn=peak_temps):
                    "ok": svc.get("Result") == "success",
                    "cpu": cpu / 1e9 if cpu is not None and cpu < 2**63 else None,
                    "mem": mem if mem is not None and not math.isnan(mem) else None}
-        runs = update_history(name, run, now)
+        def add_temps(r):   # once per run, then kept in the history
+            r["temps"] = temps_fn(PROM_HOST.get(host, host), r["start"], r["end"])
+        runs = update_history(name, run, now, add_temps)
         last = max(runs, key=lambda r: r["start"]) if runs else None
-        if last and "temps" not in last:   # once per run, then cached in the history
-            last["temps"] = temps_fn(PROM_HOST.get(host, host), last["start"], last["end"])
-            _rewrite(name, runs)
         if last:
             m("homelab_job_last_end_timestamp_seconds", "End of the latest finished run", L, last["end"])
             m("homelab_job_last_duration_seconds", "Duration of the latest finished run", L,
@@ -211,13 +218,6 @@ def collect(host, jobs, now, temps_fn=peak_temps):
     m("homelab_jobs_collector_timestamp_seconds", "When jobs_collector.py last wrote this file",
       {"host": host}, now)
     return "\n".join(l for block in lines.values() for l in block) + "\n"
-
-
-def _rewrite(name, runs):
-    path = STATE / "runs" / f"{name}.jsonl"
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text("".join(json.dumps(r) + "\n" for r in sorted(runs, key=lambda r: r["start"])))
-    os.replace(tmp, path)
 
 
 def main():

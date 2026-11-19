@@ -11,5 +11,5 @@ reader is Prometheus on xero.
 per-dataset statfs numbers, where each dataset's "size" is its own data plus
 the shared free space and snapshots count nowhere - so no sum of them says how
 full the pool really is. The script writes pool `used`/`avail` and each vdev's
-read/write/checksum error counts for the textfile collector, from cron every
+read/write/checksum error counts for the textfile collector, from the `job-zpool-textfile` timer every
 minute. Its output directory is gitignored.

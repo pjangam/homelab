@@ -1,5 +1,5 @@
 #!/bin/sh
-# Export ZFS pool usage for node-exporter's textfile collector (cron, every minute).
+# Export ZFS pool usage for node-exporter's textfile collector (timer job-zpool-textfile, every minute).
 #
 # node-exporter only sees per-dataset statfs numbers: each dataset's "size" is
 # its own data plus the shared free space, and snapshots count nowhere, so no

@@ -45,6 +45,7 @@ done < <(cd "$REPO" && docker compose config --services 2>/dev/null)
 while read -r unit; do
     path=$(systemctl --user show -p FragmentPath --value "$unit" 2>/dev/null)
     case "$path" in
+        "$HOME"/.config/systemd/user/job-*) ;;   # jobs.toml timers, checked by script below
         "$HOME"/.config/systemd/user/*) check "xero systemd" "${unit%.service}" ;;
     esac
 done < <(systemctl --user list-unit-files --type=service --no-legend 2>/dev/null \
@@ -53,6 +54,15 @@ done < <(systemctl --user list-unit-files --type=service --no-legend 2>/dev/null
 while read -r script; do
     check "xero cron" "$script"
 done < <(crontab -l 2>/dev/null | grep -v '^\s*#' | grep -oE '[^ /]+\.(sh|py)' | sort -u)
+
+# Scheduled jobs moved from cron to systemd --user timers (projects/jobs-dashboard).
+while read -r script; do
+    check "xero timer" "$script"
+done < <(python3 -c '
+import sys, tomllib
+for j in tomllib.load(open(sys.argv[1], "rb"))["job"]:
+    if j["host"] == "xero": print(j["command"])' "$REPO/projects/jobs-dashboard/jobs.toml" 2>/dev/null \
+    | grep -oE '[^ /]+\.(sh|py)' | sort -u)
 
 # Pi: containers, non-packaged enabled units, cron scripts.
 if [ "$CHECK_PI" = 1 ]; then

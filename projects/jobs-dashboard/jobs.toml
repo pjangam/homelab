@@ -19,7 +19,9 @@
 name = "jobs-collector"
 host = "xero"
 desc = "Exports every job's last run, next run and cost to Prometheus (this dashboard)"
-on_calendar = "*:*:00"
+# :30, not :00: the every-minute jobs start at :00 and a run still going
+# when the collector looks is only recorded if the next look finds it done
+on_calendar = "*:*:30"
 command = "projects/jobs-dashboard/jobs_collector.py"
 log = "jobs-collector.log"
 
@@ -30,3 +32,130 @@ desc = "Reloads HA's Tinxy integration, then restarts HA, after 20 min disconnec
 on_calendar = "*:0/5"
 command = "projects/tinxy-watchdog/watchdog_tinxy.sh"
 log = "tinxy-watchdog.log"
+
+# --- moved from xero's crontab, 2026-11-19 (crontab.xero.before has the lines) ---
+
+[[job]]
+name = "zpool-textfile"
+host = "xero"
+desc = "Exports ZFS pool usage and vdev error counts to node-exporter"
+on_calendar = "*:*:00"
+command = "services/node-exporter/zpool_textfile.sh"
+log = "zpool-textfile.log"
+
+[[job]]
+name = "bt-speaker-reconnect"
+host = "xero"
+desc = "Reconnects the Apollo One Bluetooth speaker and makes it the default sink"
+on_calendar = "*:*:00"
+command = "projects/spotifyd/bt_speaker_reconnect.sh"
+log = "bt-speaker-reconnect.log"
+
+[[job]]
+name = "power-watchdog"
+host = "xero"
+desc = "Shuts xero down cleanly when mains power has been out too long (no UPS)"
+on_calendar = "*:0/5"
+command = "projects/power-watchdog/watchdog_power.sh"
+log = "power-watchdog.log"
+
+[[job]]
+name = "spotifyd-watchdog"
+host = "xero"
+desc = "Restarts xero's spotifyd when it is down or its session went stale"
+on_calendar = "*:0/5"
+command = "projects/spotifyd/watchdog_spotifyd.sh"
+log = "spotifyd-watchdog.log"
+
+[[job]]
+name = "spotify-listed-watchdog"
+host = "xero"
+desc = "Restarts spotifyd on xero or the Pi when Spotify stops listing it as a device"
+on_calendar = "*:0/5"
+command = "projects/spotifyd/watchdog_spotify_listed.sh"
+log = "spotify-listed-watchdog.log"
+
+[[job]]
+name = "healthcheck"
+host = "xero"
+desc = "Checks containers, units, backups, certs and devices; alerts via ntfy and MQTT"
+on_calendar = "*:0/15"
+command = "projects/healthcheck/healthcheck.sh"
+log = "healthcheck.log"
+
+[[job]]
+name = "backup-vaultwarden"
+host = "xero"
+desc = "Encrypted Vaultwarden backup to Dropbox"
+on_calendar = "*-*-* 02:00:00"
+command = "projects/certs-backup/backup_vaultwarden.sh"
+log = "backup.log"
+network = true
+
+[[job]]
+name = "backup-homeassistant"
+host = "xero"
+desc = "Copies HA's backups to Dropbox, keeps the newest few"
+on_calendar = "*-*-* 03:00:00"
+command = "projects/certs-backup/backup_homeassistant.sh"
+log = "backup.log"
+network = true
+
+[[job]]
+name = "backup-hardware-md"
+host = "xero"
+desc = "Encrypted docs/hardware.md backup to Dropbox (skips when unchanged)"
+on_calendar = "*-*-* 03:30:00"
+command = "projects/certs-backup/backup_hardware_md.sh"
+log = "backup.log"
+network = true
+
+[[job]]
+name = "backup-documents"
+host = "xero"
+desc = "Encrypted tar of the documents SMB share to Dropbox (skips when unchanged)"
+on_calendar = "*-*-* 03:45:00"
+command = "projects/certs-backup/backup_documents.sh"
+log = "backup.log"
+network = true
+
+[[job]]
+name = "glacier-archive"
+host = "xero"
+desc = "Monthly encrypted Immich archive to S3 Deep Archive (hours on a big month)"
+on_calendar = "*-*-01 04:00:00"
+# flock: a manual run (projects/immich-backup/README.md) must not overlap the timer's
+command = "/usr/bin/flock -n backups/immich-archive/.lock projects/immich-backup/archive_to_glacier.sh"
+log = "backup.log"
+network = true
+
+[[job]]
+name = "spotify-songs-sync"
+host = "xero"
+desc = "Rebuilds the \"play <song>\" voice list from Spotify liked songs; retrains STT if changed"
+on_calendar = "*-*-* 04:30:00"
+command = "projects/voice-assistant/sync_spotify_songs.sh"
+log = "spotify-songs.log"
+network = true
+
+[[job]]
+name = "cert-renew"
+host = "xero"
+desc = "Renews the tailnet TLS certs (tailscale cert, 30-day minimum validity)"
+# Weekly, not monthly: a failed monthly run has no retry before expiry.
+# 05:00 not 04:00 was to dodge Watchtower's Sunday restarts (old crontab note;
+# Watchtower actually runs at 09:30 IST, so either is clear).
+on_calendar = "Sun *-*-* 05:00:00"
+command = "projects/certs-backup/renew_certs.sh"
+log = "cert-renew.log"
+network = true
+
+[[job]]
+name = "miraie-login-renew"
+host = "xero"
+desc = "Restarts the Pi's Node-RED before its MirAIe login expires (exit 2 = skipped)"
+on_calendar = "*-*-* 11:05:00"
+command = "projects/miraie-ac/renew_miraie_login.sh"
+log = "miraie-login-renew.log"
+ok_codes = [2]
+network = true

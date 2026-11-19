@@ -1,7 +1,7 @@
 # Certificates and offsite backups
 
 Two jobs that happen to share a folder because they share a shape: both run
-unattended from xero's crontab, both are useless if they fail silently, and
+unattended from xero's systemd --user timers (`projects/jobs-dashboard/jobs.toml`, cron until 2026-11-19), both are useless if they fail silently, and
 both therefore alert. Nothing here is interactive.
 
 ## Backups (rclone to Dropbox)
@@ -48,7 +48,7 @@ Two things that will bite you if you edit it:
 ## Independent expiry check
 
 `renew_certs.sh` alerts when it *fails*, but it cannot alert if it never runs at
-all - a removed crontab line, a deleted script, or a machine that was off every
+all - a removed job, a deleted script, or a machine that was off every
 Sunday are all indistinguishable from silence, and that is exactly the failure
 that went unnoticed for three months. So `projects/certs-backup/check_certs.sh` checks expiry
 independently, called from `healthcheck.sh` every 15 minutes, sharing no

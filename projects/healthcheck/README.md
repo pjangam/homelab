@@ -1,7 +1,7 @@
 # Synthetic healthcheck
 
-The homelab's one alarm clock. `healthcheck.sh` runs from xero's crontab every
-15 minutes, checks the things whose failure is otherwise silent, and is
+The homelab's one alarm clock. `healthcheck.sh` runs every 15 minutes from a systemd --user
+timer (`job-healthcheck` in `projects/jobs-dashboard/jobs.toml`, cron until 2026-11-19), checks the things whose failure is otherwise silent, and is
 **quiet when healthy** - it emails and pushes only on a real problem, so that
 an arriving alert always means something.
 

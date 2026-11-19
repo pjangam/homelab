@@ -26,7 +26,7 @@
         "x": 0,
         "y": 0,
         "w": 24,
-        "h": 10
+        "h": 19
       },
       "fieldConfig": {
         "defaults": {
@@ -200,6 +200,16 @@
                         "color": "red"
                       }
                     }
+                  },
+                  {
+                    "type": "special",
+                    "options": {
+                      "match": "null",
+                      "result": {
+                        "text": "not run yet",
+                        "color": "transparent"
+                      }
+                    }
                   }
                 ]
               },
@@ -245,6 +255,7 @@
       },
       "options": {
         "showHeader": true,
+        "cellHeight": "sm",
         "sortBy": [
           {
             "displayName": "OK",
@@ -450,7 +461,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 10,
+        "y": 19,
         "w": 12,
         "h": 8
       },
@@ -530,7 +541,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 12,
-        "y": 10,
+        "y": 19,
         "w": 12,
         "h": 8
       },
@@ -610,7 +621,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 27,
         "w": 12,
         "h": 8
       },
@@ -699,7 +710,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 12,
-        "y": 18,
+        "y": 27,
         "w": 12,
         "h": 8
       },

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Off-site copy of Immich's originals in S3 Glacier Deep Archive: the copy we
 # read only if the Kingston SSD and the local backup are both lost. Run on
-# xero, monthly from cron:
+# xero, monthly (job-glacier-archive in projects/jobs-dashboard/jobs.toml):
 #   archive_to_glacier.sh [--dry-run]
 #
 # Every original Immich knows (its asset table, every user and the external

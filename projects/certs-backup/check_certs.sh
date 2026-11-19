@@ -37,7 +37,7 @@ for cert in "$CERT_DIR"/*.crt; do
   if [ "$days" -lt 0 ]; then
     echo "TLS cert $name EXPIRED $(( -days ))d ago - run projects/certs-backup/renew_certs.sh"; found=1
   elif [ "$days" -lt "$WARN_DAYS" ]; then
-    echo "TLS cert $name expires in ${days}d - weekly renewal has not run; check cert-renew.log and 'crontab -l'"; found=1
+    echo "TLS cert $name expires in ${days}d - weekly renewal has not run; check cert-renew.log and 'systemctl --user list-timers job-cert-renew'"; found=1
   fi
 done
 exit $found

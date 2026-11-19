@@ -71,7 +71,10 @@ readable_failed() {
 }
 
 # systemd --user failed units (this is what caught the white-noise/linger bug)
-user_failed=$(systemctl --user --failed --no-legend 2>/dev/null)
+# job-* units (projects/jobs-dashboard) are scheduled scripts: one failed run
+# leaves the unit failed until the next. Their failures show on the Grafana
+# Jobs dashboard; alerting on them is a separate decision (2026-11-18).
+user_failed=$(systemctl --user --failed --no-legend 2>/dev/null | grep -v ' job-[^ ]*\.service ')
 [ -n "$user_failed" ] && problems+=("⚙️ User services failed (systemctl --user)"$'\n'"$(readable_failed "$user_failed")")
 
 # systemd system failed units (would have caught the getty@tty1 crash-loop)

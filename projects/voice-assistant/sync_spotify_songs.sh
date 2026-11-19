@@ -2,7 +2,7 @@
 # Nightly: regenerate "play <song>" from the Spotify liked songs and, only if
 # the list changed, reload HA's automations and retrain Speech-to-Phrase
 # (~30s, during which the satellites hear nothing - hence the night slot).
-#   crontab: 30 4 * * * .../projects/voice-assistant/sync_spotify_songs.sh >> .../spotify-songs.log 2>&1
+#   04:30 daily: job-spotify-songs-sync in projects/jobs-dashboard/jobs.toml (log spotify-songs.log)
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 set -a; . ./.env.healthcheck; set +a

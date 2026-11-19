@@ -13,6 +13,7 @@ a week, a point covers ~10 minutes and still shows the worst 5 seconds in it.
 Gauges (temperature, memory, disk) get max_over_time the same way.
 """
 import json
+import tomllib
 from pathlib import Path
 
 import yaml
@@ -345,6 +346,11 @@ JOB_VAR = {"type": "query", "name": "jobname", "label": "Job", "datasource": DS,
            "current": {"text": "All", "value": "$__all"}}
 
 
+# Table height: one grid unit per job plus the header, so no row hides behind a scrollbar.
+JOBS_ROWS = len(tomllib.loads((OUT.parent.parent.parent / "projects/jobs-dashboard/jobs.toml").read_text())["job"])
+JOBS_H = max(10, JOBS_ROWS + 3)
+
+
 def jobs_table(y):
     cols = [  # (refId, expr, column, unit)
         ("A", J.format("last_ok"), "OK", "none"),
@@ -366,7 +372,8 @@ def jobs_table(y):
     overrides += [
         {"matcher": {"id": "byName", "options": "OK"},
          "properties": [{"id": "mappings", "value": [{"type": "value", "options": {
-             "1": {"text": "ok", "color": "green"}, "0": {"text": "FAILED", "color": "red"}}}]},
+             "1": {"text": "ok", "color": "green"}, "0": {"text": "FAILED", "color": "red"}}},
+             {"type": "special", "options": {"match": "null", "result": {"text": "not run yet", "color": "transparent"}}}]},
              {"id": "custom.cellOptions", "value": {"type": "color-background"}}]},
         {"matcher": {"id": "byName", "options": "Fails in a row"},
          "properties": [{"id": "thresholds", "value": {"mode": "absolute", "steps": [
@@ -381,9 +388,9 @@ def jobs_table(y):
         "id": next(_ids), "type": "table", "title": "Jobs", "datasource": DS,
         "description": "One row per job, latest finished run. Schedules and commands: "
                        "projects/jobs-dashboard/jobs.toml. Output: the log file, or journalctl --user -u job-<name>.",
-        "gridPos": {"x": 0, "y": y, "w": 24, "h": 10},
+        "gridPos": {"x": 0, "y": y, "w": 24, "h": JOBS_H},
         "fieldConfig": {"defaults": {"custom": {"align": "auto"}}, "overrides": overrides},
-        "options": {"showHeader": True, "sortBy": [{"displayName": "OK", "desc": False}]},
+        "options": {"showHeader": True, "cellHeight": "sm", "sortBy": [{"displayName": "OK", "desc": False}]},
         "targets": targets,
         "transformations": [
             {"id": "merge", "options": {}},
@@ -398,7 +405,7 @@ def jobs_table(y):
 
 y = 0
 jobs = [jobs_table(y)]
-y += 10
+y += JOBS_H
 jobs.append(panel("Duration of each run", [(J.format("last_duration_seconds"), "{{host}} {{name}}")],
                   "s", 0, y, w=12, desc="Steps to each run's duration when it finishes. "
                   "Runs shorter than the gap between points can be missed when zoomed out; the table's p95/max cannot."))

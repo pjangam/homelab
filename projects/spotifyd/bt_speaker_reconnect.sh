@@ -4,7 +4,7 @@
 # there. The speaker boots into Bluetooth mode, and AUX only comes back with a
 # button press or a cable reseat, so Bluetooth is the hands-free path.
 #
-# Run from xero's crontab every minute. Quiet when nothing changes; logs only
+# Run every minute by job-bt-speaker-reconnect (projects/jobs-dashboard/jobs.toml). Quiet when nothing changes; logs only
 # when it (re)connects or fixes the default sink.
 #   BT_SPEAKER_MAC  speaker address (default: the Apollo One)
 #   --dry-run       report state, change nothing

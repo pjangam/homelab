@@ -2,14 +2,14 @@
 
 **Generated from `tracker/` by `tools/repo-tools/tracker.py index` - do not edit by hand.** One file per project lives in [`tracker/`](tracker/); how they work is in [`tracker/README.md`](tracker/README.md). The dashboard: `https://xero.<tailnet>/projects`.
 
-## 🟢 Active (13) · ₹16,340-₹19,000 + 10 unbudgeted
+## 🟢 Active (13) · ₹16,340-₹19,000 + 9 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
 | [Move xero's datapool SSD out of the case](tracker/datapool-ssd-external.md) | P1 | ? | ? |
 | [xero's UPS (CRU12V3A) dead - xero off until it is replaced](tracker/xero-ups-replacement.md) | P1 | ? | ? |
 | [Hands-free Claude in the car (Siri -> HA Assist -> Claude)](tracker/car-claude.md) | P2 | ? | ? |
-| [Jobs dashboard in Grafana](tracker/jobs-dashboard.md) | P2 | ? | ? |
+| [Jobs dashboard in Grafana](tracker/jobs-dashboard.md) | P2 | ₹0 (software only) | ~3 evenings left (scrub/TRIM, phases 2-4) |
 | [Baby-cry alert via ntfy (replace SMS Shortcut)](tracker/baby-cry-alert.md) | P3 | ? | ? |
 | [Bhakti's Google Takeout into Immich](tracker/bhakti-takeout-immich.md) | P3 | ? | ? |
 | [Clawlight jump-to-console from the iPhone (Termius -> ssh -> tmux attach)](tracker/clawlight-iphone-console.md) | P3 | ? | ? |

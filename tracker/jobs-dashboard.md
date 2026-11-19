@@ -1,12 +1,15 @@
 # Jobs dashboard in Grafana
 **Status:** Active
 **Priority:** P2
-**Cost:** ?
-**Effort:** ?
+**Cost:** ₹0 (software only)
+**Effort:** ~3 evenings left (scrub/TRIM, phases 2-4)
 
 #### Open items
-- [ ] **Claude, 2026-11-19:** check the pilot after a day: `tinxy-watchdog` runs every 5 min, history and metrics right, nothing ran twice
-- [ ] **Claude:** phase 1: move the other crontab jobs one at a time, scrub/TRIM read from `zpool status`
+- [ ] **Claude, 2026-11-20:** check the first nightly runs under timers: Vaultwarden 02:00, HA 03:00, hardware.md 03:30, documents 03:45, spotify-songs 04:30 (`backup.log`, dashboard rows no longer "not run yet", healthcheck backup ages)
+- [ ] **Claude, 2026-12-01:** check `glacier-archive`'s first run from its timer (04:00, hours; `backup.log`)
+- [ ] **Pramod:** decide whether healthcheck should alert on a failed `job-*` run (left out of its failed-units check for now, to keep alerting unchanged)
+- [ ] **Claude, after 2026-11-25:** remove the Diwali one-off, the crontab's last line
+- [ ] **Claude:** phase 1 remainder: scrub/TRIM read from `zpool status` (root's `/etc/cron.d`)
 - [ ] **Claude:** phase 2: repo-owned long-running `systemd --user` units (allowlist)
 - [ ] **Claude:** phase 3: the Pi: `--collector.textfile.directory` in `deploy_pi.sh` (no sudo), its crontab to timers, `watchdog_nodered.sh` into the repo
 - [ ] **Claude:** phase 4: container jobs: HA backups, automations, recorder purge/DB size; Immich jobs and DB dumps; Pi-hole gravity; Watchtower
@@ -46,3 +49,4 @@
 - 2026-11-18: architecture review: build after fixes (Pi cannot reach Prometheus, Pi node-exporter has no textfile collector, a broken cron wrapper would stop every job, schedules that differ from their cron line). User chose `systemd --user` timers over the wrapper, kept 8GB retention, all HA job kinds, and moving `watchdog_nodered.sh` into the repo.
 - 2026-11-18 12:29: **pilot live.** `projects/jobs-dashboard/` (`jobs.toml`, `install_jobs.py`, `record_run.sh`, `jobs_collector.py`); `tinxy-watchdog` moved from cron to `job-tinxy-watchdog.timer` (crontab saved first as `crontab.xero.before`), collector every minute into `services/node-exporter/textfile/jobs.prom`. First runs: exit 0, 0.2s CPU, 14MB peak, temps from Prometheus. systemd 255 drops `MemoryPeak` at stop (read in `ExecStopPost` instead) and user units have no io controller (no disk numbers).
 - 2026-11-18 13:50: **Grafana "Jobs" dashboard live** (`https://xero.<tailnet>/grafana/`, uid `jobs`): jobs table (result, last start, duration, p95/max over 60 days, next run, failures in a row, CPU, peak memory, peak CPU and Kingston temperature), duration and failure graphs, CPU and SSD temperature with jobs shaded while they run (only runs over 10s). The collector's `job` label clashed with Prometheus's scrape label, renamed to `name`.
+- 2026-11-19: pilot checked: 320 `tinxy-watchdog` runs, all every 5 min, none doubled. **Phase 1: all 14 jobs left in xero's crontab moved to timers** in one step (crontab emptied at 15:11:17, before the first shared minute; only the 25 Nov Diwali one-off left). Checked: every-minute and 5/15-min jobs ran clean under their timers; hardware.md backup, cert renewal and MirAIe renewal started by hand, all exit 0 (rclone, gpg, ssh to the Pi, Caddy's admin API all fine). Locale same as cron (`en_IN`), so `backup.log` parsing unchanged. Collector moved to :30 (at :00 it caught 5-min jobs mid-start and shaded a minute every 5); history files appended, pruned daily (a full rewrite every minute would have been ~13MB/min for every-minute jobs); healthcheck skips failed `job-*` units; glacier keeps `flock -n` against a manual run. Dashboard table sized to all jobs, "not run yet" for jobs without a run. `check_hardware_md.sh` reads `jobs.toml`; READMEs and script headers no longer say cron.
