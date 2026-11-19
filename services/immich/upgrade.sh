@@ -18,7 +18,11 @@
 #     @pre-vX.Y.Z, sets IMMICH_VERSION in .env, starts server + ML + redis
 #     (redis so a valkey digest bump in docker-compose.yml applies too)
 #   - waits for immich_server to report healthy and prints the migration lines
-#   - if healthy, deletes immich images older than the previous version
+#   - if healthy, deletes immich images older than the previous version and
+#     every older @pre-* snapshot of both datasets (@pre-$new is the rollback
+#     point, so nothing older is needed). A "dataset is busy" destroy means
+#     immich_server holds the snapshot automounted in its container: the
+#     script restarts it and retries once.
 #
 # Run it from a real terminal: the snapshot needs sudo's password prompt.
 # Diun posts to ntfy homelab-updates when a new release is out
@@ -121,10 +125,28 @@ if [[ $st == healthy ]]; then
   done
 fi
 
-echo "Done: $old -> $new, snapshots @$snap."
+# Drop older @pre-* snapshots: @pre-$new alone is enough to roll back to $old.
+# Left alone when the upgrade is not healthy - then they may be needed.
+if [[ $st == healthy ]]; then
+  destroy_old_snaps() {
+    local ds olds rc=0
+    for ds in datapool/immich-db datapool/immich-upload; do
+      olds=$(zfs list -H -t snapshot -o name "$ds" | sed -n "s|^$ds@\(pre-.*\)$|\1|p" | grep -vx "$snap" | paste -sd, - || true)
+      [[ -z $olds ]] && continue
+      sudo zfs destroy -v "$ds@$olds" || rc=1
+    done
+    return $rc
+  }
+  if ! destroy_old_snaps; then
+    echo "Some snapshots were busy; restarting immich_server to release them and retrying."
+    docker restart immich_server >/dev/null
+    destroy_old_snaps || echo "Still could not destroy them; see 'dataset is busy' in services/immich/README.md." >&2
+  fi
+fi
+
+echo "Done: $old -> $new, snapshot @$snap (older @pre-* snapshots removed if healthy)."
 echo "  Check the web UI and the phone app, then record it in services/immich/README.md."
 echo "  Remote ML on the Mac, if in use: remote_ml_mac.sh $new"
 echo "  Roll back: docker compose stop immich-server immich-machine-learning;"
 echo "    sudo zfs rollback datapool/immich-db@$snap; sudo zfs rollback datapool/immich-upload@$snap;"
 echo "    set IMMICH_VERSION=$old in .env; docker compose up -d immich-server immich-machine-learning"
-echo "  Once happy, drop the previous snapshots: zfs list -t snapshot | grep immich"
