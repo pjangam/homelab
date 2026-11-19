@@ -5,7 +5,6 @@
 **Effort:** ~1 evening (3-4h), after the servo build
 
 #### Open items
-- [ ] **Pramod:** decide whether the Apollo One stays or a wired speaker replaces it - a wired speaker closes this entry (see "Kill condition")
 - [ ] **Together, after the servo works:** time servo-on -> speaker booted -> xero connected -> sink ready, and wake word -> spoken reply; decides whether replies can be covered (see "Spoken replies")
 - [ ] **Claude, after the servo works:** build it - power on + connect on a "play", the play button or the wake word; disconnect + power off after ~10 min with nothing playing; gate the every-minute reconnect cron
 
@@ -51,7 +50,7 @@
 - **Power cuts:** the speaker runs on its battery and the slider stays put, so nothing changes; HA's idle timer must be a restart-safe automation (state duration), not a `delay` that a restart forgets.
 
 #### Kill condition
-The user may replace the Apollo One with a **wired speaker** soon (2026-11-18). Then this entry, the servo and both charge switches are moot: a wired powered speaker on a local smart plug (ESPHome/Tasmota, not cloud) gives the same on-demand power with no Bluetooth at all. Close this entry if that happens.
+**Decided 2026-11-19: the Apollo One stays** (user: "this speaker I already have so I think it's better to keep using it rather than buying new"). The condition below only applies if that changes, e.g. when its battery dies. If the Apollo One is ever replaced with a **wired speaker**, this entry, the servo and both charge switches are moot: a wired powered speaker on a local smart plug (ESPHome/Tasmota, not cloud) gives the same on-demand power with no Bluetooth at all. Close this entry if that happens.
 
 #### Readymade alternatives
 - None for the software side; the hardware alternatives (button pushers, wired speaker + smart plug) are compared in `speaker-power-servo.md` and under "Kill condition".
@@ -70,3 +69,4 @@ None. Everything comes from `speaker-power-servo.md` (servo, controller) and wha
 
 #### Log
 - 2026-11-18: idea recorded (user). Builds after the servo; disconnecting alone saves nothing. The servo entry's "after the servo works" item now points here.
+- 2026-11-19: **Apollo One stays** (user): already owned, no new speaker bought. The battery-wear concern is handled by this entry, the servo and the charge switches. Also considered and dropped the same day: the MAX98357A + 0.5W driver on the living-room satellite as a music replacement (fine for replies, weak for music; original ESP32 has no PSRAM).
