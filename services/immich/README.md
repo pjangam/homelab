@@ -105,6 +105,8 @@ activity: 63°C under load, 51°C fifteen seconds after a pause.
   2. Read the releases it lists. Copy into our `docker-compose.yml` / `.env` whatever from the upstream diff applies to us.
   3. `services/immich/upgrade.sh` (latest) or `upgrade.sh vX.Y.Z`. It asks for `yes`, then stops server and ML, snapshots both datasets as `@pre-vX.Y.Z`, sets `.env`, starts server, ML and redis, waits for healthy and prints the migration lines.
   4. Check the web UI and the phone app, add a line below, and delete the previous `@pre-*` snapshots.
+     - `zfs destroy` takes one argument per dataset; list snapshots with commas: `sudo zfs destroy -nv datapool/immich-upload@pre-vA,pre-vB` (dry run), then without `-nv`.
+     - **`dataset is busy`:** `immich_server` can hold a snapshot auto-mounted inside its container (`grep @pre- /proc/*/mountinfo`; the host's `mount` does not show it). `docker restart immich_server`, then destroy straight away (2026-11-19).
 
 2026-10-09: 2.7.5 -> 3.3.1 went through 2.7.5 on the
 `ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0` image first,

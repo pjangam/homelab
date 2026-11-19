@@ -2,7 +2,7 @@
 
 **Generated from `tracker/` by `tools/repo-tools/tracker.py index` - do not edit by hand.** One file per project lives in [`tracker/`](tracker/); how they work is in [`tracker/README.md`](tracker/README.md). The dashboard: `https://xero.<tailnet>/projects`.
 
-## 🟢 Active (13) · ₹340-₹2,000 + 11 unbudgeted
+## 🟢 Active (13) · ₹16,340-₹19,000 + 10 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -13,7 +13,7 @@
 | [Baby-cry alert via ntfy (replace SMS Shortcut)](tracker/baby-cry-alert.md) | P3 | ? | ? |
 | [Bhakti's Google Takeout into Immich](tracker/bhakti-takeout-immich.md) | P3 | ? | ? |
 | [Clawlight jump-to-console from the iPhone (Termius -> ssh -> tmux attach)](tracker/clawlight-iphone-console.md) | P3 | ? | ? |
-| [datapool storage headroom](tracker/datapool-headroom.md) | P3 | ? | ? |
+| [datapool storage headroom](tracker/datapool-headroom.md) | P3 | ₹16,000-17,000 (the backup HDD) | ~2 weekends (HDD pool + syncoid, then the `copies=1` rewrite) |
 | [Home power audit - smart/network devices + major appliances](tracker/home-power-audit.md) | P3 | ? | ? |
 | [Humidity-triggered AC dry mode and mister (temperature/humidity sensor on an ESP32)](tracker/humidity-dry-mode.md) | P3 | ₹300-500 | ~2 evenings (4-6h) |
 | [Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement](tracker/syncthing-doc-sync.md) | P3 | ? | ? |

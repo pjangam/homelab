@@ -1,11 +1,11 @@
 # datapool storage headroom
 **Status:** Active
 **Priority:** P3
-**Cost:** ?
-**Effort:** ?
+**Cost:** ₹16,000-17,000 (the backup HDD)
+**Effort:** ~2 weekends (HDD pool + syncoid, then the `copies=1` rewrite)
 
 #### Open items
-- [ ] **Pramod:** destroy the `@pre-v3.3.5` snapshots of `immich-upload` and `immich-db` once happy with 3.3.5 (irreversible; returns the ~62G)
+- [ ] **Pramod, with the next batch of cleanup commands:** destroy `datapool/recovered-media` (851M; both videos are in Immich, SHA-1 checked 2026-10-26, and in Deep Archive): `sudo zfs destroy -nv datapool/recovered-media`, then without `-nv`
 - [ ] **Together, when the HDD arrives:** serial on Seagate's warranty page, SMART long test, `f3probe`, make it its own ZFS pool (ZFS native encryption, key file on the boot disk + copy in Vaultwarden), stays plugged in but exported between runs (each run imports, sends, exports, then spins the disk down itself with `sdparm --command=stop` so a power cut finds the heads parked; watch SMART `Power-Off_Retract_Count`; ~0.5W idle; unplugging saves only ~Rs 30/year, S3 is the offline copy; decided 2026-11-17), check the UPS margin against the watchdog's 10 min; set up sanoid/syncoid: originals, albums, documents and phone uploads hourly but skipped when `written` is 0, `immich-db` every 6 hours, transcodes and thumbs not copied. Not a mirror: it would slow every write and copy deletions instantly
 - [ ] **Claude:** monthly scrub of the backup pool and an alert when a backup run fails
 - [ ] **Together, with the backup:** rewrite the originals at `copies=1` (decided 2026-11-10, reverses 2026-11-02; frees ~80G) in this order: rsync into a new `copies=1` dataset (old one kept), first full send of the new one to the HDD + clean scrub, then destroy the old dataset and its snapshots. xero's zfs userland is 2.2.2, so no `zfs rewrite`
@@ -42,3 +42,5 @@
 - 2026-11-14: the 1TB Samsung SD card cannot be found, so the backup copy waits for an HDD bought at Black Friday (2026-11-27). Bhakti's thumbnails checked against her dry run: ~7G for 23k files, 34G free on the boot disk. Transcodes to the boot disk ruled out: 57G today vs 34G free.
 - 2026-11-17: decided (user): buy the backup HDD now instead of waiting for Black Friday. Prefer a USB-powered Portable (on xero's mini UPS through USB); pool stays plugged in, exported and spun down between hourly runs, ZFS-encrypted.
 - 2026-11-17: compared listings (prices that day): Seagate One Touch Portable 5TB (metal, Rescue 3y) Rs 18,999 on Flipkart was best per TB, but Flipkart does not deliver to home and office delivery is awkward. Decided (user): Seagate Portable 4TB STGX4000400 on Amazon, Rs 16,949, sold by Clicktech, home delivery, Amazon Pay ICICI cashback (~Rs 16,100 effective), around Black Friday. Skipped: Seagate Expansion Desktop 4TB (own adapter, no UPS), WD My Passport 4TB Rs 19,000, WD Elements 4TB Rs 17,258-20,549, One Touch on Amazon Rs 21,499 (4TB) / 25,299 (5TB), IronWolf ST4000VN006 Rs 24,879 (internal 3.5", imported).
+- 2026-11-19: destroyed `@pre-v3.3.5` and `@pre-v3.4.1` on `immich-upload` and `immich-db` (127G + 880M back). Only `@pre-v3.4.2` left. `datapool` now 519G used (58%), 342G free: `google-takeout/bhakti` 279G (root dataset), `immich-upload` 219G (58G of it `encoded-video`), `phone-uploads` 12G, `albums` 6G, `immich-db` 950M, `recovered-media` 851M, `documents` 449M. Frag 37% is free-space fragmentation, harmless on an SSD; ZFS has no defrag, so the number to watch is staying under ~80% full.
+- 2026-11-19: the first destroy failed with `dataset is busy`: `immich_server` had auto-mounted `.zfs/snapshot/pre-v3.3.5` inside its container (seen in `/proc/<pid>/mountinfo`, not in the host's `mount`). `docker restart immich_server` released it. Cause not yet found.
