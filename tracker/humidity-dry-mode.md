@@ -7,7 +7,7 @@
 #### Open items
 - [ ] **Pramod:** decide where the SHT40 lives: the Pi (leaning, 2026-11-18: pins 3/5, I2C on, small MQTT script like pi-health) or the bedroom satellite (firmware already written; it frees GPIO19/21 for `scene-remote.md` if it goes to the Pi)
 - [ ] **Pramod:** wire the SHT40 to the bedroom satellite on a ~30cm lead: VIN->3V3, GND->GND, SDA->GPIO21, SCL->GPIO19, sensor outside the box
-- [ ] **Pramod:** flash the bedroom satellite (OTA to .125, built on the Mac with `build_on_mac.sh`); this flash also carries the pending play-button/voice-reply firmware and the extender-first WiFi
+- [ ] **Pramod:** flash the bedroom satellite (OTA to .125, built on the Mac with `build_on_mac.sh`); it also carries the extender-first WiFi (the play button and reply events are already on the board, flashed 2026-11-18)
 - [ ] **Claude:** once it reads, check `sensor.voice_satellite_bedroom_temperature`/`_humidity` in HA and add both to the Bedroom dashboard view
 - [ ] **Together:** bench the sensor beside a known hygrometer for a day, then record a few weeks of data before writing any automation
 

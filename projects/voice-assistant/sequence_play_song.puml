@@ -1,7 +1,7 @@
 @startuml
 ' One "Hey Jarvis, play faint" said in the bedroom, step by step.
 ' Render: projects/voice-assistant/render_architecture.sh
-title "Hey Jarvis, play faint" in the bedroom - one command end to end
+title "Hey Jarvis, play faint" in the bedroom - one command end to end (2026-11-19)
 
 skinparam shadowing false
 skinparam defaultFontName Helvetica
@@ -13,50 +13,87 @@ actor "You" as user
 participant "Bedroom satellite\n(ESP32 + mic)" as sat
 box "xero" #F3E5F5
   participant "HA Assist\npipeline" as pipe
-  participant "openwakeword" as oww
-  participant "speech-to-phrase" as stp
-  participant "voice_play_song\nautomation" as auto
+  participant "wake-proxy ->\nopenwakeword" as oww
+  participant "stt-fallback ->\nspeech-to-phrase\n(+ IndicConformer)" as stt
+  participant "HA automations\n(voice_replies.yaml)" as rep
+  participant "voice_play_song\n+ voice_start_music" as auto
   participant "Spotcast" as sc
   participant "piper" as piper
+  participant "mosquitto" as mqtt
 end box
 participant "Spotify\nWeb API" as sp
-box "wol Pi" #E3F2FD
+box "wol Pi (bedroom)" #E3F2FD
   participant "spotifyd" as spd
+  participant "voice-reply\nbridge + VLC" as br
 end box
 
 == always on ==
 sat -> pipe : mic audio, streamed continuously
 pipe -> oww : audio frames
-user -> sat : "Hey Jarvis"
-oww --> pipe : wake word detected
+user -> sat : "Hey Jarvis" (or "Dumbledore")
+oww --> pipe : wake word detected\n(Dumbledore reported as hey_jarvis)
 note over pipe : the other satellite heard it too:\nHA drops that run (duplicate wake-up)
+
+== wake word: pause this room's music ==
+pipe -> rep : satellite -> "listening"\n(voice_music_pause)
+rep -> rep : bedroom: note whether white noise is on
+opt the Pi ("raspberrypi") is playing
+  rep -> sp : pause; voice_paused_bedroom on
+end
 
 == command ==
 user -> sat : "play faint"
 sat -> pipe : audio until silence (VAD)
-pipe -> stp : audio clip
-stp -> stp : decode against the trained phrases,\nfuzzy-match to the nearest one
+pipe -> stt : audio clip
+stt -> stt : speech-to-phrase: nearest trained phrase
 alt close to a trained phrase
-  stp --> pipe : "play faint"
-else too far from every phrase, or no audio
-  stp --> pipe : "" -> "No text recognized", stops here
+  stt --> pipe : "play faint"
+else nothing: IndicConformer tries a Marathi title
+  stt --> pipe : "play <title>", or "" if no clear match
+  note right of pipe : "" -> "No text recognized"; the board fires\nvoice_tone: a tone on the Pi if you spoke 2-12s\n(not at night), then voice_end -> resume
 end
 pipe -> auto : sentence trigger "play {song}", song = "faint"
-auto -> auto : song list -> spotify:track:...\nsatellite area bedroom -> Pi
-auto -> sc : play_media(track URI, Pi)
-sc -> sp : start playback on device "raspberrypi"
-sp -> spd : Spotify Connect: play track
-spd -> spd : audio out of the 3.5mm jack
-auto --> pipe : response "Playing Faint - Linkin Park"
-pipe -> piper : text
+alt white noise is on in the bedroom
+  auto --> pipe : "White noise is on" - nothing plays\n(text only: no bedroom replies under white noise)
+else title in the song list
+  auto -> sc : voice_start_music: play_media(track URI, Pi)
+  sc -> sp : start playback on device "raspberrypi"
+  sp -> spd : Spotify Connect: play track
+  spd -> spd : audio out of the 3.5mm jack
+  alt it played
+    auto -> auto : voice_paused_bedroom off,\nvoice_music_started_bedroom on
+    auto --> pipe : "Playing Faint - Linkin Park"
+  else the call failed
+    auto --> pipe : "Couldn't play Faint"
+  end
+else not in the list
+  auto --> pipe : "faint is not in your liked songs"
+end
+pipe -> piper : reply text
 piper --> pipe : speech audio
 pipe -> sat : reply audio URL
-note right of sat : no speaker on the satellite (mic only):\nthe reply is generated but never played.\nOnly the HA phone app plays it.
 
-== every night 04:30 (only if the library changed) ==
-note over auto, stp
+== reply on the room speaker ==
+sat -> rep : event esphome.voice_reply {url}\n(voice_reply_events -> script voice_reply)
+alt music started (voice_music_started_bedroom on)
+  rep -> rep : clear the flag, no spoken reply:\nthe music is the answer
+else white noise on, bridge offline or replies switched off
+  rep -> rep : skip
+else a reply to speak ("Couldn't play ...", "... not in your liked songs")
+  rep -> mqtt : voice_reply/pi/play {url, volume preset}\n(night preset 22:00-07:00)
+  mqtt -> br : play
+  br -> br : VLC plays it on the jack,\nrestores the volume
+  br -> mqtt : voice_reply/pi/done
+  mqtt -> rep : done
+end
+sat -> rep : event esphome.voice_end
+rep -> sp : voice_resume: if voice_paused_bedroom is on,\nresume the music paused at the wake word
+
+== every night 04:30 (systemd --user timer, only if the library changed) ==
+note over auto, stt
   sync_spotify_songs.sh: spotify_library.py reads liked songs + playlists,
   writes songs.yaml + spotify_songs.yaml (with ALIASES),
-  reloads HA automations, restarts speech-to-phrase (retrains, ~75s)
+  reloads HA automations, restarts speech-to-phrase (retrains, ~75s);
+  stt-fallback re-reads the song list by itself
 end note
 @enduml

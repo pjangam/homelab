@@ -1,7 +1,7 @@
 @startuml
 ' Which way one voice command goes: every decision between "Hey Jarvis"
 ' and what you hear. Render: projects/voice-assistant/render_architecture.sh
-title One voice command - every decision
+title One voice command - every decision (2026-11-19)
 
 skinparam shadowing false
 skinparam defaultFontName Helvetica
@@ -17,6 +17,9 @@ if (the other satellite already took this wake word?) then (yes)
   (error duplicate_wake_up_detected);
   stop
 endif
+if (spoken replies on, and this room's\nSpotify device is playing?) then (yes)
+  #FFEBEE:Pause it (voice_paused_<room> on);
+endif
 :Record until silence (VAD);
 :speech-to-phrase: audio -> nearest trained phrase;
 if (close enough to a trained phrase?) then (no)
@@ -25,27 +28,44 @@ if (close enough to a trained phrase?) then (no)
   if (clearly one of our songs?\n(local title match, then Spotify top 3)) then (yes)
     #E1BEE7:text = "play <title>";
   else (no)
-    #FFCDD2:"No text recognized"
-    run ends, nothing happens;
+    #FFCDD2:"No text recognized";
+    if (you spoke 2-12s, and not\nbedroom at night or under white noise?) then (yes)
+      #FFEBEE:failure tone on the room speaker;
+    endif
+    #FFEBEE:resume music paused at the wake word;
     stop
   endif
 endif
 if (matches "play {song}"?) then (yes)
   #E3F2FD:voice_play_song (4a);
-  if (title in the song list?) then (yes)
+  if (bedroom and white noise on?) then (yes)
+    :"White noise is on" - nothing plays;
+  elseif (title in the song list?) then (yes)
     if (satellite's area is bedroom?) then (yes)
-      #E3F2FD:Spotcast: play the track on the Pi;
+      #E3F2FD:voice_start_music: Spotcast plays
+      the track on the Pi;
     else (no)
-      #E3F2FD:Spotcast: play the track on xero
-      (reconnect the Bluetooth speaker first);
+      if (xero's Bluetooth speaker connects\nwithin 25s?) then (yes)
+        #E3F2FD:voice_start_music: Spotcast plays
+        the track on xero;
+      else (no)
+        :"The living room speaker isn't connected";
+      endif
     endif
-    :reply "Playing <title> - <artist>";
+    if (it played?) then (yes)
+      :"Playing <title> - <artist>"
+      (music started: not spoken);
+    else (no)
+      :"Couldn't play <title>";
+    endif
   else (no)
     :reply "<title> is not in your liked songs";
   endif
 elseif (matches a sentence in voice_commands.yaml?) then (yes)
   #E8F5E9:that automation (4b): AC, fan speed,
-  turn off everything, Spotify pause / next / volume;
+  turn off everything, white noise, Spotify
+  pause / next / volume (room guard: only this
+  room's music, else "The music is in the bedroom");
   :its reply ("AC on", "Bedroom fan low", ...);
 elseif (matches a built-in sentence?) then (yes)
   #FFF8E1:HA built-in intent (4c):
@@ -57,7 +77,17 @@ else (no)
   phrases HA already knows);
 endif
 :Piper turns the reply into speech;
-#EEEEEE:Reply URL sent to the satellite:
-dropped (no speaker; plan-room-replies.md);
+:Reply URL to the satellite, which fires
+esphome.voice_reply back to HA;
+if (music just started in this room?) then (yes)
+  #EEEEEE:no spoken reply (the music is the answer);
+elseif (bedroom and white noise on,\nor the room's bridge offline,\nor spoken replies switched off?) then (yes)
+  #EEEEEE:no spoken reply;
+else (no)
+  #FFEBEE:MQTT -> voice-reply bridge -> VLC:
+  the reply on the room's speaker
+  (Pi jack / xero Bluetooth; bedroom night preset 22:00-07:00);
+endif
+#FFEBEE:voice_end: resume music paused at the wake word;
 stop
 @enduml

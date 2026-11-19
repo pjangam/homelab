@@ -32,8 +32,9 @@ Edit the `.puml`, then run `render_architecture.sh` (PlantUML in Docker) and com
 | Speech-to-text | `stt-fallback` container on `127.0.0.1:10300` (what HA's `stt.speech_to_phrase` points at) -> `speech-to-phrase` container (`127.0.0.1:10301` for direct tests). Legacy v1.4 (Kaldi) image: the newer Speech-to-Phrase ships only as an HA OS app. Why this one: "Choosing the speech-to-text" below; the proxy: "Marathi fallback" below. |
 | Command matching | HA's own conversation agent (`prefer_local_intents` on), plus `packages/voice_commands.yaml` for what its built-in sentences do not cover |
 | Text-to-speech | `piper` container, `127.0.0.1:10200`, voice `en_US-lessac-medium`. **Required, not optional** - see Gotchas. |
+| Spoken replies | No speaker on the satellites: replies play on the room's own speaker (Pi jack / xero Bluetooth) through the `voice-reply` bridge, and music is paused at the wake word and resumed after - "Spoken replies and play button" below |
 | Pipeline | The preferred "Home Assistant" Assist pipeline: `stt.speech_to_phrase` + `tts.piper` |
-| Mic | Two ESP32 + INMP441 satellites on ESPHome (Voice Satellite in the bedroom, Voice Living Room), streaming audio to HA all the time; wake words **"Hey Jarvis" and "Dumbledore"** (both live since 2026-11-16, see "Two wake words") in the `openwakeword` container on xero, reached through `wake-proxy` (the boards are original ESP32s, no on-device wake word). Also the HA phone app's Assist button. Wiring: `wiring.html` |
+| Mic | Two ESP32 + INMP441 satellites on ESPHome (Voice Satellite in the bedroom, Voice Living Room), streaming audio to HA all the time; wake words **"Hey Jarvis" and "Dumbledore"** (both live since 2026-11-16, see "Two wake words") in the `openwakeword` container on xero, reached through `wake-proxy` (the boards are original ESP32s, no on-device wake word: see "Why the wake word runs on xero"). Also the HA phone app's Assist button. Wiring: `wiring.html` |
 
 ## Choosing the speech-to-text
 
@@ -74,6 +75,14 @@ Either "Hey Jarvis" or "Dumbledore" wakes both satellites. No flashing: the boar
 - **Rollback:** point openwakeword back at `127.0.0.1:10400:10400` and remove `wake-proxy`.
 - More wake words = more false wakes (each adds its own).
 
+### Why the wake word runs on xero (checked 2026-11-19)
+
+- **openWakeWord cannot run on an ESP32** - it is a Python/ONNX model. The on-device engine is **microWakeWord**, a different project.
+- **microWakeWord needs an ESP32-S3 with PSRAM.** Both satellites are original ESP32s, which ESPHome does not support for it.
+- **What on-device would gain:** the board streams audio only after the wake word (less WiFi traffic, less load on xero). It would not help the bedroom white-noise problem: the hiss masks the voice at the mic either way.
+- **What it would cost:** two ESP32-S3 boards, re-wiring the mics, a reflash, and "Dumbledore" (only the wake-proxy offers it; microWakeWord ships okay nabu, hey jarvis, alexa).
+- **Decision:** stay on xero; revisit only if the boards are replaced for another reason.
+
 ## Marathi fallback (`stt-fallback`, since 2026-11-15)
 
 A Wyoming proxy (`stt_fallback.py`) in front of Speech-to-Phrase. Built 2026-11-15 after Marathi titles kept coming back "No text recognized".
@@ -103,7 +112,7 @@ The satellites have no speaker, so HA's spoken reply goes to the speaker already
 | Reply bridge | `voice_reply_mqtt.py` as `voice-reply.service` + an always-running VLC `voice-reply-vlc.service` (systemd --user) on the **Pi** (bedroom, jack) and **xero** (living room, Bluetooth). Install / update: `install_voice_reply.sh pi` / `xero` (run on xero) |
 | HA | `packages/voice_replies.yaml` (helpers, `voice_reply`, `voice_resume`, `voice_start_music`, wake-word pause, event handlers, safety net), `packages/night_quiet.yaml` (night window, shared), `packages/play_button.yaml` |
 | Firmware | `esphome/voice-satellite-common.yaml`: events `esphome.voice_reply {url}`, `voice_tone {gap_ms}`, `voice_end`; play button GPIO23 -> `esphome.play_button` |
-| Gate | `input_boolean.voice_replies_enabled` ("Voice replies" tile, Bedroom view). **Off until both boards are reflashed** - before that nothing resumes music paused at the wake word |
+| Gate | `input_boolean.voice_replies_enabled` ("Voice replies" tile, Bedroom view). **On since 2026-11-18**, when both boards were flashed with the events. Off -> the wake word pauses nothing and no reply plays; resume and the safety net keep running |
 | Presets | Reply volume tiles: bedroom 93, bedroom at night (22:00-07:00) by ear, living room 35. The Pi's `%` is linear in dB: 40 there is ~-60 dB, inaudible |
 | Health | `binary_sensor.bedroom_voice_replies` / `living_room_voice_replies` (online while VLC answers); `healthcheck.sh` alerts after 15 min off |
 
