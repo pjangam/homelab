@@ -127,6 +127,10 @@ files; untested whether search/face results stay compatible or the ML backlog re
 3.4 adds built-in backups (`futo-backups`, "Yucca"): it generates a key on start,
 nothing is configured.
 
+2026-11-19: 3.4.1 -> 3.4.2 with `upgrade.sh` (snapshots `@pre-v3.4.2`). Bug fixes only;
+no compose or `example.env` changes, no new migrations. The ML image pull hit a ghcr
+rate limit during `--check`; a retry a few seconds later went through.
+
 **v3 needs video metadata re-extracted.** 3.x stores video stream details in
 a new `asset_video` table, filled by metadata extraction. Videos extracted
 under 2.x have `asset_job_status."metadataExtractedAt"` set but no
