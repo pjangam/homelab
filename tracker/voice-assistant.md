@@ -1,7 +1,7 @@
 # Voice assistant (HA Assist): Spotify, room replies, wake word
 **Status:** Active
 **Priority:** P3
-**Cost:** ₹40-1,500 (bedroom button; the optional satellite speakers are most of it)
+**Cost:** ₹40-120 (bedroom button)
 **Effort:** ~1 evening
 
 #### Open items
@@ -21,9 +21,6 @@
 - [ ] **Claude, 2026-11-19:** count living-room false wakes (3 on the evening of 2026-11-18, no words heard) and tune if they continue
 - [ ] **Claude, before the reflash:** wiring guide for the play button (`circuit-diagram`), GPIO23 to GND on both boards
 - [ ] **Together, a night with white noise on:** 10 x "Hey Jarvis" from the bed to see whether the wake word gets through the hiss (0 of 77 wake-ups in 8 days did)
-- [ ] **Pramod:** decide whether the speaker parts below are still wanted once room replies work
-- [ ] **Pramod:** buy the speaker parts below (local shop first)
-- [ ] **Together:** wire per the plan, add the firmware pieces, OTA both boards
 - [ ] **Claude:** update both boards' `docs/hardware.md` entries (GPIOs, firmware)
 - [ ] **Pramod, when he wants it:** un-pause `projects/spotifyd/plan-multiroom.md` (paused 2026-11-18; apply its ninth-review table first)
 
@@ -31,7 +28,7 @@
 **Why (Spotify):** raised 2026-11-03: play music by voice the way Siri does ("play X"), from the voice satellites and, later, the car.
 **State (Spotify):** phase 1 **built and tested 2026-11-04**, in a different shape from the plan below: instead of one phrase per playlist, every liked song and every track of the playlists in `PLAYLISTS` is speakable ("play <title>" or "play <title> by <artist>", 1095 phrases for 546 songs), plus pause/resume/next/previous/volume. Synced nightly. In use by voice since 2026-11-07. Phase 2 ("play anything") is parked on the no-paid rule: Moonshine is fast enough locally (0.3s) but needs a Wyoming wrapper and its own pipeline or wake phrase.
 **Why (replies, wake word):** the Assist pipeline already answers in speech (Piper), but neither ESP32 satellite can play it, so a command only shows on the LEDs and the living room entity can sit at "responding". And `hey_jarvis` is a stopgap wake word. Split out of "Local voice control (HA Assist)" (Done 2026-10-30).
-**State (speakers):** nothing bought or wired. Speaker design and parts below; community wake words `andromeda` and `dumbledore` are preloaded by `openwakeword` but untested.
+**State (speakers):** **dropped 2026-11-19** - replies play on each room's own speaker (Pi jack, Apollo One), so a speaker on the satellites is redundant (user). See "Speaker plan" below; community wake words `andromeda` and `dumbledore` are preloaded by `openwakeword` but untested.
 
 #### Phase 1 - fixed commands (offline, both satellites)
 - One custom sentence per playlist ("play bedtime music") -> a script that calls `spotcast.play_media` on the chosen speaker; plus pause, resume, next and volume for the Spotify players. Sentences go in `projects/voice-assistant/packages/voice_commands.yaml` (lists in `custom_sentences/en/sentences.yaml`), then restart speech-to-phrase so it retrains.
@@ -48,16 +45,15 @@ qty | item | est | note
 # Play button (one per satellite, 2026-11-17)
 2 | Momentary push button, 12mm panel mount, normally open | 40-100 | local; one per satellite box, GPIO23 to GND (plan-room-replies.md "Physical play button"); plays the playlist in that room
 4 | Female-female Dupont jumper wires | 20 | if none in stock; button to the ESP32 header
-# Satellite speaker (spoken replies on the board itself, optional)
-2 | MAX98357A I2S amplifier breakout | 300-600 | one per satellite, for spoken replies; I2S digital in, 3W class-D out, runs off the board's 5V VIN
-2 | Speaker driver, 4 ohm, 3W, 40-50mm | 100-350 | one per satellite; a bare driver, not a powered/Bluetooth speaker. Example: amazon.in/dp/B0GTZ5DD6P (2 inch, 4 ohm 3W, bracket + wires, Rs 169 each, 2026-10-15); cut its connector off if it does not fit the amp. Put it in a small box with holes in front
-2 | ABS project box, white/translucent (~115x90x55mm) | 300-500 | local - one per satellite: ESP32 + INMP441 + MAX98357A + 40-50mm speaker + 8 LEDs. Drill a speaker grille, a mic hole at the end away from the speaker, and a USB cable notch; translucent so the LED ring shows
 ```
 
-#### Speaker plan (2026-10-15)
+#### Speaker plan (2026-10-15) - dropped 2026-11-19
+**Dropped (user, 2026-11-19): redundant.** Spoken replies already play on each room's own speaker through the `voice-reply` bridge (since 2026-11-18), and the Apollo One stays as the living-room speaker. A MAX98357A + 8 ohm 0.5W driver are on hand; on an original ESP32 (no PSRAM) they would be fine for replies but weak for music. GPIO26/27/22 are free again (the bedroom's 22 is claimed by `scene-remote.md`). Kept below for reference.
+
 The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satellites have no way to play it, so today a command only shows on the LED. Adding a MAX98357A + small speaker per board gives spoken replies and confirmation tones. It goes on its own I2S bus (the ESP32 has two), not shared with the mic: LRC GPIO26, BCLK GPIO27, DIN GPIO22 - all free and none of them strapping pins - with VIN to 5V, GND, and SD left unconnected (amp on). Firmware: a second `i2s_audio` bus, an `i2s_audio` speaker, and `speaker:` on `voice_assistant`; ESPHome mutes the mic while the reply plays, so the board does not hear itself. Not wired or flashed yet.
 
 #### Log
+- 2026-11-19: satellite speaker plan **dropped** (user: redundant now that replies play on the room speakers and the Apollo One stays); its parts and open items removed, GPIO26/27/22 freed.
 - 2026-11-18: both satellites flashed (spoken-reply events + play button), replies switched on. Living room tested: the play button plays the playlist from track 1. Found and fixed on the way: xero's WirePlumber dropped Bluetooth at every ssh logout and suspended the idle output (`projects/spotifyd/install_wireplumber_bt.sh`); the bridge plays 0.8s of faint noise before each xero reply; HA's same-room acknowledge chime (hard-coded) is swapped for a spoken "Done." by the bridge - heard by the user.
 - 2026-11-18: **spoken replies built** (all but the flash). Reply bridge + always-running VLC on the Pi and xero (`voice_reply_mqtt.py`, tested: reply, tone, volume restore, bad URL, VLC down, Bluetooth off, white noise on); HA package `voice_replies.yaml` with the gate **off** until the reflash; room guard on the Spotify commands ("The music is in the living room"); no reply when music starts; failed plays say "Couldn't play"; "play X" refused in the bedroom under white noise; Spotify hidden from HA's built-in media commands; "stop white noise" sentences; play button scripts (living-room button tested from track 1); firmware events + GPIO23 button (validated, not flashed); healthcheck; dashboard tiles. Tone range moved to HA sliders (2-12s), so no week of calibration before the flash.
 - 2026-11-18: **room replies: ninth review applied** (3 major: a local record of the started device because HA skips quick Spotify refreshes; night preset 40 is inaudible on the Pi, set by ear instead; new media players are auto-exposed to Assist). Room guard extended to "pause the music" and volume (user). Ready to build.

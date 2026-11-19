@@ -2,7 +2,7 @@
 
 **Generated from `tracker/` by `tools/repo-tools/tracker.py index` - do not edit by hand.** One file per project lives in [`tracker/`](tracker/); how they work is in [`tracker/README.md`](tracker/README.md). The dashboard: `https://xero.<tailnet>/projects`.
 
-## 🟢 Active (13) · ₹16,340-₹19,000 + 9 unbudgeted
+## 🟢 Active (13) · ₹16,340-₹17,620 + 9 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -18,7 +18,7 @@
 | [Humidity-triggered AC dry mode and mister (temperature/humidity sensor on an ESP32)](tracker/humidity-dry-mode.md) | P3 | ₹300-500 | ~2 evenings (4-6h) |
 | [Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement](tracker/syncthing-doc-sync.md) | P3 | ? | ? |
 | [Use xero's spare RAM](tracker/xero-spare-ram.md) | P3 | ? | ? |
-| [Voice assistant (HA Assist): Spotify, room replies, wake word](tracker/voice-assistant.md) | P3 | ₹40-1,500 (bedroom button; the optional satellite speakers are most of it) | ~1 evening |
+| [Voice assistant (HA Assist): Spotify, room replies, wake word](tracker/voice-assistant.md) | P3 | ₹40-120 (bedroom button) | ~1 evening |
 
 ## 🟡 Parked (3) · 3 unbudgeted
 

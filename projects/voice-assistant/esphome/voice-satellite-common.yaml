@@ -224,8 +224,8 @@ light:
           update_interval: 300ms
 
 # Physical play button (plan-room-replies.md): a 12mm momentary button from
-# GPIO23 to GND, internal pull-up, no resistor. GPIO27 stays free for the
-# satellite-speaker plan's amplifier. A press fires esphome.play_button; HA
+# GPIO23 to GND, internal pull-up, no resistor. GPIO26/27/22 are free (the
+# satellite-speaker plan was dropped 2026-11-19). A press fires esphome.play_button; HA
 # (packages/play_button.yaml) plays the playlist in this board's room. Safe
 # to flash before the button is wired: the pull-up holds the pin high.
 binary_sensor:
