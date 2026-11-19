@@ -10,11 +10,39 @@
 - [ ] **Claude:** monthly scrub of the backup pool and an alert when a backup run fails
 - [ ] **Together, with the backup:** rewrite the originals at `copies=1` (decided 2026-11-10, reverses 2026-11-02; frees ~80G) in this order: rsync into a new `copies=1` dataset (old one kept), first full send of the new one to the HDD + clean scrub, then destroy the old dataset and its snapshots. xero's zfs userland is 2.2.2, so no `zfs rewrite`
 - [ ] **Pramod, around Black Friday (2026-11-27):** buy the Seagate Portable 4TB (STGX4000400) on Amazon, home delivery, ~Rs 16,949 from Clicktech with the Amazon Pay ICICI card; check the page says India/APAC warranty first (STGX is Seagate's global model). See Log 2026-11-17 for the comparison
+- [ ] **Together, before Bhakti's import:** decide where the zips sit while importing: on the backup HDD, or deleted one by one as their photos are verified (see "Space math" below)
 - [ ] **Claude:** after the import, re-measure (`zpool list datapool`, `zfs list -o name,used,logicalused -r datapool`)
 - [ ] **Together:** then decide between the options below
 
 **Why:** raised 2026-11-02: the user expected to run out of storage soon and was pricing bigger SSDs (4TB 870 EVO - expensive under the chip-price spike).
 **State:** measured 2026-11-02, no space problem yet. `datapool` (Kingston SA400, 888G): **302G used (33%), 586G free.** Every dataset has `copies=2` (self-healing on one disk), so data takes twice its size: `immich-upload` is 281G on disk for 143G of data. Of that 143G, about **56G is Immich's transcoded videos** (`encoded-video/`) and ~6G thumbnails (`thumbs/`), both regenerable from the originals but stored twice too. New photos look like tens of GB of data a year, so roughly 50-100G/year on disk including transcodes - **several years of runway** (rough estimate, not a measured trend). Bhakti's Takeout, measured 2026-11-08, is 279.36 GB in zips (unique size not yet known, albums repeat files): at `copies=2` it does not fit, so this entry now blocks her import.
+
+#### Space math for Bhakti's import (2026-11-19)
+Measured with `zfs list -r -o name,used,logicalused,copies datapool`; her size from the 2026-11-14 dry run (`/datapool/google-takeout/bhakti/dry-run-2026-11-14.txt`).
+
+| What | Data | On disk | Why |
+|---|---|---|---|
+| Pramod's originals | ~82G | ~162G | `copies=2` |
+| Pramod's transcodes (`encoded-video`) | 58G | 58G | `copies=1` |
+| **Pramod's Immich total** | 140G | **219G** | |
+| Everything else (albums, phone uploads, docs, db, recovered) | ~11G | ~20G | `copies=2` |
+| Bhakti's zips (root dataset) | 279G | 279G | deleted after her import is verified |
+| Bhakti's originals | 248 GiB (266 GB; 223 GiB of it 913 videos) | 248G or 496G | `copies=1` or `2` |
+| Bhakti's transcodes | ? | ~50-100G (guess) | depends on her video codecs |
+
+**After the import, zips deleted:**
+
+| Scenario | Pramod | Bhakti | Others | Total | Of 888G |
+|---|---|---|---|---|---|
+| Originals at `copies=2` (today) | 219 | 496 + 50-100 | 20 | 785-835G | 88-94%: too full |
+| Originals at `copies=1` (decided 2026-11-10) | 140 | 248 + 50-100 | ~15 | 450-500G | 51-56%: fine |
+
+- **`copies=2` is the lever, not the other folders:** albums, phone uploads, docs etc. are only ~20G on disk; moving them off changes nothing.
+- **ZFS slows past ~80% full**, so the `copies=2` case does not work even though it technically fits.
+- **Tightest point is during the import**, zips and imported files both on disk: ~342G free now + ~80G from the `copies=1` rewrite = ~420G, minus 248G + 50-100G = ~70-120G left (87-92% full). Works, barely.
+- **To ease it:** copy the zips to the backup HDD and import from there, or delete each zip once its photos are verified in Immich.
+- **Order stays:** backup HDD -> `copies=1` rewrite of the originals -> Bhakti's import.
+- **Unknowns:** her transcode size, and photos shared between the two libraries (stored once, so her real size may be a little lower). Re-measure after the import (open item above).
 
 #### Options (cheapest first)
 1. **Transcodes and thumbnails to `copies=1`** - free, frees ~60-70G. **Script ready (2026-11-02): `services/immich/split_regenerable.sh`** (`check` / `run` / `finish` / `rollback`; dry-tested, not yet run). Best right after the `@pre-v3.3.5` snapshots are destroyed (mid-November), in winter. Put `encoded-video/` and `thumbs/` on their own dataset with `copies=1` (originals stay at `copies=2`); needs a short Immich stop and sudo for the `zfs create` and the move. If a block of a transcode rots, Immich regenerates it.
