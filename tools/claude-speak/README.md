@@ -43,14 +43,20 @@ tools/claude-speak/install.sh --uninstall # remove both hooks, their settings en
 ### Stop hotkey
 
 Ctrl+C cannot do it: Claude Code owns that key and hooks never see keypresses.
-A global shortcut via the macOS **Shortcuts** app instead (one-time, by hand,
-per Mac - `install.sh` cannot create it):
+Set up by hand, once per Mac, as an **iTerm key binding** (works whenever iTerm
+is the front app):
 
-1. Shortcuts > **+** > add the **Run Shell Script** action, script: `~/.claude/hooks/speak-stop.sh`
-2. Name it "Stop Speaking"; in its details (the **i** panel) > **Add Keyboard Shortcut**, e.g. `Ctrl+Opt+S`
-3. The first press may ask to allow running scripts: allow it.
+1. iTerm > Settings > Keys > **Key Bindings** > **+**
+2. Keyboard Shortcut: `Ctrl+Opt+Cmd+S`
+3. Action: **Run Coprocess**, command `killall say`
 
-Not set up as an Alfred hotkey because Alfred workflows need the Powerpack.
+Not used, and why (2026-11-20):
+
+| Option | Why not |
+|---|---|
+| macOS Shortcuts hotkey | The shortcut ran fine (`shortcuts run "stop saying from shell"` stopped speech) but its keyboard trigger never fired, with `Ctrl+Opt+S` or `Ctrl+Opt+Cmd+S`. |
+| Alfred hotkey | Workflows need the Powerpack. |
+| Hammerspoon (works in every app) | Offered, not chosen: another app to install. The fallback if an all-apps hotkey is ever wanted. |
 
 ## Traps
 
