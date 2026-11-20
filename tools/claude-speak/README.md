@@ -2,14 +2,15 @@
 
 Reads every Claude Code reply aloud on a Mac, using a `Stop` hook and macOS `say`.
 Code blocks, tables and markdown symbols are stripped; the whole reply is
-read (no length cap); a new reply stops the one still being read.
+read (no length cap); a new reply stops the one still being read, and so does
+sending a message.
 
 ## What runs where
 
 | What | Repo file | Installed to |
 |---|---|---|
-| The hook | `speak-reply.sh` | `~/.claude/hooks/speak-reply.sh` |
-| Its registration | written by `install.sh` | a `Stop` entry in `~/.claude/settings.json` (user-level, so every project) |
+| The reader | `speak-reply.sh` | `~/.claude/hooks/speak-reply.sh`, run by a `Stop` entry in `~/.claude/settings.json` |
+| The stopper (`killall say`) | `speak-stop.sh` | `~/.claude/hooks/speak-stop.sh`, run by a `UserPromptSubmit` entry, and by the hotkey below |
 | On/off switch + voice | - | `~/.claude/speak` (exists = on; optional first line = `say` options) |
 
 - **Host:** any Mac running Claude Code. Installed on the MacBook 2026-11-20.
@@ -21,7 +22,7 @@ read (no length cap); a new reply stops the one still being read.
 ```sh
 tools/claude-speak/install.sh --on        # install and turn speech on
 tools/claude-speak/install.sh             # install/update, leave on/off as it is
-tools/claude-speak/install.sh --uninstall # remove hook, settings entry and switch
+tools/claude-speak/install.sh --uninstall # remove both hooks, their settings entries and the switch
 ```
 
 - Needs `jq` (`brew install jq`).
@@ -37,7 +38,19 @@ tools/claude-speak/install.sh --uninstall # remove hook, settings entry and swit
 | Turn off | `rm ~/.claude/speak` |
 | Change voice/speed | `echo "-v Daniel -r 230" > ~/.claude/speak` |
 | List voices | `say -v '?'` |
-| Stop the current reply | `killall say` |
+| Stop the current reply | send any message, the hotkey below, or `killall say` |
+
+### Stop hotkey
+
+Ctrl+C cannot do it: Claude Code owns that key and hooks never see keypresses.
+A global shortcut via the macOS **Shortcuts** app instead (one-time, by hand,
+per Mac - `install.sh` cannot create it):
+
+1. Shortcuts > **+** > add the **Run Shell Script** action, script: `~/.claude/hooks/speak-stop.sh`
+2. Name it "Stop Speaking"; in its details (the **i** panel) > **Add Keyboard Shortcut**, e.g. `Ctrl+Opt+S`
+3. The first press may ask to allow running scripts: allow it.
+
+Not set up as an Alfred hotkey because Alfred workflows need the Powerpack.
 
 ## Traps
 
@@ -47,6 +60,7 @@ tools/claude-speak/install.sh --uninstall # remove hook, settings entry and swit
 | Hook fires, `say &` never speaks | Claude Code kills the hook's process group when the hook exits, taking a backgrounded `say` with it. | `speak-reply.sh` forks `say` into a new session with perl's `POSIX::setsid` (macOS has no `setsid` binary). Do not "simplify" it back to `say &`. |
 | Nothing at all, remotely | The hook speaks on the machine Claude Code runs on, not on the phone/browser driving it via Remote Control. | Be at the Mac. |
 | Every session talks | The switch is global. | `rm ~/.claude/speak`. |
+| Typing in any session cuts off another session's reply | The stopper kills every `say` on the Mac, not only this session's. | By design: simpler than tracking which session spoke. |
 
 To debug, add `echo "$(date) fired" >> ~/.claude/hooks/speak-reply.log` near the
 top of the installed hook, then remove it afterward.

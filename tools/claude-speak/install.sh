@@ -12,6 +12,7 @@ set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 hook_dir="$HOME/.claude/hooks"
 hook="$hook_dir/speak-reply.sh"
+stop_hook="$hook_dir/speak-stop.sh"
 settings="$HOME/.claude/settings.json"
 toggle="$HOME/.claude/speak"
 voice=Samantha  # must match the default in speak-reply.sh
@@ -30,37 +31,49 @@ command -v jq >/dev/null || { echo "jq is required (brew install jq)" >&2; exit 
 mkdir -p "$hook_dir"
 [ -f "$settings" ] || echo '{}' > "$settings"
 
-# Rewrite settings.json through jq, keeping a backup of the previous version
+# Rewrite settings.json through jq; the first edit of a run backs up the original
 edit_settings() {
   local tmp
   tmp=$(mktemp)
   jq "$1" "$settings" > "$tmp"
-  cp "$settings" "$settings.bak-speak"
+  [ -n "${backed_up:-}" ] || { cp "$settings" "$settings.bak-speak"; backed_up=1; }
   mv "$tmp" "$settings"
 }
 
-if [ "$mode" = uninstall ]; then
+# unregister EVENT COMMAND: drop the entry running COMMAND, and the event if it empties
+unregister() {
   edit_settings '
-    if .hooks.Stop then
-      .hooks.Stop |= map(select([.hooks[]?.command] | index("'"$hook"'") | not))
-      | if .hooks.Stop == [] then del(.hooks.Stop) else . end
+    if .hooks["'"$1"'"] then
+      .hooks["'"$1"'"] |= map(select([.hooks[]?.command] | index("'"$2"'") | not))
+      | if .hooks["'"$1"'"] == [] then del(.hooks["'"$1"'"]) else . end
     else . end'
-  rm -f "$hook" "$toggle"
-  echo "removed: $hook, its Stop entry in $settings, and $toggle"
+}
+
+# register EVENT COMMAND: add an entry running COMMAND unless one already does
+register() {
+  local found
+  found=$(jq --arg e "$1" --arg c "$2" '[.hooks[$e][]?.hooks[]?.command] | index($c) != null' "$settings")
+  if [ "$found" = true ]; then
+    echo "$1 hook already registered"
+  else
+    edit_settings '.hooks["'"$1"'"] += [{"hooks":[{"type":"command","command":"'"$2"'"}]}]'
+    echo "registered the $1 hook in $settings (backup: $settings.bak-speak)"
+  fi
+}
+
+if [ "$mode" = uninstall ]; then
+  unregister Stop "$hook"
+  unregister UserPromptSubmit "$stop_hook"
+  rm -f "$hook" "$stop_hook" "$toggle"
+  echo "removed: both hooks, their entries in $settings, and $toggle"
   exit 0
 fi
 
-mkdir -p "$hook_dir"
 install -m 755 "$here/speak-reply.sh" "$hook"
-echo "installed $hook"
-
-registered=$(jq --arg c "$hook" '[.hooks.Stop[]?.hooks[]?.command] | index($c) != null' "$settings")
-if [ "$registered" = true ]; then
-  echo "Stop hook already registered in $settings"
-else
-  edit_settings '.hooks.Stop += [{"hooks":[{"type":"command","command":"'"$hook"'"}]}]'
-  echo "registered the Stop hook in $settings (backup: $settings.bak-speak)"
-fi
+install -m 755 "$here/speak-stop.sh" "$stop_hook"
+echo "installed $hook and $stop_hook"
+register Stop "$hook"
+register UserPromptSubmit "$stop_hook"  # sending a message cuts off the reply being read
 
 # A missing or half-downloaded voice makes say exit 0 and render silence, so
 # check the rendered size rather than the exit code.
