@@ -47,7 +47,7 @@ Set up by hand, once per Mac, as an **iTerm key binding** (works whenever iTerm
 is the front app):
 
 1. iTerm > Settings > Keys > **Key Bindings** > **+**
-2. Keyboard Shortcut: `Ctrl+Opt+Cmd+S`
+2. Keyboard Shortcut: `Ctrl+Cmd+S`
 3. Action: **Run Coprocess**, command `killall say`
 
 Not used, and why (2026-11-20):
