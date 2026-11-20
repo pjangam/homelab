@@ -2,7 +2,7 @@
 
 **Generated from `tracker/` by `tools/repo-tools/tracker.py index` - do not edit by hand.** One file per project lives in [`tracker/`](tracker/); how they work is in [`tracker/README.md`](tracker/README.md). The dashboard: `https://xero.<tailnet>/projects`.
 
-## 🟢 Active (13) · ₹16,340-₹17,620 + 9 unbudgeted
+## 🟢 Active (14) · ₹16,540-₹19,120 + 9 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -11,6 +11,7 @@
 | [Hands-free Claude in the car (Siri -> HA Assist -> Claude)](tracker/car-claude.md) | P2 | ? | ? |
 | [Jobs dashboard in Grafana](tracker/jobs-dashboard.md) | P2 | ₹0 (software only) | ~3 evenings left (scrub/TRIM, phases 2-4) |
 | [Baby-cry alert via ntfy (replace SMS Shortcut)](tracker/baby-cry-alert.md) | P3 | ? | ? |
+| [Bedroom remote and satellite buttons (media, volume, white noise, oju sleep, talk)](tracker/scene-remote.md) | P3 | ₹200-1,500 | ~4 evenings + 2-3 weekends (30-40h) |
 | [Bhakti's Google Takeout into Immich](tracker/bhakti-takeout-immich.md) | P3 | ? | ? |
 | [Clawlight jump-to-console from the iPhone (Termius -> ssh -> tmux attach)](tracker/clawlight-iphone-console.md) | P3 | ? | ? |
 | [datapool storage headroom](tracker/datapool-headroom.md) | P3 | ₹16,000-17,000 (the backup HDD) | ~2 weekends (HDD pool + syncoid, then the `copies=1` rewrite) |
@@ -28,7 +29,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (36) · 28 unbudgeted
+## 💡 Backlog ideas (35) · 28 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -37,7 +38,6 @@
 | [xero cooling on the Skadis pegboard](tracker/xero-pegboard-cooling.md) | P2 | ? | ? |
 | [Automatic pour-over coffee (dose by weight, timed spiral pour, bell at the end)](tracker/pour-over-coffee.md) | P3 | ₹3,500-6,500 | ~4-6 weekends (30-45h) |
 | [Backup restore drill](tracker/backup-restore-drill.md) | P3 | ? | ? |
-| [Bedroom remote and satellite buttons (media, volume, white noise, oju sleep, talk)](tracker/scene-remote.md) | P3 | ₹200-1,500 | ~4 evenings + 2-3 weekends (30-40h) |
 | [Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance](tracker/hub75-wall-display.md) | P3 | ? | ? |
 | [Charge-limit the baby monitor iPhone SE with the smart plug](tracker/baby-monitor-charge-limit.md) | P3 | ? | ? |
 | [Clawlight small low-power display (reuse of the Pi clock screensaver)](tracker/clawlight-small-display.md) | P3 | ? | ? |
