@@ -7,14 +7,17 @@
 #### Open items
 - [ ] **Pramod:** think the plan over before any build starts (user, 2026-11-18)
 - [ ] **Pramod:** decide the SHT40's home (Pi or bedroom satellite, `humidity-dry-mode.md`): it decides whether GPIO19/21 are free for volume up / talk
-- [ ] **Pramod:** multimeter (continuity beep): map each key pad to the back's TX test points, which tells matrix or direct wiring; measure the PCB and the battery bay, room for a 21 x 18mm board
+- [ ] **Pramod:** multimeter (continuity beep): map each key's centre and ring to the key side's edge pads BON100-BON109 (TX test points on the back only if a contact reaches no BON pad); tells matrix or direct wiring
+- [ ] **Pramod:** measure the gap behind the PCB (smallest), the battery bay (L x W x D) and the PCB, for where the XIAO (21 x 17.5 x ~3.5mm) and battery go
+- [ ] **Together, bench:** wire 2-3 keys from BON pads to an ESP32 with Amazon's chip unpowered; if reads are not clean, cut the tracks to the chip or lift it
+- [ ] **Pramod, later:** battery plan for the remote (user, 2026-11-20: "batteries are going to be tricky")
 - [ ] **Pramod:** pick the remote's board (XIAO ESP32-C6 recommended, C3 the alternative) and power (LiPo pouch on the board, or 2 Panasonic NiMH + buck-boost)
 - [ ] **Pramod:** buy the parts once the plan is settled (block below; buttons local, XIAO and LiPo online)
 - [ ] **Together, before phase 3:** bench-test ESP-NOW receive on the bedroom satellite with voice running: `espnow` + `power_save_mode: none`, wake word still works, free heap stays healthy
 - [ ] **Claude:** run `architecture-review` on this plan before phase 1 starts
 
 **Why:** raised 2026-11-18 while bouncing ideas for the bedroom ESP32. The Pi's GPIO buttons (`pi-gpio-buttons.md`, Done) were built on the Pi only because no ESP32 was at hand. The bedroom voice satellite is now an ESP32 in the same room, moving next to the bed, so the buttons can move to it, gain media and volume keys, and later a handheld remote made from an old Fire TV Stick remote shell (sturdy case, printed symbols).
-**State:** plan researched 2026-11-18, nothing built or bought. Wired buttons first (phase 1), box moves by the bed (phase 2), remote last (phase 3). The pending bedroom flash (SHT40 block, extender-first WiFi, play button, voice-reply events) is separate and can go first. The remote's two firmware unknowns are answered below: both work, each needs a small lambda, no custom component.
+**State:** plan researched 2026-11-18; remote opened 2026-11-20 (it is a mic Alexa Voice Remote, keys and board in the Log), nothing bought. Wired buttons first (phase 1), box moves by the bed (phase 2), remote last (phase 3). The pending bedroom flash (SHT40 block, extender-first WiFi, play button, voice-reply events) is separate and can go first. The remote's two firmware unknowns are answered below: both work, each needs a small lambda, no custom component.
 
 #### Decisions (2026-11-18, user)
 - **The Pi stays** on the bedroom pegboard, visible from the work chair: white noise, Spotify, WoL and the clawlight LED stay on it.
@@ -210,3 +213,4 @@ qty | item | est | note
 - 2026-11-20: remote **opened** (user, photos of both PCB sides). Board `30-002573 REV 01`. 12 keys, silkscreened: SW500 VOICE, SW504 UP, SW511 DOWN, SW507 LEFT, SW505 RIGHT, SW506 SEL, SW503 BACK, SW502 HOME, SW501 MENU, SW510 REWIND, SW509 PLAY, SW508 FFW - no volume keys, so the ring's up/down stay volume; VOICE is the natural Talk key, freeing Select. Key pads are round plated discs (metal domes or carbon pills on top; check when the keypad is off). Back: one QFN SoC, a MEMS mic at the top, battery contacts J301-J304, many labelled test points (TX100-TX110, TX400-TX521) and edge pads BON100-BON109 - candidate solder points for the key lines, to be mapped by continuity.
 - 2026-11-20: opened (user photos). 12 keys, labelled on the board: SW500 VOICE, SW504 UP, SW511 DOWN, SW507 LEFT, SW505 RIGHT, SW506 SEL, SW503 BACK, SW502 HOME, SW501 MENU, SW510 REWIND, SW509 PLAY, SW508 FFW. Key side has only the pads; the back has the main chip (large QFN), a MEMS mic at the top, PCB antenna top right, battery contacts J301-J304 at the bottom, and many labelled gold test points (TX100s, TX400s, **TX500-TX521**, likely the key lines: to be confirmed with a multimeter, key pad to test point). Not yet measured.
 - 2026-11-20: Status Backlog -> Active (user): the remote is open and being mapped.
+- 2026-11-20: the key side has edge pads **BON100-BON109** (5 each side), likely the key lines: map and solder there (no flipping, away from the chip). Amazon's board stays as the key contact surface; the XIAO goes behind it or in the battery bay, decided by measurements. Batteries left for later (user).
