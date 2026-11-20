@@ -78,6 +78,7 @@ wol-sender Pi or the Mac; they move into the layout above in a later session.
 | | |
 |---|---|
 | [`chromium-update`](tools/chromium-update/README.md) | the Mac's Chromium snapshot updater |
+| [`claude-speak`](tools/claude-speak/README.md) | read Claude Code replies aloud on a Mac (Stop hook + `say`) |
 | [`dev-shell`](tools/dev-shell/README.md) | the Mac shell setup (iTerm + tmux + Claude Code) |
 | [`diagrams`](tools/diagrams/README.md) | screenshot a wiring diagram to check it before publishing |
 | [`esp32-tools`](tools/esp32-tools/README.md) | flashing and bring-up for the WLED boards |
