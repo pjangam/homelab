@@ -1,8 +1,8 @@
 # tools/claude-speak/
 
 Reads every Claude Code reply aloud on a Mac, using a `Stop` hook and macOS `say`.
-Code blocks, tables and markdown symbols are stripped; a reply is cut at 1500
-characters; a new reply stops the one still being read.
+Code blocks, tables and markdown symbols are stripped; the whole reply is
+read (no length cap); a new reply stops the one still being read.
 
 ## What runs where
 

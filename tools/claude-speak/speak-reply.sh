@@ -25,11 +25,11 @@ opts=$(head -n1 "$toggle")
 # Stop any reply still being read, so replies don't talk over each other
 killall say 2>/dev/null
 
-# Drop code blocks, tables and markdown symbols; cap the length
+# Drop code blocks, tables and markdown symbols. No length cap: a cap cut long
+# replies off mid-sentence (2026-11-20); `killall say` stops one early.
 speech=$(mktemp -t claude-speak)
 printf '%s' "$text" \
-  | sed -E '/^```/,/^```/d; /^\|/d; s/[*#`_]//g' \
-  | head -c 1500 > "$speech"
+  | sed -E '/^```/,/^```/d; /^\|/d; s/[*#`_]//g' > "$speech"
 
 # Claude Code kills the hook's process group when it exits, which took a plain
 # `say &` with it. Fork into a new session (macOS has no setsid binary) so say survives.
