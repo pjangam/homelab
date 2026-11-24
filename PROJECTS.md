@@ -2,7 +2,7 @@
 
 **Generated from `tracker/` by `tools/repo-tools/tracker.py index` - do not edit by hand.** One file per project lives in [`tracker/`](tracker/); how they work is in [`tracker/README.md`](tracker/README.md). The dashboard: `https://xero.<tailnet>/projects`.
 
-## 🟢 Active (14) · ₹17,040-₹19,620 + 8 unbudgeted
+## 🟢 Active (15) · ₹18,840-₹23,120 + 8 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -17,6 +17,7 @@
 | [datapool storage headroom](tracker/datapool-headroom.md) | P3 | ₹16,000-17,000 (the backup HDD) | ~2 weekends (HDD pool + syncoid, then the `copies=1` rewrite) |
 | [Home power audit - smart/network devices + major appliances](tracker/home-power-audit.md) | P3 | ? | ? |
 | [Humidity-triggered AC dry mode and mister (temperature/humidity sensor on an ESP32)](tracker/humidity-dry-mode.md) | P3 | ₹300-500 | ~2 evenings (4-6h) |
+| [Kitchen exhaust fan on air-quality sensors (PM2.5 + humidity, ESP32)](tracker/kitchen-exhaust-fan.md) | P3 | ₹1,800-3,500 | ~1 weekend (8-12h) + 2-3 evenings tuning thresholds |
 | [Peer-to-peer sensitive document sync (Syncthing) - Dropbox replacement](tracker/syncthing-doc-sync.md) | P3 | ? | ? |
 | [Use xero's spare RAM](tracker/xero-spare-ram.md) | P3 | ? | ? |
 | [Voice assistant (HA Assist): Spotify, room replies, wake word](tracker/voice-assistant.md) | P3 | ₹40-120 (bedroom button) | ~1 evening |
