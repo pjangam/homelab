@@ -2,13 +2,13 @@
 
 **Generated from `tracker/` by `tools/repo-tools/tracker.py index` - do not edit by hand.** One file per project lives in [`tracker/`](tracker/); how they work is in [`tracker/README.md`](tracker/README.md). The dashboard: `https://xero.<tailnet>/projects`.
 
-## 🟢 Active (14) · ₹16,540-₹19,120 + 9 unbudgeted
+## 🟢 Active (14) · ₹17,040-₹19,620 + 8 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
 | [Move xero's datapool SSD out of the case](tracker/datapool-ssd-external.md) | P1 | ? | ? |
 | [xero's UPS (CRU12V3A) dead - xero off until it is replaced](tracker/xero-ups-replacement.md) | P1 | ? | ? |
-| [Hands-free Claude in the car (Siri -> HA Assist -> Claude)](tracker/car-claude.md) | P2 | ? | ? |
+| [Hands-free Claude in the car (Siri -> HA Assist -> Claude)](tracker/car-claude.md) | P2 | ~₹500 API credit to start (pay per use; short spoken questions are cheap) | 1 evening (credit, re-run the setup script, build and test the Shortcut) |
 | [Jobs dashboard in Grafana](tracker/jobs-dashboard.md) | P2 | ₹0 (software only) | ~3 evenings left (scrub/TRIM, phases 2-4) |
 | [Baby-cry alert via ntfy (replace SMS Shortcut)](tracker/baby-cry-alert.md) | P3 | ? | ? |
 | [Bedroom remote and satellite buttons (media, volume, white noise, oju sleep, talk)](tracker/scene-remote.md) | P3 | ₹200-1,500 | ~4 evenings + 2-3 weekends (30-40h) |
