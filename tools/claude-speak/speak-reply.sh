@@ -27,14 +27,21 @@ killall say 2>/dev/null
 
 # Drop code blocks, tables and markdown symbols. No length cap: a cap cut long
 # replies off mid-sentence (2026-11-20); `killall say` stops one early.
+# Acronyms to spell out: any case (XmlParser splits to "Xml"), then uppercase-only
+# for the short ones that are also words or syllables (ha, os, pr, ...).
+any='ID|XML|HTML|HTTPS?|URL|URI|API|CSS|SQL|AWS|RDS|SSH|DNS|CLI|SDK|JWT|LAN|VPN|MQTT|TCP|UDP|PDF|CPU|GPU|SSD|USB|LLM|EC2|S3|JS|TS|DB'
+upper='HA|OS|IP|PR|UI|CI|CD|IO|AI|ESP'
+spell='sub sp { my ($w, $s) = @_; join(" ", split(//, uc $w)) . $s }
+  s/\b('"$any"')(s?)(?![a-zA-Z])/sp($1, $2)/gie; s/\b('"$upper"')(s?)(?![a-zA-Z])/sp($1, $2)/ge'
 speech=$(mktemp -t claude-speak)
 printf '%s' "$text" \
   | sed -E '/^```/,/^```/d; /^\|/d; s/[*#`]//g' \
-  | sed -E 's/_/ /g; s/([a-z0-9])([A-Z])/\1 \2/g; s/([A-Z]+)([A-Z][a-z])/\1 \2/g' \
-  | perl -pe 's/\bid(s?)\b/I D$1/gi' > "$speech"
-# The second sed splits identifiers into words, or say reads them as one:
+  | perl -pe 's/_/ /g; s/([a-z0-9])(?=[A-Z])/$1 /g; s/([A-Z]+)(?=[A-Z][a-z])(?![A-Z]s\b)/$1 /g' \
+  | perl -pe "$spell" > "$speech"
+# The first perl splits identifiers into words (keeping a plural s: APIs, not AP Is), or say reads them as one:
 # ItineraryItemDetailResponse, snake_case, HTTPServerError -> HTTP Server Error.
-# Then Id/ID/ids is spelled out, or say reads the split getUserById as "user id" (the word).
+# Then acronyms are spelled letter by letter, or say reads XML as a word and the
+# split getUserById as "user id" (the word).
 
 # Claude Code kills the hook's process group when it exits, which took a plain
 # `say &` with it. Fork into a new session (macOS has no setsid binary) so say survives.
