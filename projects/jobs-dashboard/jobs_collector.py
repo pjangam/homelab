@@ -166,11 +166,13 @@ def collect(host, jobs, now, temps_fn=peak_temps):
         run = None
         if start and end and end >= start and not running:
             rec = (STATE / f"{unit}.service.run")
-            mem = None
+            mem = cpu_max = None
             if rec.exists():
+                # "<time> <peak bytes> <peak cpu %> <exit>" (record_run.sh)
                 parts = rec.read_text().split()
                 if len(parts) >= 2 and num(parts[0]) and num(parts[0]) >= end - 5:
                     mem = num(parts[1])
+                    cpu_max = num(parts[2]) if len(parts) >= 4 else None
             status = int(num(svc.get("ExecMainStatus")) or 0)
             cpu = num(svc.get("CPUUsageNSec"))
             # the wall-clock timestamps are whole seconds; the monotonic ones are microseconds
@@ -179,7 +181,8 @@ def collect(host, jobs, now, temps_fn=peak_temps):
             run = {"start": start, "end": end, "duration": dur, "exit": status,
                    "ok": svc.get("Result") == "success",
                    "cpu": cpu / 1e9 if cpu is not None and cpu < 2**63 else None,
-                   "mem": mem if mem is not None and not math.isnan(mem) else None}
+                   "mem": mem if mem is not None and not math.isnan(mem) else None,
+                   "cpu_max": cpu_max if cpu_max is not None and not math.isnan(cpu_max) else None}
         def add_temps(r):   # once per run, then kept in the history
             r["temps"] = temps_fn(PROM_HOST.get(host, host), r["start"], r["end"])
         runs = update_history(name, run, now, add_temps)
@@ -193,6 +196,9 @@ def collect(host, jobs, now, temps_fn=peak_temps):
               L, int(last["ok"]))
             m("homelab_job_last_cpu_seconds", "CPU time of the latest run, whole process tree",
               L, last.get("cpu"))
+            m("homelab_job_last_cpu_max_percent",
+              "Highest 1s CPU use of the latest run, % of one core (100 = one full core)",
+              L, last.get("cpu_max"))
             m("homelab_job_last_memory_peak_bytes", "Peak memory of the latest run's cgroup",
               L, last.get("mem"))
             for sensor, c in (last.get("temps") or {}).items():

@@ -5,7 +5,8 @@
     projects/jobs-dashboard/install_jobs.py             # write, reload, enable
 
 For each job: ~/.config/systemd/user/job-<name>.service (oneshot, appends to
-the job's log like cron did, records peak memory after the run) and
+the job's log like cron did, samples peak CPU % during the run and records it
+with peak memory after the run) and
 job-<name>.timer (OnCalendar, Persistent so a run missed while the host was
 off happens at the next boot). Generated units that are no longer in
 jobs.toml are stopped and removed; units without the GENERATED header are
@@ -55,6 +56,7 @@ def render(job, repo=REPO):
     log = repo / job["log"]
     svc = [GENERATED, "[Unit]", f"Description={job['desc']}", "",
            "[Service]", "Type=oneshot", f"WorkingDirectory={repo}",
+           f"ExecStartPre=-{repo}/projects/jobs-dashboard/record_run.sh start {unit}.service",
            f"ExecStart={exec_start(job['command'], repo)}",
            f"StandardOutput=append:{log}", f"StandardError=append:{log}",
            "MemoryAccounting=yes",

@@ -1,7 +1,7 @@
 # Jobs dashboard
 
 Every scheduled job on xero (and later the wol Pi) as a `systemd --user`
-timer, with each run's start, duration, result, CPU, peak memory and peak
+timer, with each run's start, duration, result, max CPU %, peak memory and peak
 temperatures exported to Prometheus for a Grafana "Jobs" dashboard.
 `PROJECTS.md` entry: **"Jobs dashboard in Grafana"** (plan, review, decisions).
 
@@ -19,7 +19,7 @@ the 25 Nov Diwali one-off. Still to come: scrub/TRIM, the Pi, container jobs
 | `jobs.toml` | - | the list of jobs, the only file to edit |
 | `install_jobs.py` | each host | you, after editing `jobs.toml` |
 | `job-<name>.timer` / `.service` | each host | generated into `~/.config/systemd/user/`, enabled by `install_jobs.py` |
-| `record_run.sh` | each host | every job unit's `ExecStopPost`: saves the run's peak memory |
+| `record_run.sh` | each host | every job unit's last `ExecStartPre` (`start`: a sampler in the job's cgroup reads `cpu.stat` each second) and its `ExecStopPost` (saves the run's peak memory and highest 1s CPU %) |
 | `jobs_collector.py` | each host | the `job-jobs-collector` timer, every minute at :30 |
 | `crontab.xero.before` | - | xero's crontab before any job moved: the rollback copy |
 
@@ -50,6 +50,7 @@ projects/jobs-dashboard/install_jobs.py
 
 - **No network ordering in user units.** `After=network-online.target` does nothing there; set `network = true` and the unit waits for a default route in `ExecStartPre`.
 - **systemd 255 forgets `MemoryPeak` when a oneshot unit stops** (kept from 256). That is why `record_run.sh` reads `memory.peak` in `ExecStopPost`.
+- **Max CPU is % of one core** (100 = one full core; xero has 4, so up to 400), the highest 1s sample of the run (since 2026-11-24; before that the column was total CPU seconds). The sampler costs ~1% of a core. **A run under a second** gets its whole-run rate, which includes the hooks' own few ms, so tiny jobs read 50-100% (`/bin/true` reads ~60%) - that is short, not heavy.
 - **No disk I/O numbers:** the `io` cgroup controller is not delegated to user units (`cpu memory pids` only).
 - **Whole-second timestamps:** `ExecMainStartTimestamp` is rounded to the second, so durations use the `...Monotonic` (microsecond) properties.
 - **Work done via `docker exec` is charged to the container**, not the job, so CPU and memory undercount jobs that mostly drive containers.

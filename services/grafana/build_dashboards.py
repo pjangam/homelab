@@ -360,7 +360,7 @@ def jobs_table(y):
         ("E", J.format("duration_max_seconds"), "Max (60d)", "s"),
         ("F", J.format("next_run_timestamp_seconds") + " * 1000", "Next run", "dateTimeFromNow"),
         ("G", J.format("consecutive_failures"), "Fails in a row", "none"),
-        ("H", J.format("last_cpu_seconds"), "CPU", "s"),
+        ("H", J.format("last_cpu_max_percent"), "Max CPU", "percent"),
         ("I", J.format("last_memory_peak_bytes"), "Peak memory", "bytes"),
         ("K", 'max by (host, name) (homelab_job_last_peak_temp_celsius{name=~"$jobname",sensor="cpu"})', "CPU °C", "celsius"),
         ("L", 'max by (host, name) (homelab_job_last_peak_temp_celsius{name=~"$jobname",sensor="ssd_data"})', "Kingston °C", "celsius"),

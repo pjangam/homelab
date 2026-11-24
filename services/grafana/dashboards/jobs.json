@@ -122,12 +122,12 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "CPU"
+              "options": "Max CPU"
             },
             "properties": [
               {
                 "id": "unit",
-                "value": "s"
+                "value": "percent"
               }
             ]
           },
@@ -361,7 +361,7 @@
           "instant": true,
           "range": false,
           "format": "table",
-          "expr": "max by (host, name) (homelab_job_last_cpu_seconds{name=~\"$jobname\"})"
+          "expr": "max by (host, name) (homelab_job_last_cpu_max_percent{name=~\"$jobname\"})"
         },
         {
           "datasource": {
@@ -434,7 +434,7 @@
               "Value #E": "Max (60d)",
               "Value #F": "Next run",
               "Value #G": "Fails in a row",
-              "Value #H": "CPU",
+              "Value #H": "Max CPU",
               "Value #I": "Peak memory",
               "Value #K": "CPU \u00b0C",
               "Value #L": "Kingston \u00b0C",
