@@ -29,7 +29,10 @@ killall say 2>/dev/null
 # replies off mid-sentence (2026-11-20); `killall say` stops one early.
 speech=$(mktemp -t claude-speak)
 printf '%s' "$text" \
-  | sed -E '/^```/,/^```/d; /^\|/d; s/[*#`_]//g' > "$speech"
+  | sed -E '/^```/,/^```/d; /^\|/d; s/[*#`]//g' \
+  | sed -E 's/_/ /g; s/([a-z0-9])([A-Z])/\1 \2/g; s/([A-Z]+)([A-Z][a-z])/\1 \2/g' > "$speech"
+# The second sed splits identifiers into words, or say reads them as one:
+# ItineraryItemDetailResponse, snake_case, HTTPServerError -> HTTP Server Error.
 
 # Claude Code kills the hook's process group when it exits, which took a plain
 # `say &` with it. Fork into a new session (macOS has no setsid binary) so say survives.

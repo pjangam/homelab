@@ -1,7 +1,8 @@
 # tools/claude-speak/
 
 Reads every Claude Code reply aloud on a Mac, using a `Stop` hook and macOS `say`.
-Code blocks, tables and markdown symbols are stripped; the whole reply is
+Code blocks, tables and markdown symbols are stripped, identifiers are split
+into words (`ItineraryItemDetailResponse`, `snake_case`); the whole reply is
 read (no length cap); a new reply stops the one still being read, and so does
 sending a message.
 
@@ -65,6 +66,7 @@ Not used, and why (2026-11-20):
 | Hook fires, nothing heard, a system beep plays fine | The **system default voice** renders silence (`say -o x.aiff hi` gives a ~4 KB file; a working voice gives 80 KB+). Hit on the MacBook 2026-11-20. `say` still exits 0. | The hook names a voice (`-v Samantha`) instead of using the default. Fix the default in System Settings > Accessibility > Spoken Content. |
 | Hook fires, `say &` never speaks | Claude Code kills the hook's process group when the hook exits, taking a backgrounded `say` with it. | `speak-reply.sh` forks `say` into a new session with perl's `POSIX::setsid` (macOS has no `setsid` binary). Do not "simplify" it back to `say &`. |
 | Nothing at all, remotely | The hook speaks on the machine Claude Code runs on, not on the phone/browser driving it via Remote Control. | Be at the Mac. |
+| `ItineraryItemDetailResponse` read as one long word | `say` does not split PascalCase/camelCase, and underscores used to be deleted, gluing snake_case together. | A second `sed` inserts spaces at case changes and turns `_` into a space (2026-11-24). Side effect: `OAuth` -> "O Auth", `iPhone` -> "i Phone". |
 | Every session talks | The switch is global. | `rm ~/.claude/speak`. |
 | Typing in any session cuts off another session's reply | The stopper kills every `say` on the Mac, not only this session's. | By design: simpler than tracking which session spoke. |
 
