@@ -41,6 +41,8 @@ the rollback.
   when the router gives its old IP to someone else. Totals are kept in
   `/run/lan-gateway-bytes.state` and restart at 0 on reboot, like the
   kernel's.
+- `usage_report.py [--days N]` - the dashboard's per-device totals in the
+  terminal (last N days, last 24h, busiest hour per device), from Prometheus.
 - `block_device.sh` - temporarily cuts one device (IP or MAC) off the
   internet at xero; sudo, not persistent.
 - `setup_lan_gateway.sh` - installs it all; `--remove` undoes it. Run from a
