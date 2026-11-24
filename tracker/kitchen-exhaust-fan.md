@@ -5,19 +5,19 @@
 **Effort:** ~1 weekend (8-12h) + 2-3 evenings tuning thresholds
 
 #### Open items
-- [ ] **Together, Sat 2026-11-28 (decides it):** bench the MLX90614 at 50-70cm from the hob: one burner lit under a pan must lift the object reading clearly over room temperature within ~30s; if not, the wide-view averaging is too weak and the trigger needs rethinking
-- [ ] **Together, Sat-Sun 2026-11-28/29, before drilling:** tape the MLX at the planned spot (see Mounting) and log readings while lighting each burner in turn, and with afternoon window sun on the hob; drill only once all three burners show and the sun does not
-- [ ] **Pramod, before Wed 2026-11-25:** say how the exhaust fan is switched today: plugged into a socket (which one, 2- or 3-pin) or hard-wired through a switch on the board. HA has no kitchen fan (checked 2026-11-24: no Tinxy or other switch in the kitchen). This decides the fan-switching parts
-- [ ] **Pramod, before Wed 2026-11-25:** say where the exhaust fan is: in the window, or on the wall above the stove. This decides where the PM2.5 sensor goes
-- [ ] **Pramod, by Wed 2026-11-25:** order the PMS5003 online if the local shop cannot confirm stock (DNA Tech / Hubtronics / Robocraze ship in 2-8 days); it is the long-lead part. If it will not arrive by Sat, build with the MLX90614 only and add it later
-- [ ] **Pramod, by Fri 2026-11-27:** buy the rest locally (GY-906 MLX90614 **BAA** - check the marking on the can, relay module, box, jumpers). MLX90614 (2026-11-24): out of stock on Robu and expensive on Amazon, so check the local shop first. Avoid BCC/BCI/DCI (narrow 5-35° view); under ₹500 is likely a clone. If no BAA by Fri, bench the weekend with a DS18B20 in the hot air (~₹100, 1-2 min slower) and swap later. Confirm whether the Diwali ESP32 (wled-diwali, .127) is coming off the door, or a loose spare ESP32 is still in the drawer
+- [ ] **Together, first bench session (decides it):** bench the MLX90614 at 50-70cm from the hob: one burner lit under a pan must lift the object reading clearly over room temperature within ~30s; if not, the wide-view averaging is too weak and the trigger needs rethinking
+- [ ] **Together, before drilling:** tape the MLX at the planned spot (see Mounting) and log readings while lighting each burner in turn, and with afternoon window sun on the hob; drill only once all three burners show and the sun does not
+- [ ] **Pramod:** say how the exhaust fan is switched today: plugged into a socket (which one, 2- or 3-pin) or hard-wired through a switch on the board. HA has no kitchen fan (checked 2026-11-24: no Tinxy or other switch in the kitchen). This decides the fan-switching parts
+- [ ] **Pramod:** say where the exhaust fan is: in the window, or on the wall above the stove. This decides where the PM2.5 sensor goes
+- [ ] **Pramod:** get the PMS5003 - local shop first, else online (DNA Tech / Hubtronics / Robocraze ship in 2-8 days). If it is the last part missing, build with the MLX90614 only and add it later
+- [ ] **Pramod:** buy the rest locally (GY-906 MLX90614 **BAA** - check the marking on the can, relay module, box, jumpers). MLX90614 (2026-11-24): out of stock on Robu and expensive on Amazon, so check the local shop first. Avoid BCC/BCI/DCI (narrow 5-35° view); under ₹500 is likely a clone. Amazon's GY-906-BAA was ~₹4,000 (2026-11-24) - too much. Robu has the SmartElex MLX90614 in stock but it is **35°**: fine only from ~1.1-1.3m with a clear view of all three burners. Without a BAA, a DS18B20 in the hot air (~₹100, 1-2 min slower) can stand in and be swapped later. Confirm whether the Diwali ESP32 (wled-diwali, .127) is coming off the door, or a loose spare ESP32 is still in the drawer
 - [ ] **Pramod:** confirm the room is **Kitchen** for HA's area and the dashboard tile (the Home dashboard already has a Kitchen view with the dishwasher)
-- [ ] **Together, Sun 2026-11-29:** mount the sensors, fit the fan switching if the fan is on a socket, add the HA automation in record-only mode first
-- [ ] **Together, the week after:** read a week of cooking in HA history/Grafana, set thresholds, then let the automation switch the fan
+- [ ] **Together, after the bench test:** mount the sensors, fit the fan switching if the fan is on a socket, add the HA automation in record-only mode first
+- [ ] **Together, once a week of cooking is recorded:** read it in HA history/Grafana, set thresholds, then let the automation switch the fan
 - [ ] **Claude, before Done:** `docs/hardware.md` entry for the new board (and fan switch), HA name + area Kitchen + tile on the Kitchen view of `projects/ha-dashboard/dashboards/home.yaml`, `projects/endpoints/endpoints.toml` entry (ESPHome API 6053, like the kandil switch), `projects/kitchen-exhaust/README.md` with the folder's first file
 
 **Why:** raised 2026-11-24: turn the kitchen exhaust fan on by itself when cooking starts, and off again once the stove is off and the smoke has cleared. Started from "is this good product to automate exhaust fan in kitchen" about an Electronic Spices MQ-2 module; the answer was no (below).
-**State:** researched and decided 2026-11-24 (design changed the same day from PM2.5 + humidity to IR + PM2.5); nothing bought. **Picked straight to Active** (user, 2026-11-24): building the weekend of **Sat 2026-11-28 / Sun 2026-11-29 if all parts can be sourced in time**. Fallback if parts are short: MLX90614 only, PMS5003 added later on the same board and firmware.
+**State:** researched and decided 2026-11-24 (design changed the same day from PM2.5 + humidity to IR + PM2.5); nothing bought. **Picked straight to Active** (user, 2026-11-24): to be built once the parts are in - a hobby project, no deadlines (user, 2026-11-24). Fallback if parts are short: MLX90614 only, PMS5003 added later on the same board and firmware.
 
 #### Feasibility
 **Yes, a known build.** ESPHome has first-class components for both sensors: [mlx90614](https://esphome.io/components/sensor/mlx90614/) (I2C, object + ambient temperature) and [pmsx003](https://esphome.io/components/sensor/pmsx003/) (PMS5003, UART). HA's forum has cooking-triggered hood control done with PM spikes and timers ([extractor hood thread](https://community.home-assistant.io/t/ideas-for-how-to-measure-when-cooking-occurs-controlling-a-extractor-hood/422219), [kitchen air purifier thread](https://community.home-assistant.io/t/suggestions-help-on-automation-for-kitchen-air-purifier/581658)). The one real unknown is how strongly a wide-view IR sensor 50-70cm away sees one burner (first Open item). Switching a 230V fan with a relay is the kandil build (`projects/smart-switch/`) again.
@@ -68,7 +68,7 @@
 
 #### Overlaps
 - **`tracker/smart-switch.md` / `tracker/smart-switch-in-wall.md`** - the fan relay is either the kandil plug box again or the second real use case for the in-wall switch. If the fan is hard-wired, this project is a reason to settle the in-wall design (or the Tinxy 4N reflash test) sooner.
-- **`tracker/diwali-lights.md`** - its ESP32 (wled-diwali, .127) frees when the lights come down after 24 Nov. It is also counted on by `wol-to-esp32.md`, `wifi-analog-clock.md` and `hub75-wall-display.md`; whichever is built first takes it. This one is the first with a date.
+- **`tracker/diwali-lights.md`** - its ESP32 (wled-diwali, .127) frees when the lights come down after 24 Nov. It is also counted on by `wol-to-esp32.md`, `wifi-analog-clock.md` and `hub75-wall-display.md`; whichever is built first takes it.
 - **`tracker/baby-monitor-charge-limit.md`** - has claimed the kandil relay box after Diwali, so it is not free for the fan.
 - **`tracker/humidity-dry-mode.md`** - same "ESP32 reports, HA decides, unavailable means do nothing" pattern; no longer shares a sensor since humidity was dropped here.
 - **`tracker/shopping-list-display.md`** - also a kitchen device; no shared hardware, but a kitchen screen could show the fan state.
@@ -90,7 +90,7 @@ Prices from listings found 2026-11-24 (search snippets; check before buying, loc
 qty | item | est | note
 1 | ESP32 dev board (WROOM-32, USB) | 0-500 | skip if the Diwali board (.127) is off the door or a loose spare is in the drawer (Pramod to confirm); else local
 1 | GY-906 MLX90614 IR thermometer, BAA (90° wide view) | 600-1200 | local first; check "BAA" on the sensor can (BCC = 35°, DCI = 5°). The main trigger - buy this even if nothing else arrives
-1 | PMS5003 PM2.5 sensor WITH its 8-pin cable/adapter | 1400-2100 | local if stocked, else ORDER ONLINE by Wed 25 Nov. SDS011 is an equal substitute. If it cannot arrive by Sat 28 Nov, build MLX-only and add this later (same board, same firmware)
+1 | PMS5003 PM2.5 sensor WITH its 8-pin cable/adapter | 1400-2100 | local if stocked, else online. SDS011 is an equal substitute. If it is the last part missing, build MLX-only and add this later (same board, same firmware)
 1 | USB charger 5V 1A + USB cable | 0-200 | probably have (Pramod to check); one per board, never a shared GaN port (see voice-living-room in hardware.md)
 1 | Small ABS project box (~85x55x30mm) | 120-200 | local; vent slots for the PM sensor; mounted beside the stove, out of the plume
 1 | 4-core lead up to 1m + jumpers | 20-60 | local or Workbench stock; MLX on the lead (under 1m for I2C), box to the side
@@ -108,9 +108,9 @@ qty | item | est | note
 **Cost detail:** **₹2,000-4,500** covers the sensor board (MLX90614 + PMS5003 + box + lead, ~₹2,100-3,700 including an ESP32 and charger if bought) plus the socket relay box (~₹250-530). With the Diwali ESP32 and a spare charger it is about ₹2,400-3,800. **Cheaper variant / weekend fallback: MLX-only**, ~₹750-1,500 with the Diwali ESP32 - starts the fan exactly as the full build does (IR is the only starter anyway), but switches off a fixed few minutes after the stove cools instead of waiting for the smoke. **Cheapest:** a DS18B20 (~₹100) in the rising air instead of the MLX, accepting a 1-2 min lag.
 
 **Effort detail:** **~8-12h over the weekend, then 2-3 short evenings.**
-1. **Bench (Sat, 2-3h):** ESPHome YAML for mlx90614 (+ pmsx003 if here), build on the Mac, flash, add to HA. Hold the MLX at the planned spot with one burner and a pan: **the decisive test**. Incense stick for the PM sensor.
-2. **Fan switch (Sun, 2-3h):** socket relay box from the kandil drawings, metered before mains; or deferred if hard-wired.
-3. **Mounting (Sun, 2-3h):** **the phase that overruns** - the MLX's angle and height over the hob, out of the worst of the plume, a box spot beside the stove with a socket for the charger, and a lead that survives cleaning. Expect to re-aim it once after seeing data.
+1. **Bench (2-3h):** ESPHome YAML for mlx90614 (+ pmsx003 if here), build on the Mac, flash, add to HA. Hold the MLX at the planned spot with one burner and a pan: **the decisive test**. Incense stick for the PM sensor.
+2. **Fan switch (2-3h):** socket relay box from the kandil drawings, metered before mains; or deferred if hard-wired.
+3. **Mounting (2-3h):** **the phase that overruns** - the MLX's angle and height over the hob, out of the worst of the plume, a box spot beside the stove with a socket for the charger, and a lead that survives cleaning. Expect to re-aim it once after seeing data.
 4. **HA (1-2h):** IR rise over a slow baseline as the only start, a pre-cooking PM2.5 snapshot, PM-back-to-snapshot or the 15-20 min cap as the stop, the "on by automation" flag; record-only first.
 5. **Tuning (2-3 evenings over the next week):** read a week of real cooking, set thresholds, then let it switch. Plus the done-rules paperwork (hardware.md, dashboard tile, endpoints.toml, README) ~1h.
 
@@ -121,3 +121,4 @@ qty | item | est | note
 - 2026-11-24: design changed (user): main trigger is now an MLX90614ESF-BAA (90°) IR thermometer 60-70cm above the 3-burner stove, plus the PMS5003 for lingering smoke; on = stove hot OR PM high, off = stove cool AND PM normal ~5 min. Humidity and VOC dropped; per-burner thermistors, DS18B20 in the hot air (cheap fallback, 1-2 min late) and AMG8833 (overkill) rejected. MLX-only is the fallback if the PMS5003 is late.
 - 2026-11-24: Mounting section added (user conversation): MLX offset and tilted 30-45° down at 50-70cm, lead under 1m, window out of view, rise-over-baseline trigger for shiny pots and window sun; PMS5003 away from the window and steam; taped-on test before drilling; fan location asked.
 - 2026-11-24: fan rules revised (user): only the IR rise starts the fan; PM2.5 only keeps it running after the stove is off, until back to the pre-cooking baseline; hard stop 15-20 min after the stove goes off. Reason: the window by the stove lets in outdoor PM2.5 (often 100-300 µg/m³ in winter), so PM alone could run the fan for hours.
+- 2026-11-24: dates and deadlines removed from the Open items (user: a hobby space, no deadlines). MLX90614 sourcing: Robu BAA out of stock, Amazon BAA ~₹4,000 (skipped), Robu SmartElex in stock but 35°.
