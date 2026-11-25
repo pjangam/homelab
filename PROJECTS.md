@@ -36,6 +36,7 @@
 |---|---|---|---|
 | [Automatic plant watering (balcony)](tracker/plant-watering.md) | P1 | ? | ? |
 | [Remote controlled curtains](tracker/curtains.md) | P1 | ? | ? |
+| [Speaker power slider: servo to switch the Apollo One on and off](tracker/speaker-power-servo.md) | P1 | ₹200-300 | ~2-3 evenings (4-7h) |
 | [xero cooling on the Skadis pegboard](tracker/xero-pegboard-cooling.md) | P2 | ? | ? |
 | [Automatic pour-over coffee (dose by weight, timed spiral pour, bell at the end)](tracker/pour-over-coffee.md) | P3 | ₹3,500-6,500 | ~4-6 weekends (30-45h) |
 | [Backup restore drill](tracker/backup-restore-drill.md) | P3 | ? | ? |
@@ -62,7 +63,6 @@
 | [Pigeon deterrent - motion-triggered sprinkler (balcony railing/parapet)](tracker/pigeon-deterrent.md) | P3 | ? | ? |
 | [Replace Alfred Camera with a free, local baby monitor on the iPhone SE](tracker/baby-monitor-local.md) | P3 | ? | ? |
 | [Shopping list display (touchscreen e-ink)](tracker/shopping-list-display.md) | P3 | ? | ? |
-| [Speaker power slider: servo to switch the Apollo One on and off](tracker/speaker-power-servo.md) | P3 | ₹200-300 | ~2-3 evenings (4-7h) |
 | [Tinxy: remove stale/decommissioned devices from account](tracker/tinxy-stale-devices.md) | P3 | ? | ? |
 | [USB charge switch (MOSFET): ATtiny85 + current sensor, silent P-channel switch](tracker/usb-charge-switch-mosfet.md) | P3 | ₹50-100 | ~1 evening (2-3h), after the relay build |
 | [USB charge switch (relay): ATtiny85 + current sensor to stop charging when full](tracker/usb-charge-switch-relay.md) | P3 | ₹700-1,100 | ~2-3 evenings (5-8h) |
