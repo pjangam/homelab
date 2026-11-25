@@ -36,7 +36,7 @@
 |---|---|---|---|
 | [Automatic plant watering (balcony)](tracker/plant-watering.md) | P1 | ? | ? |
 | [Remote controlled curtains](tracker/curtains.md) | P1 | ? | ? |
-| [Speaker power slider: servo to switch the Apollo One on and off](tracker/speaker-power-servo.md) | P1 | ₹200-300 | ~2-3 evenings (4-7h) |
+| [Speaker power slider: servo to switch the Apollo One on and off](tracker/speaker-power-servo.md) | P2 | ₹200-300 | ~2-3 evenings (4-7h) |
 | [xero cooling on the Skadis pegboard](tracker/xero-pegboard-cooling.md) | P2 | ? | ? |
 | [Automatic pour-over coffee (dose by weight, timed spiral pour, bell at the end)](tracker/pour-over-coffee.md) | P3 | ₹3,500-6,500 | ~4-6 weekends (30-45h) |
 | [Backup restore drill](tracker/backup-restore-drill.md) | P3 | ? | ? |

@@ -1,6 +1,6 @@
 # Speaker power slider: servo to switch the Apollo One on and off
 **Status:** Backlog
-**Priority:** P1
+**Priority:** P2
 **Cost:** ₹200-300
 **Effort:** ~2-3 evenings (4-7h)
 
@@ -78,7 +78,7 @@ qty | item | est | note
 - If it ends up as its own device (ESP32), it needs a `docs/hardware.md` entry, and an HA name, area and Home dashboard tile.
 
 #### Log
-- 2026-11-25: priority P3 -> P1 (user). The Apollo One got stuck connected but silent; nothing xero did fixed it, only power-cycling the speaker by hand (trap in `projects/spotifyd/README.md`). The servo would let xero do that power-cycle itself.
+- 2026-11-25: priority P3 -> P2 (user; P1 was too much). The Apollo One got stuck connected but silent; nothing xero did fixed it, only power-cycling the speaker by hand (trap in `projects/spotifyd/README.md`). The servo would let xero do that power-cycle itself.
 - 2026-11-18: on-demand Bluetooth recorded as its own entry, `bt-speaker-on-demand.md`, which depends on this one; the open item points there.
 - 2026-11-18: user: build on-demand Bluetooth connection only after this servo works (a disconnected but powered speaker saves nothing; xero keeps it connected until then). Since today the living-room "play" waits for the speaker and plays nothing if it doesn't connect, and xero's WirePlumber no longer drops Bluetooth at ssh logout.
 - 2026-11-16: idea recorded (user), right after the USB charge switch entries. The slider is the Apollo One's power switch (user). Options compared: wire-across, servo, actuator/solenoid, button pushers.
