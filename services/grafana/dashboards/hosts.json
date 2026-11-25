@@ -938,7 +938,7 @@
       "id": 12,
       "type": "timeseries",
       "title": "SSD used",
-      "description": "xero's two SSDs. Kingston = the whole ZFS pool incl. snapshots, from `zfs list` (services/node-exporter/zpool_textfile.sh, cron every minute); 100% is when writes stop. Its datasets are copies=2, so each GB of new data costs 2 GB here.",
+      "description": "xero's two SSDs. Kingston = the whole ZFS pool incl. snapshots, from `zfs list` (services/node-exporter/zpool_textfile.sh, timer every 15 min); 100% is when writes stop. Its datasets are copies=2, so each GB of new data costs 2 GB here.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1215,7 +1215,7 @@
       "id": 15,
       "type": "timeseries",
       "title": "ZFS errors (xero, max)",
-      "description": "Read / write / checksum errors summed over the pool's vdevs, as zpool status counts them (services/node-exporter/zpool_textfile.sh, cron every minute). They hold until `zpool clear`, so a step up marks when they happened. A level, so max only: a p95 would just repeat it. Checksum errors with no read/write errors mean bad data, not a bad link.",
+      "description": "Read / write / checksum errors summed over the pool's vdevs, as zpool status counts them (services/node-exporter/zpool_textfile.sh, timer every 15 min). They hold until `zpool clear`, so a step up marks when they happened. A level, so max only: a p95 would just repeat it. Checksum errors with no read/write errors mean bad data, not a bad link.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"

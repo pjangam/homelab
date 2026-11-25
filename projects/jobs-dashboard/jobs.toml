@@ -39,7 +39,7 @@ log = "tinxy-watchdog.log"
 name = "zpool-textfile"
 host = "xero"
 desc = "Exports ZFS pool usage and vdev error counts to node-exporter"
-on_calendar = "*:*:00"
+on_calendar = "*:0/15:00"
 command = "services/node-exporter/zpool_textfile.sh"
 log = "zpool-textfile.log"
 

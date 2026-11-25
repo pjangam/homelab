@@ -12,4 +12,4 @@ per-dataset statfs numbers, where each dataset's "size" is its own data plus
 the shared free space and snapshots count nowhere - so no sum of them says how
 full the pool really is. The script writes pool `used`/`avail` and each vdev's
 read/write/checksum error counts for the textfile collector, from the `job-zpool-textfile` timer every
-minute. Its output directory is gitignored.
+15 minutes (every minute until 2026-11-25: pool fullness moves slowly, and HA gets the error counts every minute from xero-stats). Its output directory is gitignored.

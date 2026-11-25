@@ -163,7 +163,7 @@ hosts.append(panel("SSD used", [
      "Kingston SSD (datapool)"),
 ], "percent", 12, y, max_=100,
     desc="xero's two SSDs. Kingston = the whole ZFS pool incl. snapshots, from `zfs list` "
-         "(services/node-exporter/zpool_textfile.sh, cron every minute); 100% is when writes stop. "
+         "(services/node-exporter/zpool_textfile.sh, timer every 15 min); 100% is when writes stop. "
          "Its datasets are copies=2, so each GB of new data costs 2 GB here."))
 y += 8
 hosts.append(panel("ZFS ARC size (xero, max)", [(peak('node_zfs_arc_size')[0], "ARC")], "bytes", 0, y))
@@ -179,7 +179,7 @@ hosts.append(panel("ZFS errors (xero, max)", [
     (peak('sum by (zpool, type) (homelab_zpool_vdev_errors)')[0], "{{zpool}} {{type}}"),
 ], "short", 0, y,
     desc="Read / write / checksum errors summed over the pool's vdevs, as zpool status counts them "
-         "(services/node-exporter/zpool_textfile.sh, cron every minute). They hold until `zpool clear`, "
+         "(services/node-exporter/zpool_textfile.sh, timer every 15 min). They hold until `zpool clear`, "
          "so a step up marks when they happened. A level, so max only: a p95 would just repeat it. "
          "Checksum errors with no read/write errors mean bad data, not a bad link."))
 
