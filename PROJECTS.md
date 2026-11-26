@@ -30,7 +30,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (35) · 28 unbudgeted
+## 💡 Backlog ideas (35) · 27 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -41,7 +41,7 @@
 | [Automatic pour-over coffee (dose by weight, timed spiral pour, bell at the end)](tracker/pour-over-coffee.md) | P3 | ₹3,500-6,500 | ~4-6 weekends (30-45h) |
 | [Backup restore drill](tracker/backup-restore-drill.md) | P3 | ? | ? |
 | [Big wall display (HUB75 LED matrix) - clock, and whatever else is worth a glance](tracker/hub75-wall-display.md) | P3 | ? | ? |
-| [Charge-limit the baby monitor iPhone SE with the smart plug](tracker/baby-monitor-charge-limit.md) | P3 | ? | ? |
+| [Charge-limit the baby monitor iPhone SE with the smart plug](tracker/baby-monitor-charge-limit.md) | P3 | ₹50-400 (a socket for the box, a USB adapter if none spare) | ~2 evenings (box rewire, Shortcuts + HA watchdog, one timed discharge) |
 | [Clawlight small low-power display (reuse of the Pi clock screensaver)](tracker/clawlight-small-display.md) | P3 | ? | ? |
 | [Clawlight: a bootstrap script for a machine that has no hooks yet](tracker/clawlight-bootstrap.md) | P3 | ? | ? |
 | [Door open/close and lock status (main, safety, balcony)](tracker/door-status.md) | P3 | ? | ? |

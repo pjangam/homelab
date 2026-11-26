@@ -1,11 +1,12 @@
 # Charge-limit the baby monitor iPhone SE with the smart plug
 **Status:** Backlog
 **Priority:** P3
-**Cost:** ?
-**Effort:** ?
+**Cost:** ₹50-400 (a socket for the box, a USB adapter if none spare)
+**Effort:** ~2 evenings (box rewire, Shortcuts + HA watchdog, one timed discharge)
 
 #### Open items
 - [ ] **Claude, after 2026-11-25:** take `switch.smart_switch_bench_relay` out of the `diwali_lights_*` automations (the kandil's last off is sunrise 2026-11-25)
+- [ ] **Together:** rewire the kandil box's output from the B22 bulb holder to a small socket (NO -> socket L, N/E through), so the SE's separate USB adapter plugs into it
 - [ ] **Together, after Diwali:** move the plug to the SE's charger; set up the two Shortcuts automations and the HA side below; time one 80->20% discharge on Alfred
 
 **Why:** the iPhone SE running Alfred Camera (baby monitor, `docs/hardware.md` iphone_se) sits on its charger by the cot all day, which keeps the battery at 100% and ages it. The SE has no built-in charge limit (the 80% limit is iPhone 15 and later; Optimized Battery Charging is unreliable for a phone that never leaves the charger). User idea, 2026-11-05.
@@ -18,3 +19,4 @@
 
 #### Log
 - 2026-11-05: idea recorded (user): after Diwali the in-house plug moves from the kandil to the Alfred camera's charger, driven by the iPhone's battery level.
+- 2026-11-26: kandil box confirmed for this (user): the SE charges from a wall USB socket today (cannot be switched); it moves to a separate USB adapter plugged into the box. The box's output is wired straight to the kandil's bulb holder, so it needs a socket fitted first. The kitchen exhaust fan is hard-wired, so it will not take this box (`kitchen-exhaust-fan.md`).
