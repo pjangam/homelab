@@ -65,7 +65,7 @@
 - **Trap - heartbeat cost:** the heartbeat spends subscription usage around the clock. Decide whether to enable it at all.
 - **Channel:** web UI first; maybe **Discord** later (user's preference), locked to the user's ID with `dmPolicy` / `allowFrom` or pairing.
 - **Bookkeeping if built:** `projects/endpoints/endpoints.toml` entry, `docs/hardware.md` (new container on xero).
-- **RAM:** xero is 8GB and busy; measure the gateway's idle RSS on day one.
+- **RAM:** xero has 32GB (Crucial, since 2026-10) but runs a lot; measure the gateway's idle RSS on day one.
 
 #### Rejected
 | Option | Why not |
