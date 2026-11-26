@@ -31,7 +31,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (36) · 27 unbudgeted
+## 💡 Backlog ideas (37) · 27 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -45,6 +45,7 @@
 | [Charge-limit the baby monitor iPhone SE with the smart plug](tracker/baby-monitor-charge-limit.md) | P3 | ₹50-400 (a socket for the box, a USB adapter if none spare) | ~2 evenings (box rewire, Shortcuts + HA watchdog, one timed discharge) |
 | [Clawlight small low-power display (reuse of the Pi clock screensaver)](tracker/clawlight-small-display.md) | P3 | ? | ? |
 | [Clawlight: a bootstrap script for a machine that has no hooks yet](tracker/clawlight-bootstrap.md) | P3 | ? | ? |
+| [Door latch that sticks inside its housing after springing back](tracker/door-latch-repair.md) | P3 | ₹100-1,500 | ~1 evening (1-3h) |
 | [Door open/close and lock status (main, safety, balcony)](tracker/door-status.md) | P3 | ? | ? |
 | [ESP32 UPS LED monitor](tracker/esp32-ups-led-monitor.md) | P3 | ? | ? |
 | [Ganapati 2027: counter-rotating spiral discs (kinetic backdrop)](tracker/ganapati-2027-spiral-discs.md) | P3 | ? | ? |
