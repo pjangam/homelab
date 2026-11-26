@@ -6,6 +6,7 @@ last few traces in memory (lost on restart), so check soon after a failure.
 Run on xero:
   tools/ha-diag/script_traces.py play_bedroom_track
   tools/ha-diag/script_traces.py voice_play_song automation   # an automation, by its id
+  tools/ha-diag/script_traces.py voice_start_music --vars     # also each run's fields/variables
 """
 import asyncio, json, os, sys
 from pathlib import Path
@@ -31,6 +32,9 @@ async def main(script, domain):
             ctx = full.get("context") or {}
             started_by = "user " + ctx["user_id"][:8] if ctx.get("user_id") else ("parent " + ctx["parent_id"][:8] if ctx.get("parent_id") else "system")
             print(t["timestamp"]["start"][:19], t["state"], t.get("script_execution"), started_by)
+            if VARS:
+                first = next(iter(full.get("trace", {}).values()), [{}])[0]
+                print("   vars:", json.dumps({k: v for k, v in first.get("changed_variables", {}).items() if k != "this"}, default=str)[:400])
             if full.get("error"):
                 print("   error:", full["error"])
             trig = (full.get("trace", {}).get("trigger") or [{}])[0].get("variables", {}).get("trigger", {})
@@ -45,5 +49,7 @@ async def main(script, domain):
                         print("  ", path, "->", json.dumps(res)[:200])
 
 
-asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else "play_bedroom_track",
-                 sys.argv[2] if len(sys.argv) > 2 else "script"))
+VARS = "--vars" in sys.argv
+args = [a for a in sys.argv[1:] if a != "--vars"]
+asyncio.run(main(args[0] if args else "play_bedroom_track",
+                 args[1] if len(args) > 1 else "script"))

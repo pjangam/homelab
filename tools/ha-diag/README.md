@@ -25,6 +25,16 @@ you were listening to played (2026-11-05: it played on xero while the bedroom
 Pi was off). Uses the host's `websockets` and `.env.healthcheck`'s `HA_TOKEN`.
 Run on xero.
 
+`pipeline_runs.py [word]` - the voice pipeline's recent runs: what
+speech-to-text heard, the intent it matched (or the error, e.g.
+`stt-no-text-recognized`) and HA's reply; a word filters by heard text. Like
+traces, HA keeps only the last ~10 runs per pipeline, in memory. Use it when a
+voice command "did nothing": if the command's automation has no trace, this
+shows whether the words were misheard or matched nothing. Run on xero.
+
+`script_traces.py ... --vars` also prints each run's fields and variables
+(e.g. which `action` and `speaker` `voice_start_music` got).
+
 `wifi_drops.py <start> <end> [--times]` - per-hour count of how often each
 2.4GHz Wi-Fi device (Diwali WLED, both voice satellites, the kandil switch)
 went `unavailable`, times in IST. Devices on the router and the extender
