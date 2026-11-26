@@ -1,119 +1,111 @@
-# Door latch that sticks inside its housing after springing back
-**Status:** Backlog
+# Door rim lock whose spring latch sticks on the way out
+**Status:** Active
 **Priority:** P3
-**Cost:** ₹100-1,500
+**Cost:** ₹100-1,700
 **Effort:** ~1 evening (1-3h)
 
 #### Open items
-- [ ] **Pramod:** with the door **open**, pull the handle and let go 10 times - does the bolt stick there too, or only when the door is shut? This one test picks the branch below
-- [ ] **Pramod:** note which door, and send a photo of the bolt, faceplate and strike plate (the plate on the frame)
-- [ ] **Pramod:** note the lock type: mortise (rectangular box inside the door edge, lever handles) or tubular/cylindrical (round bore through the door, knob or lever), and the brand if stamped on the faceplate
-- [ ] **Pramod:** say which hand tools are already at home (screwdrivers, flat file, chisel, drill) - none are recorded in `docs/hardware.md`
-- [ ] **Pramod:** buy the parts the diagnosis calls for, at the local hardware shop (only the replacement latch needs the old one taken in to match)
+- [ ] **Pramod:** play test: hold the lock body firmly against the door and wiggle the latch - does the wobble go away? Are the back-cover screws tight? This picks the branch below
+- [ ] **Pramod:** check what the copper-coloured piece inside the bottom opening is (old shim, or the edge of the latch)
+- [ ] **Pramod:** note which door this is
+- [ ] **Pramod:** if the play test says the lock is sound, file where the latch catches, clean and puff in graphite; otherwise buy a matching rim lock at the local shop (take the old one along) and swap it
+- [ ] **Pramod:** if a new spot starts catching after the filing, replace the lock rather than file again
 
-**Why:** the door's latch bolt is pulled back by the handle and springs out again, but on the way out it catches in the housing because the cut-out is misaligned, so the door does not latch reliably (user, 2026-11-26). Purely mechanical: no electronics, no code.
-**State:** idea only. Which door, which lock type and which part is misaligned are not known yet (Open items above).
+**Why:** the door's spring latch sticks as it springs back out, so the door does not latch reliably (user, 2026-11-26). Purely mechanical: no electronics, no code.
+**State:** diagnosed from the user's photos, 2026-11-26; repair started. The lock type is known (surface rim lock), the faulty part is known (the bevelled spring latch in the bottom forend opening), and the likely root cause is vertical play in the latch. Not yet known: where the play comes from (Open items), which door it is.
+
+#### What the photos show (2026-11-26)
+| Part | Seen |
+|---|---|
+| **Lock type** | **Surface-mounted box lock (rim lock / night latch)**: body screwed onto the inside face of the door, L-shaped forend plate wrapping the door edge, slotted screws, knob on the inside face. Not a mortise or tubular latch |
+| **Top forend opening** | flat rectangular deadbolt - looks fine |
+| **Bottom forend opening** | bevelled **spring latch** - the one that sticks |
+| **Bottom opening's edges** | curved bulges and dents on the top and bottom edges, likely worn in by the latch hitting them; crust of rust and paint plus an inward lip on the bottom edge |
+| **Latch, door open** | comes out **tilted** |
+| **Inside the opening** | something copper-coloured; unconfirmed whether an old shim or the latch's edge (Open items) |
+| **Around the lock** | rust and paint drips - moisture is likely |
+| **Latch play (user's finding)** | **lots of vertical wobble.** A fraction of a millimetre is normal; clearly visible wobble lets the latch tilt, come out at an angle and catch the edges of the opening |
+
+- **Root cause, probably:** the vertical play. The deformed edges are the result, not the cause.
+- **Ruled out:** strike plate, hinges and door sag. It sticks with the door open, so the frame side is not involved.
 
 #### Feasibility
-**Yes, a routine fix.** Most cases are solved by tightening hinge screws, lubricating, filing a cut-out or moving the strike plate; replacing the latch is the fallback and is cheap. A locksmith is only worth calling if the latch body itself is broken inside.
-- [Bob Vila - 4 fixes for a door that won't latch](https://www.bobvila.com/articles/door-wont-latch/) - long screw into the top hinge lifts a sagging door, bottom hinge pulls it down
-- [This Old House - lipstick trick for aligning hardware](https://www.thisoldhouse.com/doors/lipstick-trick-for-aligning-hardware)
-- [Family Handyman - adjusting a door strike plate](https://www.familyhandyman.com/project/adjusting-a-door-strike-plate/) - file small offsets; past ~3mm (1/8") move the plate
-- [iFixit - fix the hole for a misaligned door latch](https://www.ifixit.com/Guide/How+to+Fix+The+Hole+For+a+Misaligned+Door+Latch/172443)
+**Yes, a routine fix.** Either tighten what is loose and dress the opening, or swap the whole rim lock for a same-size one into the same screw holes - both are hand-tool jobs. A locksmith is not needed.
 
-#### Overlap
-- **[`door-status.md`](door-status.md)** plans a bolt sensor inside the keeper of the main and safety doors. If this latch is on one of those doors, fix the alignment **first**: a bolt that does not throw fully would read "unlocked" for ever, and that entry already asks for the strike plates to come off - do both in one go.
+#### The plan
+1. **Find where the play comes from (2 min).**
+   - Hold the lock body firmly against the door and wiggle the latch.
+   - **Wobble goes away** - the body is loose on the door: tighten the mounting screws; if the holes are worn, use slightly thicker or longer screws.
+   - **Latch still wobbles** - check and tighten the **back-cover screws** of the lock body; a lifted cover gives the latch room to move.
+   - **Everything tight, still wobbles** - the internal guide is worn: replace the lock.
+2. **File only where the latch catches.**
+   - Mark the latch's sides with pencil lead or marker, work the knob, and see which edge of the opening the mark rubs off onto. File only there, with a small flat needle file.
+   - Hold the latch retracted while filing so it is not nicked. A few strokes, test, repeat.
+   - Aim to straighten the bulges, rust and paint lip - **not widen the opening**, which adds rattle.
+3. **Clean and lubricate.** Brush out filings, rust and paint flakes; puff in graphite powder.
+4. **If it still sticks:** take the lock off (a few screws), open the back cover, check the latch guide and spring. Straighten a bent guide. Broken spring or heavy rust inside: replace the lock.
 
-#### Which part is at fault - the first fork
-The user's words, "gets stuck inside housing", fit two different faults. The door-open test in Open items separates them:
+- **Trap - never file the latch itself.** It shortens the throw and the latch still tilts.
+- **Trap - no oil or WD-40.** They collect dust and gum the latch; graphite only.
+- **Trap - filing is treating the symptom.** It is fine once, to clean up edges the wobble has already deformed, but it does not remove the play.
 
-| Bolt sticks... | Fault is in | Hinges / strike matter? |
+#### If it comes back
+- **Rule (user asked):** if a **new spot** starts catching after the filing, **stop filing**. The opening was never the real problem; the play is, and more filing only loosens it further. Go to the table below, and **replace the lock** if it comes back within a few months.
+
+| Symptom | Cause | Fix |
 |---|---|---|
-| **with the door open** too | the lock itself: latch body crooked in its bore/mortise, bent faceplate, faceplate cut-out off-centre, dirt or dried grease, weak spring | no - skip to the lock-side fixes |
-| **only when the door is shut** | the frame side: door sag, loose hinge screws, strike plate cut-out misaligned with the bolt | yes |
+| Lock body moves when pushed | loose or worn mounting screws | tighten; thicker or longer screws in worn holes |
+| Latch tilts or wobbles | worn or bent internal guide | open the cover and straighten, or replace the lock |
+| Latch returns slowly and weakly | tired or broken spring | replace the lock (usually simpler than finding a spring) |
+| Fresh rust on the edges | moisture | keep it dry; graphite now and then |
 
-#### Likely causes
-| Cause | Tell-tale |
-|---|---|
-| Loose hinge screws / door sag | top of the door rubs the frame on the latch side; gap above the door is uneven; the top hinge screws turn freely |
-| Strike plate misaligned | bolt catches on the edge of the plate's hole; lipstick mark sits above, below or beside the hole |
-| Latch body not square in its bore or mortise | faceplate not flush with the door edge, or its screws loose; bolt sits off-centre in the faceplate cut-out |
-| Bent faceplate | faceplate bowed or dented where the bolt slides through; bolt scrapes one side of the cut-out |
-| Dirty or dried mechanism | bolt is slow or gritty even out of the door; old oil has turned to paste |
-| Weak or broken spring | bolt returns slowly or not at all even when clean and square |
-
-#### Diagnosis, step by step
-1. **Door-open test** (Open items): sticks with the door open = lock side; only when shut = frame side.
-2. **Look at the faceplate** on the door edge: flush and screws tight? Bolt centred in its cut-out? Shine a torch along the bolt for scrape marks on one side.
-3. **Hinge screws:** try every screw on all hinges, frame side and door side. Any that spins without tightening has a stripped hole.
-4. **Gap check:** the gap between door and frame should be even top to bottom on the latch side and across the top. A wider gap at the top of the latch side means the door has sagged.
-5. **Lipstick or marker test** (frame-side fault only): rub lipstick, chalk or whiteboard marker on the bolt's tip, close the door gently onto the strike, open it, and see where the mark lands relative to the strike's hole. Masking tape on the strike plate shows it better on a dark plate.
-6. **Bench test the latch** (lock-side fault that survives cleaning): take it out (faceplate screws, then the handle spindle), work the bolt by hand. Sticks out of the door = worn or broken inside, replace it. Smooth out of the door = it was being squeezed in the bore; enlarge the bore or mortise.
-
-#### Fixes, in order of effort
-| # | Fix | When | Time |
-|---|---|---|---|
-| 1 | **Tighten hinge and faceplate screws** | any screw loose | 5 min |
-| 2 | **Longer hinge screw into the frame** (2.5-3 inch, one per hinge, through the hinge's inner hole into the stud/wall plug) | stripped hole, or door has sagged; top hinge lifts the latch side up, bottom hinge pulls it down | 20 min |
-| 3 | **Clean and lubricate with a dry lubricant** - graphite powder or a dry PTFE spray, puffed into the bolt and latch body. Wipe old grease off first. **Not oil or general WD-40**: they collect dust and are what gums a latch up | slow or gritty bolt | 15 min |
-| 4 | **Straighten or re-seat the faceplate**: tap a bent plate flat on a hard surface; re-seat a crooked latch so it is square to the door edge | faceplate bent, latch tilted | 30 min |
-| 5 | **File the cut-out** - the faceplate's or the strike plate's, whichever the bolt catches. Small strokes, test after each. Fine for ~3mm or less | small offset | 30 min |
-| 6 | **Move the strike plate** - unscrew, extend the wood mortise behind it with a chisel, re-fix with new screw positions; fill the old holes with matchsticks and glue | offset over ~3mm | 1-2h |
-| 7 | **Replace the latch** - take the old one to the shop and match backset (centre of spindle to door edge, commonly 45mm or 60mm on mortise latches here), faceplate size and spindle size | bolt sticks out of the door, broken spring, cracked body | 1h |
-
-- **Trap - the spring is rarely the cause** on its own: a spring weak enough to fail usually does so everywhere, not only where the cut-out binds. Do fixes 1-5 before blaming it.
-- **Trap - do not file the bolt itself.** It shortens the throw and weakens it, and on a mortise lock it may leave the latch body to be replaced anyway.
-- **Trap - sag comes back** if the screws only bite the old stripped holes: the long screw has to reach solid frame.
-
-#### Tools
-| Tool | For | Needed for fixes |
-|---|---|---|
-| Phillips and flat screwdrivers (medium and large) | hinge, faceplate, strike screws | all |
-| Torch | seeing scrape marks in the cut-out | diagnosis |
-| Lipstick, chalk or marker; masking tape | the strike test | diagnosis |
-| Flat file and half-round or round needle file | enlarging a cut-out | 5, 6 |
-| Wood chisel (12-18mm) and hammer | extending the strike mortise | 6 |
-| Drill with a small bit (2-3mm) | pilot holes for the long hinge screws and the moved strike | 2, 6 |
-| Old toothbrush, cloth | cleaning the mechanism | 3 |
-
-Which of these are at home is not recorded (Open items).
+#### Replacement
+- **A same-size surface rim lock / night latch**, matched at the local hardware shop by taking the old one along.
+- **Match:** body size, the forend (L-plate size and opening positions) and the **hand** (which way the door opens, inside or outside opening), so it goes into the same screw holes.
+- **Prices found 2026-11-26** (online listings, for scale - the local shop is the baseline):
+  - Godrej Outside Opening Super Night Latch 8813: ₹1,339 on [Moglix](https://www.moglix.com/godrej-outside-opening-super-night-latch-rim-lock-8813/mp/msn2vl2bair72f) (MRP ₹1,510)
+  - Godrej 7-lever night latch, inside opening: ₹1,269 on [Flipkart](https://www.flipkart.com/godrej-7-lever-night-latch-inside-opening-lock/p/itmey7n4vy2rnggw) (sold out); outside opening ₹1,287-1,582 on [McCoy Mart](https://mccoymart.com/buy/godrej-night-latch-rim-lock-7-lever-night-latch-outside-opening-)
+  - Godrej Night Latch 8812: ₹1,250 on [IndiaMART](https://m.indiamart.com/impcat/night-latch.html) (seller quote, GST may be extra)
+  - **Link, Europa and unbranded rim locks:** no listing fetched; **estimate ₹400-900**.
 
 #### Readymade alternatives
-- **A local carpenter or locksmith** does fixes 1-6 in one visit, typically a few hundred rupees in labour (estimate, not quoted). Worth it if the strike needs moving and there is no chisel at home; otherwise the DIY path costs less than the visit.
-- **Replacement latch** (fix 7) is the "buy it" option, and cheap enough that a badly worn latch should just be swapped rather than coaxed.
+- **Swap the lock straight away** (₹400-1,600) instead of filing. Worth it if the play test says the guide is worn; otherwise the ₹100 repair is the better first try.
+- **A local carpenter or locksmith** would do the same swap for a few hundred rupees in labour (estimate, not quoted) - not needed, it is a few screws.
+
+#### Overlap
+- **[`door-status.md`](door-status.md)** plans bolt sensing on the **main and safety doors**. It applies only if this is one of those doors (not yet known, Open items): then fix the latch first, since a latch that does not throw fully reads "unlocked" for ever, and a replacement rim lock changes what that entry's sensor would sit against. If it is any other door, there is no overlap.
 
 #### Parts
 ```parts
 qty | item | est | note
-1 | Graphite powder, puffer bottle | 50-150 | local hardware shop. Estimate. Dry lube: oil and general-purpose WD-40 attract dust and gum the latch
-4 | Wood screws, 2.5-3 inch (65-75mm), steel, Phillips, head matching the hinge countersink | 30-80 | local, loose. Estimate. One per hinge into the frame, plus spares; skip if the hinge screws all hold
-1 | Flat file (8 inch) | 150-300 | local. Estimate. Skip if one is at home; only for fixes 5-6
-# Optional: dry PTFE spray instead of graphite
-1 | Dry PTFE lubricant spray (e.g. WD-40 Specialist Dry Lube, ~400ml) | 400-700 | local hardware or auto shop, else online. Estimate - no Indian listing found 2026-11-26; overseas price ~£8/250ml. Cleaner than graphite, worth it only if the can will get other uses
-# Option: replacement mortise latch
-1 | Mortise latch body (keyless/baby latch), matching backset 45 or 60mm | 450-900 | local; take the old one along. Indiamart listings 2026-11-26: Godrej keyless latch 45mm ~₹473, 60mm ~₹850. Only if the bench test says it is worn
-# Option: replacement tubular latch
-1 | Tubular latch, matching backset (60 or 70mm) and bore | 300-700 | local; take the old one along. Estimate. Only if the bench test says it is worn
+1 | Graphite powder, puffer bottle | 50-150 | local hardware shop. Estimate. Dry lube only - no oil or WD-40
+1 | Needle file set (small flat file is the one used) | 100-250 | local hardware shop. Estimate. Skip if a small flat file is at home
+4 | Wood screws, one size thicker or longer than the lock's mounting screws, slotted or Phillips | 20-50 | local, loose. Estimate. Only if the play test shows the body loose and the old holes worn; take an old screw along
+# Option: replacement rim lock
+1 | Surface rim lock / night latch, same body size, forend and hand as the old one | 400-1,600 | local hardware shop; take the old lock along. Godrej ~₹1,250-1,600 online 2026-11-26; Link/Europa/unbranded ₹400-900 estimate. Only if the play test or step 4 says the lock is worn
 ```
 
 #### Cost detail
-- **₹100-150** - the likely case: graphite and a few long hinge screws, tools at home.
-- **₹250-450** - add a flat file.
-- **Up to ~₹1,500** - the header ceiling: lube, screws, file and a replacement mortise latch, or the PTFE spray instead of graphite.
-- **₹0** if the fault turns out to be a loose screw or a bent faceplate.
+- **₹0** - if the fix is tightening the mounting or back-cover screws.
+- **₹50-150** - the likely repair case: graphite, a file already at home.
+- **₹170-450** - graphite, needle files and new mounting screws.
+- **Up to ~₹1,700** - the header ceiling: graphite plus a Godrej replacement. A local unbranded lock keeps a replacement under ~₹1,000.
 
 #### Effort detail
 | Phase | Hours | Notes |
 |---|---|---|
-| Diagnosis (door-open test, screws, gap, lipstick) | 0.25-0.5 | decides everything after it |
-| Tighten / long hinge screw / clean and lubricate | 0.5 | solves most cases |
-| File a cut-out or straighten the faceplate | 0.5 | |
-| Move the strike plate, or swap the latch | 1-2 | **the one that overruns**: chiselling the mortise to the right depth and re-drilling screw holes that wander into the old ones is the alignment work, same as every mechanical job in this repo |
+| Play test, tighten screws | 0.1-0.25 | decides everything after it |
+| Mark, file, clean, graphite | 0.5-1 | **the one that overruns**: a few strokes at a time with tests between, and the urge to keep filing is exactly the trap above |
+| Open the back cover, inspect guide and spring | 0.25-0.5 | only if it still sticks |
+| Shop trip and swap the lock | 1-1.5 | only if worn; the swap itself is a few screws, the time is matching it at the shop |
 
 #### Rejected
-- **Oil or general-purpose WD-40 as the lubricant** - short-lived, attracts dust, and is the usual reason an old latch goes sticky.
-- **Filing the bolt** - shortens the throw; see traps.
-- **A smart lock while it is apart** - already considered and rejected in [`door-status.md`](door-status.md) (read-only sensing preferred; Tinxy cloud concerns).
+- **Strike plate, hinge and door-sag fixes** (lipstick test, moving the strike, long hinge screws) - the latch sticks with the door open, so the frame side is not the fault.
+- **Mortise or tubular latch replacement** - the lock is a surface rim lock; those parts do not fit.
+- **Oil or general-purpose WD-40** - short-lived, attracts dust, gums a latch.
+- **Filing the latch, or widening the opening** - shortens the throw or adds rattle; the play is the cause.
+- **A smart lock while it is apart** - already rejected in [`door-status.md`](door-status.md) (read-only sensing preferred; Tinxy cloud concerns).
 
 #### Log
-- 2026-11-26: entry created from the user's one-line description. Door, lock type and faulty part still to be identified.
+- 2026-11-26: entry created from the user's one-line description, assuming a mortise or tubular latch; that was wrong.
+- 2026-11-26: the user's photos showed a **surface rim lock / night latch**. Diagnosis: vertical play in the bevelled spring latch lets it come out tilted and catch the bottom forend opening, whose edges are now deformed (bulges, rust and paint lip); it sticks with the door open, so strike, hinges and sag are ruled out. Plan: play test to find where the wobble comes from, tighten, file only where the latch catches, clean and graphite; replace the lock if the guide is worn or a new spot catches later. Status set to Active, the user has started.
