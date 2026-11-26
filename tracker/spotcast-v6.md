@@ -4,6 +4,15 @@
 **Why:** spotcast (the HACS integration for triggering Spotify playback from HA) was broken account-wide - `spotcast.start` failing with `KeyError: 'serverTime'`. Initially assumed to be expired `sp_dc`/`sp_key` cookies (the known failure mode - see Readme/memory), but fresh cookies didn't fix it either, pointing at something deeper.
 **Outcome (2026-09-02):** spotcast reinstalled as v6 (OAuth, no cookies) and confirmed working end-to-end; a separate, deeper spotifyd zeroconf bug (orphaned Docker network) found and fixed; new `script.play_bedroom_track` button on the Bedroom area. Fully working. Worth keeping an eye on: spotcast v6 is still alpha, so future updates could introduce new breakage. The zeroconf half later regressed (see Log, 2026-09-11).
 
+#### Known leftover (for the next time Spotcast needs touching)
+- **What:** the Marketplace repair "fondberg/spotcast removed from the catalog" is still showing. The Marketplace's own record (`.storage/marketplace.repositories`) still says fondberg is installed.
+- **Harmless meanwhile.**
+- **To clear it, in this order** (both share the `spotcast` folder):
+  1. Marketplace "Remove" on fondberg - this deletes the files.
+  2. Download `Mincka/spotcast` through the Marketplace straight after.
+  3. Re-apply the 8765 redirect lines (see Log, 2026-11-26).
+  4. Restart HA.
+
 #### What shipped
 - **Root cause found:** the failing call was to `open.spotify.com/server-time`, an unauthenticated endpoint hit *before* cookies are ever used - confirmed via direct `curl` that it now 404s for everyone. A known, actively-discussed upstream break: Spotify removed web-browser-based Chromecast device listing, which the installed spotcast v4.0.1 depended on. Not a cookie problem at all.
 - **Reinstalled spotcast v4.0.1 -> v6.0.0-a16** (alpha, ground-up rewrite for the new API shape) - old version backed up outside `custom_components/` (a first backup attempt left inside `custom_components/` with its own `manifest.json` caused a separate HA-loader import bug, since fixed). Also manually installed a missing `rapidfuzz` Python dependency that didn't auto-install.
@@ -16,3 +25,4 @@
 - 2026-07-22: earliest known date spotifyd's Spotify Connect discovery was already broken (found 2026-09-02).
 - 2026-09-02: root cause found, spotcast reinstalled v4.0.1 -> v6.0.0-a16, OAuth set up, zeroconf bug fixed, `script.play_bedroom_track` added - all confirmed working.
 - 2026-09-11: the zeroconf half regressed after the 2026-09-06 reboot - same error line, different cause (a boot race, not the Docker network). See the entry at the top of Done.
+- 2026-11-26: the Marketplace flagged fondberg/spotcast as abandoned (maintained fork: `Mincka/spotcast`). Swapped the hand-installed `v6.0.0-a16` for the fork's `6.6.7` (release zip, sha256 checked): same `spotcast` domain, so the config entry, OAuth login and every entity ID carried over. Re-applied the redirect patch `127.0.0.1:8080/login` -> `8765` in both places the fork sets it (`sessions/oauth_pcke_implementation.py`, `config_flow_classes/config_flow_handler.py`) plus the setup strings. HA upgraded spotipy to 2.26.0 itself. Old build kept at `HOMEASSISTANT_CONFIG/backups/custom_components/spotcast-v6.0.0-a16` (to roll back: copy it back over `custom_components/spotcast`, restart HA). Tested: sensors live (26 playlists, 587 liked songs), `spotcast.play_media` to xero played. After the restart Tinxy was reloaded, satellites idle, STT check ok; the AC was already unavailable since 2026-11-24 (not this). The fork's re-login flow is now paste-the-redirect-URL, so the Mac relay should no longer be needed.
