@@ -22,10 +22,11 @@
 | [Use xero's spare RAM](tracker/xero-spare-ram.md) | P3 | ? | ? |
 | [Voice assistant (HA Assist): Spotify, room replies, wake word](tracker/voice-assistant.md) | P3 | ₹40-120 (bedroom button) | ~1 evening |
 
-## 🟡 Parked (3) · 3 unbudgeted
+## 🟡 Parked (4) · ₹0 + 3 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
+| [OpenClaw (self-hosted always-on AI agent) - considered, probably never](tracker/openclaw.md) | P3 | ₹0 | ~1 evening (3-4h) for a read-only trial |
 | [Pegboard backlight as the clawlight (leftover WS2812B on Pi GPIO13)](tracker/pegboard-backlight-clawlight.md) | P3 | ? | ? |
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
