@@ -31,7 +31,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (37) · 27 unbudgeted
+## 💡 Backlog ideas (38) · 27 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -56,6 +56,7 @@
 | [Machine upgrades (whole-house UPS/inverter, second SSD, better machine)](tracker/machine-upgrades.md) | P3 | ? | ? |
 | [Minecraft server on xero (family world, local and over Tailscale)](tracker/minecraft-server.md) | P3 | ₹0 | ~2 evenings (4-6h) |
 | [Miraie AC self-healing](tracker/miraie-ac-self-healing.md) | P3 | ? | ? |
+| [Mosquito net over the bed, quick to open and close](tracker/mosquito-net.md) | P3 | ₹900-3,000 | ~2 weekends (8-14h) |
 | [Move the Airtel router to a central spot (retire the Wi-Fi extender)](tracker/router-central-spot.md) | P3 | ? | ? |
 | [Move WoL to an ESP32, put the Pi on the UPS (post-Ganapati)](tracker/wol-to-esp32.md) | P3 | ₹0-500 (₹0 on the bedroom satellite; a dedicated ESP32 otherwise) | ~1-2 evenings (firmware with the WiFi-wait fix, an outage test) |
 | [Network device + access map](tracker/network-map.md) | P3 | ? | ? |
