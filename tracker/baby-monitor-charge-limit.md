@@ -5,7 +5,6 @@
 **Effort:** ~2 evenings (box rewire, Shortcuts + HA watchdog, one timed discharge)
 
 #### Open items
-- [ ] **Claude, after 2026-11-25:** take `switch.smart_switch_bench_relay` out of the `diwali_lights_*` automations (the kandil's last off is sunrise 2026-11-25)
 - [ ] **Together:** rewire the kandil box's output from the B22 bulb holder to a small socket (NO -> socket L, N/E through), so the SE's separate USB adapter plugs into it
 - [ ] **Together, after Diwali:** move the plug to the SE's charger; set up the two Shortcuts automations and the HA side below; time one 80->20% discharge on Alfred
 
@@ -20,3 +19,4 @@
 #### Log
 - 2026-11-05: idea recorded (user): after Diwali the in-house plug moves from the kandil to the Alfred camera's charger, driven by the iPhone's battery level.
 - 2026-11-26: kandil box confirmed for this (user): the SE charges from a wall USB socket today (cannot be switched); it moves to a separate USB adapter plugged into the box. The box's output is wired straight to the kandil's bulb holder, so it needs a socket fitted first. The kitchen exhaust fan is hard-wired, so it will not take this box (`kitchen-exhaust-fan.md`).
+- 2026-11-26: `switch.smart_switch_bench_relay` taken out of the three `diwali_lights_*` automations (now turned off too); nothing drives the box until this project does.
