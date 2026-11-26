@@ -22,7 +22,7 @@ The "SSD used" panel shows xero's two SSDs only: the BIWIN boot SSD (`/`)
 and the Kingston, as the whole `datapool` ZFS pool. Per-dataset `df` numbers
 are useless for the pool (each dataset's "size" is its own data plus the
 shared free space, and snapshots count nowhere), so
-`services/node-exporter/zpool_textfile.sh` (timer `job-zpool-textfile`, every minute) writes
+`services/node-exporter/zpool_textfile.sh` (timer `job-zpool-textfile`, every 15 minutes) writes
 `zfs list` used/avail for the pool to `services/node-exporter/textfile/`, which
 node-exporter's textfile collector exports as `homelab_zpool_used_bytes` /
 `homelab_zpool_avail_bytes`. used / (used + avail) is 100% when writes stop

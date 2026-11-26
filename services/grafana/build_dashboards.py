@@ -336,8 +336,9 @@ for bars in usage[3:5]:
 
 # ---- Jobs: every scheduled job (projects/jobs-dashboard) ----------------------
 # jobs_collector.py writes one homelab_job_* series per job (label `name`; `job`
-# is Prometheus's own scrape label). Durations' p95/max are computed per run by
-# the collector from its run history, not from these gauges.
+# is Prometheus's own scrape label). The 60-day p50/p95/max (duration, CPU,
+# RAM, busiest second, temperatures) are computed per run by the collector from
+# its run history, not from these gauges.
 J = 'max by (host, name) (homelab_job_{}{{name=~"$jobname"}})'
 JOB_VAR = {"type": "query", "name": "jobname", "label": "Job", "datasource": DS,
            "query": {"query": "label_values(homelab_job_info, name)", "refId": "J"},
@@ -360,8 +361,8 @@ def jobs_table(y):
         ("E", J.format("duration_max_seconds"), "Max (60d)", "s"),
         ("F", J.format("next_run_timestamp_seconds") + " * 1000", "Next run", "dateTimeFromNow"),
         ("G", J.format("consecutive_failures"), "Fails in a row", "none"),
-        ("H", J.format("last_cpu_max_percent"), "Max CPU", "percent"),
-        ("I", J.format("last_memory_peak_bytes"), "Peak memory", "bytes"),
+        ("H", J.format("last_cpu_max_percent"), "Max CPU (1 core = 100%)", "percent"),
+        ("I", J.format("last_ram_peak_bytes"), "Peak RAM", "bytes"),
         ("K", 'max by (host, name) (homelab_job_last_peak_temp_celsius{name=~"$jobname",sensor="cpu"})', "CPU °C", "celsius"),
         ("L", 'max by (host, name) (homelab_job_last_peak_temp_celsius{name=~"$jobname",sensor="ssd_data"})', "Kingston °C", "celsius"),
         ("M", J.format("runs"), "Runs (60d)", "none"),
@@ -403,14 +404,107 @@ def jobs_table(y):
     }
 
 
+def job_temp(stat, sensor):
+    return f'max by (host, name) (homelab_job_temp_{stat}_celsius{{name=~"$jobname",sensor="{sensor}"}})'
+
+
+CPU_COLS = [  # (refId, expr, column, unit, header tooltip)
+    ("A", J.format("runs"), "Runs", "none", "Runs recorded in the last 60 days."),
+    ("B", J.format("cpu_p50_seconds"), "CPU s p50", "s",
+     "CPU seconds of a typical run, whole process tree. Blank: fewer than 20 runs, see max. "
+     "Sub-second jobs are mostly the recording hooks' own cost: compare with the noop row."),
+    ("C", J.format("cpu_p95_seconds"), "CPU s p95", "s", "CPU seconds of a heavy run (p95 over 60 days)."),
+    ("D", J.format("cpu_max_seconds"), "CPU s max", "s", "CPU seconds of the heaviest run in 60 days."),
+    ("E", J.format("cpu_busiest_day_seconds"), "CPU top day", "s",
+     "CPU seconds of all the job's runs on its busiest day (IST) in 60 days: work per run x how often. "
+     "Recomputed hourly."),
+    ("F", J.format("cpu_last_24h_seconds"), "CPU s 24h", "s",
+     "CPU seconds of all the job's runs in the last 24 hours. Recomputed hourly."),
+    ("G", J.format("cpu_busiest_second_p95_percent"), "1s CPU % p95", "percent",
+     "Busiest second of a run: highest 1s CPU, % of one core (xero has 4: up to 400), p95 over runs of 1s or more. "
+     "Over 100 = it uses more than one core. Blank: fewer than 20 runs of 1s or more (recorded since 2026-11-24)."),
+    ("H", J.format("cpu_busiest_second_max_percent"), "1s CPU % max", "percent",
+     "Highest 1s CPU of any run of 1s or more, % of one core. Blank: every run was under a second."),
+]
+MEM_COLS = [
+    ("I", J.format("ram_p95_bytes"), "RAM p95", "bytes",
+     "Peak RAM of a heavy run: the processes' own memory (anon), no page cache - what two jobs at the same "
+     "time would fight over. Recorded since 2026-11-26."),
+    ("J", J.format("ram_max_bytes"), "RAM max", "bytes", "Peak RAM (anon) of the hungriest run in 60 days."),
+    ("K", J.format("memory_max_bytes"), "+cache max", "bytes",
+     "memory.peak of the biggest run: RAM plus the page cache its file reads filled. Much bigger than RAM = "
+     "it reads a lot of files, not that it needs the memory."),
+    ("L", job_temp("p95", "cpu"), "CPU °C p95", "celsius",
+     "Hottest CPU reading during a run, p95 over runs of a minute or more (shorter runs only read what "
+     "something else did)."),
+    ("M", job_temp("max", "cpu"), "CPU °C max", "celsius", "Hottest CPU reading during any run of a minute or more."),
+    ("N", job_temp("p95", "ssd_data"), "SSD °C p95", "celsius",
+     "Kingston (datapool) SSD: hottest reading during a run of a minute or more, p95. The Kingston is rated to 70°C."),
+    ("O", job_temp("max", "ssd_data"), "SSD °C max", "celsius",
+     "Kingston (datapool) SSD: hottest reading during any run of a minute or more."),
+]
+
+
+def cost_table(title, cols, sort_by, desc, y):
+    rename = {f"Value #{r}": c for r, _, c, _, _ in cols}
+    overrides = [{"matcher": {"id": "byName", "options": c},
+                  "properties": [{"id": "unit", "value": u}, {"id": "description", "value": d}]}
+                 for _, _, c, u, d in cols]
+    targets = [{"datasource": DS, "refId": "Z", "instant": True, "range": False, "format": "table",
+                "expr": 'max by (host, name) (homelab_job_info{name=~"$jobname"})'}]
+    targets += [{"datasource": DS, "refId": r, "instant": True, "range": False, "format": "table",
+                 "expr": e} for r, e, _, _, _ in cols]
+    return {
+        "id": next(_ids), "type": "table", "title": title, "datasource": DS,
+        "description": desc + " p50/p95 need 20 runs; max shows from the first. Counts and maxima update with "
+                       "each run, p50/p95 and the CPU totals hourly. Hover a header for what it means. "
+                       "Source: projects/jobs-dashboard/jobs_collector.py.",
+        "gridPos": {"x": 0, "y": y, "w": 24, "h": JOBS_H},
+        # Grafana's default 150px minimum per column pushes the last ones off screen
+        "fieldConfig": {"defaults": {"custom": {"align": "auto", "minWidth": 60}},
+                        "overrides": overrides + [
+                            {"matcher": {"id": "byName", "options": n}, "properties": [{"id": "custom.width", "value": w}]}
+                            for n, w in (("Host", 60), ("Job", 200))]},
+        "options": {"showHeader": True, "cellHeight": "sm", "sortBy": [{"displayName": sort_by, "desc": True}]},
+        "targets": targets,
+        "transformations": [
+            {"id": "merge", "options": {}},
+            {"id": "organize", "options": {
+                "excludeByName": {"Time": True, "Value #Z": True},
+                "indexByName": {"host": 0, "name": 1},
+                "renameByName": {**rename, "name": "Job", "host": "Host"}}},
+        ],
+    }
+
+
 y = 0
 jobs = [jobs_table(y)]
+y += JOBS_H
+jobs.append(cost_table("CPU per job (60 days)", CPU_COLS, "CPU top day",
+                       "Which jobs are CPU-heavy: per run, per day, and whether one uses more than a core.", y))
+y += JOBS_H
+jobs.append(cost_table("RAM and heat per job (60 days)", MEM_COLS, "RAM max",
+                       "Which jobs need RAM (keep two big ones apart) and which heat xero.", y))
 y += JOBS_H
 jobs.append(panel("Duration of each run", [(J.format("last_duration_seconds"), "{{host}} {{name}}")],
                   "s", 0, y, w=12, desc="Steps to each run's duration when it finishes. "
                   "Runs shorter than the gap between points can be missed when zoomed out; the table's p95/max cannot."))
 jobs.append(panel("Failures in a row", [(J.format("consecutive_failures"), "{{host}} {{name}}")],
                   "none", 12, y, w=12, desc="0 while the job succeeds; climbs by one per failed run."))
+y += 8
+EACH_RUN = ("Steps to each run's value when it finishes, so a trend (a backup growing, a change making a job "
+            "heavier) shows here and not in the 60-day table. Zoomed out, runs shorter than the gap between "
+            "points can be missed; the table's max cannot.")
+jobs.append(panel("CPU seconds of each run", [(J.format("last_cpu_seconds"), "{{host}} {{name}}")],
+                  "s", 0, y, w=8, desc=EACH_RUN))
+jobs.append(panel("Peak RAM of each run", [(J.format("last_ram_peak_bytes"), "{{host}} {{name}}")],
+                  "bytes", 8, y, w=8, desc="The processes' own memory (anon), no page cache. Recorded since "
+                  "2026-11-26. " + EACH_RUN))
+jobs.append(panel("Busiest second of each run (1 core = 100%)",
+                  [(J.format("last_cpu_max_percent") + ' and on (host, name) ' + J.format("last_duration_seconds")
+                    + " >= 1", "{{host}} {{name}}")],
+                  "percent", 16, y, w=8, desc="Runs of 1s or more only (shorter ones read noise). "
+                  "Over 100 = more than one core. " + EACH_RUN))
 y += 8
 jobs.append(panel("CPU temperature (jobs shaded while running)",
                   max_p95('max by (host) (node_hwmon_temp_celsius{chip=~"platform_coretemp.*"})', "{{host}}"),

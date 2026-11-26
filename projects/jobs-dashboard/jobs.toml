@@ -33,6 +33,15 @@ on_calendar = "*:0/5"
 command = "projects/tinxy-watchdog/watchdog_tinxy.sh"
 log = "tinxy-watchdog.log"
 
+[[job]]
+name = "noop"
+host = "xero"
+desc = "Does nothing (/bin/true): its CPU and RAM are the recording hooks' own cost, the floor under every job"
+# Sub-second jobs' CPU seconds are mostly this overhead (README Traps); compare against it.
+on_calendar = "*:0/5:15"
+command = "/bin/true"
+log = "noop.log"
+
 # --- moved from xero's crontab, 2026-11-19 (crontab.xero.before has the lines) ---
 
 [[job]]

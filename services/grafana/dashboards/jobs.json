@@ -26,7 +26,7 @@
         "x": 0,
         "y": 0,
         "w": 24,
-        "h": 19
+        "h": 20
       },
       "fieldConfig": {
         "defaults": {
@@ -122,7 +122,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Max CPU"
+              "options": "Max CPU (1 core = 100%)"
             },
             "properties": [
               {
@@ -134,7 +134,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Peak memory"
+              "options": "Peak RAM"
             },
             "properties": [
               {
@@ -372,7 +372,7 @@
           "instant": true,
           "range": false,
           "format": "table",
-          "expr": "max by (host, name) (homelab_job_last_memory_peak_bytes{name=~\"$jobname\"})"
+          "expr": "max by (host, name) (homelab_job_last_ram_peak_bytes{name=~\"$jobname\"})"
         },
         {
           "datasource": {
@@ -434,8 +434,8 @@
               "Value #E": "Max (60d)",
               "Value #F": "Next run",
               "Value #G": "Fails in a row",
-              "Value #H": "Max CPU",
-              "Value #I": "Peak memory",
+              "Value #H": "Max CPU (1 core = 100%)",
+              "Value #I": "Peak RAM",
               "Value #K": "CPU \u00b0C",
               "Value #L": "Kingston \u00b0C",
               "Value #M": "Runs (60d)",
@@ -451,6 +451,618 @@
     },
     {
       "id": 28,
+      "type": "table",
+      "title": "CPU per job (60 days)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Which jobs are CPU-heavy: per run, per day, and whether one uses more than a core. p50/p95 need 20 runs; max shows from the first. Counts and maxima update with each run, p50/p95 and the CPU totals hourly. Hover a header for what it means. Source: projects/jobs-dashboard/jobs_collector.py.",
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 20
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "minWidth": 60
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Runs"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "description",
+                "value": "Runs recorded in the last 60 days."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU s p50"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "description",
+                "value": "CPU seconds of a typical run, whole process tree. Blank: fewer than 20 runs, see max. Sub-second jobs are mostly the recording hooks' own cost: compare with the noop row."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU s p95"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "description",
+                "value": "CPU seconds of a heavy run (p95 over 60 days)."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU s max"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "description",
+                "value": "CPU seconds of the heaviest run in 60 days."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU top day"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "description",
+                "value": "CPU seconds of all the job's runs on its busiest day (IST) in 60 days: work per run x how often. Recomputed hourly."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU s 24h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "description",
+                "value": "CPU seconds of all the job's runs in the last 24 hours. Recomputed hourly."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "1s CPU % p95"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "description",
+                "value": "Busiest second of a run: highest 1s CPU, % of one core (xero has 4: up to 400), p95 over runs of 1s or more. Over 100 = it uses more than one core. Blank: fewer than 20 runs of 1s or more (recorded since 2026-11-24)."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "1s CPU % max"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "description",
+                "value": "Highest 1s CPU of any run of 1s or more, % of one core. Blank: every run was under a second."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Host"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 60
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Job"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "CPU top day",
+            "desc": true
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "Z",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_info{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_runs{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "B",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_cpu_p50_seconds{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "C",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_cpu_p95_seconds{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "D",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_cpu_max_seconds{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "E",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_cpu_busiest_day_seconds{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "F",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_cpu_last_24h_seconds{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "G",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_cpu_busiest_second_p95_percent{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "H",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_cpu_busiest_second_max_percent{name=~\"$jobname\"})"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value #Z": true
+            },
+            "indexByName": {
+              "host": 0,
+              "name": 1
+            },
+            "renameByName": {
+              "Value #A": "Runs",
+              "Value #B": "CPU s p50",
+              "Value #C": "CPU s p95",
+              "Value #D": "CPU s max",
+              "Value #E": "CPU top day",
+              "Value #F": "CPU s 24h",
+              "Value #G": "1s CPU % p95",
+              "Value #H": "1s CPU % max",
+              "name": "Job",
+              "host": "Host"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "type": "table",
+      "title": "RAM and heat per job (60 days)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Which jobs need RAM (keep two big ones apart) and which heat xero. p50/p95 need 20 runs; max shows from the first. Counts and maxima update with each run, p50/p95 and the CPU totals hourly. Hover a header for what it means. Source: projects/jobs-dashboard/jobs_collector.py.",
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 20
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "minWidth": 60
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RAM p95"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "description",
+                "value": "Peak RAM of a heavy run: the processes' own memory (anon), no page cache - what two jobs at the same time would fight over. Recorded since 2026-11-26."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RAM max"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "description",
+                "value": "Peak RAM (anon) of the hungriest run in 60 days."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "+cache max"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "description",
+                "value": "memory.peak of the biggest run: RAM plus the page cache its file reads filled. Much bigger than RAM = it reads a lot of files, not that it needs the memory."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU \u00b0C p95"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "description",
+                "value": "Hottest CPU reading during a run, p95 over runs of a minute or more (shorter runs only read what something else did)."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU \u00b0C max"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "description",
+                "value": "Hottest CPU reading during any run of a minute or more."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SSD \u00b0C p95"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "description",
+                "value": "Kingston (datapool) SSD: hottest reading during a run of a minute or more, p95. The Kingston is rated to 70\u00b0C."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SSD \u00b0C max"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "description",
+                "value": "Kingston (datapool) SSD: hottest reading during any run of a minute or more."
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Host"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 60
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Job"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "RAM max",
+            "desc": true
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "Z",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_info{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "I",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_ram_p95_bytes{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "J",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_ram_max_bytes{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "K",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_memory_max_bytes{name=~\"$jobname\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "L",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_temp_p95_celsius{name=~\"$jobname\",sensor=\"cpu\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "M",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_temp_max_celsius{name=~\"$jobname\",sensor=\"cpu\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "N",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_temp_p95_celsius{name=~\"$jobname\",sensor=\"ssd_data\"})"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "O",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "expr": "max by (host, name) (homelab_job_temp_max_celsius{name=~\"$jobname\",sensor=\"ssd_data\"})"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value #Z": true
+            },
+            "indexByName": {
+              "host": 0,
+              "name": 1
+            },
+            "renameByName": {
+              "Value #I": "RAM p95",
+              "Value #J": "RAM max",
+              "Value #K": "+cache max",
+              "Value #L": "CPU \u00b0C p95",
+              "Value #M": "CPU \u00b0C max",
+              "Value #N": "SSD \u00b0C p95",
+              "Value #O": "SSD \u00b0C max",
+              "name": "Job",
+              "host": "Host"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 30,
       "type": "timeseries",
       "title": "Duration of each run",
       "description": "Steps to each run's duration when it finishes. Runs shorter than the gap between points can be missed when zoomed out; the table's p95/max cannot.",
@@ -461,7 +1073,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 19,
+        "y": 60,
         "w": 12,
         "h": 8
       },
@@ -530,7 +1142,7 @@
       ]
     },
     {
-      "id": 29,
+      "id": 31,
       "type": "timeseries",
       "title": "Failures in a row",
       "description": "0 while the job succeeds; climbs by one per failed run.",
@@ -541,7 +1153,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 12,
-        "y": 19,
+        "y": 60,
         "w": 12,
         "h": 8
       },
@@ -610,7 +1222,247 @@
       ]
     },
     {
-      "id": 30,
+      "id": 32,
+      "type": "timeseries",
+      "title": "CPU seconds of each run",
+      "description": "Steps to each run's value when it finishes, so a trend (a backup growing, a change making a job heavier) shows here and not in the 60-day table. Zoomed out, runs shorter than the gap between points can be missed; the table's max cannot.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "$res",
+      "gridPos": {
+        "x": 0,
+        "y": 68,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*p95.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "hideZeros": true
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "max by (host, name) (homelab_job_last_cpu_seconds{name=~\"$jobname\"})",
+          "legendFormat": "{{host}} {{name}}"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "type": "timeseries",
+      "title": "Peak RAM of each run",
+      "description": "The processes' own memory (anon), no page cache. Recorded since 2026-11-26. Steps to each run's value when it finishes, so a trend (a backup growing, a change making a job heavier) shows here and not in the 60-day table. Zoomed out, runs shorter than the gap between points can be missed; the table's max cannot.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "$res",
+      "gridPos": {
+        "x": 8,
+        "y": 68,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*p95.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "hideZeros": true
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "max by (host, name) (homelab_job_last_ram_peak_bytes{name=~\"$jobname\"})",
+          "legendFormat": "{{host}} {{name}}"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "type": "timeseries",
+      "title": "Busiest second of each run (1 core = 100%)",
+      "description": "Runs of 1s or more only (shorter ones read noise). Over 100 = more than one core. Steps to each run's value when it finishes, so a trend (a backup growing, a change making a job heavier) shows here and not in the 60-day table. Zoomed out, runs shorter than the gap between points can be missed; the table's max cannot.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "$res",
+      "gridPos": {
+        "x": 16,
+        "y": 68,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*p95.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Max",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "hideZeros": true
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "max by (host, name) (homelab_job_last_cpu_max_percent{name=~\"$jobname\"}) and on (host, name) max by (host, name) (homelab_job_last_duration_seconds{name=~\"$jobname\"}) >= 1",
+          "legendFormat": "{{host}} {{name}}"
+        }
+      ]
+    },
+    {
+      "id": 35,
       "type": "timeseries",
       "title": "CPU temperature (jobs shaded while running)",
       "description": "Shaded: a job that has been running for more than 10s (shorter runs cannot move a temperature).",
@@ -621,7 +1473,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 0,
-        "y": 27,
+        "y": 76,
         "w": 12,
         "h": 8
       },
@@ -699,7 +1551,7 @@
       ]
     },
     {
-      "id": 31,
+      "id": 36,
       "type": "timeseries",
       "title": "SSD temperature (jobs shaded while running)",
       "description": "The Kingston is rated to 70\u00b0C. Shaded regions: a job was running.",
@@ -710,7 +1562,7 @@
       "interval": "$res",
       "gridPos": {
         "x": 12,
-        "y": 27,
+        "y": 76,
         "w": 12,
         "h": 8
       },
