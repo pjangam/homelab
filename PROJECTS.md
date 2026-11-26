@@ -30,7 +30,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (35) · 27 unbudgeted
+## 💡 Backlog ideas (36) · 27 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -63,6 +63,7 @@
 | [Pigeon deterrent - motion-triggered sprinkler (balcony railing/parapet)](tracker/pigeon-deterrent.md) | P3 | ? | ? |
 | [Replace Alfred Camera with a free, local baby monitor on the iPhone SE](tracker/baby-monitor-local.md) | P3 | ? | ? |
 | [Shopping list display (touchscreen e-ink)](tracker/shopping-list-display.md) | P3 | ? | ? |
+| [Small talk with the voice satellites, in English and Marathi (LLM-answered)](tracker/voice-conversation.md) | P3 | ₹0-500 (₹500 API credit shared with car-claude; then ~₹25-150/month) | ~5 evenings (14-18h) |
 | [Tinxy: remove stale/decommissioned devices from account](tracker/tinxy-stale-devices.md) | P3 | ? | ? |
 | [USB charge switch (MOSFET): ATtiny85 + current sensor, silent P-channel switch](tracker/usb-charge-switch-mosfet.md) | P3 | ₹50-100 | ~1 evening (2-3h), after the relay build |
 | [USB charge switch (relay): ATtiny85 + current sensor to stop charging when full](tracker/usb-charge-switch-relay.md) | P3 | ₹700-1,100 | ~2-3 evenings (5-8h) |
