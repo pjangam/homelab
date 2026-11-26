@@ -402,8 +402,8 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   port = 6053
   connect = "projects/smart-switch/esphome/esphome.sh logs --device 192.168.1.128"
   desc = "ESPHome native API on the in-house Tinxy replacement prototype: an ESP32 + relay switching the akash kandil. LAN only, Noise-encrypted with api_key."
-  who = "Home Assistant's ESPHome integration (device \"Smart Switch Bench\", switch.smart_switch_bench_relay), driven by the Diwali Lights automations."
-  note = "Flashed 2026-11-05. Static IP in firmware; prefers the bedroom AP. OTA on port 3232. projects/smart-switch/README.md"
+  who = "Home Assistant's ESPHome integration (device \"Smart Switch Bench\", switch.smart_switch_bench_relay), no automation drives it since 2026-11-26 (kandil taken down)."
+  note = "Flashed 2026-11-05. Static IP in firmware; prefers the bedroom AP. OTA on port 3232. Off the wall since 2026-11-26; next job: the baby-monitor phone charger (tracker/baby-monitor-charge-limit.md). projects/smart-switch/README.md"
 
   [[group.endpoint]]
   name = "Diwali door lights (WLED)"
@@ -413,7 +413,7 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   url = "http://192.168.1.127/"
   desc = "WLED 0.14.4 audioreactive on the Diwali door-outline ESP32 (284 px). Web UI and JSON API; close the web UI before scripting it, an open page overwrites API changes."
   who = "Home Assistant's WLED integration (\"Diwali Lights\", light.diwali_lights, area Living Room), diwali-cracker-fx on xero, and projects/diwali-lights/diwali_wled.sh."
-  note = "Static IP set in WLED, inside the router's DHCP range. Seasonal: off the door after Diwali. projects/diwali-lights/README.md"
+  note = "PACKED AWAY 2026-11-26 - board off the door and unpowered, answers nothing until set up again. Static IP set in WLED, inside the router's DHCP range. projects/diwali-lights/README.md"
 
   [[group.endpoint]]
   name = "Diwali lights audio sync (UDP multicast)"
@@ -422,7 +422,7 @@ blurb = "The ones nobody thinks of as endpoints until they break."
   port = 11988
   connect = "journalctl --user -u diwali-cracker-fx -f   (on xero)"
   desc = "WLED AudioReactive's FFT results from the Diwali board, ~42 packets/s, sent as multicast on the LAN. The board does not react to sound itself."
-  who = "diwali-cracker-fx.service on xero (systemd --user), which flips the board to a burst preset on firecrackers. Only while that service runs; a crontab line disables it on 25 Nov."
+  who = "diwali-cracker-fx.service on xero (systemd --user), which flips the board to a burst preset on firecrackers. Not running: service removed 2026-11-25, board packed away 2026-11-26."
   note = "Added 2026-11-17. projects/diwali-lights/README.md"
 
   [[group.endpoint]]
