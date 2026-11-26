@@ -178,6 +178,7 @@ Bedroom board after phase 1:
 #### Parts
 ```parts
 qty | item | est | note
+1 | Crocodile clip test leads, set of 10 (both ends clips) | 50-150 | local; for mapping the remote's keys hands-free (one end on the multimeter probe, other on a jumper wire to a test point). General bench use too. Estimate
 # Phase 1: wired buttons
 11 | 12mm momentary push button | 150-300 | local; 9 bedroom + 2 living room (prev/next; play button already planned). Estimate, not a fetched listing
 # Phase 3 remote, power option B: LiPo (recommended)
@@ -214,3 +215,4 @@ qty | item | est | note
 - 2026-11-20: opened (user photos). 12 keys, labelled on the board: SW500 VOICE, SW504 UP, SW511 DOWN, SW507 LEFT, SW505 RIGHT, SW506 SEL, SW503 BACK, SW502 HOME, SW501 MENU, SW510 REWIND, SW509 PLAY, SW508 FFW. Key side has only the pads; the back has the main chip (large QFN), a MEMS mic at the top, PCB antenna top right, battery contacts J301-J304 at the bottom, and many labelled gold test points (TX100s, TX400s, **TX500-TX521**, likely the key lines: to be confirmed with a multimeter, key pad to test point). Not yet measured.
 - 2026-11-20: Status Backlog -> Active (user): the remote is open and being mapped.
 - 2026-11-20: the key side has edge pads **BON100-BON109** (5 each side), likely the key lines: map and solder there (no flipping, away from the chip). Amazon's board stays as the key contact surface; the XIAO goes behind it or in the battery bay, decided by measurements. Batteries left for later (user).
+- 2026-11-27: mapping so far: TX520 (back) = BON109 (key-side edge pad), always connected. Crocodile leads added to the parts list (user) to free a hand for probing.
