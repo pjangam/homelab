@@ -294,21 +294,6 @@ views:
       vertical: false
       features_position: bottom
     - type: tile
-      entity: light.diwali_lights
-      name: Door lights
-      vertical: false
-      features_position: bottom
-      features:
-      - type: light-brightness
-    - type: tile
-      entity: select.diwali_lights_preset
-      name: Door effect
-      icon: mdi:palette
-      vertical: false
-      features_position: bottom
-      features:
-      - type: select-options
-    - type: tile
       entity: fan.living_room_fan
       name: Fan
     - type: tile
@@ -386,12 +371,6 @@ views:
         name:
           type: entity
         icon: mdi:waves
-        vertical: false
-        features_position: bottom
-      - type: tile
-        entity: switch.smart_switch_bench_relay
-        name: Akash Kandil
-        icon: mdi:lamp
         vertical: false
         features_position: bottom
       columns: 3
