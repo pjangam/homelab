@@ -33,7 +33,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (38) · 25 unbudgeted
+## 💡 Backlog ideas (39) · 25 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -63,6 +63,7 @@
 | [Network device + access map](tracker/network-map.md) | P3 | ? | ? |
 | [Old duplicity backup in Google Drive - keep or delete](tracker/old-duplicity-backup.md) | P3 | ? | ? |
 | [On-demand Bluetooth for xero's speaker (after the servo)](tracker/bt-speaker-on-demand.md) | P3 | ₹0 | ~1 evening (3-4h), after the servo build |
+| [Photo requests from a session to the phone, through the Discord idea-bot](tracker/phone-photo-requests.md) | P3 | ₹0 | ~1-2 evenings (4-7h) |
 | [Pi audio move follow-ups: monitoring, xero cleanup, then xero to the router](tracker/pi-audio-move-followups.md) | P3 | ? | ? |
 | [Pigeon deterrent - motion-triggered sprinkler (balcony railing/parapet)](tracker/pigeon-deterrent.md) | P3 | ? | ? |
 | [Replace Alfred Camera with a free, local baby monitor on the iPhone SE](tracker/baby-monitor-local.md) | P3 | ? | ? |

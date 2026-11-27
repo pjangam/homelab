@@ -8,9 +8,11 @@
 - [ ] **Claude:** after the first real ideas, run the `architecture-review` agent on `projects/idea-bot`
 - [ ] **Claude:** add `idea-bot` to the healthcheck's watched user units
 - [ ] **Claude, if wanted:** an iOS Share-sheet Shortcut that posts a link into `#ideas`, for one-tap sharing from Safari
+- [ ] **Claude, after the review and healthcheck items:** photo requests from sessions to the phone, a Backlog extension in [`phone-photo-requests.md`](phone-photo-requests.md)
 
 **Why:** sending an idea today means logging in, starting Claude, resuming a session and only then typing it. An always-listening bot lets a one-liner or a link go straight to the `idea-dump` agent from the phone (user, 2026-11-27). This is the "capture from the phone" part that the OpenClaw review said to build separately ([`openclaw.md`](openclaw.md)).
 **State:** running on xero since 2026-11-27 (`systemctl --user status idea-bot`); first idea recorded end to end the same day. Code and setup in [`projects/idea-bot/`](../projects/idea-bot/README.md).
+**Extensions:** session-initiated photo requests ([`phone-photo-requests.md`](phone-photo-requests.md), Backlog, 2026-11-27).
 
 #### Decisions
 | Decision | Choice | Why |
