@@ -36,6 +36,7 @@ wol-sender Pi or the Mac; they move into the layout above in a later session.
 | [`endpoints`](projects/endpoints/README.md) | the one page listing every endpoint we serve |
 | [`ha-dashboard`](projects/ha-dashboard/README.md) | the Home dashboard, tracked and synced over HA's websocket API |
 | [`healthcheck`](projects/healthcheck/README.md) | the synthetic healthcheck - silent when healthy, alerts when not |
+| [`idea-bot`](projects/idea-bot/README.md) | Discord bot: post an idea from the phone, the idea-dump agent writes the tracker file |
 | [`immich-backup`](projects/immich-backup/README.md) | offsite copy of Immich originals (S3 Glacier Deep Archive) |
 | [`jobs-dashboard`](projects/jobs-dashboard/README.md) | every scheduled job as a `systemd --user` timer, runs exported for the Grafana "Jobs" dashboard |
 | [`lan-gateway`](projects/lan-gateway/README.md) | xero as the LAN gateway, counting bytes per device |

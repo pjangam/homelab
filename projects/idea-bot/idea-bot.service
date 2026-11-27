@@ -1,0 +1,18 @@
+[Unit]
+Description=Discord idea bot: hands ideas to the idea-dump agent (projects/idea-bot)
+
+[Service]
+# DISCORD_TOKEN, IDEA_BOT_USER_ID, IDEA_BOT_CHANNEL_ID - never in the repo.
+EnvironmentFile=%h/.config/idea-bot/env
+ExecStart=%h/.local/bin/uv run --script %h/code/homelab/projects/idea-bot/bot.py
+# uv hands the SIGTERM of a normal stop back as exit 143; without this a
+# `systemctl stop` leaves the unit "failed", which healthcheck.sh alarms on.
+SuccessExitStatus=143
+# Restart=always, not on-failure: at boot the network may not be up yet
+# (After=network-online.target is a no-op in user units) and the first login
+# to Discord fails; this retries until it is.
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target

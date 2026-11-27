@@ -55,7 +55,7 @@ These recur, and an entry that ignores them gets rebuilt later:
 
 - **Power cuts are frequent.** Mains-only devices die; xero runs ~200min on UPS;
   anything that must act when mains returns has to be *off* the UPS.
-- **xero is 8GB and busy** (Immich is parked over exactly this). Node apps that
+- **xero has 32GB but runs a lot** (Immich ML is throttled for load and heat). Node apps that
   idle at 150MB are a real cost.
 - **Local-first.** Cloud-dependent gear breaks in an ISP outage and cannot be
   pointed at xero - the Tinxy lesson. Prefer ESPHome/WLED/MQTT.
