@@ -32,7 +32,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (37) · 27 unbudgeted
+## 💡 Backlog ideas (37) · 26 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -72,7 +72,7 @@
 | [USB charge switch (relay): ATtiny85 + current sensor to stop charging when full](tracker/usb-charge-switch-relay.md) | P3 | ₹700-1,100 | ~2-3 evenings (5-8h) |
 | [WiFi-synced analog clock (ESP32 retrofit of a quartz movement)](tracker/wifi-analog-clock.md) | P3 | ? | ? |
 | [Wired Ethernet dongle for the MacBooks](tracker/macbook-ethernet-dongle.md) | P3 | ? | ? |
-| [Workbench stock: jumper wires and project boxes](tracker/workbench-stock.md) | P3 | ? | ? |
+| [Workbench stock: jumper wires and project boxes](tracker/workbench-stock.md) | P3 | ₹3,200-5,500 (sum of the parts list; optional micro-USB pairs not included) | ~1 evening (one shop trip) |
 
 ## ⚪ Closed (not acting) (4)
 

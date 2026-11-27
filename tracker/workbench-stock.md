@@ -1,8 +1,8 @@
 # Workbench stock: jumper wires and project boxes
 **Status:** Backlog
 **Priority:** P3
-**Cost:** ?
-**Effort:** ?
+**Cost:** ₹3,200-5,500 (sum of the parts list; optional micro-USB pairs not included)
+**Effort:** ~1 evening (one shop trip)
 
 #### Open items
 - [ ] **Pramod:** buy on the next shop trip (all loose local stock)
@@ -26,6 +26,7 @@ qty | item | est | note
 1 | USB-A male breakout board | 9-25 | local - the third male for the 3 pairs
 3 | USB-C male breakout (plug) board | 50-100 | local - USB-C pairs, with the female boards below
 2 | USB-C female breakout, 6-pin with 5.1k CC resistors | 20-40 | local - with the 24-pin one on hand, makes 3 USB-C pairs. The 5.1k resistors make a USB-C charger give 5V; a board without them gets no power
+1 | Nylon spacer/standoff + screw + nut assortment kit, M2.5 and M3 (M-F and F-F standoffs, assorted lengths) | 250-450 | local - mounts boards into project boxes and onto panels. M2.5 fits Pi holes; M3 fits most ESP32 devkits and modules. Nylon, so no shorts against the board
 # Optional: micro-USB pairs
 3 | Micro-USB female breakout board | 10-20 | local - for older devices with micro-USB cables
 3 | Micro-USB male breakout (plug) board | 20-40 | local
@@ -35,3 +36,4 @@ qty | item | est | note
 - 2026-10-28: entry created for jumper wires and project boxes. Boxes for the voice satellites and the Diwali WLED controller moved to those entries' parts lists; two spares stay here. Jumpers doubled and a 10cm set added: current stock is running out. Berg strip (dupont) housings added for multi-pin plugs, then a dupont crimp tool and 100 each male/female crimp pins.
 - 2026-11-14: DS3231 RTC module + CR2032 added (user), general stock - not needed by the USB charge switch.
 - 2026-11-17: USB breakout pairs added (user): 3 USB-A, 3 USB-C, micro-USB optional. Counts allow for the 2 USB-A male and 1 USB-C female (24-pin) already on hand (`docs/hardware.md`).
+- 2026-11-27: nylon standoff/spacer + screw kit (M2.5 and M3) added (user).
