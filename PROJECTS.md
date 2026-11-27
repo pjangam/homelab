@@ -32,7 +32,7 @@
 | [xero OS: stay on Ubuntu 24.04 LTS, no 26.04 upgrade yet](tracker/xero-os-version.md) | P3 | ? | ? |
 | [ZFS mirror (real redundancy for datapool)](tracker/zfs-mirror.md) | P3 | ? | ? |
 
-## 💡 Backlog ideas (37) · 26 unbudgeted
+## 💡 Backlog ideas (37) · 25 unbudgeted
 
 | Project | Priority | Cost | Effort |
 |---|---|---|---|
@@ -51,7 +51,7 @@
 | [Ganapati 2027: counter-rotating spiral discs (kinetic backdrop)](tracker/ganapati-2027-spiral-discs.md) | P3 | ? | ? |
 | [Ganapati 2027: solar system / general relativity decoration](tracker/ganapati-2027-solar-system.md) | P3 | ? | ? |
 | [Homelab health LED (Pi GPIO) - the whole healthcheck as one light](tracker/health-led.md) | P3 | ? | ? |
-| [In-wall smart switch (Tinxy replacement, phase 2)](tracker/smart-switch-in-wall.md) | P3 | ? | ? |
+| [In-wall smart switch (Tinxy replacement, phase 2)](tracker/smart-switch-in-wall.md) | P3 | ₹0-1,700 (reflash an installed Tinxy ₹0, test unit ~₹1,200; DIY 4-switch board ~₹1,600-1,700) | ~1 evening (reflash test) to ~2 weekends (DIY box) |
 | [Local Qwen (Ollama) delegation experiment](tracker/local-qwen-delegation.md) | P3 | ? | ? |
 | [Machine upgrades (whole-house UPS/inverter, second SSD, better machine)](tracker/machine-upgrades.md) | P3 | ? | ? |
 | [Minecraft server on xero (family world, local and over Tailscale)](tracker/minecraft-server.md) | P3 | ₹0 | ~2 evenings (4-6h) |

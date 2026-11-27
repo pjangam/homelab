@@ -1,8 +1,8 @@
 # In-wall smart switch (Tinxy replacement, phase 2)
 **Status:** Backlog
 **Priority:** P3
-**Cost:** ?
-**Effort:** ?
+**Cost:** ₹0-1,700 (reflash an installed Tinxy ₹0, test unit ~₹1,200; DIY 4-switch board ~₹1,600-1,700)
+**Effort:** ~1 evening (reflash test) to ~2 weekends (DIY box)
 
 #### Open items
 - [ ] **Pramod, after Diwali:** with the MCB off, open one installed Tinxy: note the model (is it the 4N with fan regulator?) and photograph the board's chip for Claude
@@ -37,7 +37,7 @@ qty | item | est | note
 # DIY 4-switch board (option A)
 1 | ESP32 devkit, WROOM-32 38-pin | 384 | have spares - skip
 1 | HLK-PM01 5V supply, genuine Hi-Link | 180-195 | local
-1 | 4-channel 5V relay module | 140 | local (electronicscomp 140)
+1 | 4-channel 5V relay module, optocoupler, with JD-VCC jumper | 159 | ₹159 incl. GST (user, 2026-11-27). Remove the JD-VCC jumper: VCC to the ESP32's 3.3V, JD-VCC to 5V, so a 3.3V pin switches the optos cleanly. Usually low-trigger (ESPHome `inverted: true`). 4 coils on = ~300-350mA; check the board has isolation slots
 4 | 220V AC optocoupler module, 1 channel | 772 | local (robu 193 each) - active-low: OUT to GND when 230V is present
 1 | 5x20mm PCB fuse holder + T500mA-T1A fuse | 15 | local
 1 | Enclosure and wire | 80-210 | local
@@ -52,3 +52,4 @@ qty | item | est | note
 #### Log
 - 2026-11-05: split out of "In-house smart switch to replace Tinxy" when the kandil prototype was marked Done.
 - 2026-11-05: options A/B drawn (`wiring.md` section 6). Cost check: Tinxy's 4N with fan regulator at ~₹1,200 beats the DIY box on price and fan speed; DIY wins only on staying off the cloud. Next is testing an ESPHome reflash of a Tinxy 4N (ESP8266, documented on devices.esphome.io and Tinxy's forum) before any DIY build.
+- 2026-11-27: option A's relay board priced at ₹159 (4-channel opto version, user), with the 3.3V wiring note. Budget lines added.
