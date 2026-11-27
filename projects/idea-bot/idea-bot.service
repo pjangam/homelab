@@ -4,6 +4,9 @@ Description=Discord idea bot: hands ideas to the idea-dump agent (projects/idea-
 [Service]
 # DISCORD_TOKEN, IDEA_BOT_USER_ID, IDEA_BOT_CHANNEL_ID - never in the repo.
 EnvironmentFile=%h/.config/idea-bot/env
+# ~/.local/bin is not on a user unit's PATH: without it the pre-push hook
+# cannot find gitleaks and pushes unscanned (happened on the first run).
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=%h/.local/bin/uv run --script %h/code/homelab/projects/idea-bot/bot.py
 # uv hands the SIGTERM of a normal stop back as exit 143; without this a
 # `systemctl stop` leaves the unit "failed", which healthcheck.sh alarms on.

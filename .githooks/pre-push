@@ -2,6 +2,8 @@
 # Runs gitleaks before every push to catch secrets in committed history.
 set -euo pipefail
 
+# Services (systemd --user, the idea-bot) do not have ~/.local/bin on PATH.
+[ -x "$HOME/.local/bin/gitleaks" ] && PATH="$HOME/.local/bin:$PATH"
 if ! command -v gitleaks &>/dev/null; then
   echo "WARNING: gitleaks not found, skipping secret scan. Install it to enable this check."
   exit 0
