@@ -80,7 +80,10 @@ projects/idea-bot/bot.py --probe "..."     # run the Claude side by hand, same f
 
 ## Traps
 
-- **"Message Content Intent" off** → the bot logs in but every message arrives empty and nothing happens.
+- **"Message Content Intent" not saved** → `PrivilegedIntentsRequired` in the journal and a restart every 30s. Toggle it, then click **Save Changes**.
+- **Bot not in the server** (invite never completed) → it logs in, then sees nothing at all: no `message from` lines. Check with `GET https://discord.com/api/v10/users/@me/guilds` and the bot token; `[]` means re-run the invite.
+- **Messages sent while the bot is down are lost:** Discord does not replay them. Post again.
+- **Every received message is logged** (`message from <user> in channel <id>`); none means Discord is not delivering, not that the bot ignored it.
 - **A run takes minutes.** The idea-dump agent researches and prices; ⏳ means it's working. Timeout is 30 min (`IDEA_BOT_TIMEOUT`).
 - **Uses the Claude subscription.** Each idea is a full agent run, so it eats the same allowance as a session.
 - **The commit hook can call a headless `claude -p` itself** (`fix_open_items.sh`) if the agent's file breaks the Open items format; that runs inside the agent's `git commit` and is expected.

@@ -5,14 +5,12 @@
 **Effort:** ~1 evening (2-3h)
 
 #### Open items
-- [ ] **Pramod:** create the private `homelab` Discord server with an `#ideas` channel, and the bot app with Message Content Intent on (README steps 1-4)
-- [ ] **Pramod:** write `~/.config/idea-bot/env` on xero with the token and the two IDs (README step 5; type the token yourself, not in a Claude session)
-- [ ] **Together, once the env file exists:** install and enable the unit, post a first test idea, check the thread reply and the commit
 - [ ] **Claude:** after the first real ideas, run the `architecture-review` agent on `projects/idea-bot`
-- [ ] **Claude, after the first real run:** add `idea-bot` to the healthcheck's watched user units, and to the xero entry's Log line in `docs/hardware.md` as running (now: installed only)
+- [ ] **Claude:** add `idea-bot` to the healthcheck's watched user units
+- [ ] **Claude, if wanted:** an iOS Share-sheet Shortcut that posts a link into `#ideas`, for one-tap sharing from Safari
 
 **Why:** sending an idea today means logging in, starting Claude, resuming a session and only then typing it. An always-listening bot lets a one-liner or a link go straight to the `idea-dump` agent from the phone (user, 2026-11-27). This is the "capture from the phone" part that the OpenClaw review said to build separately ([`openclaw.md`](openclaw.md)).
-**State:** built, not yet running: waiting on the Discord server, bot token and env file. Code and setup in [`projects/idea-bot/`](../projects/idea-bot/README.md).
+**State:** running on xero since 2026-11-27 (`systemctl --user status idea-bot`); first idea recorded end to end the same day. Code and setup in [`projects/idea-bot/`](../projects/idea-bot/README.md).
 
 #### Decisions
 | Decision | Choice | Why |
@@ -29,3 +27,4 @@
 
 #### Log
 - 2026-11-27: built `projects/idea-bot` (bot, unit, README). Checked headless: `--agent idea-dump` passes the tracker hook; permission probe allowed tracker writes, `git add tracker/*` and commit, and refused `.env.mqtt`, `curl`, `rm`, writes to `projects/` and `git reset`. Also fixed `tools/repo-tools/tracker.py` missing its executable bit (agents had been falling back to `python3`), and the idea-dump agent's stale "xero is 8GB" line (32GB since 2026-10-08).
+- 2026-11-27: set up with the user. Traps hit, now in the README: Message Content Intent must be **saved** (else `PrivilegedIntentsRequired` and a restart loop), and the OAuth invite must actually complete (bot in no server = no messages at all; `GET /users/@me/guilds` returned `[]`). Discord does not replay messages sent while the bot is offline. First run: the weather-cloud idea, 23 turns, committed and pushed as `bca37c7` with no hook fixes. Bot now logs every message it receives. Also allowlisted `click.discord.com` on xero's Pi-hole (StevenBlack list blocked Discord's email links, including the password reset).

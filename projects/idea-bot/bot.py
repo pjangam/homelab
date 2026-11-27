@@ -190,6 +190,9 @@ class IdeaBot(discord.Client):
                  self.user, self.channel_id, self.user_id)
 
     async def on_message(self, msg: discord.Message):
+        if msg.author.id != getattr(self.user, "id", None):
+            log.info("message from %s in channel %s (%d chars)", msg.author.id,
+                     msg.channel.id, len(msg.content))
         if msg.author.bot or msg.author.id != self.user_id:
             return
         ch = msg.channel
