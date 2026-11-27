@@ -555,6 +555,16 @@ blurb = "Packets with a direction and no listener, or a listener that never answ
   who = "The Pi's wol-xero.service, fired on every Pi boot - which is how xero comes back after a power cut."
   note = "The endpoint is a direction, not a service. There is no way to test it other than letting xero sleep."
 
+  [[group.endpoint]]
+  name = "idea-bot (Discord #ideas)"
+  proto = "https"
+  host = "gateway.discord.gg"
+  port = 443
+  connect = "Discord app -> homelab server -> #ideas"
+  desc = "Post an idea or a link in #ideas; the idea-bot on xero hands it to the idea-dump agent, which writes tracker/<slug>.md and pushes. Outbound websocket only: xero opens no port."
+  who = "You, from the phone or Mac. systemd --user unit idea-bot (projects/idea-bot) is the only listener, on Discord's side."
+  note = "The channel lives on Discord's servers, not xero. Messages sent while the bot is down are lost - post again."
+
 [[group]]
 name = "Tailnet names"
 blurb = "Three names, three different ways of getting a certificate. Worth knowing which is which the next time one expires."
