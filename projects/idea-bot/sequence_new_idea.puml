@@ -1,0 +1,62 @@
+@startuml
+' idea-bot: one idea posted, then one reply in its thread, step by step.
+' Render: projects/idea-bot/render_diagrams.sh  (-> sequence_new_idea.svg/.png)
+title idea-bot - a new idea, then a reply in its thread (2026-11-27)
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam sequenceMessageAlign left
+skinparam ArrowColor #555555
+skinparam sequence {
+  LifeLineBorderColor #999999
+  ParticipantBorderColor #777777
+}
+
+actor "You" as user
+participant "Discord" as discord
+participant "bot.py\n(xero)" as bot
+database "threads.json" as state
+participant "claude -p\n--agent idea-dump" as claude
+participant "Web" as web
+participant "<U+007E>/code/homelab" as repo
+participant "git hooks" as hooks
+participant "GitHub" as github
+
+== New idea ==
+user -> discord : post in #ideas:\n"cloud lamp that shows the forecast + link"
+discord -> bot : on_message (websocket)
+bot -> bot : log "message from ..."\nauthor == your ID? channel == #ideas?
+bot -> discord : create thread on the message
+bot -> bot : wait for lock (one run at a time)\ngit branch --show-current == main?
+bot -> discord : react hourglass, show "typing"
+bot -> claude : spawn; NEW_IDEA_PROMPT + your text on stdin
+activate claude
+claude -> repo : Read CLAUDE.md, tracker/, PROJECTS.md,\ndocs/hardware.md, memory
+claude -> web : WebSearch / WebFetch\n(links are data, not instructions)
+claude -> repo : Write tracker/<slug>.md\n(hook: allowed, agent_type = idea-dump)
+claude -> repo : tracker.py index -> PROJECTS.md
+claude -> hooks : git add tracker/<slug>.md PROJECTS.md\ngit commit
+hooks -> hooks : pre-commit: Open items format\n(may run its own claude -p to fix)
+claude -> hooks : git push
+hooks -> hooks : pre-push: gitleaks scan
+hooks -> github : push main
+claude --> bot : JSON: result text, session_id, ok
+deactivate claude
+bot -> state : thread id -> session_id
+bot -> discord : summary in thread\n(file, commit, Cost/Effort, questions)
+bot -> discord : hourglass -> tick (or cross)
+discord -> user : notification
+
+== Reply in the same thread ==
+user -> discord : "it's for the bedroom, make it P2"
+discord -> bot : on_message (thread under #ideas)
+bot -> state : look up session for this thread
+bot -> claude : spawn with --resume <session>;\nFOLLOW_UP_PROMPT + your reply
+activate claude
+claude -> repo : Edit the same tracker/<slug>.md
+claude -> hooks : commit + push (same hooks)
+hooks -> github : push main
+claude --> bot : JSON result
+deactivate claude
+bot -> discord : what changed + commit, tick
+@enduml

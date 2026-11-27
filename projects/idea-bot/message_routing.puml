@@ -1,0 +1,58 @@
+@startuml
+' idea-bot: every decision one Discord message passes through, and where it stops.
+' Render: projects/idea-bot/render_diagrams.sh  (-> message_routing.svg/.png)
+title idea-bot - what happens to one message (2026-11-27)
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ActivityBorderColor #777777
+skinparam ActivityDiamondBorderColor #777777
+skinparam ArrowColor #555555
+
+start
+:Discord delivers a message
+(only while the bot is connected:
+messages sent while it is down are lost);
+:log "message from <user> in channel <id>";
+if (from a bot, or not your user ID?) then (yes)
+  #EEEEEE:ignore silently;
+  stop
+endif
+if (where?) then (thread under #ideas)
+  if (thread has a session in threads.json?) then (no)
+    #FFEBEE:reply "no Claude session for this thread,
+    post the idea in the channel";
+    stop
+  endif
+  :prompt = FOLLOW_UP + your reply;
+  :resume = that session id;
+elseif () then (the #ideas channel)
+  :create a thread named after the first line;
+  :prompt = NEW_IDEA + your text
+  (+ attachment URLs);
+else (anywhere else)
+  #EEEEEE:ignore;
+  stop
+endif
+if (another run in progress?) then (yes)
+  :say "Queued behind another idea";
+  :wait for the lock;
+endif
+if (repo on main?) then (no)
+  #FFEBEE:say "not on main, not running", react warning;
+  stop
+endif
+:react hourglass, typing;
+#FFF3E0:claude -p --agent idea-dump
+--permission-mode dontAsk
+(allow/deny lists), cwd <U+007E>/code/homelab;
+if (finished within 30 min?) then (no)
+  #FFEBEE:kill it, "Timed out";
+else (yes)
+  :parse JSON: result, session_id, ok;
+  :save thread -> session_id;
+endif
+:post reply in the thread (split at 1,900 chars);
+:hourglass -> tick if ok, else cross;
+stop
+@enduml

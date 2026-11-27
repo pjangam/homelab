@@ -1,0 +1,88 @@
+@startuml
+' idea-bot: every part, where it runs and what talks to what.
+' Render: projects/idea-bot/render_diagrams.sh  (-> architecture.svg/.png)
+title idea-bot - architecture (2026-11-27)
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam componentStyle rectangle
+skinparam ArrowColor #555555
+skinparam nodesep 30
+skinparam ranksep 45
+skinparam rectangle {
+  BorderColor #777777
+  RoundCorner 8
+}
+skinparam database {
+  BackgroundColor #E8EAF6
+}
+skinparam component {
+  BackgroundColor #FFFFFF
+}
+skinparam legend {
+  BackgroundColor #FAFAFA
+  BorderColor #BBBBBB
+}
+
+actor "You" as user
+
+rectangle "Your devices" as devices #E3F2FD {
+  component "Discord app\n(iPhone / Mac)" as app
+}
+
+cloud "Internet" as internet #F5F5F5 {
+  component "Discord\nprivate server 'homelab'\nchannel #ideas, one thread per idea" as discord
+  component "Anthropic\n(Claude Max login)" as anthropic
+  component "Web pages\n(links you send, search results)\n<b>untrusted text</b>" as web #FFEBEE
+  component "GitHub\npjangam/homelab (main)" as github
+}
+
+rectangle "xero" as xero #E8F5E9 {
+  rectangle "systemd --user unit: idea-bot\n(Restart=always, PATH has <U+007E>/.local/bin)" as unit #FFFFFF {
+    component "bot.py\n(uv script, discord.py)\n- only your user ID\n- one run at a time (lock)\n- refuses if repo not on main" as bot
+  }
+  component "claude -p --agent idea-dump\n(one process per idea or reply)\n--permission-mode dontAsk\n+ allow/deny lists from bot.py" as claude #FFF3E0
+
+  rectangle "<U+007E>/code/homelab (shared working tree)" as repo #FFFFFF {
+    database "tracker/<slug>.md\nPROJECTS.md\n<b>(the only writable files)</b>" as tracker
+    database "CLAUDE.md, .claude/agents/idea-dump.md\ndocs/hardware.md (gitignored)\nother tracker files\n(read-only context)" as context
+    component ".claude/settings.json hook\nrequire_idea_dump.py\n(new idea files: idea-dump only)" as hook
+    component ".githooks\npre-commit: check_open_items,\n  fix_open_items (own claude -p)\npre-push: gitleaks" as githooks
+  }
+
+  database "<U+007E>/.config/idea-bot/env\nDISCORD_TOKEN, user ID, channel ID\n(mode 600, not in git)" as env
+  database "<U+007E>/.local/state/idea-bot/threads.json\nthread id -> Claude session id" as state
+  database "<U+007E>/.claude/...\nmemory files (read)\nsession transcripts (--resume)" as cmem
+
+  component "Interactive Claude sessions\n(tmux, Remote Control)" as sessions #EEEEEE
+  component "projects-ui\n(/projects dashboard)" as ui #EEEEEE
+}
+
+user --> app : types idea / reply
+app <--> discord
+bot <--> discord : outbound websocket\n(no inbound port)
+env ..> unit : EnvironmentFile
+bot --> state : save / look up session
+bot --> claude : spawn, prompt on stdin;\nJSON result back
+claude --> anthropic : model calls
+claude --> web : WebSearch / WebFetch
+claude --> context : Read
+claude --> tracker : Edit / Write
+claude ..> hook : every Edit/Write/Bash\nchecked
+claude --> githooks : git commit / git push
+githooks --> github : push main
+claude --> cmem
+sessions ..> repo : same checkout\n(may branch it)
+ui ..> tracker : reads live
+
+legend right
+  |= Colour |= Meaning |
+  |<#FFF3E0>| the agent: runs with your Claude login, tools limited by bot.py |
+  |<#FFEBEE>| untrusted input: may contain instructions, treated as data |
+  |<#EEEEEE>| neighbours: not part of the bot, share the repo |
+  |<#E8EAF6>| files on disk (state, secrets, repo content) |
+  Refused to the agent: other shell (ssh, curl, docker, rm),
+  writes outside tracker/, git reset/checkout/config,
+  reading .env*, <U+007E>/.ssh, <U+007E>/.config, certs/, vw-data/, HA config.
+endlegend
+@enduml

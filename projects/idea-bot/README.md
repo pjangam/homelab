@@ -19,6 +19,22 @@ A Discord bot that sends ideas from the phone straight to the `idea-dump` agent.
 - **Refuses to run if the checkout is not on `main`.** Other sessions share this working tree and sometimes branch it.
 - **No inbound port.** The bot connects out to Discord, so there is nothing for `endpoints.toml`.
 
+## Diagrams
+
+Every part and what talks to what (source `architecture.puml`):
+
+![idea-bot architecture](architecture.svg)
+
+One idea, then one reply in its thread, step by step (source `sequence_new_idea.puml`):
+
+![new idea sequence](sequence_new_idea.svg)
+
+Every decision one Discord message passes through, and where it stops (source `message_routing.puml`):
+
+![message routing](message_routing.svg)
+
+Edit a `.puml`, run `render_diagrams.sh` (PlantUML in Docker; xero has no Java) and commit the `.svg`/`.png` with it. Tildes are written `<U+007E>` in the sources: a bare `~` is PlantUML's escape character.
+
 ## What the agent may do
 
 Headless runs use `--permission-mode dontAsk`: anything not on the list in `bot.py` (`ALLOWED_TOOLS`) is refused, not asked.
@@ -39,6 +55,7 @@ Headless runs use `--permission-mode dontAsk`: anything not on the list in `bot.
 |---|---|
 | `bot.py` | the bot (uv script, `discord.py`); `--probe` runs the Claude side without Discord |
 | `idea-bot.service` | `systemd --user` unit |
+| `*.puml` + `render_diagrams.sh` | the diagrams above (renders `.svg`/`.png`) |
 | `~/.config/idea-bot/env` | **secrets, not in git**: `DISCORD_TOKEN`, `IDEA_BOT_USER_ID`, `IDEA_BOT_CHANNEL_ID` |
 | `~/.local/state/idea-bot/threads.json` | Discord thread → Claude session id, so thread replies resume the right session |
 
