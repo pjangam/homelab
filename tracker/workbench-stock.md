@@ -1,7 +1,7 @@
 # Workbench stock: jumper wires and project boxes
 **Status:** Backlog
 **Priority:** P3
-**Cost:** ₹3,200-5,500 (sum of the parts list; optional micro-USB pairs not included)
+**Cost:** ₹4,600-6,700 (sum of the parts list; optional micro-USB pairs not included)
 **Effort:** ~1 evening (one shop trip)
 
 #### Open items
@@ -26,7 +26,7 @@ qty | item | est | note
 1 | USB-A male breakout board | 9-25 | local - the third male for the 3 pairs
 3 | USB-C male breakout (plug) board | 50-100 | local - USB-C pairs, with the female boards below
 2 | USB-C female breakout, 6-pin with 5.1k CC resistors | 20-40 | local - with the 24-pin one on hand, makes 3 USB-C pairs. The 5.1k resistors make a USB-C charger give 5V; a board without them gets no power
-1 | Nylon spacer/standoff + screw + nut assortment kit, M2.5 and M3 (M-F and F-F standoffs, assorted lengths) | 250-450 | local - mounts boards into project boxes and onto panels. M2.5 fits Pi holes; M3 fits most ESP32 devkits and modules. Nylon, so no shorts against the board
+1 | Nylon spacer/standoff + screw + nut assortment kit, M2.5 and M3 (M-F and F-F standoffs, assorted lengths) | 1628 | Amazon.in https://www.amazon.in/gp/product/B0F297R23T ₹1,628 (user, 2026-11-27); a small local kit is ~₹250-450 - mounts boards into project boxes and onto panels. M2.5 fits Pi holes; M3 fits most ESP32 devkits and modules. Nylon, so no shorts against the board
 # Optional: micro-USB pairs
 3 | Micro-USB female breakout board | 10-20 | local - for older devices with micro-USB cables
 3 | Micro-USB male breakout (plug) board | 20-40 | local
@@ -37,3 +37,4 @@ qty | item | est | note
 - 2026-11-14: DS3231 RTC module + CR2032 added (user), general stock - not needed by the USB charge switch.
 - 2026-11-17: USB breakout pairs added (user): 3 USB-A, 3 USB-C, micro-USB optional. Counts allow for the 2 USB-A male and 1 USB-C female (24-pin) already on hand (`docs/hardware.md`).
 - 2026-11-27: nylon standoff/spacer + screw kit (M2.5 and M3) added (user).
+- 2026-11-27: standoff kit priced from an Amazon.in listing at ₹1,628 (user); budget raised to match.
