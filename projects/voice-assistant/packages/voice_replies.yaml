@@ -17,6 +17,11 @@ input_boolean:
   voice_replies_enabled:
     name: Voice replies
     icon: mdi:account-voice
+  # "Yes?" on the room speaker at the wake word, so you know it was heard
+  # (user, 2026-11-28). Same quiet rules as the failure tone.
+  voice_wake_yes:
+    name: Say "Yes?" on wake word
+    icon: mdi:account-voice
   voice_quiet_bedroom:
     name: Bedroom quiet (white noise at the wake word)
   voice_paused_bedroom:
@@ -288,12 +293,43 @@ automation:
             {% if rec not in ['', 'unknown', 'unavailable'] and sp and rec_t > as_timestamp(sp.last_updated) %}{{ rec }}
             {% elif sp and sp.state == 'playing' %}{{ sp.attributes.source | default('') }}
             {% endif %}
-      - condition: "{{ is_state(trigger.entity_id, 'listening') and playing_on | trim == devices[room] }}"
-      - action: input_boolean.turn_on
-        target: {entity_id: "input_boolean.voice_paused_{{ room }}"}
-      - action: media_player.media_pause
-        target: {entity_id: media_player.spotify_pramod}
-        continue_on_error: true
+      - if: "{{ is_state(trigger.entity_id, 'listening') and playing_on | trim == devices[room] }}"
+        then:
+          - action: input_boolean.turn_on
+            target: {entity_id: "input_boolean.voice_paused_{{ room }}"}
+          - action: media_player.media_pause
+            target: {entity_id: media_player.spotify_pramod}
+            continue_on_error: true
+      # "Yes?" after the pause, so it is not over the music. Fire and forget:
+      # nothing waits for its done; the command's own reply queues behind it
+      # in the bridge. Not while white noise is on or in the bedroom at night
+      # (the failure tone's rules: a false wake must not wake you).
+      - variables:
+          hosts: {bedroom: pi, living_room: xero}
+          health:
+            bedroom: binary_sensor.bedroom_voice_replies
+            living_room: binary_sensor.living_room_voice_replies
+          night: >-
+            {% set st = states('input_datetime.night_quiet_start') %}
+            {% set en = states('input_datetime.night_quiet_end') %}
+            {% set n = now().strftime('%H:%M:%S') %}
+            {{ n >= st or n < en }}
+          yes_volume: "{{ states('input_number.voice_reply_volume_' ~ room) | int(0) }}"
+      - if: >-
+          {{ is_state(trigger.entity_id, 'listening')
+             and is_state('input_boolean.voice_wake_yes', 'on')
+             and is_state(health[room], 'on')
+             and yes_volume >= 1
+             and not (room == 'bedroom' and (night
+                      or is_state('input_boolean.voice_quiet_bedroom', 'on')
+                      or not is_state('switch.white_noise', 'off'))) }}
+        then:
+          - action: mqtt.publish
+            data:
+              topic: "voice_reply/{{ hosts[room] }}/play"
+              payload: >-
+                {{ {'id': room ~ '-yes-' ~ (now().timestamp() | round(3)),
+                    'sound': 'yes', 'volume': yes_volume} | to_json }}
 
   # Firmware events (needs the reflash). Room from the board's HA area.
   - id: voice_reply_events

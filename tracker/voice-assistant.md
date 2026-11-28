@@ -17,6 +17,8 @@
 - [ ] **Pramod:** check which end (DIN, follow the arrows) of the bedroom strip is wired before connecting it
 - [ ] **Pramod:** keep using spoken replies in both rooms and report anything odd (living room tested 2026-11-18; bedroom replies not yet heard)
 - [ ] **Together, an evening:** bedroom night reply level by ear on its tile (78 for now; ~75-82), and hear a bedroom reply next to music and white noise (plan step 0)
+- [ ] **Pramod:** try "Hey Jarvis" in both rooms and say whether "Yes?" comes quickly enough, and whether commands still work right after it (the mic hears the "Yes?" too)
+- [ ] **Pramod:** wire the bedroom satellite's LED; until then "Yes?" is the only sign there that the wake word was heard (none at night or with white noise on)
 - [ ] **Pramod:** buy a 12mm push button and wire it to the bedroom board (GPIO23 to GND); the living room's works since 2026-11-18
 - [ ] **Claude, 2026-11-19:** count living-room false wakes (3 on the evening of 2026-11-18, no words heard) and tune if they continue
 - [ ] **Claude, before the reflash:** wiring guide for the play button (`circuit-diagram`), GPIO23 to GND on both boards
@@ -53,6 +55,7 @@ qty | item | est | note
 The pipeline already answers in speech (Piper, `127.0.0.1:10200`), but the satellites have no way to play it, so today a command only shows on the LED. Adding a MAX98357A + small speaker per board gives spoken replies and confirmation tones. It goes on its own I2S bus (the ESP32 has two), not shared with the mic: LRC GPIO26, BCLK GPIO27, DIN GPIO22 - all free and none of them strapping pins - with VIN to 5V, GND, and SD left unconnected (amp on). Firmware: a second `i2s_audio` bus, an `i2s_audio` speaker, and `speaker:` on `voice_assistant`; ESPHome mutes the mic while the reply plays, so the board does not hear itself. Not wired or flashed yet.
 
 #### Log
+- 2026-11-28: "Yes?" on the wake word (user: no way to tell the wake word was heard, and the bedroom has no LED yet). `yes.mp3` rendered with HA's Piper lessac; the bridge got a `sound: "yes"`; `voice_music_pause` sends it after pausing the music. Toggle `input_boolean.voice_wake_yes`, on, with a tile in the Bedroom view next to "Voice replies". None in the bedroom at night or with white noise on. Tested from MQTT on xero (played, volume restored); waiting on a by-voice try.
 - 2026-11-26: "Hey Jarvis" stopped pausing the music: `input_boolean.voice_replies_enabled` had been switched off from the app on 2026-11-20 12:42, not on purpose (probably a tap on the "Voice replies" tile, Bedroom view). Turned back on; pause-on-wake-word and spoken replies are live again.
 - 2026-11-26: bare "pause" / "next" diagnosed: speech-to-phrase only knows listed sentences, so bare "pause" came out as the nearest song ("play faint") and bare "next" hit HA's built-in skip, which can't see the hidden Spotify ("not aware of any media player in the Living Room area"). "next song" / "pause the music" work. Decision (Pramod): keep the multi-word forms only, no bare words. `tools/ha-diag/pipeline_runs.py` shows what was heard.
 - 2026-11-19: satellite speaker plan **dropped** (user: redundant now that replies play on the room speakers and the Apollo One stays); its parts and open items removed, GPIO26/27/22 freed.

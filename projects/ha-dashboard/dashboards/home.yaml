@@ -488,6 +488,9 @@ views:
     - type: tile
       entity: input_boolean.voice_replies_enabled
       name: Voice replies
+    - type: tile
+      entity: input_boolean.voice_wake_yes
+      name: Say "Yes?" on wake word
     column_span: 4
   - type: grid
     cards:

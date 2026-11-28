@@ -7,13 +7,13 @@
 Runs on the wol Pi (bedroom, 3.5mm jack) and on xero (living room, Bluetooth
 Apollo One) as the `voice-reply` systemd --user unit, next to an always-running
 VLC (`voice-reply-vlc`, driven over a unix socket). HA's `voice_reply` script
-publishes voice_reply/<host>/play {id, url | sound: "tone", volume?}; this
+publishes voice_reply/<host>/play {id, url | sound: "tone"|"yes", volume?}; this
 plays it and answers voice_reply/<host>/done {id} - for every play, dropped or
 not. Design and reasons: plan-room-replies.md, Design row 2.
 
 Per play:
  0. drop (still answering done) if: the url is not HA's tts_proxy mp3, the
-    sound is not "tone", it waited > 10s in this queue, on the Pi white noise
+    sound is not "tone" or "yes", it waited > 10s in this queue, on the Pi white noise
     is active/activating/deactivating, on xero the Bluetooth speaker is not
     connected or not the default sink (Bluetooth errors are ignored: no
     reconnect, user 2026-11-18)
@@ -62,6 +62,10 @@ TONE = STATE / "tone.wav"
 # changes acknowledge.mp3 brings the chime back; add the new hash here.
 ACK_SHA256 = {"88762f0f72e04bab3b545d4852d0badd017bb4a8799cc4f3ef0cb4fc8e7ecdae"}
 DONE = Path(__file__).resolve().parent / "done.mp3"
+# "Yes?" (Piper lessac, 0.7s) on the wake word, so you know it was heard
+# (user, 2026-11-28; packages/voice_replies.yaml voice_music_pause).
+YES = Path(__file__).resolve().parent / "yes.mp3"
+SOUNDS = {"tone": TONE, "yes": YES}
 LEAD = STATE / "lead-in.wav"  # xero: played before each sound, see make_lead
 # Which mixer the preset goes to: the same control as the room's volume slider
 # (volume-mqtt). Pi: -c Headphones PCM (its default card is HDMI). xero:
@@ -253,7 +257,7 @@ def handle(job, client):
     url, sound, volume = req.get("url"), req.get("sound"), req.get("volume")
     if url and not (url.startswith(URL_PREFIX) and url.endswith(".mp3")):
         why = f"bad url {url[:60]!r}"
-    elif not url and sound != "tone":
+    elif not url and sound not in SOUNDS:
         why = f"bad sound {sound!r}"
     elif time.monotonic() - arrived > MAX_QUEUE_AGE:
         why = "waited too long in the queue"
@@ -263,8 +267,8 @@ def handle(job, client):
         why = "Bluetooth speaker not connected"
     if why is None:
         try:
-            how = play(url, volume)
-            log(f"played {rid} ({'tone' if not url else 'reply'}{f', at {volume}%' if volume is not None else ''}): {how}")
+            how = play(url, volume, sound)
+            log(f"played {rid} ({sound if not url else 'reply'}{f', at {volume}%' if volume is not None else ''}): {how}")
         except Exception as e:  # noqa: BLE001 - never leave HA waiting
             log(f"play {rid} failed: {e!r}")
             restore_saved()
@@ -278,7 +282,7 @@ def handle(job, client):
     client.publish(f"{TOPIC}/done", json.dumps({"id": rid}))
 
 
-def play(url, volume):
+def play(url, volume, sound=None):
     if url:
         path = RUN / "voice-reply.mp3"
         with urllib.request.urlopen(url, timeout=5) as r:
@@ -287,7 +291,7 @@ def play(url, volume):
             data = DONE.read_bytes()
         path.write_bytes(data)
     else:
-        path = TONE
+        path = SOUNDS[sound]
     if volume is not None:
         if not SAVED.exists():  # a queued second play keeps the first saved level
             SAVED.write_text(json.dumps(mixer_get()))
